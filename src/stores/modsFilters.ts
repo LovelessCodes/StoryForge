@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { ModTag } from "@/routes/mods";
+import type { ModTag } from "@/lib/types";
 
 export type ModsFilters = {
 	selectedGameVersions: string[];

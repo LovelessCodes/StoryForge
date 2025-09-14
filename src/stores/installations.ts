@@ -102,14 +102,22 @@ export const useInstallationsStore = create<InstallationsStore>((set) => ({
 		})),
 	updateInstallation: (installation, cb) =>
 		set((state) => {
-			if (state.installations.find((s) => s.path === installation.path)) {
+			if (
+				state.installations.find(
+					(s) => s.path === installation.path && s.id !== installation.id,
+				)
+			) {
 				toast.error(
 					`Installation with path "${installation.path}" already exists`,
 				);
 				cb?.(false);
 				return state;
 			}
-			if (state.installations.find((s) => s.name === installation.name)) {
+			if (
+				state.installations.find(
+					(s) => s.name === installation.name && s.id !== installation.id,
+				)
+			) {
 				toast.error(
 					`Installation with name "${installation.name}" already exists`,
 				);
