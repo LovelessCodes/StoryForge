@@ -2,8 +2,12 @@ import { Heart, Package, PackagePlusIcon, Play, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { Installation } from "@/stores/installations";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 interface InstallationCardProps {
 	installation: Installation;

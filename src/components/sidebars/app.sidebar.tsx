@@ -13,6 +13,12 @@ import { AddUserDialog } from "@/components/dialogs/adduser.dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+} from "@/components/ui/select";
+import {
 	Sidebar,
 	SidebarContent,
 	SidebarFooter,
@@ -23,7 +29,6 @@ import {
 } from "@/components/ui/sidebar";
 import { useAccountStore } from "@/stores/accounts";
 import { useInstallations } from "@/stores/installations";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
 
 export function AppSidebar() {
 	const { selectedUser, users, removeUser, setSelectedUser } =

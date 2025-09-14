@@ -20,6 +20,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import type { Installation } from "@/stores/installations";
 
 export function RemoveModDialog({
@@ -50,14 +51,14 @@ export function RemoveModDialog({
 				id: `mod-remove-${variables.path}-${variables.modpath}`,
 			});
 		},
-		onSuccess: (data, variables) => {
+		onSuccess: async (data, variables) => {
 			if (data === "removed") {
 				toast.success(`Removed ${name} from ${installation.name}`, {
 					id: `mod-remove-${variables.path}-${variables.modpath}`,
 				});
 				// Invalidate the mods query to refresh the list
-				queryClient.invalidateQueries({
-					queryKey: ["installationMods", installation.path],
+				await queryClient.invalidateQueries({
+					queryKey: installedModsQueryKey(installation.path),
 				});
 				setOpen(false);
 			}

@@ -2,6 +2,7 @@ import { useForm } from "@tanstack/react-form";
 import clsx from "clsx";
 import { WrenchIcon } from "lucide-react";
 import { useId, useState } from "react";
+import { serverSchema } from "@/components/dialogs/addserver.dialog";
 import { PasswordInput } from "@/components/inputs";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +13,14 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+} from "@/components/ui/select";
 import {
 	Tooltip,
 	TooltipContent,
@@ -20,9 +28,6 @@ import {
 } from "@/components/ui/tooltip";
 import { useInstallations } from "@/stores/installations";
 import { type Server, useServerStore } from "@/stores/servers";
-import { Input } from "../ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
-import { serverSchema } from "./addserver.dialog";
 
 export function EditServerDialog({ server }: { server: Server }) {
 	const id = useId();
@@ -161,7 +166,9 @@ export function EditServerDialog({ server }: { server: Server }) {
 													htmlFor="password"
 												>
 													Password
-													<span className="text-muted-foreground text-xs">(optional)</span>
+													<span className="text-muted-foreground text-xs">
+														(optional)
+													</span>
 												</Label>
 											</TooltipTrigger>
 											<TooltipContent align="start" side="bottom">
@@ -257,7 +264,9 @@ export function EditServerDialog({ server }: { server: Server }) {
 													htmlFor="port"
 												>
 													Port
-													<span className="text-muted-foreground text-xs">(optional)</span>
+													<span className="text-muted-foreground text-xs">
+														(optional)
+													</span>
 												</Label>
 											</TooltipTrigger>
 											<TooltipContent align="start" side="bottom">

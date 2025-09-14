@@ -1,6 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { invoke } from "@tauri-apps/api/core";
 import { ChevronDownIcon } from "lucide-react";
 import { useRef } from "react";
 import { AuthorCombobox } from "@/components/comboboxes/author.combobox";
@@ -21,25 +20,10 @@ import {
 	SelectTrigger,
 } from "@/components/ui/select";
 import { useInstalledMods } from "@/hooks/use-installed-mods";
+import { gameVersionsQuery, modTagsQuery } from "@/lib/queries";
 import { compareSemverDesc } from "@/lib/utils";
 import { useInstallations } from "@/stores/installations";
 import { type ModsFilters, useModsFilters } from "@/stores/modsFilters";
-
-export type ModTag = {
-	tagid: number;
-	name: string;
-	color: string;
-};
-
-export const gameVersionsQuery = {
-	queryFn: () => invoke("fetch_versions") as Promise<string[]>,
-	queryKey: ["gameVersions"],
-};
-
-const modTagsQuery = {
-	queryFn: () => invoke("fetch_mod_tags") as Promise<ModTag[]>,
-	queryKey: ["modTags"],
-};
 
 export const Route = createFileRoute("/install-mods/$id")({
 	component: RouteComponent,

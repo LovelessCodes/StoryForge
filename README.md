@@ -12,6 +12,7 @@
 # Story Forge
 
 **Story Forge** is a modern desktop app for Vintage Story players, designed to make switching between game versions, modpacks, servers, and accounts effortless.
+[![Checked with Biome](https://img.shields.io/badge/Checked_with-Biome-60a5fa?style=for-the-badge&logo=biome)](https://biomejs.dev/)
 
 ---
 

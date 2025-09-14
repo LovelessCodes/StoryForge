@@ -18,8 +18,13 @@ type ModUpdatesResponse = {
 	};
 };
 
+export const modUpdatesQueryKey = (installationId: number | null) => [
+	"modUpdates",
+	installationId,
+];
+
 export const useModUpdates = (
-	{installation, params}: {installation: number | null, params: string},
+	{ installationId, params }: { installationId: number | null; params: string },
 	props?: Omit<
 		UseQueryOptions<ModUpdatesResponse, Error, ModUpdatesResponse>,
 		"queryKey" | "queryFn"
@@ -28,7 +33,7 @@ export const useModUpdates = (
 	return useQuery({
 		queryFn: () =>
 			invoke("get_mod_updates", { params }) as Promise<ModUpdatesResponse>,
-		queryKey: ["modUpdates", installation],
+		queryKey: modUpdatesQueryKey(installationId),
 		...props,
 	});
 };

@@ -37,10 +37,7 @@ export function DeleteInstallationDialog({
 	);
 
 	const { mutate: deleteInstallation, isPending } = useMutation({
-		mutationFn: async (id: number) => {
-			console.log("Deleting installation with id:", id);
-			return invoke("remove_installation", { id });
-		},
+		mutationFn: async (id: number) => invoke("remove_installation", { id }),
 		onError: (error, variables) => {
 			toast.error(`Error deleting installation: ${error}`, {
 				id: `installation-delete-${variables}`,

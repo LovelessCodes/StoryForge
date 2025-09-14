@@ -4,10 +4,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { DownloadCloudIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { ProgressPayload } from "@/lib/types";
-import type { OutputMod } from "@/routes/install-mods/$id";
-import type { Installation } from "@/stores/installations";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -15,9 +12,23 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTrigger,
-} from "../ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+} from "@/components/ui/dialog";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+} from "@/components/ui/select";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { installedModsQueryKey } from "@/hooks/use-installed-mods";
+import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
+import type { ProgressPayload } from "@/lib/types";
+import type { OutputMod } from "@/routes/install-mods/$id";
+import type { Installation } from "@/stores/installations";
 
 type Release = {
 	releaseid: number;
@@ -85,7 +96,11 @@ export function UpdateModDialog({
 		refetchOnWindowFocus: false,
 	});
 	const listenRef = useRef<UnlistenFn>(null);
-	const [selectedVersion, setSelectedVersion] = useState<Release | null>(versionFrom ? modInfo?.mod.releases.find((r) => r.modversion === versionFrom) || null : null);
+	const [selectedVersion, setSelectedVersion] = useState<Release | null>(
+		versionFrom
+			? modInfo?.mod.releases.find((r) => r.modversion === versionFrom) || null
+			: null,
+	);
 	const queryClient = useQueryClient();
 	const emitevent = `mod-download-${mod.modid}-${installation.id}`;
 	const { mutate: removeModFromInstallation, isPending: removePending } =
@@ -123,9 +138,12 @@ export function UpdateModDialog({
 			listenRef.current?.();
 		},
 		onMutate: async () => {
-			toast.loading(`${selectedVersion && selectedVersion.modversion > versionFrom ? "Upgrading" : "Downgrading"} ${modInfo?.mod.name} to ${installation.name}...`, {
-				id: `add-mod-${modInfo?.mod.modid}-${installation.id}`,
-			});
+			toast.loading(
+				`${selectedVersion && selectedVersion.modversion > versionFrom ? "Upgrading" : "Downgrading"} ${modInfo?.mod.name} to ${installation.name}...`,
+				{
+					id: `add-mod-${modInfo?.mod.modid}-${installation.id}`,
+				},
+			);
 			listenRef.current = await listen<ProgressPayload>(emitevent, (event) => {
 				const { phase, percent } = event.payload;
 				if (phase === "download") {
@@ -136,17 +154,17 @@ export function UpdateModDialog({
 				}
 			});
 		},
-		onSuccess: () => {
+		onSuccess: async () => {
 			listenRef.current?.();
 			toast.success(
 				`Successfully ${selectedVersion && selectedVersion.modversion > versionFrom ? "updated" : "downgraded"} ${modInfo?.mod.name} to ${installation.name}`,
 				{ id: `add-mod-${modInfo?.mod.modid}-${installation.id}` },
 			);
-			queryClient.invalidateQueries({
-				queryKey: ["installationMods", installation.path],
+			await queryClient.invalidateQueries({
+				queryKey: installedModsQueryKey(installation.path),
 			});
-			queryClient.invalidateQueries({
-				queryKey: ["modUpdates", installation.id],
+			await queryClient.invalidateQueries({
+				queryKey: modUpdatesQueryKey(installation.id),
 			});
 			setOpen(false);
 		},
@@ -154,12 +172,12 @@ export function UpdateModDialog({
 
 	useEffect(() => {
 		if (modInfo && modInfo.mod.releases.length > 0) {
-			const modVersion = modInfo.mod.releases.find((release) =>
-				release.tags.includes(installation.version),
+			const modVersion = modInfo.mod.releases.find(
+				(release) => release.modversion === versionFrom,
 			);
 			setSelectedVersion(modVersion ? modVersion : null);
 		}
-	}, [modInfo, installation.version]);
+	}, [modInfo, versionFrom]);
 
 	return (
 		<Dialog
@@ -255,9 +273,17 @@ export function UpdateModDialog({
 				</div>
 				<DialogFooter>
 					<Button
-						disabled={!selectedVersion || isPending || removePending || selectedVersion.modversion === versionFrom}
+						disabled={
+							!selectedVersion ||
+							isPending ||
+							removePending ||
+							selectedVersion.modversion === versionFrom
+						}
 						onClick={async () => {
-							if (selectedVersion && selectedVersion.modversion !== versionFrom) {
+							if (
+								selectedVersion &&
+								selectedVersion.modversion !== versionFrom
+							) {
 								removeModFromInstallation({
 									modpath: mod.path,
 									path: installation.path,

@@ -1,5 +1,3 @@
-"use client";
-
 import { Command as CommandPrimitive, useCommandState } from "cmdk";
 import { ChevronDownIcon, X } from "lucide-react";
 import * as React from "react";
@@ -459,7 +457,7 @@ const MultipleSelector = React.forwardRef<
 				}
 			>
 				{/** biome-ignore lint/a11y/noStaticElementInteractions: False positive */}
-<div
+				<div
 					className={cn(
 						"flex items-start justify-between rounded-md border border-input px-3 py-2 text-base ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 md:text-sm",
 						{
@@ -471,12 +469,12 @@ const MultipleSelector = React.forwardRef<
 						if (disabled) return;
 						inputRef?.current?.focus();
 					}}
-                    onKeyUp={(e) => {
-                        if (e.key === "Enter") {
-                            if (disabled) return;
-                            inputRef?.current?.focus();
-                        }
-                    }}
+					onKeyUp={(e) => {
+						if (e.key === "Enter") {
+							if (disabled) return;
+							inputRef?.current?.focus();
+						}
+					}}
 				>
 					<div className="relative flex flex-wrap gap-1">
 						{selected.map((option) => {

@@ -13,7 +13,14 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+} from "@/components/ui/select";
 import {
 	Tooltip,
 	TooltipContent,
@@ -21,8 +28,6 @@ import {
 } from "@/components/ui/tooltip";
 import { useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
-import { Input } from "../ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
 
 export const serverSchema = z.object({
 	favorite: z.boolean(),
@@ -39,7 +44,7 @@ export const serverSchema = z.object({
 		.min(1)
 		.max(5)
 		.nullable()
-		.refine((val) => val ? /^\d+$/.test(val) : true, {
+		.refine((val) => (val ? /^\d+$/.test(val) : true), {
 			message: "Port must be a number",
 		}),
 });
@@ -85,12 +90,15 @@ export function AddServerDialog() {
 		},
 	});
 	return (
-		<Dialog onOpenChange={(open) => {
-			if (!open) {
-				form.reset();
-			}
-			setOpen(open);
-		}} open={open}>
+		<Dialog
+			onOpenChange={(open) => {
+				if (!open) {
+					form.reset();
+				}
+				setOpen(open);
+			}}
+			open={open}
+		>
 			<DialogTrigger asChild>
 				<Button
 					className="w-full justify-between cursor-pointer"
@@ -176,7 +184,9 @@ export function AddServerDialog() {
 													htmlFor="password"
 												>
 													Password
-													<span className="text-muted-foreground text-xs">(optional)</span>
+													<span className="text-muted-foreground text-xs">
+														(optional)
+													</span>
 												</Label>
 											</TooltipTrigger>
 											<TooltipContent align="start" side="bottom">
@@ -306,14 +316,18 @@ export function AddServerDialog() {
 								)}
 							</form.Field>
 						</div>
-						<form.Field name="installationId"
-						validators={{
-							onSubmit: ({ value }) => {
-								if (!installations.find((inst) => inst.id.toString() === value)) {
-									return Error("You must select an installation");
-								}
-							}
-						}}>
+						<form.Field
+							name="installationId"
+							validators={{
+								onSubmit: ({ value }) => {
+									if (
+										!installations.find((inst) => inst.id.toString() === value)
+									) {
+										return Error("You must select an installation");
+									}
+								},
+							}}
+						>
 							{(field) => (
 								<div className="grid gap-2">
 									<Tooltip>

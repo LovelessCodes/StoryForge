@@ -31,13 +31,13 @@ import {
 } from "@/components/ui/tooltip";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
+import { gameVersionsQuery } from "@/lib/queries";
 import type { ProgressPayload } from "@/lib/types";
 import {
 	compareSemverDesc,
 	makeStringFolderSafe,
 	zipfolderprefix,
 } from "@/lib/utils";
-import { gameVersionsQuery } from "@/routes/mods";
 import { useInstallationsStore } from "@/stores/installations";
 
 export const installationSchema = z.object({

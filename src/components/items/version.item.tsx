@@ -1,6 +1,6 @@
 import { Download } from "lucide-react";
+import { DeleteVersionDialog } from "@/components/dialogs/deleteversion.dialog";
 import { Badge } from "@/components/ui/badge";
-import { DeleteVersionDialog } from "../dialogs/deleteversion.dialog";
 
 interface VersionItemProps {
 	version: string;

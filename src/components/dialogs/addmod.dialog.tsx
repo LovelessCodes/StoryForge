@@ -4,9 +4,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { PackagePlusIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { ProgressPayload } from "@/lib/types";
-import type { Installation } from "@/stores/installations";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -14,9 +12,22 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTrigger,
-} from "../ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+} from "@/components/ui/dialog";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+} from "@/components/ui/select";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { installedModsQueryKey } from "@/hooks/use-installed-mods";
+import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
+import type { ProgressPayload } from "@/lib/types";
+import type { Installation } from "@/stores/installations";
 
 type Release = {
 	releaseid: number;
@@ -73,7 +84,8 @@ export function AddModDialog({
 	const [open, setOpen] = useState(false);
 	const { data: modInfo } = useQuery({
 		enabled: open,
-		queryFn: () => invoke("fetch_mod_info", { modid: modid.toString() }) as Promise<ModInfo>,
+		queryFn: () =>
+			invoke("fetch_mod_info", { modid: modid.toString() }) as Promise<ModInfo>,
 		queryKey: ["modInfo", modid],
 		refetchOnReconnect: false,
 		refetchOnWindowFocus: false,
@@ -111,17 +123,17 @@ export function AddModDialog({
 				}
 			});
 		},
-		onSuccess: () => {
+		onSuccess: async () => {
 			listenRef.current?.();
 			toast.success(
 				`Successfully added ${modInfo?.mod.name} to ${installation.name}`,
 				{ id: `add-mod-${modInfo?.mod.modid}-${installation.id}` },
 			);
-			queryClient.invalidateQueries({
-				queryKey: ["installationMods", installation.path],
+			await queryClient.invalidateQueries({
+				queryKey: installedModsQueryKey(installation.path),
 			});
-			queryClient.invalidateQueries({
-				queryKey: ["modUpdates", installation.id],
+			await queryClient.invalidateQueries({
+				queryKey: modUpdatesQueryKey(installation.id),
 			});
 			setOpen(false);
 		},

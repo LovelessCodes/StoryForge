@@ -5,18 +5,18 @@ import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
-import {
 	Command,
 	CommandEmpty,
 	CommandInput,
 	CommandItem,
 	CommandList,
 	CommandLoading,
-} from "../ui/command";
+} from "@/components/ui/command";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 
 type AuthorResponse = {
 	[key: string]: string;
@@ -90,11 +90,19 @@ export const AuthorCombobox = (
 										actualValue === value && "bg-accent/50",
 									])}
 									key={key}
-									onSelect={(v) => v === actualValue ? handleValueChange("") : handleValueChange(value)}
+									onSelect={(v) =>
+										v === actualValue
+											? handleValueChange("")
+											: handleValueChange(value)
+									}
 									value={value}
 								>
 									{value}
-									{value === actualValue && (<div className="absolute right-2 opacity-50 pointer-events-none size-3.5"><CheckIcon className="size-4" /></div>)}
+									{value === actualValue && (
+										<div className="absolute right-2 opacity-50 pointer-events-none size-3.5">
+											<CheckIcon className="size-4" />
+										</div>
+									)}
 								</CommandItem>
 							))}
 					</CommandList>

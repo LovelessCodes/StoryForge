@@ -2,9 +2,13 @@ import { Heart, Lock, Settings, Wifi } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useInstallations } from "@/stores/installations";
 import type { Server } from "@/stores/servers";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 interface ServerCardProps {
 	server: Server;
@@ -72,7 +76,11 @@ export function ServerCard({
 					</Button>
 					<Tooltip>
 						<TooltipTrigger asChild>
-							<Button onClick={() => onEdit(server)} size="icon" variant="outline">
+							<Button
+								onClick={() => onEdit(server)}
+								size="icon"
+								variant="outline"
+							>
 								<Settings className="w-4 h-4" />
 							</Button>
 						</TooltipTrigger>

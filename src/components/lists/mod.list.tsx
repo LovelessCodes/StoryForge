@@ -2,6 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { measureElement, useVirtualizer } from "@tanstack/react-virtual";
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback } from "react";
+import { AddModDialog } from "@/components/dialogs/addmod.dialog";
+import { RemoveModDialog } from "@/components/dialogs/removemod.dialog";
+import { UpdateModDialog } from "@/components/dialogs/updatemod.dialog";
 import {
 	Tooltip,
 	TooltipContent,
@@ -12,9 +15,6 @@ import { useInstalledMods } from "@/hooks/use-installed-mods";
 import { useModUpdates } from "@/hooks/use-mod-updates";
 import type { Installation } from "@/stores/installations";
 import { useModsFilters } from "@/stores/modsFilters";
-import { AddModDialog } from "../dialogs/addmod.dialog";
-import { RemoveModDialog } from "../dialogs/removemod.dialog";
-import { UpdateModDialog } from "../dialogs/updatemod.dialog";
 
 type ModsParams = {
 	versions: string[];
@@ -77,8 +77,10 @@ export function ModList({
 	const installedMods = instMods?.mods ?? [];
 	const { data: modUpdates } = useModUpdates(
 		{
-			installation: installation?.id ?? -1,
-			params: installedMods?.map((mod) => `${mod.modid}@${mod.version}`).join(",") ?? ""
+			installationId: installation?.id ?? -1,
+			params:
+				installedMods?.map((mod) => `${mod.modid}@${mod.version}`).join(",") ??
+				"",
 		},
 		{
 			enabled: !!installedMods.length,
@@ -104,11 +106,11 @@ export function ModList({
 			side !== "installed"
 				? mod.side === side
 				: installedMods.some(
-					(installedMod) =>
-						installedMod.modid === mod.modid ||
-						installedMod.modid.toString() === mod.urlalias ||
-						mod.modidstrs.includes(installedMod.modid.toString()),
-				),
+						(installedMod) =>
+							installedMod.modid === mod.modid ||
+							installedMod.modid.toString() === mod.urlalias ||
+							mod.modidstrs.includes(installedMod.modid.toString()),
+					),
 		)
 		.sort((a, b) => {
 			if (side === "installed") {
@@ -118,18 +120,18 @@ export function ModList({
 						: b.side === "both"
 							? 1
 							: installedMods.some(
-								(installedMod) =>
-									installedMod.modid === a.modid ||
-									installedMod.modid.toString() === a.urlalias ||
-									a.modidstrs.includes(installedMod.modid.toString()),
-							)
+										(installedMod) =>
+											installedMod.modid === a.modid ||
+											installedMod.modid.toString() === a.urlalias ||
+											a.modidstrs.includes(installedMod.modid.toString()),
+									)
 								? -1
 								: installedMods.some(
-									(installedMod) =>
-										installedMod.modid === b.modid ||
-										installedMod.modid.toString() === b.urlalias ||
-										b.modidstrs.includes(installedMod.modid.toString()),
-								)
+											(installedMod) =>
+												installedMod.modid === b.modid ||
+												installedMod.modid.toString() === b.urlalias ||
+												b.modidstrs.includes(installedMod.modid.toString()),
+										)
 									? 1
 									: 0;
 				}
@@ -138,18 +140,18 @@ export function ModList({
 					: b.side === "both"
 						? -1
 						: installedMods.some(
-							(installedMod) =>
-								installedMod.modid === a.modid ||
-								installedMod.modid.toString() === a.urlalias ||
-								a.modidstrs.includes(installedMod.modid.toString()),
-						)
+									(installedMod) =>
+										installedMod.modid === a.modid ||
+										installedMod.modid.toString() === a.urlalias ||
+										a.modidstrs.includes(installedMod.modid.toString()),
+								)
 							? 1
 							: installedMods.some(
-								(installedMod) =>
-									installedMod.modid === b.modid ||
-									installedMod.modid.toString() === b.urlalias ||
-									b.modidstrs.includes(installedMod.modid.toString()),
-							)
+										(installedMod) =>
+											installedMod.modid === b.modid ||
+											installedMod.modid.toString() === b.urlalias ||
+											b.modidstrs.includes(installedMod.modid.toString()),
+									)
 								? -1
 								: 0;
 			}
@@ -228,7 +230,7 @@ export function ModList({
 						(i) =>
 							i.modid === mod.modid ||
 							i.modid.toString() === mod.urlalias ||
-							mod.modidstrs.includes(i.modid.toString())
+							mod.modidstrs.includes(i.modid.toString()),
 					);
 					return (
 						<div
@@ -312,7 +314,8 @@ export function ModList({
 											Object.keys(modUpdates.updates).includes(
 												mod.urlalias ?? "",
 											)) &&
-										installation && installedMod && (
+										installation &&
+										installedMod && (
 											<UpdateModDialog
 												installation={installation}
 												mod={installedMod}
@@ -327,9 +330,7 @@ export function ModList({
 											<RemoveModDialog
 												installation={installation}
 												name={mod.name}
-												path={
-													installedMod.path ?? ""
-												}
+												path={installedMod.path ?? ""}
 											/>
 										) : (
 											<AddModDialog

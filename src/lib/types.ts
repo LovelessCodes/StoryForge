@@ -7,3 +7,9 @@ export type ProgressPayload = {
 	count: number | null;
 	message: string | null;
 };
+
+export type ModTag = {
+	tagid: number;
+	name: string;
+	color: string;
+};
