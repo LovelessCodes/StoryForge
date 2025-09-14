@@ -12,11 +12,14 @@
 		"enabled": true
 	},
 	"files": {
-		"experimentalScannerIgnores": ["routeTree.gen.ts"],
 		"ignoreUnknown": false
 	},
 	"formatter": {
 		"enabled": true,
+		"includes": [
+			"**/*.{js,jsx,ts,tsx,json,css,scss,md,mdx}",
+			"!**/routeTree.gen.ts"
+		],
 		"indentStyle": "tab"
 	},
 	"javascript": {

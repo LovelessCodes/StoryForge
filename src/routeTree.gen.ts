@@ -8,190 +8,190 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from "./routes/__root";
-import { Route as IndexRouteImport } from "./routes/index";
-import { Route as InstallModsIdRouteImport } from "./routes/install-mods/$id";
-import { Route as InstallationsRouteImport } from "./routes/installations";
-import { Route as NewsRouteImport } from "./routes/news";
-import { Route as NewsIdRouteImport } from "./routes/news/$id";
-import { Route as ServersRouteImport } from "./routes/servers";
-import { Route as VersionsRouteImport } from "./routes/versions";
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as InstallModsIdRouteImport } from './routes/install-mods/$id'
+import { Route as InstallationsRouteImport } from './routes/installations'
+import { Route as NewsRouteImport } from './routes/news'
+import { Route as NewsIdRouteImport } from './routes/news/$id'
+import { Route as ServersRouteImport } from './routes/servers'
+import { Route as VersionsRouteImport } from './routes/versions'
 
 const VersionsRoute = VersionsRouteImport.update({
-	getParentRoute: () => rootRouteImport,
-	id: "/versions",
-	path: "/versions",
-} as any);
+  getParentRoute: () => rootRouteImport,
+  id: '/versions',
+  path: '/versions',
+} as any)
 const ServersRoute = ServersRouteImport.update({
-	getParentRoute: () => rootRouteImport,
-	id: "/servers",
-	path: "/servers",
-} as any);
+  getParentRoute: () => rootRouteImport,
+  id: '/servers',
+  path: '/servers',
+} as any)
 const NewsRoute = NewsRouteImport.update({
-	getParentRoute: () => rootRouteImport,
-	id: "/news",
-	path: "/news",
-} as any);
+  getParentRoute: () => rootRouteImport,
+  id: '/news',
+  path: '/news',
+} as any)
 const InstallationsRoute = InstallationsRouteImport.update({
-	getParentRoute: () => rootRouteImport,
-	id: "/installations",
-	path: "/installations",
-} as any);
+  getParentRoute: () => rootRouteImport,
+  id: '/installations',
+  path: '/installations',
+} as any)
 const IndexRoute = IndexRouteImport.update({
-	getParentRoute: () => rootRouteImport,
-	id: "/",
-	path: "/",
-} as any);
+  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+} as any)
 const NewsIdRoute = NewsIdRouteImport.update({
-	getParentRoute: () => NewsRoute,
-	id: "/$id",
-	path: "/$id",
-} as any);
+  getParentRoute: () => NewsRoute,
+  id: '/$id',
+  path: '/$id',
+} as any)
 const InstallModsIdRoute = InstallModsIdRouteImport.update({
-	getParentRoute: () => rootRouteImport,
-	id: "/install-mods/$id",
-	path: "/install-mods/$id",
-} as any);
+  getParentRoute: () => rootRouteImport,
+  id: '/install-mods/$id',
+  path: '/install-mods/$id',
+} as any)
 
 export interface FileRoutesByFullPath {
-	"/": typeof IndexRoute;
-	"/installations": typeof InstallationsRoute;
-	"/news": typeof NewsRouteWithChildren;
-	"/servers": typeof ServersRoute;
-	"/versions": typeof VersionsRoute;
-	"/install-mods/$id": typeof InstallModsIdRoute;
-	"/news/$id": typeof NewsIdRoute;
+  '/': typeof IndexRoute
+  '/installations': typeof InstallationsRoute
+  '/news': typeof NewsRouteWithChildren
+  '/servers': typeof ServersRoute
+  '/versions': typeof VersionsRoute
+  '/install-mods/$id': typeof InstallModsIdRoute
+  '/news/$id': typeof NewsIdRoute
 }
 export interface FileRoutesByTo {
-	"/": typeof IndexRoute;
-	"/installations": typeof InstallationsRoute;
-	"/news": typeof NewsRouteWithChildren;
-	"/servers": typeof ServersRoute;
-	"/versions": typeof VersionsRoute;
-	"/install-mods/$id": typeof InstallModsIdRoute;
-	"/news/$id": typeof NewsIdRoute;
+  '/': typeof IndexRoute
+  '/installations': typeof InstallationsRoute
+  '/news': typeof NewsRouteWithChildren
+  '/servers': typeof ServersRoute
+  '/versions': typeof VersionsRoute
+  '/install-mods/$id': typeof InstallModsIdRoute
+  '/news/$id': typeof NewsIdRoute
 }
 export interface FileRoutesById {
-	__root__: typeof rootRouteImport;
-	"/": typeof IndexRoute;
-	"/installations": typeof InstallationsRoute;
-	"/news": typeof NewsRouteWithChildren;
-	"/servers": typeof ServersRoute;
-	"/versions": typeof VersionsRoute;
-	"/install-mods/$id": typeof InstallModsIdRoute;
-	"/news/$id": typeof NewsIdRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/installations': typeof InstallationsRoute
+  '/news': typeof NewsRouteWithChildren
+  '/servers': typeof ServersRoute
+  '/versions': typeof VersionsRoute
+  '/install-mods/$id': typeof InstallModsIdRoute
+  '/news/$id': typeof NewsIdRoute
 }
 export interface FileRouteTypes {
-	fileRoutesByFullPath: FileRoutesByFullPath;
-	fullPaths:
-		| "/"
-		| "/installations"
-		| "/news"
-		| "/servers"
-		| "/versions"
-		| "/install-mods/$id"
-		| "/news/$id";
-	fileRoutesByTo: FileRoutesByTo;
-	to:
-		| "/"
-		| "/installations"
-		| "/news"
-		| "/servers"
-		| "/versions"
-		| "/install-mods/$id"
-		| "/news/$id";
-	id:
-		| "__root__"
-		| "/"
-		| "/installations"
-		| "/news"
-		| "/servers"
-		| "/versions"
-		| "/install-mods/$id"
-		| "/news/$id";
-	fileRoutesById: FileRoutesById;
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/installations'
+    | '/news'
+    | '/servers'
+    | '/versions'
+    | '/install-mods/$id'
+    | '/news/$id'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/installations'
+    | '/news'
+    | '/servers'
+    | '/versions'
+    | '/install-mods/$id'
+    | '/news/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/installations'
+    | '/news'
+    | '/servers'
+    | '/versions'
+    | '/install-mods/$id'
+    | '/news/$id'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-	IndexRoute: typeof IndexRoute;
-	InstallationsRoute: typeof InstallationsRoute;
-	NewsRoute: typeof NewsRouteWithChildren;
-	ServersRoute: typeof ServersRoute;
-	VersionsRoute: typeof VersionsRoute;
-	InstallModsIdRoute: typeof InstallModsIdRoute;
+  IndexRoute: typeof IndexRoute
+  InstallationsRoute: typeof InstallationsRoute
+  NewsRoute: typeof NewsRouteWithChildren
+  ServersRoute: typeof ServersRoute
+  VersionsRoute: typeof VersionsRoute
+  InstallModsIdRoute: typeof InstallModsIdRoute
 }
 
-declare module "@tanstack/react-router" {
-	interface FileRoutesByPath {
-		"/versions": {
-			id: "/versions";
-			path: "/versions";
-			fullPath: "/versions";
-			preLoaderRoute: typeof VersionsRouteImport;
-			parentRoute: typeof rootRouteImport;
-		};
-		"/servers": {
-			id: "/servers";
-			path: "/servers";
-			fullPath: "/servers";
-			preLoaderRoute: typeof ServersRouteImport;
-			parentRoute: typeof rootRouteImport;
-		};
-		"/news": {
-			id: "/news";
-			path: "/news";
-			fullPath: "/news";
-			preLoaderRoute: typeof NewsRouteImport;
-			parentRoute: typeof rootRouteImport;
-		};
-		"/installations": {
-			id: "/installations";
-			path: "/installations";
-			fullPath: "/installations";
-			preLoaderRoute: typeof InstallationsRouteImport;
-			parentRoute: typeof rootRouteImport;
-		};
-		"/": {
-			id: "/";
-			path: "/";
-			fullPath: "/";
-			preLoaderRoute: typeof IndexRouteImport;
-			parentRoute: typeof rootRouteImport;
-		};
-		"/news/$id": {
-			id: "/news/$id";
-			path: "/$id";
-			fullPath: "/news/$id";
-			preLoaderRoute: typeof NewsIdRouteImport;
-			parentRoute: typeof NewsRoute;
-		};
-		"/install-mods/$id": {
-			id: "/install-mods/$id";
-			path: "/install-mods/$id";
-			fullPath: "/install-mods/$id";
-			preLoaderRoute: typeof InstallModsIdRouteImport;
-			parentRoute: typeof rootRouteImport;
-		};
-	}
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/versions': {
+      id: '/versions'
+      path: '/versions'
+      fullPath: '/versions'
+      preLoaderRoute: typeof VersionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/servers': {
+      id: '/servers'
+      path: '/servers'
+      fullPath: '/servers'
+      preLoaderRoute: typeof ServersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/news': {
+      id: '/news'
+      path: '/news'
+      fullPath: '/news'
+      preLoaderRoute: typeof NewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/installations': {
+      id: '/installations'
+      path: '/installations'
+      fullPath: '/installations'
+      preLoaderRoute: typeof InstallationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/news/$id': {
+      id: '/news/$id'
+      path: '/$id'
+      fullPath: '/news/$id'
+      preLoaderRoute: typeof NewsIdRouteImport
+      parentRoute: typeof NewsRoute
+    }
+    '/install-mods/$id': {
+      id: '/install-mods/$id'
+      path: '/install-mods/$id'
+      fullPath: '/install-mods/$id'
+      preLoaderRoute: typeof InstallModsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+  }
 }
 
 interface NewsRouteChildren {
-	NewsIdRoute: typeof NewsIdRoute;
+  NewsIdRoute: typeof NewsIdRoute
 }
 
 const NewsRouteChildren: NewsRouteChildren = {
-	NewsIdRoute: NewsIdRoute,
-};
+  NewsIdRoute: NewsIdRoute,
+}
 
-const NewsRouteWithChildren = NewsRoute._addFileChildren(NewsRouteChildren);
+const NewsRouteWithChildren = NewsRoute._addFileChildren(NewsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-	IndexRoute: IndexRoute,
-	InstallationsRoute: InstallationsRoute,
-	InstallModsIdRoute: InstallModsIdRoute,
-	NewsRoute: NewsRouteWithChildren,
-	ServersRoute: ServersRoute,
-	VersionsRoute: VersionsRoute,
-};
+  IndexRoute: IndexRoute,
+  InstallationsRoute: InstallationsRoute,
+  InstallModsIdRoute: InstallModsIdRoute,
+  NewsRoute: NewsRouteWithChildren,
+  ServersRoute: ServersRoute,
+  VersionsRoute: VersionsRoute,
+}
 export const routeTree = rootRouteImport
-	._addFileChildren(rootRouteChildren)
-	._addFileTypes<FileRouteTypes>();
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
