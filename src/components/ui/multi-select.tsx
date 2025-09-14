@@ -590,6 +590,7 @@ const MultipleSelector = React.forwardRef<
 							}}
 						>
 							{isLoading ? (
+								// biome-ignore lint/complexity/noUselessFragments: Needed for shadcn component
 								<>{loadingIndicator}</>
 							) : (
 								<>
@@ -604,6 +605,7 @@ const MultipleSelector = React.forwardRef<
 											heading={key}
 											key={key}
 										>
+											{/** biome-ignore lint/complexity/noUselessFragments: Needed for shadcn component */}
 											<>
 												{dropdowns.map((option) => {
 													return (

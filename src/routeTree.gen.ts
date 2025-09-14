@@ -9,48 +9,48 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as InstallModsIdRouteImport } from './routes/install-mods/$id'
-import { Route as InstallationsRouteImport } from './routes/installations'
-import { Route as NewsRouteImport } from './routes/news'
-import { Route as NewsIdRouteImport } from './routes/news/$id'
-import { Route as ServersRouteImport } from './routes/servers'
 import { Route as VersionsRouteImport } from './routes/versions'
+import { Route as ServersRouteImport } from './routes/servers'
+import { Route as NewsRouteImport } from './routes/news'
+import { Route as InstallationsRouteImport } from './routes/installations'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as NewsIdRouteImport } from './routes/news/$id'
+import { Route as InstallModsIdRouteImport } from './routes/install-mods/$id'
 
 const VersionsRoute = VersionsRouteImport.update({
-  getParentRoute: () => rootRouteImport,
   id: '/versions',
   path: '/versions',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ServersRoute = ServersRouteImport.update({
-  getParentRoute: () => rootRouteImport,
   id: '/servers',
   path: '/servers',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const NewsRoute = NewsRouteImport.update({
-  getParentRoute: () => rootRouteImport,
   id: '/news',
   path: '/news',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const InstallationsRoute = InstallationsRouteImport.update({
-  getParentRoute: () => rootRouteImport,
   id: '/installations',
   path: '/installations',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
-  getParentRoute: () => rootRouteImport,
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const NewsIdRoute = NewsIdRouteImport.update({
-  getParentRoute: () => NewsRoute,
   id: '/$id',
   path: '/$id',
+  getParentRoute: () => NewsRoute,
 } as any)
 const InstallModsIdRoute = InstallModsIdRouteImport.update({
-  getParentRoute: () => rootRouteImport,
   id: '/install-mods/$id',
   path: '/install-mods/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -187,10 +187,10 @@ const NewsRouteWithChildren = NewsRoute._addFileChildren(NewsRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   InstallationsRoute: InstallationsRoute,
-  InstallModsIdRoute: InstallModsIdRoute,
   NewsRoute: NewsRouteWithChildren,
   ServersRoute: ServersRoute,
   VersionsRoute: VersionsRoute,
+  InstallModsIdRoute: InstallModsIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

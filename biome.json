@@ -12,14 +12,14 @@
 		"enabled": true
 	},
 	"files": {
-		"ignoreUnknown": false
+		"ignoreUnknown": false,
+		"includes": [
+			"**/*.{js,jsx,ts,tsx,json,css,scss,md,mdx}",
+			"!src/routeTree.gen.ts"
+		]
 	},
 	"formatter": {
 		"enabled": true,
-		"includes": [
-			"**/*.{js,jsx,ts,tsx,json,css,scss,md,mdx}",
-			"!**/routeTree.gen.ts"
-		],
 		"indentStyle": "tab"
 	},
 	"javascript": {
