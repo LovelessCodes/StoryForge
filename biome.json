@@ -12,6 +12,7 @@
 		"enabled": true
 	},
 	"files": {
+		"experimentalScannerIgnores": ["routeTree.gen.ts"],
 		"ignoreUnknown": false
 	},
 	"formatter": {
