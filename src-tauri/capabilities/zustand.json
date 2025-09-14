@@ -1,0 +1,16 @@
+{
+  "identifier": "zustand",
+  "permissions": [
+    "zustand:default",
+    "core:event:default",
+    "dialog:allow-open",
+    "dialog:default",
+    "os:default",
+    "shell:default",
+    "opener:default",
+    "opener:allow-open-path"
+  ],
+  "windows": [
+    "*"
+  ]
+}
