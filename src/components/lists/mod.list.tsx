@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useInstalledMods } from "@/hooks/use-installed-mods";
 import { useModUpdates } from "@/hooks/use-mod-updates";
+import { cn } from "@/lib/utils";
 import type { Installation } from "@/stores/installations";
 import { useModsFilters } from "@/stores/modsFilters";
 
@@ -234,7 +235,10 @@ export function ModList({
 					);
 					return (
 						<div
-							className="border-b border-b-muted py-2 flex gap-2 absolute top-0 left-0 w-full"
+							className={cn([
+								"border-b border-b-muted p-2 flex gap-2 absolute top-0 left-0 w-full",
+								installedMod && "bg-green-200/15",
+							])}
 							data-index={item.index}
 							key={mod.modid}
 							ref={rowVirtualizer.measureElement}

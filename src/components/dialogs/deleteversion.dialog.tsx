@@ -21,11 +21,13 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useInstallations } from "@/stores/installations";
+import { useServerStore } from "@/stores/servers";
 
 export function DeleteVersionDialog({ version }: { version: string }) {
 	const queryClient = useQueryClient();
 	const [open, setOpen] = useState(false);
 	const { installations } = useInstallations();
+	const { servers } = useServerStore();
 	const { mutate: removeVersion, isPending } = useMutation({
 		mutationFn: (version: string) =>
 			invoke("remove_installed_version", { version }),
@@ -62,7 +64,6 @@ export function DeleteVersionDialog({ version }: { version: string }) {
 						<Button
 							aria-label="Delete"
 							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							disabled={installations.some((inst) => inst.version === version)}
 							onClick={() => setOpen(true)}
 							size="icon"
 							variant="outline"
@@ -70,16 +71,7 @@ export function DeleteVersionDialog({ version }: { version: string }) {
 							<XIcon aria-hidden="true" className="opacity-60" size={16} />
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>
-						{installations.some((inst) => inst.version === version)
-							? `Used in ${installations.filter((inst) => inst.version === version)[0].name}${
-									installations.filter((inst) => inst.version === version)
-										.length > 1
-										? ` and ${installations.filter((inst) => inst.version === version).length - 2} other installation(s)`
-										: ""
-								}`
-							: "Delete"}
-					</TooltipContent>
+					<TooltipContent>Delete</TooltipContent>
 				</Tooltip>
 			</AlertDialogTrigger>
 			<AlertDialogContent>
@@ -92,6 +84,36 @@ export function DeleteVersionDialog({ version }: { version: string }) {
 						{version} from Story Forge.
 					</AlertDialogDescription>
 				</AlertDialogHeader>
+				<div className="flex flex-col gap-2 my-4 px-1 text-sm">
+					{installations.some((inst) => inst.version === version) && (
+						<p className="text-red-600">
+							Warning: This version is currently in use by the following
+							installation(s):
+							<ul className="list-disc list-inside">
+								{installations
+									.filter((inst) => inst.version === version)
+									.map((inst) => (
+										<li key={inst.id}>
+											{inst.name}
+											{servers
+												.filter((srv) => srv.installationId === inst.id)
+												.map((srv) => (
+													<ul
+														className="list-disc list-inside ml-4"
+														key={srv.id}
+													>
+														<li className="text-xs text-gray-500" key={srv.id}>
+															(Server: {srv.name} - {srv.ip}
+															{srv.port && `:${srv.port}`})
+														</li>
+													</ul>
+												))}
+										</li>
+									))}
+							</ul>
+						</p>
+					)}
+				</div>
 				<AlertDialogFooter>
 					<AlertDialogCancel>Cancel</AlertDialogCancel>
 					<AlertDialogAction

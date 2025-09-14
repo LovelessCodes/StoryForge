@@ -216,7 +216,7 @@ function RouteComponent() {
 				<SideToggleGroup />
 			</div>
 			<div
-				className="h-full px-4 py-2 relative overflow-auto w-full"
+				className="h-full py-2 relative overflow-auto w-full"
 				ref={parentRef}
 			>
 				<ModList installation={installation} parentRef={parentRef} />

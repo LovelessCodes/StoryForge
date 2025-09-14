@@ -29,13 +29,13 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAppFolder } from "@/hooks/use-app-folder";
+import { gameVersionsQuery } from "@/lib/queries";
 import type { ProgressPayload } from "@/lib/types";
 import {
 	compareSemverDesc,
 	makeStringFolderSafe,
 	zipfolderprefix,
 } from "@/lib/utils";
-import { gameVersionsQuery } from "@/routes/mods";
 import {
 	type Installation,
 	useInstallationsStore,
