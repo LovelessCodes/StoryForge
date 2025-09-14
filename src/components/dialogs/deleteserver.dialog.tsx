@@ -19,11 +19,7 @@ import {
 } from "@/components/ui/tooltip";
 import { type Server, useServerStore } from "@/stores/servers";
 
-export function DeleteServerDialog({
-	server,
-}: {
-	server: Server;
-}) {
+export function DeleteServerDialog({ server }: { server: Server }) {
 	const [open, setOpen] = useState(false);
 	const { removeServer } = useServerStore();
 

@@ -6,7 +6,7 @@ export type User = {
 	email: string;
 	playername: string | undefined;
 	sessionkey: string | undefined;
-    sessionsignature: string | undefined;
+	sessionsignature: string | undefined;
 };
 
 type AccountStore = {
@@ -55,6 +55,10 @@ export const useAccountStore = create<AccountStore>((set) => ({
 	users: [],
 }));
 
-export const tauriAccountsHandler = createTauriStore("accounts", useAccountStore, {
-	saveOnChange: true,
-});
+export const tauriAccountsHandler = createTauriStore(
+	"accounts",
+	useAccountStore,
+	{
+		saveOnChange: true,
+	},
+);

@@ -1,17 +1,15 @@
 {
-  "$schema": "../gen/schemas/desktop-schema.json",
-  "description": "Capability for the main window",
-  "identifier": "default",
-  "permissions": [
-    "core:default",
-    "opener:default",
-    "dialog:allow-open",
-    "dialog:default",
-    "os:default",
-    "shell:default",
-    "opener:allow-open-path"
-  ],
-  "windows": [
-    "main"
-  ]
+	"$schema": "../gen/schemas/desktop-schema.json",
+	"description": "Capability for the main window",
+	"identifier": "default",
+	"permissions": [
+		"core:default",
+		"opener:default",
+		"dialog:allow-open",
+		"dialog:default",
+		"os:default",
+		"shell:default",
+		"opener:allow-open-path"
+	],
+	"windows": ["main"]
 }

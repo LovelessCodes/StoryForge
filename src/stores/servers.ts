@@ -87,12 +87,20 @@ export const useServerStore = create<ServerStore>()((set) => ({
 				cb?.(false);
 				return state;
 			}
-			if (state.servers.find((s) => s.name === updatedServer.name && s.id !== updatedServer.id)) {
+			if (
+				state.servers.find(
+					(s) => s.name === updatedServer.name && s.id !== updatedServer.id,
+				)
+			) {
 				toast.error(`Server with name "${updatedServer.name}" already exists`);
 				cb?.(false);
 				return state;
 			}
-			if (state.servers.find((s) => s.ip === updatedServer.ip && s.id !== updatedServer.id)) {
+			if (
+				state.servers.find(
+					(s) => s.ip === updatedServer.ip && s.id !== updatedServer.id,
+				)
+			) {
 				toast.error(`Server with IP "${updatedServer.ip}" already exists`);
 				cb?.(false);
 				return state;
@@ -107,8 +115,7 @@ export const useServerStore = create<ServerStore>()((set) => ({
 						: server,
 				),
 			};
-		}
-	),
+		}),
 }));
 
 export const tauriServersHandler = createTauriStore("servers", useServerStore, {

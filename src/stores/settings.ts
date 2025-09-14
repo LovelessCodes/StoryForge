@@ -13,18 +13,20 @@ type SettingStore = {
 export const useSettingStore = create<SettingStore>((set) => ({
 	execPath: "",
 	setExecPath: async (path) => {
-        try {
-            const result = await invoke("confirm_vintage_story_exe", { path });
-            if (result) {
-                toast.success("Game executable path saved!");
-                set({ execPath: path });
-                return true;
-            }
-        } catch {
-            toast.error("Could not find a valid Vintage Story executable at that path.");
-        }
-        return false;
-    },
+		try {
+			const result = await invoke("confirm_vintage_story_exe", { path });
+			if (result) {
+				toast.success("Game executable path saved!");
+				set({ execPath: path });
+				return true;
+			}
+		} catch {
+			toast.error(
+				"Could not find a valid Vintage Story executable at that path.",
+			);
+		}
+		return false;
+	},
 }));
 
 export const tauriSettingsHandler = createTauriStore(

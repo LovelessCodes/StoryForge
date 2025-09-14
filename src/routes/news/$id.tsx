@@ -15,7 +15,7 @@ function RouteComponent() {
 	const { data: newsArticles } = useSuspenseQuery(newsQueryOptions);
 	const newsArticle = newsArticles.find((article) => article.guid === id);
 	return (
-        // biome-ignore lint/security/noDangerouslySetInnerHtml: Needed to display news article
+		// biome-ignore lint/security/noDangerouslySetInnerHtml: Needed to display news article
 		<div dangerouslySetInnerHTML={{ __html: newsArticle?.description ?? "" }} />
 	);
 }

@@ -32,11 +32,7 @@ export const Route = createFileRoute("/news")({
 });
 
 function RouteComponent() {
-	const {
-		data: news,
-		isLoading,
-		error,
-	} = useSuspenseQuery(newsQueryOptions);
+	const { data: news, isLoading, error } = useSuspenseQuery(newsQueryOptions);
 
 	if (isLoading) {
 		return (
@@ -53,35 +49,40 @@ function RouteComponent() {
 	return (
 		<div className="flex flex-col gap-6 px-4 py-2">
 			<h1 className="text-3xl font-bold mb-4">Vintage Story News</h1>
-            <div className="flex gap-2 flex-col">
-                <h2 className="text-xl font-bold mb-2">Newest releases</h2>
-                <ScrollArea className="w-[calc(100vw-10rem-32px)]">
-                    <div className="flex w-max space-x-4">
-                        {news && news.length > 0 ? (
-                            news.map((item) => (
-                                <Card className="hover:shadow-lg transition-shadow w-[300px]" key={item.guid}>
-                                    <Link
-                                        className="block"
-                                        rel="noopener noreferrer"
-                                        target="_blank"
-                                        to={item.link}
-                                    >
-                                        <CardHeader>
-                                            <CardTitle className="text-xl mb-1">{item.title}</CardTitle>
-                                            <CardDescription className="text-xs text-muted-foreground mb-2">
-                                                {new Date(item.pubDate).toLocaleString()}
-                                            </CardDescription>
-                                        </CardHeader>
-                                    </Link>
-                                </Card>
-                            ))
-                        ) : (
-                            <div className="text-muted-foreground">No news found.</div>
-                        )}
-                    </div>
-                    <ScrollBar orientation="horizontal" />
-                </ScrollArea>
-            </div>
+			<div className="flex gap-2 flex-col">
+				<h2 className="text-xl font-bold mb-2">Newest releases</h2>
+				<ScrollArea className="w-[calc(100vw-10rem-32px)]">
+					<div className="flex w-max space-x-4">
+						{news && news.length > 0 ? (
+							news.map((item) => (
+								<Card
+									className="hover:shadow-lg transition-shadow w-[300px]"
+									key={item.guid}
+								>
+									<Link
+										className="block"
+										rel="noopener noreferrer"
+										target="_blank"
+										to={item.link}
+									>
+										<CardHeader>
+											<CardTitle className="text-xl mb-1">
+												{item.title}
+											</CardTitle>
+											<CardDescription className="text-xs text-muted-foreground mb-2">
+												{new Date(item.pubDate).toLocaleString()}
+											</CardDescription>
+										</CardHeader>
+									</Link>
+								</Card>
+							))
+						) : (
+							<div className="text-muted-foreground">No news found.</div>
+						)}
+					</div>
+					<ScrollBar orientation="horizontal" />
+				</ScrollArea>
+			</div>
 		</div>
 	);
 }

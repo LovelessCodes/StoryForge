@@ -172,7 +172,9 @@ export function AddVersionDialog() {
 						sortedVersions?.indexOf("1.19.0") && (
 						<div className="text-destructive">
 							Warning: This version is below 1.19.0 and may not be compatible
-							with MacOS.<br />Please refer to{" "}
+							with MacOS.
+							<br />
+							Please refer to{" "}
 							<a
 								className="underline hover:text-primary"
 								href="https://wiki.vintagestory.at/Installing_the_game_on_MacOS#Versions_prior_to_1.19.0:_set_up_using_Homebrew"
