@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDownIcon } from "lucide-react";
 import { useRef } from "react";
@@ -17,6 +17,7 @@ import {
 	SelectItem,
 	SelectTrigger,
 } from "@/components/ui/select";
+import { publicServersQuery } from "@/hooks/use-public-servers";
 import { gameVersionsQuery } from "@/lib/queries";
 import { compareSemverDesc } from "@/lib/utils";
 import {
@@ -26,6 +27,10 @@ import {
 
 export const Route = createFileRoute("/public-servers")({
 	component: RouteComponent,
+	loader: ({ context: { queryClient } }) => {
+		queryClient.ensureQueryData(gameVersionsQuery);
+		queryClient.ensureQueryData(publicServersQuery());
+	},
 });
 
 const sortOptions: Record<ServersFilters["sortBy"], string> = {
@@ -39,7 +44,8 @@ const sortOptions: Record<ServersFilters["sortBy"], string> = {
 
 function RouteComponent() {
 	const parentRef = useRef<HTMLDivElement | null>(null);
-	const { data: gameVersions } = useQuery(gameVersionsQuery);
+	const { data: gameVersions } = useSuspenseQuery(gameVersionsQuery);
+	const { data: publicServers } = useSuspenseQuery(publicServersQuery());
 	const {
 		searchText,
 		setSearchText,
@@ -122,7 +128,12 @@ function RouteComponent() {
 				className="h-full py-2 relative overflow-auto w-full"
 				ref={parentRef}
 			>
-				<PublicServerList parentRef={parentRef} />
+				{publicServers && (
+					<PublicServerList
+						parentRef={parentRef}
+						publicServers={publicServers?.data}
+					/>
+				)}
 			</div>
 		</div>
 	);

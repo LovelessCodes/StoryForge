@@ -25,6 +25,15 @@ type PublicServersResponse = {
 	data: PublicServer[];
 };
 
+export const publicServersQuery = () => ({
+	keepPreviousData: true,
+	queryFn: () =>
+		invoke("fetch_public_servers") as Promise<PublicServersResponse>,
+	queryKey: ["publicServers"],
+	refetchOnWindowFocus: false,
+	staleTime: 1000 * 60 * 5, // 5 minutes
+});
+
 export const usePublicServers = (
 	props?: Omit<
 		UseQueryOptions<PublicServersResponse, Error, PublicServersResponse>,
@@ -33,11 +42,5 @@ export const usePublicServers = (
 ) =>
 	useQuery({
 		...props,
-		queryFn: () =>
-			invoke("fetch_public_servers") as Promise<{
-				statuscode: string;
-				data: PublicServer[];
-			}>,
-		queryKey: ["publicServers"],
-		staleTime: 1000 * 60 * 5, // 5 minutes
+		...publicServersQuery(),
 	});

@@ -2,7 +2,7 @@ import { measureElement, useVirtualizer } from "@tanstack/react-virtual";
 import { ListCheckIcon, LockIcon, Users2Icon } from "lucide-react";
 import { useCallback } from "react";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
-import { usePublicServers } from "@/hooks/use-public-servers";
+import type { PublicServer } from "@/hooks/use-public-servers";
 import { useServersFilters } from "@/stores/serversFilters";
 import { ConnectServerDialog } from "../dialogs/connectserver.dialog";
 import { Badge } from "../ui/badge";
@@ -10,15 +10,16 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 export function PublicServerList({
 	parentRef,
+	publicServers,
 }: {
 	parentRef: React.RefObject<HTMLDivElement | null>;
+	publicServers: PublicServer[];
 }) {
-	const { data: publicServers } = usePublicServers();
 	const { data: installedVersions } = useInstalledVersions();
 	const { searchText, selectedGameVersions, sortBy, orderDirection } =
 		useServersFilters();
 
-	const filteredServers = publicServers?.data
+	const filteredServers = publicServers
 		.filter((server) =>
 			searchText.length > 1
 				? server.serverName.toLowerCase().includes(searchText.toLowerCase()) ||
