@@ -20,9 +20,14 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
+            // Authorization
             auth::login,
             auth::verify,
+
+            // News
             news::fetch_news,
+
+            // Mods
             mods::fetch_mod_tags,
             mods::fetch_mods,
             mods::fetch_mod_info,
@@ -32,17 +37,25 @@ pub fn run() {
             mods::get_installation_mods,
             mods::add_mod_to_installation,
             mods::remove_mod_from_installation,
+
+            // Download
             download::get_download_links,
             download::get_download_link,
             download::download_and_maybe_extract,
+
+            // Versions
             versions::fetch_versions,
             versions::get_installed_versions,
             versions::remove_installed_version,
+
+            // Installations
             installations::play_game,
             installations::confirm_vintage_story_exe,
             installations::initialize_game,
             installations::reveal_in_file_explorer,
             installations::remove_installation,
+
+            // Servers
             servers::fetch_public_servers,
         ])
         .run(tauri::generate_context!())
