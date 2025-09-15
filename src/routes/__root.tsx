@@ -6,6 +6,7 @@ import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import * as React from "react";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export const Route = createRootRouteWithContext<{
 	queryClient: QueryClient;
@@ -18,6 +19,7 @@ function RootComponent() {
 		<React.Fragment>
 			<AppSidebar />
 			<main className="flex flex-1">
+				<SidebarTrigger className="md:hidden h-full items-start pt-2 border-r" />
 				<Outlet />
 			</main>
 			<TanStackDevtools

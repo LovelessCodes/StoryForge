@@ -50,9 +50,9 @@ function Dashboard() {
 	};
 
 	return (
-		<div className="min-h-screen w-full bg-background">
+		<div className="h-screen w-full grid grid-rows-[min-content,1fr] bg-background">
 			{/* Header */}
-			<header className="border-b bg-card">
+			<header className="border-b bg-card sticky top-0 z-10">
 				<div className="container mx-auto px-6 py-4">
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-3">
@@ -73,7 +73,7 @@ function Dashboard() {
 			</header>
 
 			{/* Main Content */}
-			<main className="container mx-auto px-6 py-8 space-y-8">
+			<main className="px-6 py-8 space-y-8 h-full overflow-y-auto">
 				{/* Favorited Installations */}
 				<section>
 					<div className="flex items-center gap-2 mb-6">
