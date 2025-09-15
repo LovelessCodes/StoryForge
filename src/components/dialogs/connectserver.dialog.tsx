@@ -97,6 +97,7 @@ export function ConnectServerDialog({ server }: { server: PublicServer }) {
 				<AlertDialogFooter>
 					<AlertDialogCancel>Cancel</AlertDialogCancel>
 					<AlertDialogAction
+						disabled={selectedInstallation === null}
 						onClick={() => {
 							if (selectedInstallation === null) return;
 							connectToServer({
