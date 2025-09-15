@@ -48,9 +48,9 @@ function RouteComponent() {
 	}
 
 	return (
-		<div className="flex gap-2 flex-col px-4 py-2 h-screen w-full grid-rows-[min-content_1fr]">
-			<h2 className="text-xl font-bold mb-2">Newest releases</h2>
-			<div className="flex flex-col w-full space-y-4 overflow-auto">
+		<div className="flex gap-2 flex-col py-2 h-screen w-full grid-rows-[min-content_1fr]">
+			<h2 className="text-xl font-bold mb-2 px-4">Newest releases</h2>
+			<div className="flex flex-col w-full space-y-4 overflow-auto px-4 box-border">
 				{news && news.length > 0 ? (
 					news.map((item) => (
 						<Card
