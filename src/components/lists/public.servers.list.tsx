@@ -114,7 +114,7 @@ export function PublicServerList({
 									</div>
 									<p className="text-xs">{server?.serverIP}</p>
 									<p className="text-sm text-muted-foreground line-clamp-1 break-all">
-										{server?.gameDescription}
+										{server?.gameDescription.replace(/<\/?[^>]+(>|$)/g, "")}
 									</p>
 									<div className="flex gap-2 items-center text-xs text-muted-foreground mt-1">
 										<Badge
