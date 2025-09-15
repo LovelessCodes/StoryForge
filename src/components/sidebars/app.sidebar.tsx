@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
 import {
 	CircleFadingPlusIcon,
+	EarthIcon,
 	FolderIcon,
 	HomeIcon,
 	MapPinIcon,
@@ -143,6 +144,18 @@ export function AppSidebar() {
 							>
 								<MapPinIcon />
 								Servers
+							</Link>
+						</SidebarMenuButton>
+						<SidebarMenuButton asChild>
+							<Link
+								activeProps={{
+									className: "bg-accent text-accent-foreground",
+								}}
+								to="/public-servers"
+								viewTransition={{ types: ["warp"] }}
+							>
+								<EarthIcon />
+								Public Servers
 							</Link>
 						</SidebarMenuButton>
 						<SidebarMenuButton asChild>

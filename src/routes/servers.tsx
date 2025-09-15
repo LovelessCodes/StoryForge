@@ -187,7 +187,6 @@ function SortableServerRow(props: SortableServerRowProps) {
 function RouteComponent() {
 	const { servers, moveServer, toggleFavorite } = useServerStore();
 	const { installations } = useInstallations();
-	const navigate = Route.useNavigate();
 
 	// DnD-kit setup
 	const sensors = useSensors(useSensor(PointerSensor));
@@ -207,32 +206,11 @@ function RouteComponent() {
 
 	return (
 		<div
-			className="grid grid-rows-[min-content_min-content_1fr] gap-2 w-full"
+			className="grid grid-rows-[min-content_1fr] gap-2 w-full"
 			style={{ height: "100vh" }}
 		>
-			<div className="flex justify-end px-2 pt-2">
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							onClick={() =>
-								navigate({
-									to: "/public-servers",
-									viewTransition: {
-										types: ["warp"],
-									},
-								})
-							}
-							size="sm"
-							variant="ghost"
-						>
-							Public Servers
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>View public servers</TooltipContent>
-				</Tooltip>
-			</div>
 			<div className="flex flex-col gap-2 w-full justify-start">
-				<div className="flex gap-2 h-fit sticky top-0 bg-background/10 backdrop-blur-md z-10 px-4 pb-2">
+				<div className="flex gap-2 h-fit sticky top-0 bg-background/10 backdrop-blur-md z-10 px-4 py-2">
 					<AddServerDialog />
 				</div>
 				<DndContext

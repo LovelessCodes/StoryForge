@@ -5,7 +5,6 @@ import { useRef } from "react";
 import { SearchInput } from "@/components/inputs";
 import { PublicServerList } from "@/components/lists/public.servers.list";
 import { TextSwitch } from "@/components/switches/text.switch";
-import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
@@ -18,11 +17,6 @@ import {
 	SelectItem,
 	SelectTrigger,
 } from "@/components/ui/select";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { gameVersionsQuery } from "@/lib/queries";
 import { compareSemverDesc } from "@/lib/utils";
 import {
@@ -44,7 +38,6 @@ const sortOptions: Record<ServersFilters["sortBy"], string> = {
 };
 
 function RouteComponent() {
-	const navigate = Route.useNavigate();
 	const parentRef = useRef<HTMLDivElement | null>(null);
 	const { data: gameVersions } = useQuery(gameVersionsQuery);
 	const {
@@ -60,30 +53,9 @@ function RouteComponent() {
 	} = useServersFilters();
 	return (
 		<div
-			className="grid grid-rows-[min-content_min-content_1fr] gap-2 w-full"
+			className="grid grid-rows-[min-content_1fr] gap-2 w-full"
 			style={{ height: "100vh" }}
 		>
-			<div className="flex justify-end px-2 pt-2">
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							onClick={() =>
-								navigate({
-									to: "/servers",
-									viewTransition: {
-										types: ["warp"],
-									},
-								})
-							}
-							size="sm"
-							variant="ghost"
-						>
-							My Servers
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>View your personal servers</TooltipContent>
-				</Tooltip>
-			</div>
 			<div className="flex gap-2 flex-wrap items-center h-fit sticky top-0 bg-background/10 backdrop-blur-md z-10 px-4 py-2">
 				<SearchInput
 					onChange={(e) => setSearchText(e.target.value)}
