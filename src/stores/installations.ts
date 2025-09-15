@@ -154,28 +154,7 @@ export const useInstallations = () => {
 		updateLastPlayed,
 	} = useInstallationsStore();
 
-	// const { data: standardInstallation } = useQuery({
-	// 	queryFn: () =>
-	// 		invoke<{ path: string, version: string | null }>("detect_vintage_story_exe") as Promise<{ path: string; version: string | null }>,
-	// 	queryKey: ["standardInstallation"],
-	// 	refetchOnWindowFocus: false,
-	// });
-
-	const outInstallations = [
-		...installations,
-		// standardInstallation ? {
-		// 	favorite: false,
-		// 	icon: null,
-		// 	id: 0,
-		// 	index: -1,
-		// 	lastTimePlayed: 0,
-		// 	name: "Standard Installation",
-		// 	path: standardInstallation?.path || "Not detected",
-		// 	startParams: "",
-		// 	totalTimePlayed: 0,
-		// 	version: standardInstallation?.version || "N/A",
-		// } : null,
-	]
+	const outInstallations = [...installations]
 		.filter((i) => i !== null)
 		.sort((a, b) => a.index - b.index);
 

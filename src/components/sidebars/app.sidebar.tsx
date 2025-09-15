@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
 import {
+	CheckIcon,
 	CircleFadingPlusIcon,
 	EarthIcon,
 	FolderIcon,
@@ -8,17 +9,13 @@ import {
 	MapPinIcon,
 	NewspaperIcon,
 	PlayIcon,
+	RefreshCcwIcon,
 	UserMinus2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { AddUserDialog } from "@/components/dialogs/adduser.dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-} from "@/components/ui/select";
 import {
 	Sidebar,
 	SidebarContent,
@@ -28,19 +25,55 @@ import {
 	SidebarMenu,
 	SidebarMenuButton,
 } from "@/components/ui/sidebar";
+import { useVerifyAuth } from "@/hooks/use-verify-auth";
 import { useAccountStore } from "@/stores/accounts";
 import { useInstallations } from "@/stores/installations";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 export function AppSidebar() {
 	const { selectedUser, users, removeUser, setSelectedUser } =
 		useAccountStore();
 	const { installations } = useInstallations();
+	const { mutate: verifyAuth } = useVerifyAuth({
+		onError: (error, variables) => {
+			toast.error(
+				`Error verifying auth for ${users.find((user) => user.uid === variables.uid)?.playername}: ${error.message}`,
+				{
+					id: `verify-auth-${variables.uid}`,
+				},
+			);
+		},
+		onMutate: (variables) => {
+			toast.loading(
+				`Verifying auth for ${users.find((user) => user.uid === variables.uid)?.playername}...`,
+				{ id: `verify-auth-${variables.uid}` },
+			);
+		},
+		onSuccess: (data, variables) => {
+			if (data.valid) {
+				toast.success(
+					`Auth is valid for ${users.find((user) => user.uid === variables.uid)?.playername}`,
+					{ id: `verify-auth-${variables.uid}` },
+				);
+			} else {
+				toast.error(
+					`Auth is NOT valid for ${users.find((user) => user.uid === variables.uid)?.playername}`,
+					{ id: `verify-auth-${variables.uid}` },
+				);
+			}
+		},
+	});
 	return (
 		<Sidebar>
 			<SidebarHeader>
 				{selectedUser ? (
-					<Select value={selectedUser?.uid ?? ""}>
-						<SelectTrigger className="w-full">
+					<DropdownMenu>
+						<DropdownMenuTrigger className="w-full">
 							{selectedUser ? (
 								<div className="flex items-center gap-2">
 									<Avatar className="w-6 h-6">
@@ -54,43 +87,85 @@ export function AppSidebar() {
 							) : (
 								<AddUserDialog />
 							)}
-						</SelectTrigger>
-						<SelectContent align="start" side="right">
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="start" side="right">
 							{users.map((user) => (
-								<SelectItem
+								<div
+									className="flex items-center justify-between group"
 									key={user.uid}
-									onSelect={() => setSelectedUser(user.uid)}
-									value={user.uid ?? ""}
 								>
-									<div className="flex items-center gap-2">
+									<Button
+										className="flex items-center gap-2 rounded-none group-first:rounded-tl-md"
+										onClick={() => setSelectedUser(user.uid)}
+										onKeyUp={(e) => {
+											if (e.key === "Enter") setSelectedUser(user.uid);
+										}}
+										variant="outline"
+									>
 										<Avatar className="w-6 h-6">
 											<AvatarImage src="./placeholder.png" />
 											<AvatarFallback>
-												{selectedUser.playername?.charAt(0)}
+												{user.playername?.charAt(0)}
 											</AvatarFallback>
 										</Avatar>
-										<span className="font-medium">
-											{selectedUser.playername}
-										</span>
-									</div>
-									<Button
-										className="flex items-center justify-center p-1 rounded-sm"
-										onClick={() => removeUser(user.uid)}
-										onKeyUp={(e) => {
-											if (e.key === "Enter") {
-												removeUser(user.uid);
-											}
-										}}
-										size="icon"
-										variant="outline"
-									>
-										<UserMinus2 />
+										<span className="font-medium">{user.playername}</span>
+										{user.uid === selectedUser.uid && (
+											<CheckIcon className="size-4 text-muted-foreground opacity-50" />
+										)}
 									</Button>
-								</SelectItem>
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<Button
+												className="flex items-center justify-center hover:text-green-900 p-1 rounded-none"
+												onClick={() => {
+													verifyAuth({
+														sessionkey: user.sessionkey || "",
+														uid: user.uid || "",
+													});
+												}}
+												onKeyUp={(e) => {
+													if (e.key === "Enter") {
+														verifyAuth({
+															sessionkey: user.sessionkey || "",
+															uid: user.uid || "",
+														});
+													}
+												}}
+												size="icon"
+												variant="outline"
+											>
+												<RefreshCcwIcon />
+											</Button>
+										</TooltipTrigger>
+										<TooltipContent>
+											Verify {user.playername}&#39;s auth
+										</TooltipContent>
+									</Tooltip>
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<Button
+												className="flex items-center justify-center hover:text-red-900 p-1 rounded-none group-first:rounded-tr-md"
+												onClick={() => {
+													removeUser(user.uid);
+												}}
+												onKeyUp={(e) => {
+													if (e.key === "Enter") {
+														removeUser(user.uid);
+													}
+												}}
+												size="icon"
+												variant="outline"
+											>
+												<UserMinus2 />
+											</Button>
+										</TooltipTrigger>
+										<TooltipContent>Remove {user.playername}</TooltipContent>
+									</Tooltip>
+								</div>
 							))}
 							<AddUserDialog />
-						</SelectContent>
-					</Select>
+						</DropdownMenuContent>
+					</DropdownMenu>
 				) : (
 					<AddUserDialog />
 				)}

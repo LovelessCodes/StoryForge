@@ -136,7 +136,10 @@ export function AddUserDialog() {
 	return (
 		<Dialog>
 			<DialogTrigger asChild>
-				<Button className="w-full justify-between" variant="outline">
+				<Button
+					className="w-full justify-between not-first:rounded-t-none"
+					variant="outline"
+				>
 					<span className="flex text-xs">
 						{selectedUser ? "Add user" : "Sign in"}
 					</span>

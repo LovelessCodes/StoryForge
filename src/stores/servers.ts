@@ -32,8 +32,12 @@ export const useServerStore = create<ServerStore>()((set) => ({
 				cb?.(false);
 				return state;
 			}
-			if (state.servers.find((s) => s.ip === server.ip)) {
-				toast.error(`Server with IP "${server.ip}" already exists`);
+			if (
+				state.servers.find((s) => s.ip === server.ip && s.port === server.port)
+			) {
+				toast.error(
+					`Server with IP "${server.ip}" and port "${server.port}" already exists`,
+				);
 				cb?.(false);
 				return state;
 			}

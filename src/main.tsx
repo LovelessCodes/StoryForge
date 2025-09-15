@@ -7,10 +7,8 @@ import { routeTree } from "./routeTree.gen";
 import { tauriAccountsHandler } from "./stores/accounts";
 import { tauriInstallationsHandler } from "./stores/installations";
 import { tauriServersHandler } from "./stores/servers";
-import { tauriSettingsHandler } from "./stores/settings";
 
 await tauriServersHandler.start();
-await tauriSettingsHandler.start();
 await tauriAccountsHandler.start();
 await tauriInstallationsHandler.start();
 
