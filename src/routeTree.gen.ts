@@ -14,7 +14,6 @@ import { Route as ServersRouteImport } from './routes/servers'
 import { Route as NewsRouteImport } from './routes/news'
 import { Route as InstallationsRouteImport } from './routes/installations'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as NewsIdRouteImport } from './routes/news/$id'
 import { Route as InstallModsIdRouteImport } from './routes/install-mods/$id'
 
 const VersionsRoute = VersionsRouteImport.update({
@@ -42,11 +41,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const NewsIdRoute = NewsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => NewsRoute,
-} as any)
 const InstallModsIdRoute = InstallModsIdRouteImport.update({
   id: '/install-mods/$id',
   path: '/install-mods/$id',
@@ -56,30 +50,27 @@ const InstallModsIdRoute = InstallModsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/installations': typeof InstallationsRoute
-  '/news': typeof NewsRouteWithChildren
+  '/news': typeof NewsRoute
   '/servers': typeof ServersRoute
   '/versions': typeof VersionsRoute
   '/install-mods/$id': typeof InstallModsIdRoute
-  '/news/$id': typeof NewsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/installations': typeof InstallationsRoute
-  '/news': typeof NewsRouteWithChildren
+  '/news': typeof NewsRoute
   '/servers': typeof ServersRoute
   '/versions': typeof VersionsRoute
   '/install-mods/$id': typeof InstallModsIdRoute
-  '/news/$id': typeof NewsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/installations': typeof InstallationsRoute
-  '/news': typeof NewsRouteWithChildren
+  '/news': typeof NewsRoute
   '/servers': typeof ServersRoute
   '/versions': typeof VersionsRoute
   '/install-mods/$id': typeof InstallModsIdRoute
-  '/news/$id': typeof NewsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -90,7 +81,6 @@ export interface FileRouteTypes {
     | '/servers'
     | '/versions'
     | '/install-mods/$id'
-    | '/news/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -99,7 +89,6 @@ export interface FileRouteTypes {
     | '/servers'
     | '/versions'
     | '/install-mods/$id'
-    | '/news/$id'
   id:
     | '__root__'
     | '/'
@@ -108,13 +97,12 @@ export interface FileRouteTypes {
     | '/servers'
     | '/versions'
     | '/install-mods/$id'
-    | '/news/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   InstallationsRoute: typeof InstallationsRoute
-  NewsRoute: typeof NewsRouteWithChildren
+  NewsRoute: typeof NewsRoute
   ServersRoute: typeof ServersRoute
   VersionsRoute: typeof VersionsRoute
   InstallModsIdRoute: typeof InstallModsIdRoute
@@ -157,13 +145,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/news/$id': {
-      id: '/news/$id'
-      path: '/$id'
-      fullPath: '/news/$id'
-      preLoaderRoute: typeof NewsIdRouteImport
-      parentRoute: typeof NewsRoute
-    }
     '/install-mods/$id': {
       id: '/install-mods/$id'
       path: '/install-mods/$id'
@@ -174,20 +155,10 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface NewsRouteChildren {
-  NewsIdRoute: typeof NewsIdRoute
-}
-
-const NewsRouteChildren: NewsRouteChildren = {
-  NewsIdRoute: NewsIdRoute,
-}
-
-const NewsRouteWithChildren = NewsRoute._addFileChildren(NewsRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   InstallationsRoute: InstallationsRoute,
-  NewsRoute: NewsRouteWithChildren,
+  NewsRoute: NewsRoute,
   ServersRoute: ServersRoute,
   VersionsRoute: VersionsRoute,
   InstallModsIdRoute: InstallModsIdRoute,

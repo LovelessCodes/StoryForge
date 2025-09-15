@@ -18,22 +18,44 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import clsx from "clsx";
-import { StarIcon, UnplugIcon } from "lucide-react";
+import { ChevronDownIcon, StarIcon, UnplugIcon } from "lucide-react";
+import { useRef, useState } from "react";
 import { AddServerDialog } from "@/components/dialogs/addserver.dialog";
 import { DeleteServerDialog } from "@/components/dialogs/deleteserver.dialog";
 import { EditServerDialog } from "@/components/dialogs/editserver.dialog";
+import { SearchInput } from "@/components/inputs";
+import { PublicServerList } from "@/components/lists/public.servers.list";
+import { TextSwitch } from "@/components/switches/text.switch";
 import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuCheckboxItem,
+	DropdownMenuContent,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+} from "@/components/ui/select";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
-import { cn } from "@/lib/utils";
+import { gameVersionsQuery } from "@/lib/queries";
+import { cn, compareSemverDesc } from "@/lib/utils";
 import { type Installation, useInstallations } from "@/stores/installations";
 import { type Server, useServerStore } from "@/stores/servers";
+import {
+	type ServersFilters,
+	useServersFilters,
+} from "@/stores/serversFilters";
 
 export const Route = createFileRoute("/servers")({
 	component: RouteComponent,
@@ -184,9 +206,32 @@ function SortableServerRow(props: SortableServerRowProps) {
 	);
 }
 
+const sortOptions: Record<ServersFilters["sortBy"], string> = {
+	maxplayers: "Max Players",
+	mods: "Mods",
+	name: "Name",
+	players: "Players",
+	version: "Version",
+	whitelist: "Whitelist",
+};
+
 function RouteComponent() {
 	const { servers, moveServer, toggleFavorite } = useServerStore();
 	const { installations } = useInstallations();
+	const [publicServers, setPublicServers] = useState(false);
+	const {
+		setSearchText,
+		searchText,
+		addGameVersion,
+		removeGameVersion,
+		selectedGameVersions,
+		sortBy,
+		setSortBy,
+		orderDirection,
+		setOrderDirection,
+	} = useServersFilters();
+	const { data: gameVersions } = useQuery(gameVersionsQuery);
+	const parentRef = useRef<HTMLDivElement>(null);
 
 	// DnD-kit setup
 	const sensors = useSensors(useSensor(PointerSensor));
@@ -205,37 +250,136 @@ function RouteComponent() {
 	}
 
 	return (
-		<div className="flex flex-col gap-2 w-full">
-			<div className="flex gap-2 h-fit sticky top-0 bg-background/10 backdrop-blur-md z-10 px-4 py-2">
-				<AddServerDialog />
+		<div
+			className="grid grid-rows-[min-content_min-content_1fr] gap-2 w-full"
+			style={{ height: "100vh" }}
+		>
+			{/* Toggle Public Servers */}
+			<div className="flex justify-end px-2 pt-2">
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							onClick={() => setPublicServers(!publicServers)}
+							size="sm"
+							variant="ghost"
+						>
+							{publicServers ? "My Servers" : "Public Servers"}
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>
+						{publicServers
+							? "View your personal servers"
+							: "View public servers"}
+					</TooltipContent>
+				</Tooltip>
 			</div>
-			<DndContext
-				collisionDetection={closestCenter}
-				modifiers={[restrictToParentElement, restrictToVerticalAxis]}
-				onDragEnd={handleDragEnd}
-				sensors={sensors}
-			>
-				<SortableContext
-					items={serverIds}
-					strategy={verticalListSortingStrategy}
-				>
-					<div className="rounded shadow divide-y">
-						{servers
-							.sort((a, b) => a.index - b.index)
-							.map((server) => (
-								<SortableServerRow
-									installation={installations.find(
-										(inst) => inst.id === server.installationId,
-									)}
-									key={server.id}
-									onConnect={connectToServer}
-									onFavorite={toggleFavorite}
-									server={server}
-								/>
-							))}
+
+			{/* Server List */}
+			{publicServers ? (
+				<>
+					<div className="flex gap-2 flex-wrap items-center h-fit sticky top-0 bg-background/10 backdrop-blur-md z-10 px-4 py-2">
+						<SearchInput
+							onChange={(e) => setSearchText(e.target.value)}
+							placeholder="Search servers..."
+							value={searchText}
+						/>
+						<DropdownMenu>
+							<DropdownMenuTrigger className="flex gap-1 w-46 truncate">
+								{selectedGameVersions.length > 0
+									? selectedGameVersions.length > 1
+										? `${selectedGameVersions.length} versions`
+										: selectedGameVersions[0]
+									: "Game version(s)"}
+								<ChevronDownIcon className="size-4 opacity-50" />
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align="start">
+								{gameVersions?.sort(compareSemverDesc).map((version) => (
+									<DropdownMenuCheckboxItem
+										checked={!!selectedGameVersions?.find((v) => v === version)}
+										key={version}
+										onCheckedChange={(checked) => {
+											if (checked) {
+												addGameVersion(version);
+											} else {
+												removeGameVersion(version);
+											}
+										}}
+										onSelect={(e) => e.preventDefault()}
+									>
+										{version}
+									</DropdownMenuCheckboxItem>
+								))}
+							</DropdownMenuContent>
+						</DropdownMenu>
+						<Select
+							onValueChange={(value) =>
+								setSortBy(value as ServersFilters["sortBy"])
+							}
+							value={sortBy}
+						>
+							<SelectTrigger>
+								{sortBy
+									? `${sortOptions[sortBy as keyof typeof sortOptions]}`
+									: "Sort by"}
+							</SelectTrigger>
+							<SelectContent align="start">
+								{Object.entries(sortOptions).map(([key, value]) => (
+									<SelectItem key={key} value={key}>
+										{value}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<TextSwitch
+							checked={orderDirection === "descending"}
+							onCheckedChange={(checked) =>
+								setOrderDirection(checked ? "descending" : "ascending")
+							}
+							textChecked="Asc"
+							textUnchecked="Desc"
+						/>
 					</div>
-				</SortableContext>
-			</DndContext>
+					<div
+						className="h-full py-2 relative overflow-auto w-full"
+						ref={parentRef}
+					>
+						<PublicServerList parentRef={parentRef} />
+					</div>
+				</>
+			) : (
+				<div className="flex flex-col gap-2 w-full justify-start">
+					<div className="flex gap-2 h-fit sticky top-0 bg-background/10 backdrop-blur-md z-10 px-4 pb-2">
+						<AddServerDialog />
+					</div>
+					<DndContext
+						collisionDetection={closestCenter}
+						modifiers={[restrictToParentElement, restrictToVerticalAxis]}
+						onDragEnd={handleDragEnd}
+						sensors={sensors}
+					>
+						<SortableContext
+							items={serverIds}
+							strategy={verticalListSortingStrategy}
+						>
+							<div className="rounded shadow divide-y">
+								{servers
+									.sort((a, b) => a.index - b.index)
+									.map((server) => (
+										<SortableServerRow
+											installation={installations.find(
+												(inst) => inst.id === server.installationId,
+											)}
+											key={server.id}
+											onConnect={connectToServer}
+											onFavorite={toggleFavorite}
+											server={server}
+										/>
+									))}
+							</div>
+						</SortableContext>
+					</DndContext>
+				</div>
+			)}
 		</div>
 	);
 }
