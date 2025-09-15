@@ -75,7 +75,7 @@ export function PublicServerList({
 	const estimateSize = useCallback(() => 81, []);
 
 	const rowVirtualizer = useVirtualizer({
-		count: filteredServers?.length ?? 0,
+		count: filteredServers?.length || 0,
 		estimateSize,
 		getScrollElement: () => parentRef.current,
 		measureElement,
