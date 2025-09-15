@@ -84,8 +84,8 @@ export function DeleteVersionDialog({ version }: { version: string }) {
 						{version} from Story Forge.
 					</AlertDialogDescription>
 				</AlertDialogHeader>
-				<div className="flex flex-col gap-2 my-4 px-1 text-sm">
-					{installations.some((inst) => inst.version === version) && (
+				{installations.some((inst) => inst.version === version) && (
+					<div className="flex flex-col gap-2 my-4 px-1 text-sm">
 						<p className="text-red-600">
 							Warning: This version is currently in use by the following
 							installation(s):
@@ -112,12 +112,15 @@ export function DeleteVersionDialog({ version }: { version: string }) {
 									))}
 							</ul>
 						</p>
-					)}
-				</div>
+					</div>
+				)}
 				<AlertDialogFooter>
 					<AlertDialogCancel>Cancel</AlertDialogCancel>
 					<AlertDialogAction
-						disabled={isPending}
+						disabled={
+							isPending ||
+							installations.some((inst) => inst.version === version)
+						}
 						onClick={() => removeVersion(version)}
 					>
 						{isPending ? "Deleting..." : "Delete"}

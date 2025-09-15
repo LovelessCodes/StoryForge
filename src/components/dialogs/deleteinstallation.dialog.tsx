@@ -73,7 +73,6 @@ export function DeleteInstallationDialog({
 						<Button
 							aria-label="Delete"
 							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							disabled={!canDelete}
 							onClick={() => setOpen(true)}
 							size="icon"
 							variant="outline"
@@ -81,14 +80,7 @@ export function DeleteInstallationDialog({
 							<XIcon aria-hidden="true" className="opacity-60" size={16} />
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>
-						{canDelete
-							? "Delete"
-							: `Used in ${servers
-									.filter((srv) => srv.installationId === installation.id)
-									.map((srv) => srv.name)
-									.join(", ")}`}
-					</TooltipContent>
+					<TooltipContent>Delete</TooltipContent>
 				</Tooltip>
 			</AlertDialogTrigger>
 			<AlertDialogContent>
@@ -101,6 +93,23 @@ export function DeleteInstallationDialog({
 						installation from your computer as well as all its data.
 					</AlertDialogDescription>
 				</AlertDialogHeader>
+				{servers.some((srv) => srv.installationId === installation.id) && (
+					<div className="flex flex-col gap-2 my-4 px-1 text-sm">
+						<p className="text-red-600">
+							Warning: This installation is currently in use by the following
+							server(s):
+							<ul className="list-disc list-inside">
+								{servers
+									.filter((srv) => srv.installationId === installation.id)
+									.map((srv) => (
+										<li key={srv.id}>
+											{srv.name} ({srv.ip}:{srv.port})
+										</li>
+									))}
+							</ul>
+						</p>
+					</div>
+				)}
 				<AlertDialogFooter>
 					<AlertDialogCancel>Cancel</AlertDialogCancel>
 					<AlertDialogAction
