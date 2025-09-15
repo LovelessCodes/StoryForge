@@ -211,11 +211,19 @@ export function AddUserDialog() {
 														: ""
 												}
 												disabled={isPending}
+												id={`${id}-email`}
 												onChange={(e) => field.handleChange(e.target.value)}
 												onKeyUp={(e) => {
 													if (e.key === "Enter") {
 														e.preventDefault();
 														form.handleSubmit();
+													}
+													if (e.key === "Tab" && !e.shiftKey) {
+														e.preventDefault();
+														const passwordField = document.getElementById(
+															`${id}-password`,
+														) as HTMLInputElement | null;
+														passwordField?.focus();
 													}
 												}}
 												value={field.state.value}
@@ -266,6 +274,11 @@ export function AddUserDialog() {
 												</a>
 											</div>
 											<PasswordInput
+												className={
+													field.state.meta.errors.length
+														? "text-destructive"
+														: ""
+												}
 												disabled={isPending}
 												id={`${id}-password`}
 												onChange={(e) => field.handleChange(e.target.value)}
@@ -274,6 +287,20 @@ export function AddUserDialog() {
 														e.preventDefault();
 														form.handleSubmit();
 													}
+													if (e.key === "Tab" && e.shiftKey) {
+														e.preventDefault();
+														const emailField = document.getElementById(
+															`${id}-email`,
+														) as HTMLInputElement | null;
+														emailField?.focus();
+													}
+													if (e.key === "Tab" && !e.shiftKey) {
+														e.preventDefault();
+														const submitButton = document.getElementById(
+															`${id}-submit`,
+														) as HTMLButtonElement | null;
+														submitButton?.focus();
+													}
 												}}
 												value={field.state.value}
 											/>
@@ -281,14 +308,27 @@ export function AddUserDialog() {
 									)}
 								</form.Field>
 							</div>
-							<Button
-								className="w-full"
-								disabled={isPending}
-								onClick={() => form.handleSubmit()}
-								type="button"
+							<form.Subscribe
+								selector={(s) =>
+									s.errors.length > 0 ||
+									!s.isTouched ||
+									!s.isFormValid ||
+									s.fieldMeta.email.errors.length > 0 ||
+									s.fieldMeta.password.errors.length > 0
+								}
 							>
-								{isPending ? "Signing in..." : "Sign in"}
-							</Button>
+								{(hasErrors) => (
+									<Button
+										className="w-full"
+										disabled={isPending || hasErrors}
+										id={`${id}-submit`}
+										onClick={() => form.handleSubmit()}
+										type="button"
+									>
+										{isPending ? "Signing in..." : "Sign in"}
+									</Button>
+								)}
+							</form.Subscribe>
 						</div>
 					</>
 				)}
