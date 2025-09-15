@@ -38,6 +38,7 @@
         "@tauri-apps/plugin-opener": "^2.5.0",
         "@tauri-apps/plugin-os": "~2.3.1",
         "@tauri-apps/plugin-shell": "~2.3.1",
+        "@tauri-apps/plugin-window-state": "^2.4.0",
         "@tauri-store/zustand": "^0.3.1",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -489,6 +490,8 @@
     "@tauri-apps/plugin-os": ["@tauri-apps/plugin-os@2.3.1", "", { "dependencies": { "@tauri-apps/api": "^2.8.0" } }, "sha512-ty5V8XDUIFbSnrk3zsFoP3kzN+vAufYzalJSlmrVhQTImIZa1aL1a03bOaP2vuBvfR+WDRC6NgV2xBl8G07d+w=="],
 
     "@tauri-apps/plugin-shell": ["@tauri-apps/plugin-shell@2.3.1", "", { "dependencies": { "@tauri-apps/api": "^2.8.0" } }, "sha512-jjs2WGDO/9z2pjNlydY/F5yYhNsscv99K5lCmU5uKjsVvQ3dRlDhhtVYoa4OLDmktLtQvgvbQjCFibMl6tgGfw=="],
+
+    "@tauri-apps/plugin-window-state": ["@tauri-apps/plugin-window-state@2.4.0", "", { "dependencies": { "@tauri-apps/api": "^2.6.0" } }, "sha512-hRSzPNi2NG0lPFthfVY0V5C1MyWN/gGaQtQYw7i9zZhLzrhZveHZ2omHG1rIiIsjfTGbO7fhjydSoeTTK9GqLw=="],
 
     "@tauri-store/shared": ["@tauri-store/shared@0.9.1", "", { "dependencies": { "@tauri-apps/api": "^2.0.3", "es-toolkit": "^1.39.5" } }, "sha512-WbX/JnvDxgII0Oiz+31wwc3uTCNqKSk82/ThLQLjeXx3adn6aV2EOh/dCv6ejA9QKAhwV/Nldwyplrk3Deekzg=="],
 
