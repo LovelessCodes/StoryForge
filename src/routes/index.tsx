@@ -4,7 +4,6 @@ import {
 	Download,
 	FolderHeartIcon,
 	FolderPlusIcon,
-	Gamepad2,
 	MapPinIcon,
 	MapPinPlusIcon,
 	ServerIcon,
@@ -57,9 +56,11 @@ function Dashboard() {
 				<div className="container mx-auto px-6 py-4">
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-3">
-							<div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-								<Gamepad2 className="w-6 h-6 text-primary-foreground" />
-							</div>
+							<img
+								alt="Story Forge"
+								className="w-10 h-10"
+								src="/StoryForge.png"
+							/>
 							<div>
 								<h1 className="text-2xl font-bold">Story Forge</h1>
 								<p className="text-sm text-muted-foreground">
