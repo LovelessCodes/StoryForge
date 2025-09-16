@@ -1,4 +1,5 @@
 use futures_util::StreamExt;
+use reqwest::get;
 use reqwest::header::CONTENT_DISPOSITION;
 use serde::Serialize;
 use serde_json::Value;
@@ -8,7 +9,6 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
 };
-use reqwest::get;
 use tauri::{command, Emitter, Runtime};
 
 use super::errors::UiError;
@@ -39,9 +39,7 @@ pub async fn download_and_maybe_extract<R: Runtime>(
     zipsubfolderprefix: Option<String>,
 ) -> Result<String, UiError> {
     // 1) Download
-    let resp = get(&url)
-        .await
-        .map_err(|e| format!("request error: {e}"))?;
+    let resp = get(&url).await.map_err(|e| format!("request error: {e}"))?;
 
     // Get the filename from Content-Disposition or fallback
     // Content-Disposition: attachment; filename="example.pdf"
@@ -50,16 +48,14 @@ pub async fn download_and_maybe_extract<R: Runtime>(
         .get(CONTENT_DISPOSITION)
         .and_then(|cd| cd.to_str().ok())
         .and_then(|cd_str| {
-            cd_str
-                .split(';')
-                .find_map(|part| {
-                    let part = part.trim();
-                    if part.starts_with("filename=") {
-                        Some(part.trim_start_matches("filename=").trim_matches('"'))
-                    } else {
-                        None
-                    }
-                })
+            cd_str.split(';').find_map(|part| {
+                let part = part.trim();
+                if part.starts_with("filename=") {
+                    Some(part.trim_start_matches("filename=").trim_matches('"'))
+                } else {
+                    None
+                }
+            })
         })
         .unwrap_or_else(|| {
             url.split('/')
@@ -98,20 +94,19 @@ pub async fn download_and_maybe_extract<R: Runtime>(
         downloaded += chunk.len() as u64;
 
         let percent = total.map(|t| (downloaded as f64 / t as f64) * 100.0);
-        app
-            .emit(
-                &emitevent,
-                ProgressPayload {
-                    phase: "download",
-                    downloaded: Some(downloaded),
-                    total,
-                    percent,
-                    current: None,
-                    count: None,
-                    message: None,
-                },
-            )
-            .map_err(|e| format!("emit error: {e}"))?;
+        app.emit(
+            &emitevent,
+            ProgressPayload {
+                phase: "download",
+                downloaded: Some(downloaded),
+                total,
+                percent,
+                current: None,
+                count: None,
+                message: None,
+            },
+        )
+        .map_err(|e| format!("emit error: {e}"))?;
     }
 
     // Optionally extract ZIP content
@@ -126,7 +121,8 @@ pub async fn download_and_maybe_extract<R: Runtime>(
             let extract_dir = extractdir
                 .ok_or_else(|| "extract_dir must be provided when extract=true".to_string())?;
             let extract_dir = PathBuf::from(extract_dir);
-            fs::create_dir_all(&extract_dir).map_err(|e| format!("create extract dir error: {e}"))?;
+            fs::create_dir_all(&extract_dir)
+                .map_err(|e| format!("create extract dir error: {e}"))?;
 
             let mut zip_file = File::open(&filepath).map_err(|e| format!("open zip error: {e}"))?;
             zip_file
@@ -204,31 +200,30 @@ pub async fn download_and_maybe_extract<R: Runtime>(
                     None
                 };
 
-                app
-                    .emit(
-                        &emitevent,
-                        ProgressPayload {
-                            phase: "extract",
-                            downloaded: None,
-                            total: None,
-                            percent,
-                            current: Some(processed),
-                            count: Some(count_to_extract),
-                            message: Some(format!("Extracted {}", entry_name)),
-                        },
-                    )
-                    .map_err(|e| UiError::from(format!("emit error: {e}")))?;
+                app.emit(
+                    &emitevent,
+                    ProgressPayload {
+                        phase: "extract",
+                        downloaded: None,
+                        total: None,
+                        percent,
+                        current: Some(processed),
+                        count: Some(count_to_extract),
+                        message: Some(format!("Extracted {}", entry_name)),
+                    },
+                )
+                .map_err(|e| UiError::from(format!("emit error: {e}")))?;
             }
             // Remove the downloaded archive after extraction
-            fs::remove_file(&filepath).map_err(|e| UiError::from(format!("remove file error: {e}")))?;
+            fs::remove_file(&filepath)
+                .map_err(|e| UiError::from(format!("remove file error: {e}")))?;
             // Traverse the destination path and try to find Vintagestory executable
             let mut found_exe = false;
             for entry in walkdir::WalkDir::new(&destpath) {
                 let entry = entry.map_err(|e| UiError::from(format!("walkdir error: {e}")))?;
                 if entry.file_type().is_file() {
                     let fname = entry.file_name().to_string_lossy();
-                    if fname.eq_ignore_ascii_case("vintagestory.exe")
-                    {
+                    if fname.eq_ignore_ascii_case("vintagestory.exe") {
                         found_exe = true;
                         break;
                     }
@@ -237,10 +232,13 @@ pub async fn download_and_maybe_extract<R: Runtime>(
             if !found_exe {
                 // Delete the destination path if extraction failed
                 fs::remove_dir_all(&destpath).ok();
-                return Err(UiError::from("Could not find Vintage Story executable after extraction"));
+                return Err(UiError::from(
+                    "Could not find Vintage Story executable after extraction",
+                ));
             }
         } else {
-            fs::create_dir_all(&destpath).map_err(|e| UiError::from(format!("create dir error: {e}")))?;
+            fs::create_dir_all(&destpath)
+                .map_err(|e| UiError::from(format!("create dir error: {e}")))?;
             let destpath_str = destpath.to_str().unwrap();
             let mut args = vec![
                 "--strip-components",
@@ -256,33 +254,33 @@ pub async fn download_and_maybe_extract<R: Runtime>(
                 }
             }
 
-            app
-                .emit(
-                    &emitevent,
-                    ProgressPayload {
-                        phase: "extract",
-                        downloaded: None,
-                        total: None,
-                        percent: None,
-                        current: None,
-                        count: None,
-                        message: None,
-                    },
-                )
-                .map_err(|e| UiError::from(format!("emit error: {e}")))?;
+            app.emit(
+                &emitevent,
+                ProgressPayload {
+                    phase: "extract",
+                    downloaded: None,
+                    total: None,
+                    percent: None,
+                    current: None,
+                    count: None,
+                    message: None,
+                },
+            )
+            .map_err(|e| UiError::from(format!("emit error: {e}")))?;
             let status = Command::new(if cfg!(target_os = "macos") {
                 "bsdtar"
             } else {
                 "tar"
             })
-                .args(&args)
-                .status()
-                .map_err(|e| UiError::from(format!("tar error: {e}")))?;
+            .args(&args)
+            .status()
+            .map_err(|e| UiError::from(format!("tar error: {e}")))?;
             if !status.success() {
                 return Err(UiError::from("tar failed"));
             }
             // Remove the downloaded archive after extraction
-            fs::remove_file(&filepath).map_err(|e| UiError::from(format!("remove file error: {e}")))?;
+            fs::remove_file(&filepath)
+                .map_err(|e| UiError::from(format!("remove file error: {e}")))?;
 
             // Traverse the destination path and try to find Vintagestory executable
             let mut found_exe = false;
@@ -290,7 +288,9 @@ pub async fn download_and_maybe_extract<R: Runtime>(
                 let entry = entry.map_err(|e| UiError::from(format!("walkdir error: {e}")))?;
                 if entry.file_type().is_file() {
                     let fname = entry.file_name().to_string_lossy();
-                    if fname.eq_ignore_ascii_case("vintagestory") || fname.eq_ignore_ascii_case("vintagestory.exe") {
+                    if fname.eq_ignore_ascii_case("vintagestory")
+                        || fname.eq_ignore_ascii_case("vintagestory.exe")
+                    {
                         found_exe = true;
                         break;
                     }
@@ -299,18 +299,19 @@ pub async fn download_and_maybe_extract<R: Runtime>(
             if !found_exe {
                 // Delete the destination path if extraction failed
                 fs::remove_dir_all(&destpath).ok();
-                return Err(UiError::from("Could not find Vintage Story executable after extraction"));
+                return Err(UiError::from(
+                    "Could not find Vintage Story executable after extraction",
+                ));
             }
         }
     }
 
     // Done
-    app
-        .emit(
-            &format!("{emitevent}/done"),
-            serde_json::json!({ "path": destpath }),
-        )
-        .map_err(|e| format!("emit error: {e}"))?;
+    app.emit(
+        &format!("{emitevent}/done"),
+        serde_json::json!({ "path": destpath }),
+    )
+    .map_err(|e| format!("emit error: {e}"))?;
 
     Ok("success".into())
 }

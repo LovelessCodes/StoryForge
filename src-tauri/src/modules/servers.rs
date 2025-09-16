@@ -22,7 +22,7 @@ pub async fn fetch_public_servers() -> Result<Value, UiError> {
         .text()
         .await
         .map_err(|e| UiError::from(format!("Read error: {e}")))?;
-    let json: Value = serde_json::from_str(&res_text)
-        .map_err(|e| UiError::from(format!("Parse error: {e}")))?;
+    let json: Value =
+        serde_json::from_str(&res_text).map_err(|e| UiError::from(format!("Parse error: {e}")))?;
     Ok(json)
 }

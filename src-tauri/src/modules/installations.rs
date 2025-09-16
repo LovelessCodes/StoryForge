@@ -7,7 +7,7 @@ use std::{
     process::Command,
 };
 use tauri::{command, AppHandle, Manager};
-use tauri_plugin_zustand::{ManagerExt};
+use tauri_plugin_zustand::ManagerExt;
 
 use super::errors::UiError;
 
@@ -85,7 +85,9 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
         let entry = entry.map_err(|e| UiError::from(format!("walkdir error: {e}")))?;
         if entry.file_type().is_file() {
             let fname = entry.file_name().to_string_lossy();
-            if fname.eq_ignore_ascii_case("vintagestory") || fname.eq_ignore_ascii_case("vintagestory.exe") {
+            if fname.eq_ignore_ascii_case("vintagestory")
+                || fname.eq_ignore_ascii_case("vintagestory.exe")
+            {
                 found_exe = true;
                 combined_path = entry.path().to_path_buf();
                 break;
@@ -93,7 +95,9 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
         }
     }
     if !found_exe {
-        return Err(UiError::from("Could not find Vintage Story executable in installation path"));
+        return Err(UiError::from(
+            "Could not find Vintage Story executable in installation path",
+        ));
     }
     if !combined_path.exists() || !combined_path.is_file() {
         return Err(UiError {
@@ -259,11 +263,26 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
         if status.is_err() || !status.unwrap().success() {
             // Try common file managers
             let fm_cmds = [
-                ("nautilus", vec![target.as_os_str().to_string_lossy().into_owned()]),
-                ("dolphin", vec![target.as_os_str().to_string_lossy().into_owned()]),
-                ("thunar", vec![target.as_os_str().to_string_lossy().into_owned()]),
-                ("pcmanfm", vec![target.as_os_str().to_string_lossy().into_owned()]),
-                ("nemo", vec![target.as_os_str().to_string_lossy().into_owned()]),
+                (
+                    "nautilus",
+                    vec![target.as_os_str().to_string_lossy().into_owned()],
+                ),
+                (
+                    "dolphin",
+                    vec![target.as_os_str().to_string_lossy().into_owned()],
+                ),
+                (
+                    "thunar",
+                    vec![target.as_os_str().to_string_lossy().into_owned()],
+                ),
+                (
+                    "pcmanfm",
+                    vec![target.as_os_str().to_string_lossy().into_owned()],
+                ),
+                (
+                    "nemo",
+                    vec![target.as_os_str().to_string_lossy().into_owned()],
+                ),
             ];
             let mut launched = false;
             for (bin, args) in fm_cmds {

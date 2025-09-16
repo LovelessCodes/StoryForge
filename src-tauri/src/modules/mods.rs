@@ -8,7 +8,7 @@ use std::{
     str::FromStr,
 };
 use tauri::{command, AppHandle};
-use tauri_plugin_zustand::{ManagerExt};
+use tauri_plugin_zustand::ManagerExt;
 use zip::read::ZipArchive;
 
 use super::errors::UiError;
@@ -479,7 +479,8 @@ pub async fn get_mod_updates(params: String) -> Result<Value, UiError> {
         .text()
         .await
         .map_err(|e| UiError::from(format!("Read error: {e}")))?;
-    let json: Value = serde_json::from_str(&res_text).map_err(|e| UiError::from(format!("Parse error: {e}")))?;
+    let json: Value =
+        serde_json::from_str(&res_text).map_err(|e| UiError::from(format!("Parse error: {e}")))?;
     Ok(json)
 }
 

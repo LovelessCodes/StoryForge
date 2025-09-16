@@ -9,7 +9,8 @@
 		"dialog:default",
 		"os:default",
 		"shell:default",
-		"opener:allow-open-path"
+		"opener:allow-open-path",
+		"process:default"
 	],
 	"windows": ["main"]
 }
