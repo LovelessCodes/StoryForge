@@ -1,6 +1,5 @@
 import { useForm, useStore } from "@tanstack/react-form";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { invoke } from "@tauri-apps/api/core";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { platform } from "@tauri-apps/plugin-os";
 import clsx from "clsx";
@@ -29,10 +28,14 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useAppFolder } from "@/hooks/use-app-folder";
+import { useDownloadVersion } from "@/hooks/use-download-version";
+import {
+	installedVersionsQueryKey,
+	useInstalledVersions,
+} from "@/hooks/use-installed-versions";
 import { gameVersionsQuery } from "@/lib/queries";
 import type { ProgressPayload } from "@/lib/types";
-import { compareSemverDesc, zipfolderprefix } from "@/lib/utils";
+import { compareSemverDesc } from "@/lib/utils";
 
 export const versionSchema = z.object({
 	version: z.string().min(1),
@@ -41,14 +44,9 @@ export const versionSchema = z.object({
 export function AddVersionDialog() {
 	const queryClient = useQueryClient();
 	const { data: gameVersions } = useQuery(gameVersionsQuery);
-	const { appFolder } = useAppFolder();
 	const [open, setOpen] = useState(false);
 	const listenRef = useRef<UnlistenFn>(null);
-	const { data: installedVersions } = useQuery({
-		initialData: [],
-		queryFn: () => invoke<string[]>("get_installed_versions"),
-		queryKey: ["installedVersions"],
-	});
+	const { data: installedVersions } = useInstalledVersions();
 	const currentPlatform = platform();
 
 	const availableVersions = gameVersions?.filter(
@@ -57,27 +55,7 @@ export function AddVersionDialog() {
 
 	const sortedVersions = gameVersions?.sort(compareSemverDesc);
 
-	const { mutateAsync: downloadVersion, isPending } = useMutation({
-		mutationFn: async (version: string) => {
-			const url = (await invoke("get_download_link", {
-				version,
-			})) as string;
-			if (!url) {
-				throw new Error("Download URL not found in response");
-			}
-			const downloadUrl = url;
-			if (!appFolder) {
-				throw new Error("App folder not found");
-			}
-			return invoke("download_and_maybe_extract", {
-				destpath: `${appFolder}/versions/${version}`,
-				emitevent: `download://version:${version.replace(/\./g, "_")}`,
-				extract: true,
-				extractdir: `${appFolder}/versions/${version}`,
-				url: downloadUrl,
-				zipsubfolderprefix: zipfolderprefix(),
-			}) as Promise<string>;
-		},
+	const { mutateAsync: downloadVersion, isPending } = useDownloadVersion({
 		onError: (error, v) => {
 			listenRef.current?.();
 			toast.error(`Error downloading game version: ${error.message}`, {
@@ -118,7 +96,7 @@ export function AddVersionDialog() {
 				id: `download-game-version-${v}`,
 			});
 			queryClient.invalidateQueries({
-				queryKey: ["installedVersions"],
+				queryKey: installedVersionsQueryKey(),
 			});
 			setOpen(false);
 		},

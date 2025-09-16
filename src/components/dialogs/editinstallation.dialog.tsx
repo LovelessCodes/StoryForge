@@ -29,6 +29,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAppFolder } from "@/hooks/use-app-folder";
+import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { gameVersionsQuery } from "@/lib/queries";
 import type { ProgressPayload } from "@/lib/types";
 import {
@@ -49,11 +50,7 @@ export function EditInstallationDialog({
 }) {
 	const id = useId();
 	const { data: gameVersions } = useQuery(gameVersionsQuery);
-	const { data: installedVersions } = useQuery({
-		initialData: [],
-		queryFn: () => invoke<string[]>("get_installed_versions"),
-		queryKey: ["installedVersions"],
-	});
+	const { data: installedVersions } = useInstalledVersions();
 	const { appFolder } = useAppFolder();
 	const listenRef = useRef<UnlistenFn>(null);
 	const [open, setOpen] = useState(false);

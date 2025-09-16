@@ -20,6 +20,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { installedVersionsQueryKey } from "@/hooks/use-installed-versions";
 import { useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
 
@@ -45,7 +46,7 @@ export function DeleteVersionDialog({ version }: { version: string }) {
 			toast.success(`Version ${version} deleted`, {
 				id: `version-delete-${version}`,
 			});
-			queryClient.invalidateQueries({ queryKey: ["installedVersions"] });
+			queryClient.invalidateQueries({ queryKey: installedVersionsQueryKey() });
 			setOpen(false);
 		},
 	});

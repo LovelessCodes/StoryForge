@@ -18,9 +18,19 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { listen } from "@tauri-apps/api/event";
 import clsx from "clsx";
-import { FolderIcon, PackagePlusIcon, PlayIcon, StarIcon } from "lucide-react";
+import {
+	DownloadCloudIcon,
+	FolderIcon,
+	PackagePlusIcon,
+	PlayIcon,
+	StarIcon,
+} from "lucide-react";
+import { useRef } from "react";
+import { toast } from "sonner";
 import { AddInstallationDialog } from "@/components/dialogs/addinstallation.dialog";
 import { DeleteInstallationDialog } from "@/components/dialogs/deleteinstallation.dialog";
 import { EditInstallationDialog } from "@/components/dialogs/editinstallation.dialog";
@@ -30,8 +40,14 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useDownloadVersion } from "@/hooks/use-download-version";
+import {
+	installedVersionsQueryKey,
+	useInstalledVersions,
+} from "@/hooks/use-installed-versions";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
+import type { ProgressPayload } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { type Installation, useInstallations } from "@/stores/installations";
 
@@ -63,6 +79,55 @@ function InstallationRow({
 	style,
 }: InstallationRowProps) {
 	const router = useRouter();
+	const listenRef = useRef<() => void>(null);
+	const { data: versions } = useInstalledVersions();
+	const queryClient = useQueryClient();
+	const { mutate: installVersion } = useDownloadVersion({
+		onError: (error, v) => {
+			listenRef.current?.();
+			toast.error(`Error downloading game version: ${error.message}`, {
+				id: `download-game-version-${v}`,
+			});
+		},
+		onMutate: async (v) => {
+			toast.loading(`Starting to download game version ${v}...`, {
+				id: `download-game-version-${v}`,
+			});
+			listenRef.current = await listen<ProgressPayload>(
+				`download://version:${v.replace(/\./g, "_")}`,
+				(event) => {
+					const { phase, percent } = event.payload;
+					if (phase === "download") {
+						toast.loading(
+							`Downloading game version ${v}: ${percent?.toFixed(0)}%`,
+							{
+								id: `download-game-version-${v}`,
+							},
+						);
+					}
+					if (phase === "extract") {
+						toast.loading(`Extracting game version ${v}`, {
+							id: `download-game-version-${v}`,
+						});
+					}
+				},
+			);
+		},
+		onSuccess: (d, v) => {
+			listenRef.current?.();
+			if (d === "already_downloaded") {
+				toast.dismiss(`download-game-version-${v}`);
+				return;
+			}
+			toast.success(`Game version ${v} downloaded`, {
+				id: `download-game-version-${v}`,
+			});
+			queryClient.invalidateQueries({
+				queryKey: installedVersionsQueryKey(),
+			});
+		},
+	});
+	const version = versions?.find((v) => v === installation.version);
 	return (
 		<div
 			className={clsx([
@@ -85,28 +150,50 @@ function InstallationRow({
 			</span>
 			<span className="flex-1">
 				{installation.name}{" "}
-				<span className="opacity-50 text-xs">({installation.version})</span>
+				<span className="opacity-50 text-xs">
+					(
+					<span className={version ? "text-green-300" : "text-red-300"}>
+						{installation.version}
+					</span>
+					)
+				</span>
 			</span>
 			<div className="inline-flex -space-x-px rounded-md shadow-xs rtl:space-x-reverse">
 				<Tooltip>
 					<TooltipTrigger asChild>
-						<Button
-							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() =>
-								onPlay({
-									id: installation.id,
-								})
-							}
-							variant="outline"
-						>
-							<PlayIcon
-								aria-hidden="true"
-								className="-ms-1 opacity-60 text-green-300"
-								size={16}
-							/>
-						</Button>
+						{version ? (
+							<Button
+								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
+								onClick={() =>
+									onPlay({
+										id: installation.id,
+									})
+								}
+								variant="outline"
+							>
+								<PlayIcon
+									aria-hidden="true"
+									className="-ms-1 opacity-60 text-green-300"
+									size={16}
+								/>
+							</Button>
+						) : (
+							<Button
+								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
+								onClick={() => installVersion(installation.version)}
+								variant="outline"
+							>
+								<DownloadCloudIcon
+									aria-hidden="true"
+									className="-ms-1 opacity-60 text-yellow-300"
+									size={16}
+								/>
+							</Button>
+						)}
 					</TooltipTrigger>
-					<TooltipContent>Play</TooltipContent>
+					<TooltipContent>
+						{version ? "Play" : `Install ${installation.version}`}
+					</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger asChild>
