@@ -1,10 +1,10 @@
 
 <p align="center">
-   <a href="https://github.com/lovelesscodes/story-forge/actions">
+   <a href="https://github.com/lovelesscodes/storyforge/actions">
       <img src="https://img.shields.io/github/actions/workflow/status/lovelesscodes/storyforge/ci.yml?branch=main&label=build&style=for-the-badge" alt="Build Status" />
    </a>
    <a href="https://github.com/lovelesscodes/storyforge/blob/main/LICENSE">
-      <img src="https://img.shields.io/github/license/lovelesscodes/story-forge?color=brightgreen&style=for-the-badge" alt="License" />
+      <img src="https://img.shields.io/github/license/lovelesscodes/storyforge?color=brightgreen&style=for-the-badge" alt="License" />
    </a>
    <img src="https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=for-the-badge" alt="Platforms" />   
    <a href="https://biomejs.dev/" target="_blank">
