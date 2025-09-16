@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { PackagePlusIcon } from "lucide-react";
@@ -24,55 +24,11 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAddModToInstallation } from "@/hooks/use-add-mod-to-installation";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
-import type { ProgressPayload } from "@/lib/types";
+import type { ModInfo, ProgressPayload, Release } from "@/lib/types";
 import type { Installation } from "@/stores/installations";
-
-type Release = {
-	releaseid: number;
-	mainfile: string;
-	filename: string;
-	fileid: number;
-	downloads: number;
-	tags: string[];
-	modidstr: string;
-	modversion: string;
-	created: string;
-	changelog: string | null;
-};
-
-type ModInfo = {
-	mod: {
-		modid: number;
-		assetid: number;
-		name: string;
-		text: string;
-		author: string;
-		urlalias: string;
-		logofilename: string | null;
-		logofile: string | null;
-		logofiledb: string | null;
-		homepageurl: string | null;
-		sourcecodeurl: string | null;
-		trailervideourl: string | null;
-		issuetrackerurl: string | null;
-		wikiurl: string | null;
-		downloads: number;
-		follows: number;
-		trendingpoints: number;
-		comments: number;
-		side: string;
-		type: string;
-		created: string;
-		lastreleased: string;
-		lastmodified: string;
-		tags: string[];
-		releases: Release[];
-		screenshots: string[];
-	};
-	statuscode: string;
-};
 
 export function AddModDialog({
 	modid,
@@ -93,47 +49,51 @@ export function AddModDialog({
 	const listenRef = useRef<UnlistenFn>(null);
 	const [selectedVersion, setSelectedVersion] = useState<Release | null>(null);
 	const queryClient = useQueryClient();
-	const emitevent = `mod-download-${modid}-${installation.id}`;
-	const { mutate: addModToInstallation, isPending } = useMutation({
-		mutationFn: ({ path, url }: { path: string; url: string }) =>
-			invoke("download_and_maybe_extract", {
-				destpath: path,
-				emitevent,
-				extract: false,
-				url,
-			}) as Promise<string>,
-		onError: (error) => {
+	const { mutate: addModToInstallation, isPending } = useAddModToInstallation({
+		onError: (error, variables) => {
 			toast.error(
-				`Error adding ${modInfo?.mod.name} to ${installation.name}: ${error.message}`,
-				{ id: `add-mod-${modInfo?.mod.modid}-${installation.id}` },
+				`Error adding ${variables.mod.mod.name} to ${variables.installation.name}: ${error.message}`,
+				{
+					id: `add-mod-${variables.mod.mod.modid}-${variables.installation.id}`,
+				},
 			);
 			listenRef.current?.();
 		},
-		onMutate: async () => {
-			toast.loading(`Adding ${modInfo?.mod.name} to ${installation.name}...`, {
-				id: `add-mod-${modInfo?.mod.modid}-${installation.id}`,
-			});
-			listenRef.current = await listen<ProgressPayload>(emitevent, (event) => {
-				const { phase, percent } = event.payload;
-				if (phase === "download") {
-					toast.loading(
-						`Downloading ${modInfo?.mod.name} to ${installation.name}... ${percent?.toFixed(0)}%`,
-						{ id: `add-mod-${modInfo?.mod.modid}-${installation.id}` },
-					);
-				}
-			});
+		onMutate: async (variables) => {
+			toast.loading(
+				`Adding ${variables.mod.mod.name} to ${variables.installation.name}...`,
+				{
+					id: `add-mod-${variables.mod.mod.modid}-${variables.installation.id}`,
+				},
+			);
+			listenRef.current = await listen<ProgressPayload>(
+				variables.emitevent,
+				(event) => {
+					const { phase, percent } = event.payload;
+					if (phase === "download") {
+						toast.loading(
+							`Downloading ${variables.mod.mod.name} to ${variables.installation.name}... ${percent?.toFixed(0)}%`,
+							{
+								id: `add-mod-${variables.mod.mod.modid}-${variables.installation.id}`,
+							},
+						);
+					}
+				},
+			);
 		},
-		onSuccess: async () => {
+		onSuccess: async (_, variables) => {
 			listenRef.current?.();
 			toast.success(
-				`Successfully added ${modInfo?.mod.name} to ${installation.name}`,
-				{ id: `add-mod-${modInfo?.mod.modid}-${installation.id}` },
+				`Successfully added ${variables.mod.mod.name} to ${variables.installation.name}`,
+				{
+					id: `add-mod-${variables.mod.mod.modid}-${variables.installation.id}`,
+				},
 			);
 			await queryClient.invalidateQueries({
-				queryKey: installedModsQueryKey(installation.path),
+				queryKey: installedModsQueryKey(variables.installation.path),
 			});
 			await queryClient.invalidateQueries({
-				queryKey: modUpdatesQueryKey(installation.id),
+				queryKey: modUpdatesQueryKey(variables.installation.id),
 			});
 			setOpen(false);
 		},
@@ -239,10 +199,12 @@ export function AddModDialog({
 					<Button
 						disabled={!selectedVersion}
 						onClick={async () => {
-							if (selectedVersion) {
+							if (selectedVersion && modInfo) {
 								addModToInstallation({
-									path: `${installation.path}/Mods`,
-									url: selectedVersion.mainfile,
+									emitevent: `mod-download-${modid}-${installation.id}`,
+									installation: installation,
+									mod: modInfo,
+									version: selectedVersion.modversion,
 								});
 							}
 						}}

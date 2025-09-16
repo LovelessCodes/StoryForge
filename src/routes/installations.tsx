@@ -24,6 +24,7 @@ import { listen } from "@tauri-apps/api/event";
 import clsx from "clsx";
 import {
 	DownloadCloudIcon,
+	FileUpIcon,
 	FolderIcon,
 	PackagePlusIcon,
 	PlayIcon,
@@ -34,6 +35,7 @@ import { toast } from "sonner";
 import { AddInstallationDialog } from "@/components/dialogs/addinstallation.dialog";
 import { DeleteInstallationDialog } from "@/components/dialogs/deleteinstallation.dialog";
 import { EditInstallationDialog } from "@/components/dialogs/editinstallation.dialog";
+import { ImportInstallationDialog } from "@/components/dialogs/importinstallation.dialog";
 import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
@@ -41,6 +43,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useDownloadVersion } from "@/hooks/use-download-version";
+import { useInstalledMods } from "@/hooks/use-installed-mods";
 import {
 	installedVersionsQueryKey,
 	useInstalledVersions,
@@ -127,7 +130,22 @@ function InstallationRow({
 			});
 		},
 	});
+	const { data: installationMods } = useInstalledMods(installation.path);
 	const version = versions?.find((v) => v === installation.version);
+
+	const exportInstallation = async () => {
+		const data = {
+			mods: installationMods?.mods.map((m) => ({
+				id: m.modid,
+				version: m.version,
+			})),
+			name: installation.name,
+			version: installation.version,
+		};
+		// Copy to clipboard
+		await window.navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+		toast.success("Installation copied to clipboard");
+	};
 	return (
 		<div
 			className={clsx([
@@ -256,6 +274,22 @@ function InstallationRow({
 					</TooltipTrigger>
 					<TooltipContent>Open folder</TooltipContent>
 				</Tooltip>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
+							onClick={() => exportInstallation()}
+							variant="outline"
+						>
+							<FileUpIcon
+								aria-hidden="true"
+								className="-ms-1 opacity-60"
+								size={16}
+							/>
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Export</TooltipContent>
+				</Tooltip>
 				<EditInstallationDialog installation={installation} />
 				<DeleteInstallationDialog installation={installation} />
 			</div>
@@ -319,8 +353,9 @@ function RouteComponent() {
 
 	return (
 		<div className="flex flex-col gap-2 w-full">
-			<div className="flex gap-2 h-fit sticky top-0 bg-background/10 backdrop-blur-md z-10 px-4 py-2">
+			<div className="grid grid-cols-[1fr_min-content] gap-2 h-fit sticky top-0 bg-background/10 backdrop-blur-md z-10 px-4 py-2">
 				<AddInstallationDialog />
+				<ImportInstallationDialog />
 			</div>
 			<DndContext
 				collisionDetection={closestCenter}
