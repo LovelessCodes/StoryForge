@@ -9,7 +9,8 @@
 		"shell:default",
 		"opener:default",
 		"opener:allow-open-path",
-		"process:default"
+		"process:default",
+		"updater:default"
 	],
 	"windows": ["*"]
 }

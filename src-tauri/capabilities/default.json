@@ -3,6 +3,7 @@
 	"description": "Capability for the main window",
 	"identifier": "default",
 	"permissions": [
+		"zustand:default",
 		"core:default",
 		"opener:default",
 		"dialog:allow-open",
@@ -10,7 +11,8 @@
 		"os:default",
 		"shell:default",
 		"opener:allow-open-path",
-		"process:default"
+		"process:default",
+		"updater:default"
 	],
 	"windows": ["main"]
 }
