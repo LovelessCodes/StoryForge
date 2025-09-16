@@ -1,5 +1,8 @@
 
 <p align="center">
+   <img src="public/StoryForge.png" alt="Story Forge" />
+   <br />
+   <br />
    <a href="https://github.com/lovelesscodes/storyforge/actions">
       <img src="https://img.shields.io/github/actions/workflow/status/lovelesscodes/storyforge/ci.yml?branch=main&label=build&style=for-the-badge" alt="Build Status" />
    </a>
