@@ -86,7 +86,7 @@ export function AddUserDialog() {
 			totpcode: string;
 			prelogintoken: string;
 		}) =>
-			invoke("auth_login", {
+			invoke("login", {
 				email,
 				password,
 				prelogintoken,

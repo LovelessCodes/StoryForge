@@ -16,6 +16,6 @@ export const useVerifyAuth = (
 ) =>
 	useMutation({
 		mutationFn: async ({ uid, sessionkey }) =>
-			invoke("auth_verify", { sessionkey, uid }),
+			invoke("verify", { sessionkey, uid }),
 		...props,
 	});
