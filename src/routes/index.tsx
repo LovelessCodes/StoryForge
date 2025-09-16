@@ -18,6 +18,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAppVersion } from "@/hooks/use-app-version";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
@@ -37,16 +38,19 @@ function Dashboard() {
 		useInstallations();
 	const { servers, toggleFavorite: toggleFavoriteServer } = useServerStore();
 	const { data: versions } = useInstalledVersions();
+	const { data: appVersion } = useAppVersion();
 	const router = useRouter();
 	const { mutate: connectToServer } = useConnectToServer();
 	const { mutate: playWithInstallation } = usePlayInstallation();
 
 	const handleEditInstallation = (installation: Installation) => {
 		console.log("Editing installation:", installation.name);
+		// TODO: Implement edit functionality
 	};
 
 	const handleEditServer = (server: Server) => {
 		console.log("Editing server:", server.name);
+		// TODO: Implement edit functionality
 	};
 
 	return (
@@ -62,7 +66,17 @@ function Dashboard() {
 								src="/StoryForge.png"
 							/>
 							<div>
-								<h1 className="text-2xl font-bold">Story Forge</h1>
+								<h1 className="text-2xl font-bold">
+									Story Forge{" "}
+									<a
+										className="text-muted-foreground text-xs font-normal hover:underline"
+										href={`https://github.com/lovelesscodes/storyforge/releases/storyforge-v${appVersion}`}
+										rel="noreferrer"
+										target="_blank"
+									>
+										(v{appVersion})
+									</a>
+								</h1>
 								<p className="text-sm text-muted-foreground">
 									Manage your installations, servers, and mods
 								</p>
