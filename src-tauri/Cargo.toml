@@ -1,6 +1,6 @@
 [package]
 name = "StoryForge"
-version = "0.1.0"
+version = "0.1.1"
 description = "Launcher for Vintage Story"
 authors = ["lovelesscodes"]
 edition = "2021"
