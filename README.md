@@ -76,7 +76,3 @@ Story Forge uses Tauri to package the app into a minimal, secure binary for Wind
 Pull requests and suggestions are welcome! If you have ideas for new features or improvements, open an issue or join the discussion.
 
 ---
-
-## 📚 License
-
-MIT
