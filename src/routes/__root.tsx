@@ -57,6 +57,8 @@ function RootComponent() {
 						}),
 				},
 				description: `Version ${update.version} is available.`,
+				dismissible: true,
+				duration: Number.POSITIVE_INFINITY,
 				id: "updater",
 			});
 		}
