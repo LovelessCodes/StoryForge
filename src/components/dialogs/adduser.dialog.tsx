@@ -109,8 +109,7 @@ export function AddUserDialog() {
 				form.setFieldValue("totpcode", "");
 				toast.error("IP address has changed – please try again.");
 			} else {
-				console.log(error);
-				toast.error(`Sign-in failed: ${error?.message || "Unknown error"}`, {
+				toast.error(`Sign-in failed: ${error?.message || error}`, {
 					id: `signin-${id}`,
 				});
 			}
