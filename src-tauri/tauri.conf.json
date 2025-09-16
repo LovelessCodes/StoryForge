@@ -34,11 +34,11 @@
 	"plugins": {
 		"updater": {
 			"endpoints": [
-				"https://github.com/lovelesscodes/storyforge/releases/download/latest/latest.json"
+				"https://github.com/lovelesscodes/storyforge/releases/latest/download/latest.json"
 			],
 			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDhGMEI3NzE4QkNBOTUxNTUKUldSVlVhbThHSGNMais2dzluVDdrQTJ1WWg5M3laWnlYVlNuZ09lMGluU1h1L0RRVnNvTjBhM08K"
 		}
 	},
 	"productName": "Story Forge",
-	"version": "0.1.3"
+	"version": "0.1.4"
 }
