@@ -1,0 +1,39 @@
+name: Update "latest" tag on release
+
+on:
+  release:
+    types: [published] # triggers when a release is published
+
+permissions:
+  contents: write # required to push tags
+
+jobs:
+  move-latest-tag:
+    name: Move "latest" tag to this release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (no history needed)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine release commit
+        id: rel
+        run: |
+          # GITHUB_SHA is the commit associated with the release target
+          echo "sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Create/move 'latest' tag locally
+        run: |
+          git tag -f latest "${{ steps.rel.outputs.sha }}"
+          git tag -l
+
+      - name: Push 'latest' tag (force)
+        run: |
+          git push origin -f refs/tags/latest
