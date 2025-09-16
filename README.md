@@ -1,18 +1,20 @@
 
 <p align="center">
    <a href="https://github.com/lovelesscodes/story-forge/actions">
-      <img src="https://img.shields.io/github/actions/workflow/status/lovelesscodes/story-forge/ci.yml?branch=main&label=build" alt="Build Status" />
+      <img src="https://img.shields.io/github/actions/workflow/status/lovelesscodes/story-forge/ci.yml?branch=main&label=build&style=for-the-badge" alt="Build Status" />
    </a>
    <a href="https://github.com/lovelesscodes/story-forge/blob/main/LICENSE">
-      <img src="https://img.shields.io/github/license/lovelesscodes/story-forge?color=brightgreen" alt="License" />
+      <img src="https://img.shields.io/github/license/lovelesscodes/story-forge?color=brightgreen&style=for-the-badge" alt="License" />
    </a>
-   <img src="https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-blue" alt="Platforms" />
+   <img src="https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=for-the-badge" alt="Platforms" />   
+   <a href="https://biomejs.dev/" target="_blank">
+      <img src="https://img.shields.io/badge/Checked_with-Biome-60a5fa?style=for-the-badge&logo=biome" alt="Checked with Biome" />
+   </a>
 </p>
 
 # Story Forge
 
-**Story Forge** is a modern desktop app for Vintage Story players, designed to make switching between game versions, modpacks, servers, and accounts effortless.
-[![Checked with Biome](https://img.shields.io/badge/Checked_with-Biome-60a5fa?style=for-the-badge&logo=biome)](https://biomejs.dev/)
+**Story Forge** is a modern desktop app for Vintage Story players, designed to make switching between game versions, modpacks, servers, and accounts effortless. 
 
 ---
 
