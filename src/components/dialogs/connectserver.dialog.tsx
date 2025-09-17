@@ -1,4 +1,3 @@
-import { UnplugIcon } from "lucide-react";
 import { useState } from "react";
 import {
 	AlertDialog,
@@ -9,51 +8,34 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
 import type { PublicServer } from "@/hooks/use-public-servers";
+import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
 import { PasswordInput } from "../inputs";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
 
-export function ConnectServerDialog({ server }: { server: PublicServer }) {
-	const [open, setOpen] = useState(false);
+export type ConnectServerDialogProps = {
+	server: PublicServer;
+};
+
+export function ConnectServerDialog({
+	open,
+	server,
+}: {
+	open: boolean;
+} & ConnectServerDialogProps) {
 	const [password, setPassword] = useState("");
 	const { installations } = useInstallations();
 	const { mutate: connectToServer } = useConnectToServer();
+	const { closeDialog } = useDialogStore();
 	const [selectedInstallation, setSelectedInstallation] = useState<
 		number | null
 	>(null);
 
 	return (
-		<AlertDialog onOpenChange={setOpen} open={open}>
-			<AlertDialogTrigger asChild>
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							aria-label="Delete"
-							className="shadow-none focus-visible:z-10"
-							disabled={
-								installations.filter((i) => i.version === server.gameVersion)
-									.length === 0
-							}
-							onClick={() => setOpen(true)}
-							size="icon"
-							variant="outline"
-						>
-							<UnplugIcon aria-hidden="true" className="opacity-60" size={16} />
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>Connect to {server?.serverIP}</TooltipContent>
-				</Tooltip>
-			</AlertDialogTrigger>
+		<AlertDialog onOpenChange={() => closeDialog()} open={open}>
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle>
@@ -105,7 +87,7 @@ export function ConnectServerDialog({ server }: { server: PublicServer }) {
 								ip: server.serverIP,
 								password,
 							});
-							setOpen(false);
+							closeDialog();
 						}}
 					>
 						Connect
