@@ -1,7 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { PackagePlusIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,6 @@ import {
 	DialogDescription,
 	DialogFooter,
 	DialogHeader,
-	DialogTrigger,
 } from "@/components/ui/dialog";
 import {
 	Select,
@@ -19,25 +17,25 @@ import {
 	SelectItem,
 	SelectTrigger,
 } from "@/components/ui/select";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useAddModToInstallation } from "@/hooks/use-add-mod-to-installation";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import type { ModInfo, ProgressPayload, Release } from "@/lib/types";
+import { useDialogStore } from "@/stores/dialogs";
 import type { Installation } from "@/stores/installations";
 
+export type AddModDialogProps = {
+	modid: number;
+	installation: Installation;
+};
+
 export function AddModDialog({
+	open,
 	modid,
 	installation,
 }: {
-	modid: number;
-	installation: Installation;
-}) {
-	const [open, setOpen] = useState(false);
+	open: boolean;
+} & AddModDialogProps) {
 	const { data: modInfo } = useQuery({
 		enabled: open,
 		queryFn: () =>
@@ -46,10 +44,11 @@ export function AddModDialog({
 		refetchOnReconnect: false,
 		refetchOnWindowFocus: false,
 	});
+	const { closeDialog } = useDialogStore();
 	const listenRef = useRef<UnlistenFn>(null);
 	const [selectedVersion, setSelectedVersion] = useState<Release | null>(null);
 	const queryClient = useQueryClient();
-	const { mutate: addModToInstallation, isPending } = useAddModToInstallation({
+	const { mutate: addModToInstallation } = useAddModToInstallation({
 		onError: (error, variables) => {
 			toast.error(
 				`Error adding ${variables.mod.mod.name} to ${variables.installation.name}: ${error.message}`,
@@ -95,7 +94,7 @@ export function AddModDialog({
 			await queryClient.invalidateQueries({
 				queryKey: modUpdatesQueryKey(variables.installation.id),
 			});
-			setOpen(false);
+			closeDialog();
 		},
 	});
 
@@ -111,27 +110,11 @@ export function AddModDialog({
 	return (
 		<Dialog
 			onOpenChange={(op) => {
-				if (isPending) return;
 				if (op === false) setSelectedVersion(null);
-				setOpen(op);
+				closeDialog();
 			}}
 			open={open}
 		>
-			<DialogTrigger asChild>
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							aria-label="Delete"
-							onClick={() => setOpen(true)}
-							size="icon"
-							variant="outline"
-						>
-							<PackagePlusIcon size={4} />
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>Add Mod</TooltipContent>
-				</Tooltip>
-			</DialogTrigger>
 			<DialogContent>
 				<DialogHeader>
 					<h3 className="text-lg font-medium leading-6">
