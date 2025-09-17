@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { DownloadCloudIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,6 @@ import {
 	DialogDescription,
 	DialogFooter,
 	DialogHeader,
-	DialogTrigger,
 } from "@/components/ui/dialog";
 import {
 	Select,
@@ -19,15 +17,11 @@ import {
 	SelectItem,
 	SelectTrigger,
 } from "@/components/ui/select";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import type { ProgressPayload } from "@/lib/types";
 import type { OutputMod } from "@/routes/install-mods/$id";
+import { useDialogStore } from "@/stores/dialogs";
 import type { Installation } from "@/stores/installations";
 
 type Release = {
@@ -75,18 +69,21 @@ type ModInfo = {
 	statuscode: string;
 };
 
-export function UpdateModDialog({
-	mod,
-	installation,
-	versionFrom,
-	versionTo,
-}: {
+export type UpdateModDialogProps = {
 	mod: OutputMod;
 	installation: Installation;
 	versionFrom: string;
-	versionTo: string;
-}) {
-	const [open, setOpen] = useState(false);
+};
+
+export function UpdateModDialog({
+	open,
+	mod,
+	installation,
+	versionFrom,
+}: {
+	open: boolean;
+} & UpdateModDialogProps) {
+	const { closeDialog } = useDialogStore();
 	const { data: modInfo } = useQuery({
 		enabled: open,
 		queryFn: () =>
@@ -166,7 +163,7 @@ export function UpdateModDialog({
 			await queryClient.invalidateQueries({
 				queryKey: modUpdatesQueryKey(installation.id),
 			});
-			setOpen(false);
+			closeDialog();
 		},
 	});
 
@@ -181,32 +178,12 @@ export function UpdateModDialog({
 
 	return (
 		<Dialog
-			onOpenChange={(op) => {
+			onOpenChange={() => {
 				if (isPending) return;
-				if (op === false) setSelectedVersion(null);
-				setOpen(op);
+				closeDialog();
 			}}
 			open={open}
 		>
-			<DialogTrigger asChild>
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							aria-label="Delete"
-							onClick={() => setOpen(true)}
-							size="icon"
-							variant="outline"
-						>
-							<DownloadCloudIcon size={4} />
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>
-						<span className="text-xs text-muted-foreground">
-							{versionFrom} → {versionTo}
-						</span>
-					</TooltipContent>
-				</Tooltip>
-			</DialogTrigger>
 			<DialogContent>
 				<DialogHeader>
 					<h3 className="text-lg font-medium leading-6">
