@@ -1,7 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { PackageMinusIcon } from "lucide-react";
-import { useState } from "react";
 import { toast } from "sonner";
 import {
 	AlertDialog,
@@ -12,29 +10,27 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
+import { useDialogStore } from "@/stores/dialogs";
 import type { Installation } from "@/stores/installations";
 
+export type RemoveModDialogProps = {
+	name: string;
+	path: string;
+	installation: Installation;
+};
+
 export function RemoveModDialog({
+	open,
 	name,
 	path,
 	installation,
 }: {
-	name: string;
-	path: string;
-	installation: Installation;
-}) {
-	const [open, setOpen] = useState(false);
-
+	open: boolean;
+} & RemoveModDialogProps) {
 	const queryClient = useQueryClient();
+	const { closeDialog } = useDialogStore();
 	const { mutate: removeModFromInstallation, isPending } = useMutation({
 		mutationFn: ({ path, modpath }: { path: string; modpath: string }) =>
 			invoke("remove_mod_from_installation", { params: { modpath, path } }),
@@ -60,34 +56,19 @@ export function RemoveModDialog({
 				await queryClient.invalidateQueries({
 					queryKey: installedModsQueryKey(installation.path),
 				});
-				setOpen(false);
+				closeDialog();
 			}
 		},
 	});
 
 	return (
 		<AlertDialog
-			onOpenChange={(op) => {
+			onOpenChange={() => {
 				if (isPending) return;
-				setOpen(op);
+				closeDialog();
 			}}
 			open={open}
 		>
-			<AlertDialogTrigger asChild>
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							aria-label="Remove"
-							onClick={() => setOpen(true)}
-							size="icon"
-							variant="destructive"
-						>
-							<PackageMinusIcon aria-hidden="true" size={4} />
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>Remove</TooltipContent>
-				</Tooltip>
-			</AlertDialogTrigger>
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle>
