@@ -3,7 +3,6 @@ import { useMutation } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import clsx from "clsx";
 import { OTPInput, type SlotProps } from "input-otp";
-import { UserPlus2 } from "lucide-react";
 import { useId } from "react";
 import { toast } from "sonner";
 import z from "zod";
@@ -15,7 +14,6 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -25,6 +23,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useAccountStore } from "@/stores/accounts";
+import { useDialogStore } from "@/stores/dialogs";
 
 type SignInResponse = {
 	valid: number;
@@ -53,7 +52,7 @@ const signInSchema = z.object({
 		.max(6, { message: "TOTP code must be 6 digits long" }),
 });
 
-export function AddUserDialog() {
+export function AddUserDialog({ open }: { open: boolean }) {
 	const id = useId();
 	const form = useForm({
 		defaultValues: {
@@ -69,6 +68,7 @@ export function AddUserDialog() {
 			onChange: signInSchema,
 		},
 	});
+	const { closeDialog } = useDialogStore();
 	const { addUser, selectedUser } = useAccountStore();
 	const {
 		mutate: signInMutate,
@@ -133,18 +133,7 @@ export function AddUserDialog() {
 		},
 	});
 	return (
-		<Dialog>
-			<DialogTrigger asChild>
-				<Button
-					className="w-full justify-between not-first:rounded-t-none"
-					variant="outline"
-				>
-					<span className="flex text-xs">
-						{selectedUser ? "Add user" : "Sign in"}
-					</span>
-					<UserPlus2 className="size-4" />
-				</Button>
-			</DialogTrigger>
+		<Dialog onOpenChange={() => closeDialog()} open={open}>
 			<DialogContent>
 				{signInError?.message === "requiretotpcode" ||
 				signInError?.message === "wrongtotpcode" ? (
