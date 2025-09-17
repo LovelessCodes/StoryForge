@@ -3,8 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { platform } from "@tauri-apps/plugin-os";
 import clsx from "clsx";
-import { FolderPlusIcon } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { toast } from "sonner";
 import z from "zod";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,6 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -36,15 +34,16 @@ import {
 import { gameVersionsQuery } from "@/lib/queries";
 import type { ProgressPayload } from "@/lib/types";
 import { compareSemverDesc } from "@/lib/utils";
+import { useDialogStore } from "@/stores/dialogs";
 
 export const versionSchema = z.object({
 	version: z.string().min(1),
 });
 
-export function AddVersionDialog() {
+export function AddVersionDialog({ open }: { open: boolean }) {
 	const queryClient = useQueryClient();
 	const { data: gameVersions } = useQuery(gameVersionsQuery);
-	const [open, setOpen] = useState(false);
+	const { closeDialog } = useDialogStore();
 	const listenRef = useRef<UnlistenFn>(null);
 	const { data: installedVersions } = useInstalledVersions();
 	const currentPlatform = platform();
@@ -98,7 +97,7 @@ export function AddVersionDialog() {
 			queryClient.invalidateQueries({
 				queryKey: installedVersionsQueryKey(),
 			});
-			setOpen(false);
+			closeDialog();
 		},
 	});
 	const form = useForm({
@@ -118,23 +117,7 @@ export function AddVersionDialog() {
 
 	const version = useStore(form.store, (state) => state.values.version);
 	return (
-		<Dialog
-			onOpenChange={(op) => {
-				if (isPending) return;
-				if (op === false) form.reset();
-				setOpen(op);
-			}}
-			open={open}
-		>
-			<DialogTrigger asChild>
-				<Button
-					className="w-full justify-between cursor-pointer"
-					variant="outline"
-				>
-					<span className="flex text-xs">Add version</span>
-					<FolderPlusIcon className="size-4" />
-				</Button>
-			</DialogTrigger>
+		<Dialog onOpenChange={() => closeDialog()} open={open}>
 			<DialogContent>
 				<div className="flex flex-col items-center gap-2">
 					<DialogHeader>
