@@ -1,7 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { XIcon } from "lucide-react";
-import { useState } from "react";
 import { toast } from "sonner";
 import {
 	AlertDialog,
@@ -12,21 +10,24 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { installedVersionsQueryKey } from "@/hooks/use-installed-versions";
+import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
 
-export function DeleteVersionDialog({ version }: { version: string }) {
+export type DeleteVersionDialogProps = {
+	version: string;
+};
+
+export function DeleteVersionDialog({
+	open,
+	version,
+}: {
+	open: boolean;
+} & DeleteVersionDialogProps) {
 	const queryClient = useQueryClient();
-	const [open, setOpen] = useState(false);
+	const { closeDialog } = useDialogStore();
 	const { installations } = useInstallations();
 	const { servers } = useServerStore();
 	const { mutate: removeVersion, isPending } = useMutation({
@@ -42,39 +43,25 @@ export function DeleteVersionDialog({ version }: { version: string }) {
 				id: `version-delete-${version}`,
 			});
 		},
-		onSuccess: () => {
+		onSuccess: async () => {
 			toast.success(`Version ${version} deleted`, {
 				id: `version-delete-${version}`,
 			});
-			queryClient.invalidateQueries({ queryKey: installedVersionsQueryKey() });
-			setOpen(false);
+			await queryClient.invalidateQueries({
+				queryKey: installedVersionsQueryKey(),
+			});
+			closeDialog();
 		},
 	});
 
 	return (
 		<AlertDialog
-			onOpenChange={(op) => {
+			onOpenChange={() => {
 				if (isPending) return;
-				if (op === false) setOpen(false);
+				closeDialog();
 			}}
 			open={open}
 		>
-			<AlertDialogTrigger asChild>
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							aria-label="Delete"
-							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() => setOpen(true)}
-							size="icon"
-							variant="outline"
-						>
-							<XIcon aria-hidden="true" className="opacity-60" size={16} />
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>Delete</TooltipContent>
-				</Tooltip>
-			</AlertDialogTrigger>
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle>
