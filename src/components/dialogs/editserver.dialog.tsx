@@ -1,7 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 import clsx from "clsx";
-import { WrenchIcon } from "lucide-react";
-import { useId, useState } from "react";
+import { useId } from "react";
 import { serverSchema } from "@/components/dialogs/addserver.dialog";
 import { PasswordInput } from "@/components/inputs";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,6 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,12 +24,22 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
 import { type Server, useServerStore } from "@/stores/servers";
 
-export function EditServerDialog({ server }: { server: Server }) {
+export type EditServerDialogProps = {
+	server: Server;
+};
+
+export function EditServerDialog({
+	open,
+	server,
+}: {
+	open: boolean;
+} & EditServerDialogProps) {
 	const id = useId();
-	const [open, setOpen] = useState(false);
+	const { closeDialog } = useDialogStore();
 	const { installations } = useInstallations();
 	const { updateServer } = useServerStore();
 	const form = useForm({
@@ -57,7 +65,7 @@ export function EditServerDialog({ server }: { server: Server }) {
 					password: value.password,
 					port: value.port?.length ? parseInt(value.port, 10) : null,
 				},
-				(status) => status && setOpen(false),
+				(status) => status && closeDialog(),
 			);
 		},
 		validators: {
@@ -65,31 +73,7 @@ export function EditServerDialog({ server }: { server: Server }) {
 		},
 	});
 	return (
-		<Dialog
-			onOpenChange={(v) => {
-				setOpen(v);
-				form.reset();
-			}}
-			open={open}
-		>
-			<DialogTrigger asChild>
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() => setOpen(true)}
-							variant="outline"
-						>
-							<WrenchIcon
-								aria-hidden="true"
-								className="-ms-1 opacity-60"
-								size={16}
-							/>
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>Edit</TooltipContent>
-				</Tooltip>
-			</DialogTrigger>
+		<Dialog onOpenChange={() => closeDialog()} open={open}>
 			<DialogContent>
 				<div className="flex flex-col items-center gap-2">
 					<DialogHeader>

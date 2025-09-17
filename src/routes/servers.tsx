@@ -20,10 +20,13 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { createFileRoute } from "@tanstack/react-router";
 import clsx from "clsx";
-import { StarIcon, UnplugIcon } from "lucide-react";
-import { AddServerDialog } from "@/components/dialogs/addserver.dialog";
-import { DeleteServerDialog } from "@/components/dialogs/deleteserver.dialog";
-import { EditServerDialog } from "@/components/dialogs/editserver.dialog";
+import {
+	MapPinPlusIcon,
+	StarIcon,
+	UnplugIcon,
+	WrenchIcon,
+	XIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
@@ -32,6 +35,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
 import { cn } from "@/lib/utils";
+import { useDialogStore } from "@/stores/dialogs";
 import { type Installation, useInstallations } from "@/stores/installations";
 import { type Server, useServerStore } from "@/stores/servers";
 
@@ -70,6 +74,7 @@ function ServerRow({
 	setNodeRef,
 	style,
 }: ServerRowProps) {
+	const { openDialog } = useDialogStore();
 	return (
 		<div
 			className={clsx([
@@ -144,8 +149,36 @@ function ServerRow({
 						{server.favorite ? "Unfavorite" : "Favorite"}
 					</TooltipContent>
 				</Tooltip>
-				<EditServerDialog server={server} />
-				<DeleteServerDialog server={server} />
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
+							onClick={() => openDialog("EditServerDialog", { server })}
+							variant="outline"
+						>
+							<WrenchIcon
+								aria-hidden="true"
+								className="-ms-1 opacity-60"
+								size={16}
+							/>
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Edit</TooltipContent>
+				</Tooltip>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							aria-label="Delete"
+							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
+							onClick={() => openDialog("DeleteServerDialog", { server })}
+							size="icon"
+							variant="outline"
+						>
+							<XIcon aria-hidden="true" className="opacity-60" size={16} />
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Delete</TooltipContent>
+				</Tooltip>
 			</div>
 		</div>
 	);
@@ -187,6 +220,7 @@ function SortableServerRow(props: SortableServerRowProps) {
 function RouteComponent() {
 	const { servers, moveServer, toggleFavorite } = useServerStore();
 	const { installations } = useInstallations();
+	const { openDialog } = useDialogStore();
 
 	// DnD-kit setup
 	const sensors = useSensors(useSensor(PointerSensor));
@@ -211,7 +245,14 @@ function RouteComponent() {
 		>
 			<div className="flex flex-col gap-2 w-full justify-start">
 				<div className="flex gap-2 h-fit sticky top-0 bg-background/10 backdrop-blur-md z-10 px-4 py-2">
-					<AddServerDialog />
+					<Button
+						className="w-full justify-between cursor-pointer"
+						onClick={() => openDialog("AddServerDialog")}
+						variant="outline"
+					>
+						<span className="flex text-xs">Add server</span>
+						<MapPinPlusIcon className="size-4" />
+					</Button>
 				</div>
 				<DndContext
 					collisionDetection={closestCenter}

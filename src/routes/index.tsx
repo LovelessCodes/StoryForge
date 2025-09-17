@@ -22,8 +22,9 @@ import { useAppVersion } from "@/hooks/use-app-version";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
-import { type Installation, useInstallations } from "@/stores/installations";
-import { type Server, useServerStore } from "@/stores/servers";
+import { useDialogStore } from "@/stores/dialogs";
+import { useInstallations } from "@/stores/installations";
+import { useServerStore } from "@/stores/servers";
 
 export const Route = createFileRoute("/")({
 	component: RouteComponent,
@@ -42,16 +43,7 @@ function Dashboard() {
 	const router = useRouter();
 	const { mutate: connectToServer } = useConnectToServer();
 	const { mutate: playWithInstallation } = usePlayInstallation();
-
-	const handleEditInstallation = (installation: Installation) => {
-		console.log("Editing installation:", installation.name);
-		// TODO: Implement edit functionality
-	};
-
-	const handleEditServer = (server: Server) => {
-		console.log("Editing server:", server.name);
-		// TODO: Implement edit functionality
-	};
+	const { openDialog } = useDialogStore();
 
 	return (
 		<div className="h-screen w-full grid grid-rows-[min-content,1fr] bg-background">
@@ -130,7 +122,9 @@ function Dashboard() {
 												viewTransition: { types: ["warp"] },
 											})
 										}
-										onEdit={handleEditInstallation}
+										onEdit={(i) =>
+											openDialog("EditInstallationDialog", { installation: i })
+										}
 										onPlay={(i) => playWithInstallation({ id: i.id })}
 										onUnfavorite={(i) => toggleFavoriteInstallation(i.id)}
 									/>
@@ -189,7 +183,9 @@ function Dashboard() {
 												password: s.password,
 											})
 										}
-										onEdit={handleEditServer}
+										onEdit={(s) =>
+											openDialog("EditServerDialog", { server: s })
+										}
 										onUnfavorite={(s) => toggleFavoriteServer(s.id)}
 										server={server}
 									/>

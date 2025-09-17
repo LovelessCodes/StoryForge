@@ -1,11 +1,13 @@
 import { measureElement, useVirtualizer } from "@tanstack/react-virtual";
-import { ListCheckIcon, LockIcon, Users2Icon } from "lucide-react";
+import { ListCheckIcon, LockIcon, UnplugIcon, Users2Icon } from "lucide-react";
 import { useCallback } from "react";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import type { PublicServer } from "@/hooks/use-public-servers";
+import { useDialogStore } from "@/stores/dialogs";
+import { useInstallations } from "@/stores/installations";
 import { useServersFilters } from "@/stores/serversFilters";
-import { ConnectServerDialog } from "../dialogs/connectserver.dialog";
 import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 export function PublicServerList({
@@ -16,6 +18,8 @@ export function PublicServerList({
 	publicServers: PublicServer[];
 }) {
 	const { data: installedVersions } = useInstalledVersions();
+	const { installations } = useInstallations();
+	const { openDialog } = useDialogStore();
 	const { searchText, selectedGameVersions, sortBy, orderDirection } =
 		useServersFilters();
 
@@ -163,7 +167,33 @@ export function PublicServerList({
 							<div className="flex gap-2 items-center">
 								<Tooltip>
 									<TooltipTrigger asChild>
-										<ConnectServerDialog server={server} />
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<Button
+													aria-label="Delete"
+													className="shadow-none focus-visible:z-10"
+													disabled={
+														installations.filter(
+															(i) => i.version === server.gameVersion,
+														).length === 0
+													}
+													onClick={() =>
+														openDialog("ConnectServerDialog", { server })
+													}
+													size="icon"
+													variant="outline"
+												>
+													<UnplugIcon
+														aria-hidden="true"
+														className="opacity-60"
+														size={16}
+													/>
+												</Button>
+											</TooltipTrigger>
+											<TooltipContent>
+												Connect to {server?.serverIP}
+											</TooltipContent>
+										</Tooltip>
 									</TooltipTrigger>
 									<TooltipContent>Connect to {server?.serverIP}</TooltipContent>
 								</Tooltip>

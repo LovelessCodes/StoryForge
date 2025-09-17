@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { measureElement, useVirtualizer } from "@tanstack/react-virtual";
 import { invoke } from "@tauri-apps/api/core";
+import {
+	DownloadCloudIcon,
+	PackageMinusIcon,
+	PackagePlusIcon,
+} from "lucide-react";
 import { useCallback } from "react";
-import { AddModDialog } from "@/components/dialogs/addmod.dialog";
-import { RemoveModDialog } from "@/components/dialogs/removemod.dialog";
-import { UpdateModDialog } from "@/components/dialogs/updatemod.dialog";
 import {
 	Tooltip,
 	TooltipContent,
@@ -14,8 +16,10 @@ import {
 import { useInstalledMods } from "@/hooks/use-installed-mods";
 import { useModUpdates } from "@/hooks/use-mod-updates";
 import { cn } from "@/lib/utils";
+import { useDialogStore } from "@/stores/dialogs";
 import type { Installation } from "@/stores/installations";
 import { useModsFilters } from "@/stores/modsFilters";
+import { Button } from "../ui/button";
 
 type ModsParams = {
 	versions: string[];
@@ -72,6 +76,7 @@ export function ModList({
 			versions: selectedGameVersions.map((version) => version),
 		}),
 	);
+	const { openDialog } = useDialogStore();
 	const { data: instMods } = useInstalledMods(installation?.path ?? "", {
 		enabled: !!installation,
 	});
@@ -320,27 +325,71 @@ export function ModList({
 											)) &&
 										installation &&
 										installedMod && (
-											<UpdateModDialog
-												installation={installation}
-												mod={installedMod}
-												versionFrom={installedMod.version}
-												versionTo={
-													modUpdates.updates[mod.modidstrs[0]].modversion
-												}
-											/>
+											<Tooltip>
+												<TooltipTrigger asChild>
+													<Button
+														aria-label="Delete"
+														onClick={() =>
+															openDialog("UpdateModDialog", {
+																installation,
+																mod: installedMod,
+																versionFrom: installedMod.version,
+															})
+														}
+														size="icon"
+														variant="outline"
+													>
+														<DownloadCloudIcon size={4} />
+													</Button>
+												</TooltipTrigger>
+												<TooltipContent>
+													<span className="text-xs text-muted-foreground">
+														{installedMod.version} →{" "}
+														{modUpdates.updates[mod.modidstrs[0]].modversion}
+													</span>
+												</TooltipContent>
+											</Tooltip>
 										)}
 									{installation &&
 										(installedMod ? (
-											<RemoveModDialog
-												installation={installation}
-												name={mod.name}
-												path={installedMod.path ?? ""}
-											/>
+											<Tooltip>
+												<TooltipTrigger asChild>
+													<Button
+														aria-label="Remove"
+														onClick={() =>
+															openDialog("RemoveModDialog", {
+																installation,
+																name: mod.name,
+																path: installedMod.path ?? "",
+															})
+														}
+														size="icon"
+														variant="destructive"
+													>
+														<PackageMinusIcon aria-hidden="true" size={4} />
+													</Button>
+												</TooltipTrigger>
+												<TooltipContent>Remove</TooltipContent>
+											</Tooltip>
 										) : (
-											<AddModDialog
-												installation={installation}
-												modid={mod.modid}
-											/>
+											<Tooltip>
+												<TooltipTrigger asChild>
+													<Button
+														aria-label="Delete"
+														onClick={() =>
+															openDialog("AddModDialog", {
+																installation,
+																modid: mod.modid,
+															})
+														}
+														size="icon"
+														variant="outline"
+													>
+														<PackagePlusIcon size={4} />
+													</Button>
+												</TooltipTrigger>
+												<TooltipContent>Add Mod</TooltipContent>
+											</Tooltip>
 										))}
 								</div>
 							</div>

@@ -1,7 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { XIcon } from "lucide-react";
-import { useState } from "react";
 import { toast } from "sonner";
 import {
 	AlertDialog,
@@ -12,24 +10,23 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { useDialogStore } from "@/stores/dialogs";
 import { type Installation, useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
 
+export type DeleteInstallationDialogProps = {
+	installation: Installation;
+};
+
 export function DeleteInstallationDialog({
+	open,
 	installation,
 }: {
-	installation: Installation;
-}) {
-	const [open, setOpen] = useState(false);
+	open: boolean;
+} & DeleteInstallationDialogProps) {
 	const { removeInstallation } = useInstallations();
+	const { closeDialog } = useDialogStore();
 	const { servers } = useServerStore();
 
 	const canDelete = !servers.some(
@@ -54,35 +51,19 @@ export function DeleteInstallationDialog({
 				toast.success("Installation deleted", {
 					id: `installation-delete-${variables}`,
 				});
-				setOpen(false);
+				closeDialog();
 			}
 		},
 	});
 
 	return (
 		<AlertDialog
-			onOpenChange={(op) => {
+			onOpenChange={() => {
 				if (isPending) return;
-				setOpen(op);
+				closeDialog();
 			}}
 			open={open}
 		>
-			<AlertDialogTrigger asChild>
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							aria-label="Delete"
-							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() => setOpen(true)}
-							size="icon"
-							variant="outline"
-						>
-							<XIcon aria-hidden="true" className="opacity-60" size={16} />
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>Delete</TooltipContent>
-				</Tooltip>
-			</AlertDialogTrigger>
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle>

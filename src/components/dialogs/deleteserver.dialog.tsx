@@ -1,5 +1,3 @@
-import { XIcon } from "lucide-react";
-import { useState } from "react";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -9,38 +7,25 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { useDialogStore } from "@/stores/dialogs";
 import { type Server, useServerStore } from "@/stores/servers";
 
-export function DeleteServerDialog({ server }: { server: Server }) {
-	const [open, setOpen] = useState(false);
+export type DeleteServerDialogProps = {
+	server: Server;
+};
+
+export function DeleteServerDialog({
+	open,
+	server,
+}: {
+	open: boolean;
+} & DeleteServerDialogProps) {
 	const { removeServer } = useServerStore();
+	const { closeDialog } = useDialogStore();
 
 	return (
-		<AlertDialog onOpenChange={setOpen} open={open}>
-			<AlertDialogTrigger asChild>
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							aria-label="Delete"
-							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() => setOpen(true)}
-							size="icon"
-							variant="outline"
-						>
-							<XIcon aria-hidden="true" className="opacity-60" size={16} />
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>Delete</TooltipContent>
-				</Tooltip>
-			</AlertDialogTrigger>
+		<AlertDialog onOpenChange={() => closeDialog()} open={open}>
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle>
@@ -56,7 +41,7 @@ export function DeleteServerDialog({ server }: { server: Server }) {
 					<AlertDialogAction
 						onClick={() => {
 							removeServer(server.id);
-							setOpen(false);
+							closeDialog();
 						}}
 					>
 						Delete

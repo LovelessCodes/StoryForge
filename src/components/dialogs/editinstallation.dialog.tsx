@@ -3,8 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import clsx from "clsx";
-import { WrenchIcon } from "lucide-react";
-import { useId, useRef, useState } from "react";
+import { useId, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +12,6 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,23 +35,29 @@ import {
 	makeStringFolderSafe,
 	zipfolderprefix,
 } from "@/lib/utils";
+import { useDialogStore } from "@/stores/dialogs";
 import {
 	type Installation,
 	useInstallationsStore,
 } from "@/stores/installations";
 import { installationSchema } from "./addinstallation.dialog";
 
+export type EditInstallationDialogProps = {
+	installation: Installation;
+};
+
 export function EditInstallationDialog({
+	open,
 	installation,
 }: {
-	installation: Installation;
-}) {
+	open: boolean;
+} & EditInstallationDialogProps) {
 	const id = useId();
 	const { data: gameVersions } = useQuery(gameVersionsQuery);
+	const { closeDialog } = useDialogStore();
 	const { data: installedVersions } = useInstalledVersions();
 	const { appFolder } = useAppFolder();
 	const listenRef = useRef<UnlistenFn>(null);
-	const [open, setOpen] = useState(false);
 	const { updateInstallation } = useInstallationsStore();
 	const { mutateAsync: downloadVersion } = useMutation({
 		mutationFn: async (version: string) => {
@@ -144,7 +148,7 @@ export function EditInstallationDialog({
 					totalTimePlayed: installation.totalTimePlayed,
 					version: value.version,
 				},
-				(status) => status && setOpen(false),
+				(status) => status && closeDialog(),
 			);
 		},
 		validators: {
@@ -153,31 +157,12 @@ export function EditInstallationDialog({
 	});
 	return (
 		<Dialog
-			onOpenChange={(op) => {
+			onOpenChange={() => {
 				if (form.state.isSubmitting) return;
-				if (op === false) form.reset();
-				setOpen(op);
+				closeDialog();
 			}}
 			open={open}
 		>
-			<DialogTrigger asChild>
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() => setOpen(true)}
-							variant="outline"
-						>
-							<WrenchIcon
-								aria-hidden="true"
-								className="-ms-1 opacity-60"
-								size={16}
-							/>
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>Edit</TooltipContent>
-				</Tooltip>
-			</DialogTrigger>
 			<DialogContent>
 				<div className="flex flex-col items-center gap-2">
 					<DialogHeader>

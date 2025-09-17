@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { FileDownIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -14,20 +13,14 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useAddModToInstallation } from "@/hooks/use-add-mod-to-installation";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import type { ModInfo, ProgressPayload } from "@/lib/types";
 import { makeStringFolderSafe } from "@/lib/utils";
+import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
 
 const installationSchema = z.object({
@@ -41,10 +34,10 @@ const installationSchema = z.object({
 	version: z.string().min(2).max(100),
 });
 
-export function ImportInstallationDialog() {
-	const [open, setOpen] = useState(false);
+export function ImportInstallationDialog({ open }: { open: boolean }) {
 	const [newInstallation, setNewInstallation] = useState<string>("");
 	const { addInstallation, installations } = useInstallations();
+	const { closeDialog } = useDialogStore();
 	const listenRef = useRef<() => void>(null);
 	const queryClient = useQueryClient();
 	const { appFolder } = useAppFolder();
@@ -95,7 +88,7 @@ export function ImportInstallationDialog() {
 			await queryClient.invalidateQueries({
 				queryKey: modUpdatesQueryKey(variables.installation.id),
 			});
-			setOpen(false);
+			closeDialog();
 		},
 	});
 
@@ -166,28 +159,12 @@ export function ImportInstallationDialog() {
 
 	return (
 		<AlertDialog
-			onOpenChange={(op) => {
+			onOpenChange={() => {
 				if (isPending) return;
-				if (op === false) setOpen(false);
+				closeDialog();
 			}}
 			open={open}
 		>
-			<AlertDialogTrigger asChild>
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							aria-label="Import installation"
-							className="shadow-none focus-visible:z-10"
-							onClick={() => setOpen(true)}
-							size="icon"
-							variant="outline"
-						>
-							<FileDownIcon aria-hidden="true" size={16} />
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>Import Installation</TooltipContent>
-				</Tooltip>
-			</AlertDialogTrigger>
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle>Import a new installation</AlertDialogTitle>

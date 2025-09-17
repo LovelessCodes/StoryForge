@@ -24,18 +24,18 @@ import { listen } from "@tauri-apps/api/event";
 import clsx from "clsx";
 import {
 	DownloadCloudIcon,
+	FileDownIcon,
 	FileUpIcon,
 	FolderIcon,
+	FolderPlusIcon,
 	PackagePlusIcon,
 	PlayIcon,
 	StarIcon,
+	WrenchIcon,
+	XIcon,
 } from "lucide-react";
 import { useRef } from "react";
 import { toast } from "sonner";
-import { AddInstallationDialog } from "@/components/dialogs/addinstallation.dialog";
-import { DeleteInstallationDialog } from "@/components/dialogs/deleteinstallation.dialog";
-import { EditInstallationDialog } from "@/components/dialogs/editinstallation.dialog";
-import { ImportInstallationDialog } from "@/components/dialogs/importinstallation.dialog";
 import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
@@ -52,6 +52,7 @@ import { usePlayInstallation } from "@/hooks/use-play-installation";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import type { ProgressPayload } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useDialogStore } from "@/stores/dialogs";
 import { type Installation, useInstallations } from "@/stores/installations";
 
 export const Route = createFileRoute("/installations")({
@@ -132,6 +133,7 @@ function InstallationRow({
 	});
 	const { data: installationMods } = useInstalledMods(installation.path);
 	const version = versions?.find((v) => v === installation.version);
+	const { openDialog } = useDialogStore();
 
 	const exportInstallation = async () => {
 		const data = {
@@ -290,8 +292,40 @@ function InstallationRow({
 					</TooltipTrigger>
 					<TooltipContent>Export</TooltipContent>
 				</Tooltip>
-				<EditInstallationDialog installation={installation} />
-				<DeleteInstallationDialog installation={installation} />
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
+							onClick={() =>
+								openDialog("EditInstallationDialog", { installation })
+							}
+							variant="outline"
+						>
+							<WrenchIcon
+								aria-hidden="true"
+								className="-ms-1 opacity-60"
+								size={16}
+							/>
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Edit</TooltipContent>
+				</Tooltip>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							aria-label="Delete"
+							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
+							onClick={() =>
+								openDialog("DeleteInstallationDialog", { installation })
+							}
+							size="icon"
+							variant="outline"
+						>
+							<XIcon aria-hidden="true" className="opacity-60" size={16} />
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Delete</TooltipContent>
+				</Tooltip>
 			</div>
 		</div>
 	);
@@ -333,6 +367,7 @@ function SortableInstallationRow(props: SortableInstallationRowProps) {
 function RouteComponent() {
 	const { installations, moveInstallation, toggleFavorite } =
 		useInstallations();
+	const { openDialog } = useDialogStore();
 
 	// DnD-kit setup
 	const sensors = useSensors(useSensor(PointerSensor));
@@ -354,8 +389,28 @@ function RouteComponent() {
 	return (
 		<div className="flex flex-col gap-2 w-full">
 			<div className="grid grid-cols-[1fr_min-content] gap-2 h-fit sticky top-0 bg-background/10 backdrop-blur-md z-10 px-4 py-2">
-				<AddInstallationDialog />
-				<ImportInstallationDialog />
+				<Button
+					className="w-full justify-between cursor-pointer"
+					onClick={() => openDialog("AddInstallationDialog")}
+					variant="outline"
+				>
+					<span className="flex text-xs">Add installation</span>
+					<FolderPlusIcon className="size-4" />
+				</Button>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							aria-label="Import installation"
+							className="shadow-none focus-visible:z-10"
+							onClick={() => openDialog("ImportInstallationDialog")}
+							size="icon"
+							variant="outline"
+						>
+							<FileDownIcon aria-hidden="true" size={16} />
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Import Installation</TooltipContent>
+				</Tooltip>
 			</div>
 			<DndContext
 				collisionDetection={closestCenter}
