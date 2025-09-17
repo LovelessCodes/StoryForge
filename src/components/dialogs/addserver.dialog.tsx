@@ -1,7 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 import clsx from "clsx";
-import { MapPinPlusIcon } from "lucide-react";
-import { useId, useState } from "react";
+import { useId } from "react";
 import z from "zod";
 import { PasswordInput } from "@/components/inputs";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,6 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +24,8 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useInstallations } from "@/stores/installations";
+import { useDialogStore } from "@/stores/dialogs";
+import { type Installation, useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
 
 export const serverSchema = z.object({
@@ -49,9 +48,16 @@ export const serverSchema = z.object({
 		}),
 });
 
-export function AddServerDialog() {
+export type AddServerDialogProps = {
+	installation?: Installation;
+};
+
+export function AddServerDialog({
+	open,
+	installation,
+}: { open: boolean } & AddServerDialogProps) {
 	const id = useId();
-	const [open, setOpen] = useState(false);
+	const { closeDialog } = useDialogStore();
 	const { installations } = useInstallations();
 	const { addServer, servers } = useServerStore();
 	const form = useForm({
@@ -59,7 +65,7 @@ export function AddServerDialog() {
 			favorite: false,
 			id: Date.now(),
 			index: servers.length,
-			installationId: "0",
+			installationId: installation?.id.toString() ?? "0",
 			ip: "",
 			name: "",
 			password: "",
@@ -79,8 +85,7 @@ export function AddServerDialog() {
 				},
 				(status) => {
 					if (status) {
-						setOpen(false);
-						form.reset();
+						closeDialog();
 					}
 				},
 			);
@@ -90,24 +95,7 @@ export function AddServerDialog() {
 		},
 	});
 	return (
-		<Dialog
-			onOpenChange={(open) => {
-				if (!open) {
-					form.reset();
-				}
-				setOpen(open);
-			}}
-			open={open}
-		>
-			<DialogTrigger asChild>
-				<Button
-					className="w-full justify-between cursor-pointer"
-					variant="outline"
-				>
-					<span className="flex text-xs">Add server</span>
-					<MapPinPlusIcon className="size-4" />
-				</Button>
-			</DialogTrigger>
+		<Dialog onOpenChange={() => closeDialog()} open={open}>
 			<DialogContent>
 				<div className="flex flex-col items-center gap-2">
 					<DialogHeader>
