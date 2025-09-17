@@ -11,9 +11,9 @@ import {
 	PlayIcon,
 	RefreshCcwIcon,
 	UserMinus2,
+	UserPlus2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { AddUserDialog } from "@/components/dialogs/adduser.dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useVerifyAuth } from "@/hooks/use-verify-auth";
 import { useAccountStore } from "@/stores/accounts";
+import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
 import {
 	DropdownMenu,
@@ -39,6 +40,7 @@ export function AppSidebar() {
 	const { selectedUser, users, removeUser, setSelectedUser } =
 		useAccountStore();
 	const { installations } = useInstallations();
+	const { openDialog } = useDialogStore();
 	const { mutate: verifyAuth } = useVerifyAuth({
 		onError: (error, variables) => {
 			toast.error(
@@ -85,7 +87,14 @@ export function AppSidebar() {
 									<span className="font-medium">{selectedUser.playername}</span>
 								</div>
 							) : (
-								<AddUserDialog />
+								<Button
+									className="w-full justify-between"
+									onClick={() => openDialog("AddUserDialog")}
+									variant="outline"
+								>
+									<span className="flex text-xs">Sign in</span>
+									<UserPlus2 className="size-4" />
+								</Button>
 							)}
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="start" side="right">
@@ -163,11 +172,25 @@ export function AppSidebar() {
 									</Tooltip>
 								</div>
 							))}
-							<AddUserDialog />
+							<Button
+								className="w-full justify-between rounded-t-none"
+								onClick={() => openDialog("AddUserDialog")}
+								variant="outline"
+							>
+								<span className="flex text-xs">Add user</span>
+								<UserPlus2 className="size-4" />
+							</Button>
 						</DropdownMenuContent>
 					</DropdownMenu>
 				) : (
-					<AddUserDialog />
+					<Button
+						className="w-full justify-between"
+						onClick={() => openDialog("AddUserDialog")}
+						variant="outline"
+					>
+						<span className="flex text-xs">Sign in</span>
+						<UserPlus2 className="size-4" />
+					</Button>
 				)}
 			</SidebarHeader>
 			<SidebarContent>
