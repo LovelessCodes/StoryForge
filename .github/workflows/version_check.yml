@@ -52,26 +52,51 @@ jobs:
     needs: get_pr_version
     runs-on: ubuntu-latest
     steps:
-      - name: Check release tag via gh
+      - name: Show computed tag
+        run: |
+          echo "Version: ${{ needs.get_pr_version.outputs.version }}"
+          echo "Tag: storyforge-v${{ needs.get_pr_version.outputs.version }}"
+
+      - name: Check release tag via API (with debug)
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ needs.get_pr_version.outputs.tauri_version }}
+          GH_REPO: ${{ github.repository }}
+          TAG: storyforge-v${{ needs.get_pr_version.outputs.version }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          if gh api repos/${GITHUB_REPOSITORY}/releases/tags/${TAG} >/dev/null 2>&1; then
+
+          if [ -z "${TOKEN:-}" ]; then
+            echo "GITHUB_TOKEN is missing. Make sure permissions are set and secrets available."
+            exit 2
+          fi
+
+          url="https://api.github.com/repos/${GH_REPO}/releases/tags/${TAG}"
+          echo "Requesting: $url"
+
+          # Capture headers too for debugging
+          response_headers=$(mktemp)
+          status=$(curl -sS -D "$response_headers" -o /dev/null \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$url" -w "%{http_code}")
+
+          echo "HTTP status: $status"
+          echo "Response headers:"
+          sed -n '1,20p' "$response_headers" || true
+
+          if [ "$status" = "200" ]; then
             echo "Release with tag '${TAG}' already exists."
             exit 1
+          elif [ "$status" = "404" ]; then
+            echo "No existing release with tag '${TAG}'."
+            exit 0
           else
-            status=$?
-            if [ $status -eq 1 ]; then
-              # gh returns exit 1 for non-2xx; distinguish 404 vs other with --include
-              code=$(gh api --include repos/${GITHUB_REPOSITORY}/releases/tags/${TAG} 2>&1 \
-                | awk 'BEGIN{c=0}/^HTTP\/.* [0-9]{3}/{c=$2}END{print c}')
-              if [ "$code" = "404" ]; then
-                echo "No existing release with tag '${TAG}'."
-                exit 0
-              fi
-              echo "Unexpected status: $code"
-              exit 2
-            fi
+            echo "Unexpected status: $status"
+            # Show body for diagnostics
+            echo "Response body:"
+            curl -sS \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "$url" || true
+            exit 2
           fi
