@@ -52,22 +52,25 @@ jobs:
     needs: get_pr_version
     runs-on: ubuntu-latest
     steps:
-      - name: Check if release tag exists
-        id: check_release
-        uses: octokit/request-action@v2.1.2
-        with:
-          route: GET /repos/${{ github.repository }}/releases/tags/${{ needs.get_pr_version.outputs.tauri_version }}
+      - name: Check release tag via API
+        id: curl_check
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
-      - name: Fail if release exists
-        if: steps.check_release.outcome == 'success'
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.get_pr_version.outputs.tauri_version }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "A release with tag '${{ needs.get_pr_version.outputs.tauri_version }}' already exists."
-          exit 1
-
-      - name: OK if not found (404)
-        if: steps.check_release.outcome != 'success'
-        run: |
-          echo "No existing release with tag '${{ needs.get_pr_version.outputs.tauri_version }}'. Proceeding."
+          set -euo pipefail
+          code=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GH_REPO}/releases/tags/${TAG}")
+          if [ "$code" = "200" ]; then
+            echo "Release with tag '${TAG}' already exists."
+            exit 1
+          elif [ "$code" = "404" ]; then
+            echo "No existing release with tag '${TAG}'."
+            exit 0
+          else
+            echo "Unexpected status: $code"
+            exit 2
+          fi
