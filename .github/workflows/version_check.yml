@@ -3,7 +3,7 @@ name: Check PR Tauri version
 on:
   pull_request:
     branches:
-      - main # or your default branch
+      - release
     types:
       - opened
       - synchronize
@@ -48,7 +48,6 @@ jobs:
           echo "Tauri version from PR: $version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-  # Example of how to use the extracted version in a subsequent job
   check_version:
     needs: get_pr_version
     runs-on: ubuntu-latest
