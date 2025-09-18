@@ -47,6 +47,60 @@ jobs:
 
           echo "Tauri version from PR: storyforge-v$version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+      
+      - name: Read package.json and compare version
+        id: compare_package_json
+        run: |
+          PACKAGE_JSON_PATH="./package.json"
+
+          if [ ! -f "$PACKAGE_JSON_PATH" ]; then
+            echo "Error: $PACKAGE_JSON_PATH not found in the PR branch."
+            exit 1
+          fi
+
+          package_version=$(jq -r '.version' "$PACKAGE_JSON_PATH")
+
+          if [ -z "$package_version" ]; then
+            echo "Error: 'version' field not found in $PACKAGE_JSON_PATH."
+            exit 1
+          fi
+
+          echo "Package version from PR: $package_version"
+
+          if [ "$package_version" != "${{ steps.parse_json.outputs.version }}" ]; then
+            echo "Error: Version mismatch between tauri.conf.json (${{ steps.parse_json.outputs.version }}) and package.json ($package_version)."
+            exit 1
+          fi
+
+          echo "package_version=$package_version" >> "$GITHUB_OUTPUT"
+      
+      - name: Read Cargo.toml and compare version
+        run: |
+          CARGO_TOML_PATH="./src-tauri/Cargo.toml"
+
+          if [ ! -f "$CARGO_TOML_PATH" ]; then
+            echo "Error: $CARGO_TOML_PATH not found in the PR branch."
+            exit 1
+          fi
+
+          cargo_version=$(grep '^version =' "$CARGO_TOML_PATH" | sed -E 's/version = "(.*)"/\1/')
+
+          if [ -z "$cargo_version" ]; then
+            echo "Error: 'version' field not found in $CARGO_TOML_PATH."
+            exit 1
+          fi
+
+          echo "Cargo version from PR: $cargo_version"
+
+          if [ "$cargo_version" != "${{ steps.parse_json.outputs.version }}" ]; then
+            echo "Error: Version mismatch between tauri.conf.json (${{ steps.parse_json.outputs.version }}) and Cargo.toml ($cargo_version)."
+            exit 1
+          fi
+
+          if [ "$cargo_version" != "${{ steps.compare_package_json.outputs.package_version }}" ]; then
+            echo "Error: Version mismatch between package.json (${{ steps.compare_package_json.outputs.package_version }}) and Cargo.toml ($cargo_version)."
+            exit 1
+          fi
 
   check_version:
     needs: get_pr_version
