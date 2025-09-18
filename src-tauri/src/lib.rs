@@ -25,10 +25,12 @@ pub fn run() {
             mods::fetch_mod_info,
             mods::fetch_authors,
             mods::get_mods,
+            mods::get_mod_configs,
             mods::get_mod_updates,
             mods::get_installation_mods,
             mods::add_mod_to_installation,
             mods::remove_mod_from_installation,
+            mods::save_mod_config,
             // Download
             download::get_download_links,
             download::get_download_link,

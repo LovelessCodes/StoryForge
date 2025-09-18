@@ -1,0 +1,156 @@
+name: Check PR Tauri version
+
+on:
+  pull_request:
+    branches:
+      - release
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+jobs:
+  get_pr_version:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read # Needed to checkout the PR branch
+
+    outputs:
+      tauri_version: ${{ steps.parse_json.outputs.version }}
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Read tauri.conf.json and extract version
+        id: parse_json
+        run: |
+          TAURI_CONFIG_PATH="./src-tauri/tauri.conf.json"
+
+          if [ ! -f "$TAURI_CONFIG_PATH" ]; then
+            echo "Error: $TAURI_CONFIG_PATH not found in the PR branch."
+            exit 1
+          fi
+
+          # Use 'jq' to parse the JSON and extract the 'version' field
+          # 'jq -r' outputs raw string
+          version=$(jq -r '.version' "$TAURI_CONFIG_PATH")
+
+          if [ -z "$version" ]; then
+            echo "Error: 'version' field not found in $TAURI_CONFIG_PATH."
+            exit 1
+          fi
+
+          echo "Tauri version from PR: storyforge-v$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      
+      - name: Read package.json and compare version
+        id: compare_package_json
+        run: |
+          PACKAGE_JSON_PATH="./package.json"
+
+          if [ ! -f "$PACKAGE_JSON_PATH" ]; then
+            echo "Error: $PACKAGE_JSON_PATH not found in the PR branch."
+            exit 1
+          fi
+
+          package_version=$(jq -r '.version' "$PACKAGE_JSON_PATH")
+
+          if [ -z "$package_version" ]; then
+            echo "Error: 'version' field not found in $PACKAGE_JSON_PATH."
+            exit 1
+          fi
+
+          echo "Package version from PR: $package_version"
+
+          if [ "$package_version" != "${{ steps.parse_json.outputs.version }}" ]; then
+            echo "Error: Version mismatch between tauri.conf.json (${{ steps.parse_json.outputs.version }}) and package.json ($package_version)."
+            exit 1
+          fi
+
+          echo "package_version=$package_version" >> "$GITHUB_OUTPUT"
+      
+      - name: Read Cargo.toml and compare version
+        run: |
+          CARGO_TOML_PATH="./src-tauri/Cargo.toml"
+
+          if [ ! -f "$CARGO_TOML_PATH" ]; then
+            echo "Error: $CARGO_TOML_PATH not found in the PR branch."
+            exit 1
+          fi
+
+          cargo_version=$(grep '^version =' "$CARGO_TOML_PATH" | sed -E 's/version = "(.*)"/\1/')
+
+          if [ -z "$cargo_version" ]; then
+            echo "Error: 'version' field not found in $CARGO_TOML_PATH."
+            exit 1
+          fi
+
+          echo "Cargo version from PR: $cargo_version"
+
+          if [ "$cargo_version" != "${{ steps.parse_json.outputs.version }}" ]; then
+            echo "Error: Version mismatch between tauri.conf.json (${{ steps.parse_json.outputs.version }}) and Cargo.toml ($cargo_version)."
+            exit 1
+          fi
+
+          if [ "$cargo_version" != "${{ steps.compare_package_json.outputs.package_version }}" ]; then
+            echo "Error: Version mismatch between package.json (${{ steps.compare_package_json.outputs.package_version }}) and Cargo.toml ($cargo_version)."
+            exit 1
+          fi
+
+  check_version:
+    needs: get_pr_version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show computed tag
+        run: |
+          echo "Version: ${{ needs.get_pr_version.outputs.tauri_version }}"
+          echo "Tag: storyforge-v${{ needs.get_pr_version.outputs.tauri_version }}"
+
+      - name: Check release tag via API (with debug)
+        env:
+          GH_REPO: ${{ github.repository }}
+          TAG: storyforge-v${{ needs.get_pr_version.outputs.tauri_version }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${TOKEN:-}" ]; then
+            echo "GITHUB_TOKEN is missing. Make sure permissions are set and secrets available."
+            exit 2
+          fi
+
+          url="https://api.github.com/repos/${GH_REPO}/releases/tags/${TAG}"
+          echo "Requesting: $url"
+
+          # Capture headers too for debugging
+          response_headers=$(mktemp)
+          status=$(curl -sS -D "$response_headers" -o /dev/null \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$url" -w "%{http_code}")
+
+          echo "HTTP status: $status"
+          echo "Response headers:"
+          sed -n '1,20p' "$response_headers" || true
+
+          if [ "$status" = "200" ]; then
+            echo "Release with tag '${TAG}' already exists."
+            exit 1
+          elif [ "$status" = "404" ]; then
+            echo "No existing release with tag '${TAG}'."
+            exit 0
+          else
+            echo "Unexpected status: $status"
+            # Show body for diagnostics
+            echo "Response body:"
+            curl -sS \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "$url" || true
+            exit 2
+          fi
