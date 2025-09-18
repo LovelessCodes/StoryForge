@@ -461,6 +461,62 @@ pub fn get_mods(path: String) -> Result<ModsResult, UiError> {
 }
 
 #[command]
+pub fn get_mod_configs(app: AppHandle, installation_id: u64) -> Result<Vec<Value>, UiError> {
+    let installation_zustand = app.zustand().get("installations", "installations").unwrap();
+    let installation_json: Value = serde_json::from_value(installation_zustand).unwrap();
+    // Find installation with matching id
+    let installation = installation_json
+        .as_array()
+        .and_then(|arr| {
+            arr.iter()
+                .find(|inst| inst["id"].as_u64() == Some(installation_id))
+        });
+
+    let installation = match installation {
+        Some(inst) => inst,
+        None => {
+            // Optionally, log the error or handle it as needed
+            return Err(UiError {
+                name: "installation_not_found".into(),
+                message: format!("Installation with id {} not found", installation_id),
+            });
+        }
+    };
+
+    let mod_config_path = Path::new(installation["path"].as_str().unwrap()).join("ModConfig");
+    if !mod_config_path.exists() || !mod_config_path.is_dir() {
+        return Err(UiError {
+            name: "not_found".into(),
+            message: mod_config_path.to_string_lossy().into_owned(),
+        });
+    }
+    // Traverse the ModConfig directory and read all .json files
+    let mut configs = Vec::new();
+    for entry in std::fs::read_dir(mod_config_path).map_err(|e| UiError::from(format!("Read dir error: {e}")))? {
+        let entry = entry.map_err(|e| UiError::from(format!("Dir entry error: {e}")))?;
+        let path = entry.path();
+        if path.is_file() {
+            if let Some(ext) = path.extension() {
+                if ext == "json" {
+                    // Output should be an array of objects with "filename" and "content"
+                    let filename = path.file_name().and_then(|s| s.to_str()).unwrap_or("").to_string();
+                    let mut file = File::open(&path).map_err(|e| UiError::from(format!("Open file error: {e}")))?;
+                    let mut content = String::new();
+                    file.read_to_string(&mut content).map_err(|e| UiError::from(format!("Read file error: {e}")))?;
+                    let json_content: Value = serde_json::from_str(&content).map_err(|e| UiError::from(format!("Parse JSON error: {e}")))?;
+                    configs.push(serde_json::json!({
+                        "filename": filename,
+                        "content": json_content
+                    }));
+                }
+            }
+        }
+    }
+
+    Ok(configs)
+}
+
+#[command]
 pub async fn get_mod_updates(params: String) -> Result<Value, UiError> {
     let client = reqwest::Client::new();
     let url = format!("https://mods.vintagestory.at/api/updates?mods={}", params);
