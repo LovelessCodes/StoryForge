@@ -38,10 +38,10 @@ jobs:
 
           # Use 'jq' to parse the JSON and extract the 'version' field
           # 'jq -r' outputs raw string
-          version=$(jq -r '.package.version' "$TAURI_CONFIG_PATH")
+          version=$(jq -r '.version' "$TAURI_CONFIG_PATH")
 
           if [ -z "$version" ]; then
-            echo "Error: 'version' field not found in 'package' object within $TAURI_CONFIG_PATH."
+            echo "Error: 'version' field not found in $TAURI_CONFIG_PATH."
             exit 1
           fi
 
