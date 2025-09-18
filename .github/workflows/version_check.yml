@@ -46,7 +46,7 @@ jobs:
           fi
 
           echo "Tauri version from PR: storyforge-v$version"
-          echo "version=storyforge-v$version" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
   check_version:
     needs: get_pr_version
@@ -54,13 +54,13 @@ jobs:
     steps:
       - name: Show computed tag
         run: |
-          echo "Version: ${{ needs.get_pr_version.outputs.version }}"
-          echo "Tag: storyforge-v${{ needs.get_pr_version.outputs.version }}"
+          echo "Version: ${{ needs.get_pr_version.outputs.tauri_version }}"
+          echo "Tag: storyforge-v${{ needs.get_pr_version.outputs.tauri_version }}"
 
       - name: Check release tag via API (with debug)
         env:
           GH_REPO: ${{ github.repository }}
-          TAG: storyforge-v${{ needs.get_pr_version.outputs.version }}
+          TAG: storyforge-v${{ needs.get_pr_version.outputs.tauri_version }}
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
