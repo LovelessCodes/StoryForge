@@ -52,25 +52,26 @@ jobs:
     needs: get_pr_version
     runs-on: ubuntu-latest
     steps:
-      - name: Check release tag via API
-        id: curl_check
+      - name: Check release tag via gh
         env:
-          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.get_pr_version.outputs.tauri_version }}
-          TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          code=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer $TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${GH_REPO}/releases/tags/${TAG}")
-          if [ "$code" = "200" ]; then
+          if gh api repos/${GITHUB_REPOSITORY}/releases/tags/${TAG} >/dev/null 2>&1; then
             echo "Release with tag '${TAG}' already exists."
             exit 1
-          elif [ "$code" = "404" ]; then
-            echo "No existing release with tag '${TAG}'."
-            exit 0
           else
-            echo "Unexpected status: $code"
-            exit 2
+            status=$?
+            if [ $status -eq 1 ]; then
+              # gh returns exit 1 for non-2xx; distinguish 404 vs other with --include
+              code=$(gh api --include repos/${GITHUB_REPOSITORY}/releases/tags/${TAG} 2>&1 \
+                | awk 'BEGIN{c=0}/^HTTP\/.* [0-9]{3}/{c=$2}END{print c}')
+              if [ "$code" = "404" ]; then
+                echo "No existing release with tag '${TAG}'."
+                exit 0
+              fi
+              echo "Unexpected status: $code"
+              exit 2
+            fi
           fi
