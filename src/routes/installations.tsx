@@ -28,6 +28,7 @@ import {
 	FileUpIcon,
 	FolderIcon,
 	FolderPlusIcon,
+	PackageOpenIcon,
 	PackagePlusIcon,
 	PlayIcon,
 	StarIcon,
@@ -261,6 +262,30 @@ function InstallationRow({
 						</Button>
 					</TooltipTrigger>
 					<TooltipContent>Add Mods</TooltipContent>
+				</Tooltip>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
+							onClick={() =>
+								router.navigate({
+									params: { id: installation.id.toString() },
+									to: "/mod-configs/$id",
+									viewTransition: {
+										types: ["warp"],
+									},
+								})
+							}
+							variant="outline"
+						>
+							<PackageOpenIcon
+								aria-hidden="true"
+								className="-ms-1 opacity-60"
+								size={16}
+							/>
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Edit Mod Configurations</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger asChild>

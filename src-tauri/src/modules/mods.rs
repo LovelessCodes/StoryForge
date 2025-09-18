@@ -517,6 +517,57 @@ pub fn get_mod_configs(app: AppHandle, installation_id: u64) -> Result<Vec<Value
 }
 
 #[command]
+pub fn save_mod_config(app: AppHandle, installation_id: u64, file: String, new_code: String) -> Result<(), UiError> {
+    // Find installation path from zustand
+    let installation_zustand = app.zustand().get("installations", "installations").unwrap();
+    let installation_json: Value = serde_json::from_value(installation_zustand).unwrap();
+    let installation = installation_json
+        .as_array()
+        .and_then(|arr| {
+            arr.iter()
+                .find(|inst| inst["id"].as_u64() == Some(installation_id))
+        });
+
+    let installation = match installation {
+        Some(inst) => inst,
+        None => {
+            return Err(UiError {
+                name: "installation_not_found".into(),
+                message: format!("Installation with id {} not found", installation_id),
+            });
+        }
+    };
+
+    let mod_config_path = Path::new(installation["path"].as_str().unwrap()).join("ModConfig");
+    if !mod_config_path.exists() || !mod_config_path.is_dir() {
+        return Err(UiError {
+            name: "not_found".into(),
+            message: mod_config_path.to_string_lossy().into_owned(),
+        });
+    }
+
+    let file_path = mod_config_path.join(&file);
+    if !file_path.exists() || !file_path.is_file() {
+        return Err(UiError {
+            name: "file_not_found".into(),
+            message: file_path.to_string_lossy().into_owned(),
+        });
+    }
+
+    // Write new code to the file
+    let mut f = File::create(&file_path).map_err(|e| UiError {
+        name: "create_file_failed".into(),
+        message: format!("Failed to create file: {e}"),
+    })?;
+    f.write_all(new_code.as_bytes()).map_err(|e| UiError {
+        name: "write_file_failed".into(),
+        message: format!("Failed to write file: {e}"),
+    })?;
+
+    Ok(())
+}
+
+#[command]
 pub async fn get_mod_updates(params: String) -> Result<Value, UiError> {
     let client = reqwest::Client::new();
     let url = format!("https://mods.vintagestory.at/api/updates?mods={}", params);

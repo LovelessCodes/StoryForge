@@ -30,7 +30,7 @@ pub fn run() {
             mods::get_installation_mods,
             mods::add_mod_to_installation,
             mods::remove_mod_from_installation,
-
+            mods::save_mod_config,
             // Download
             download::get_download_links,
             download::get_download_link,
