@@ -56,10 +56,7 @@ jobs:
         id: check_release
         uses: octokit/request-action@v2.1.2
         with:
-          route: GET /repos/{owner}/{repo}/releases/tags/{tag}
-          owner: ${{ github.repository_owner }}
-          repo: ${{ github.event.repository.name }}
-          tag: ${{ needs.get_pr_version.outputs.tauri_version }}
+          route: GET /repos/${{ github.repository }}/releases/tags/${{ needs.get_pr_version.outputs.tauri_version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
