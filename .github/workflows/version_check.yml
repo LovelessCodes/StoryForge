@@ -45,8 +45,8 @@ jobs:
             exit 1
           fi
 
-          echo "Tauri version from PR: $version"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Tauri version from PR: storyforge-v$version"
+          echo "version=storyforge-v$version" >> "$GITHUB_OUTPUT"
 
   check_version:
     needs: get_pr_version
