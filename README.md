@@ -5,10 +5,10 @@
    </a>
    <br />
    <br />
-   <a href="https://github.com/lovelesscodes/storyforge/actions">
+   <a href="/actions">
       <img src="https://img.shields.io/github/actions/workflow/status/lovelesscodes/storyforge/publish.yml?branch=release&label=build&style=flat-square" alt="Build Status" />
    </a>
-   <a href="https://github.com/lovelesscodes/storyforge/blob/main/LICENSE">
+   <a href="/LICENSE">
       <img src="https://img.shields.io/github/license/lovelesscodes/storyforge?color=brightgreen&style=flat-square" alt="License" />
    </a>
    <a href="https://getstoryforge.app/">
