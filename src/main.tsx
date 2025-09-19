@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { appDataDir } from "@tauri-apps/api/path";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { setStoreCollectionPath } from "@tauri-store/zustand";
 import ReactDOM from "react-dom/client";
 import { Toaster } from "sonner";
@@ -12,6 +13,13 @@ import { tauriServersHandler } from "./stores/servers";
 
 const appData = await appDataDir();
 await setStoreCollectionPath(`${appData}/store`);
+
+const theme = await getCurrentWindow().theme();
+if (theme === "dark") {
+	document.body.classList.add("dark");
+} else {
+	document.body.classList.remove("dark");
+}
 
 await tauriServersHandler.start();
 await tauriAccountsHandler.start();
