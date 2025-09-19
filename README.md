@@ -1,6 +1,8 @@
 
 <p align="center">
-   <img src="public/StoryForge.png" alt="Story Forge" />
+   <a href="https://getstoryforge.app/">
+      <img src="public/StoryForge.png" alt="Story Forge" />
+   </a>
    <br />
    <br />
    <a href="https://github.com/lovelesscodes/storyforge/actions">
@@ -9,7 +11,9 @@
    <a href="https://github.com/lovelesscodes/storyforge/blob/main/LICENSE">
       <img src="https://img.shields.io/github/license/lovelesscodes/storyforge?color=brightgreen&style=flat-square" alt="License" />
    </a>
-   <img src="https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=flat-square" alt="Platforms" />   
+   <a href="https://getstoryforge.app/">
+      <img src="https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=flat-square" alt="Platforms" />
+   </a>
    <a href="https://biomejs.dev/" target="_blank">
       <img src="https://img.shields.io/badge/checked_with-Biome-60a5fa?style=flat-square&logo=biome" alt="Checked with Biome" />
    </a>
