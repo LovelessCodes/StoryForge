@@ -173,7 +173,7 @@ function InstallationRow({
 				{installation.name}{" "}
 				<span className="opacity-50 text-xs">
 					(
-					<span className={version ? "text-green-300" : "text-red-300"}>
+					<span className={version ? "text-success" : "text-destructive"}>
 						{installation.version}
 					</span>
 					)
@@ -194,7 +194,7 @@ function InstallationRow({
 							>
 								<PlayIcon
 									aria-hidden="true"
-									className="-ms-1 opacity-60 text-green-300"
+									className="-ms-1 opacity-60 text-success"
 									size={16}
 								/>
 							</Button>
@@ -206,7 +206,7 @@ function InstallationRow({
 							>
 								<DownloadCloudIcon
 									aria-hidden="true"
-									className="-ms-1 opacity-60 text-yellow-300"
+									className="-ms-1 opacity-60 text-warning"
 									size={16}
 								/>
 							</Button>
@@ -228,7 +228,7 @@ function InstallationRow({
 								className={cn(
 									"-ms-1",
 									installation.favorite
-										? "fill-yellow-300 text-yellow-300 opacity-100"
+										? "fill-warning text-warning opacity-100"
 										: "opacity-60",
 								)}
 								size={16}
