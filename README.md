@@ -90,10 +90,11 @@ Pull requests and suggestions are welcome! If you have ideas for new features or
 
 ## 📸 Screenshots
 
-![Overview page](/screenshots/Overview.png)
-![Public servers page](/screenshots/Public_Servers.png)
-![Installations page](/screenshots/Installations.png)
-![Mod browser](/screenshots/Mod_Browser.png)
-![Adding mod](/screenshots/Adding_Mod.png)
-![Update mod](/screenshots/Update_Mod.png)
-![User management](/screenshots/User_Management.png)
+![Overview page](/screenshots/Overview.png)     
+![Public servers page](/screenshots/Public_Servers.png)     
+![Installations page](/screenshots/Installations.png)     
+![Mod browser](/screenshots/Mod_Browser.png)     
+![Adding mod](/screenshots/Adding_Mod.png)     
+![Update mod](/screenshots/Update_Mod.png)     
+![User management](/screenshots/User_Management.png)     
+![Mod configurations](/screenshots/Mod_Configs.png)     
