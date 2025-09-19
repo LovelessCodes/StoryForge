@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
 	AlertDialog,
@@ -13,8 +14,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { installedVersionsQueryKey } from "@/hooks/use-installed-versions";
 import { useDialogStore } from "@/stores/dialogs";
-import { useInstallations } from "@/stores/installations";
-import { useServerStore } from "@/stores/servers";
 
 export type DeleteVersionDialogProps = {
 	version: string;
@@ -28,8 +27,6 @@ export function DeleteVersionDialog({
 } & DeleteVersionDialogProps) {
 	const queryClient = useQueryClient();
 	const { closeDialog } = useDialogStore();
-	const { installations } = useInstallations();
-	const { servers } = useServerStore();
 	const { mutate: removeVersion, isPending } = useMutation({
 		mutationFn: (version: string) =>
 			invoke("remove_installed_version", { version }),
@@ -70,45 +67,26 @@ export function DeleteVersionDialog({
 					<AlertDialogDescription>
 						This action cannot be undone. This will permanently delete version{" "}
 						{version} from Story Forge.
+						<motion.div
+							animate={{ opacity: 1, y: 0 }}
+							className="my-4 rounded-md border border-warning bg-warning/10 p-3 text-warning-foreground"
+							exit={{ opacity: 0, y: -10 }}
+							initial={{ opacity: 0, y: -10 }}
+							transition={{ duration: 0.3 }}
+						>
+							<strong>Note:</strong>
+							<br />
+							Deleting versions that are currently in use by installations will
+							not harm these installations or their servers. However, you will
+							not be able to create new installations with this version until
+							you reinstall it.
+						</motion.div>
 					</AlertDialogDescription>
 				</AlertDialogHeader>
-				{installations.some((inst) => inst.version === version) && (
-					<div className="flex flex-col gap-2 my-4 px-1 text-sm">
-						<p className="text-red-600">
-							Warning: This version is currently in use by the following
-							installation(s):
-							<ul className="list-disc list-inside">
-								{installations
-									.filter((inst) => inst.version === version)
-									.map((inst) => (
-										<li key={inst.id}>
-											{inst.name}
-											{servers
-												.filter((srv) => srv.installationId === inst.id)
-												.map((srv) => (
-													<ul
-														className="list-disc list-inside ml-4"
-														key={srv.id}
-													>
-														<li className="text-xs text-gray-500" key={srv.id}>
-															(Server: {srv.name} - {srv.ip}
-															{srv.port && `:${srv.port}`})
-														</li>
-													</ul>
-												))}
-										</li>
-									))}
-							</ul>
-						</p>
-					</div>
-				)}
 				<AlertDialogFooter>
 					<AlertDialogCancel>Cancel</AlertDialogCancel>
 					<AlertDialogAction
-						disabled={
-							isPending ||
-							installations.some((inst) => inst.version === version)
-						}
+						disabled={isPending}
 						onClick={() => removeVersion(version)}
 					>
 						{isPending ? "Deleting..." : "Delete"}
