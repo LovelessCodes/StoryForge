@@ -1,5 +1,5 @@
 mod modules;
-use modules::{auth, download, installations, mods, news, servers, versions};
+use modules::{auth, download, installations, mods, news, servers, versions, saves};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -47,6 +47,8 @@ pub fn run() {
             installations::remove_installation,
             // Servers
             servers::fetch_public_servers,
+            // Saves
+            saves::get_installation_saves,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
