@@ -38,7 +38,7 @@ import type { Installation } from "@/stores/installations";
 
 export type InstallationRowProps = {
 	installation: Installation;
-	onPlay: ({ id }: { id: number }) => void;
+	onPlay: ({ id, save }: { id: number; save?: string }) => void;
 	onFavorite: (id: number) => void;
 	onOpenFolder: (path: string) => void;
 	listeners?: DraggableSyntheticListeners;
@@ -349,9 +349,9 @@ export function InstallationRow({
 			{showSaves &&
 				Array.isArray(installationSaves) &&
 				installationSaves.length > 0 && (
-					<div className="ml-8 mt-2 mb-2 flex flex-col gap-1">
+					<div className="pl-12 pr-2 mt-2 mb-2 flex flex-col gap-1">
 						<span className="text-xs font-semibold text-muted-foreground mb-1">
-							Saves:
+							Worlds:
 						</span>
 						{installationSaves.map((save: string, idx: number) => (
 							<div className="flex items-center gap-2 group" key={save || idx}>
@@ -363,15 +363,15 @@ export function InstallationRow({
 												className="text-success"
 												onClick={(e) => {
 													e.stopPropagation();
-													onPlay({ id: installation.id });
+													onPlay({ id: installation.id, save });
 												}}
 												size="icon"
-												variant="ghost"
+												variant="outline"
 											>
 												<PlayIcon size={16} />
 											</Button>
 										</TooltipTrigger>
-										<TooltipContent>Play with save</TooltipContent>
+										<TooltipContent>Play with world</TooltipContent>
 									</Tooltip>
 								) : (
 									<Tooltip>
@@ -383,7 +383,7 @@ export function InstallationRow({
 													installVersion(installation.version);
 												}}
 												size="icon"
-												variant="ghost"
+												variant="outline"
 											>
 												<DownloadCloudIcon size={16} />
 											</Button>

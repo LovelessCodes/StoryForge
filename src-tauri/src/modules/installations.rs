@@ -41,6 +41,7 @@ pub struct PlayGameParams {
     pub installation_id: u64,
     pub server: Option<String>,
     pub password: Option<String>,
+    pub save: Option<String>,
 }
 
 #[command]
@@ -161,6 +162,7 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
         })?;
         return Command::new(&combined_path.as_os_str())
             .args(&["--dataPath", &pb.as_path().to_string_lossy()])
+            .args(&options.save.as_ref().map(|s| vec!["-o", s.as_str()]).unwrap_or_default())
             .args(
                 &options
                     .server
