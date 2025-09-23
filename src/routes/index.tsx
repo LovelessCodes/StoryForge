@@ -179,7 +179,7 @@ function Dashboard() {
 										onConnect={(s) =>
 											connectToServer({
 												installationId: s.installationId,
-												ip: s.ip,
+												ip: `${s.ip}${s.port ? `:${s.port}` : ""}`,
 												password: s.password,
 											})
 										}
