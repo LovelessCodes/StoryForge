@@ -5,14 +5,6 @@ use tauri::command;
 use super::errors::UiError;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Account {
-    pub uid: String,
-    pub playername: String,
-    pub sessionkey: String,
-    pub sessionsignature: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct GameLoginResponse {
     pub sessionkey: Option<String>,
     pub sessionsignature: Option<String>,

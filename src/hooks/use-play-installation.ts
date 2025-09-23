@@ -5,13 +5,13 @@ import { toast } from "sonner";
 import { useInstallations } from "@/stores/installations";
 
 export const usePlayInstallation = (
-	props?: UseMutationOptions<void, Error, { id: number }>,
+	props?: UseMutationOptions<void, Error, { id: number; save?: string }>,
 ) => {
 	const { installations, updateLastPlayed } = useInstallations();
 	return useMutation({
 		...props,
-		mutationFn: ({ id }) =>
-			invoke("play_game", { options: { installation_id: id } }),
+		mutationFn: ({ id, save }) =>
+			invoke("play_game", { options: { installation_id: id, save } }),
 		onError: (error) => {
 			toast.error(`Error playing with installation: ${error.message}`);
 		},
@@ -19,7 +19,9 @@ export const usePlayInstallation = (
 			const installation = installations.find(
 				(inst) => inst.id === variable.id,
 			);
-			toast.success(`Playing with ${installation?.name}!`);
+			toast.success(
+				`Playing${variable.save ? ` world ${variable.save}` : ""} with ${installation?.name}!`,
+			);
 			updateLastPlayed(variable.id);
 		},
 	});

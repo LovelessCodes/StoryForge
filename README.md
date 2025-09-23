@@ -1,15 +1,22 @@
 
 <p align="center">
-   <img src="public/StoryForge.png" alt="Story Forge" />
+   <a href="https://getstoryforge.app/">
+      <img src="public/StoryForge.png" alt="Story Forge" />
+   </a>
    <br />
    <br />
-   <a href="https://github.com/lovelesscodes/storyforge/actions">
+   <a href="/actions">
       <img src="https://img.shields.io/github/actions/workflow/status/lovelesscodes/storyforge/publish.yml?branch=release&label=build&style=flat-square" alt="Build Status" />
    </a>
-   <a href="https://github.com/lovelesscodes/storyforge/blob/main/LICENSE">
+   <a href="/LICENSE">
       <img src="https://img.shields.io/github/license/lovelesscodes/storyforge?color=brightgreen&style=flat-square" alt="License" />
+   </a><br />
+   <a href="https://discord.gg/gByx63peUC">
+      <img src="https://img.shields.io/badge/join-discord-5865F2?style=flat-square&logo=discord&logoColor=fff" alt="Join Discord" />
    </a>
-   <img src="https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=flat-square" alt="Platforms" />   
+   <a href="https://getstoryforge.app/">
+      <img src="https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=flat-square" alt="Platforms" />
+   </a><br />
    <a href="https://biomejs.dev/" target="_blank">
       <img src="https://img.shields.io/badge/checked_with-Biome-60a5fa?style=flat-square&logo=biome" alt="Checked with Biome" />
    </a>
@@ -86,10 +93,11 @@ Pull requests and suggestions are welcome! If you have ideas for new features or
 
 ## 📸 Screenshots
 
-![Overview page](/screenshots/Overview.png)
-![Public servers page](/screenshots/Public_Servers.png)
-![Installations page](/screenshots/Installations.png)
-![Mod browser](/screenshots/Mod_Browser.png)
-![Adding mod](/screenshots/Adding_Mod.png)
-![Update mod](/screenshots/Update_Mod.png)
-![User management](/screenshots/User_Management.png)
+![Overview page](/screenshots/Overview.png)     
+![Public servers page](/screenshots/Public_Servers.png)     
+![Installations page](/screenshots/Installations.png)     
+![Mod browser](/screenshots/Mod_Browser.png)     
+![Adding mod](/screenshots/Adding_Mod.png)     
+![Update mod](/screenshots/Update_Mod.png)     
+![User management](/screenshots/User_Management.png)     
+![Mod configurations](/screenshots/Mod_Configs.png)     

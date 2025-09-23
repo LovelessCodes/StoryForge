@@ -130,6 +130,7 @@ export function AddUserDialog({ open }: { open: boolean }) {
 				sessionsignature: data.sessionsignature,
 				uid: data.uid,
 			});
+			closeDialog();
 		},
 	});
 	return (
