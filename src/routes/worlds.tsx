@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ChevronDownIcon } from "lucide-react";
 import { useState } from "react";
 import { SearchInput } from "@/components/inputs";
 import { WorldList } from "@/components/lists/world.list";
@@ -50,6 +51,7 @@ function RouteComponent() {
 						{selectedInstallationId
 							? `${installations.find((installation) => installation.id === selectedInstallationId)?.name}`
 							: "Select installation"}
+						<ChevronDownIcon className="size-4 opacity-50" />
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="start">
 						{installations.map((installation) => (
