@@ -13,7 +13,7 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useSaves } from "@/hooks/use-saves";
+import { useSavesFromInstallation } from "@/hooks/use-saves";
 import { useDialogStore } from "@/stores/dialogs";
 import { type Installation, useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
@@ -31,7 +31,7 @@ export function DeleteInstallationDialog({
 	const { removeInstallation } = useInstallations();
 	const { closeDialog } = useDialogStore();
 	const { servers } = useServerStore();
-	const { data: saves } = useSaves(installation.id);
+	const { data: saves } = useSavesFromInstallation(installation.id);
 
 	const activeServers = servers.filter(
 		(srv) => srv.installationId === installation.id,

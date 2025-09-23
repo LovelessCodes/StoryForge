@@ -16,7 +16,7 @@ import {
 	WrenchIcon,
 	XIcon,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +30,6 @@ import {
 	installedVersionsQueryKey,
 	useInstalledVersions,
 } from "@/hooks/use-installed-versions";
-import { useSaves } from "@/hooks/use-saves";
 import type { ProgressPayload } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
@@ -109,7 +108,6 @@ export function InstallationRow({
 		},
 	});
 	const { data: installationMods } = useInstalledMods(installation.path);
-	const { data: installationSaves } = useSaves(installation.id);
 	const version = versions?.find((v) => v === installation.version);
 	const { openDialog } = useDialogStore();
 
@@ -126,275 +124,209 @@ export function InstallationRow({
 		await window.navigator.clipboard.writeText(JSON.stringify(data, null, 2));
 		toast.success("Installation copied to clipboard");
 	};
-	const [showSaves, setShowSaves] = useState(false);
-
-	const handleRowClick = (e: React.MouseEvent<HTMLDivElement>) => {
-		if ((e.target as HTMLElement).closest("button")) return;
-		setShowSaves((prev) => !prev);
-	};
-
 	return (
-		<div className="flex flex-col">
-			{/** biome-ignore lint/a11y/noStaticElementInteractions: Needed for interactable installation row */}
-			{/** biome-ignore lint/a11y/useKeyWithClickEvents: Needed for interactable installation row */}
-			<div
-				className={cn([
-					"flex items-center gap-2 border-b border-b-muted py-2 px-2 cursor-pointer",
-					isDragging ? "opacity-50 bg-muted" : "opacity-100",
-				])}
-				onClick={handleRowClick}
-				ref={setNodeRef}
-				style={{
-					...style,
-					transition: "background 0.2s",
-				}}
+		<div
+			className={cn([
+				"flex items-center gap-2 border-b border-b-muted py-2 px-2",
+				isDragging ? "opacity-50 bg-muted" : "opacity-100",
+			])}
+			ref={setNodeRef}
+			style={{
+				...style,
+				transition: "background 0.2s",
+			}}
+		>
+			{/* Drag handle */}
+			<span
+				className="cursor-grab select-none px-2 text-lg"
+				{...attributes}
+				{...listeners}
 			>
-				{/* Drag handle */}
-				<span
-					className="cursor-grab select-none px-2 text-lg"
-					{...attributes}
-					{...listeners}
-				>
-					≡
-				</span>
-				<span className="flex-1">
-					{installation.name}{" "}
-					<span className="opacity-50 text-xs">
-						(
-						<span className={version ? "text-success" : "text-destructive"}>
-							{installation.version}
-						</span>
-						)
+				≡
+			</span>
+			<span className="flex-1">
+				{installation.name}{" "}
+				<span className="opacity-50 text-xs">
+					(
+					<span className={version ? "text-green-300" : "text-red-300"}>
+						{installation.version}
 					</span>
+					)
 				</span>
-				<div className="inline-flex -space-x-px rounded-md shadow-xs rtl:space-x-reverse">
-					<Tooltip>
-						<TooltipTrigger asChild>
-							{version ? (
-								<Button
-									className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-									onClick={() =>
-										onPlay({
-											id: installation.id,
-										})
-									}
-									variant="outline"
-								>
-									<PlayIcon
-										aria-hidden="true"
-										className="-ms-1 opacity-60 text-success"
-										size={16}
-									/>
-								</Button>
-							) : (
-								<Button
-									className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-									onClick={() => installVersion(installation.version)}
-									variant="outline"
-								>
-									<DownloadCloudIcon
-										aria-hidden="true"
-										className="-ms-1 opacity-60 text-warning"
-										size={16}
-									/>
-								</Button>
-							)}
-						</TooltipTrigger>
-						<TooltipContent>
-							{version ? "Play" : `Install ${installation.version}`}
-						</TooltipContent>
-					</Tooltip>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-								onClick={() => onFavorite(installation.id)}
-								variant="outline"
-							>
-								<StarIcon
-									aria-hidden="true"
-									className={cn(
-										"-ms-1",
-										installation.favorite
-											? "fill-warning text-warning opacity-100"
-											: "opacity-60",
-									)}
-									size={16}
-								/>
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>
-							{installation.favorite ? "Unfavorite" : "Favorite"}
-						</TooltipContent>
-					</Tooltip>
-					<Tooltip>
-						<TooltipTrigger asChild>
+			</span>
+			<div className="inline-flex -space-x-px rounded-md shadow-xs rtl:space-x-reverse">
+				<Tooltip>
+					<TooltipTrigger asChild>
+						{version ? (
 							<Button
 								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
 								onClick={() =>
-									router.navigate({
-										params: { id: installation.id.toString() },
-										to: "/install-mods/$id",
-										viewTransition: {
-											types: ["warp"],
-										},
+									onPlay({
+										id: installation.id,
 									})
 								}
 								variant="outline"
 							>
-								<PackagePlusIcon
+								<PlayIcon
 									aria-hidden="true"
-									className="-ms-1 opacity-60"
+									className="-ms-1 opacity-60 text-green-300"
 									size={16}
 								/>
 							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Add Mods</TooltipContent>
-					</Tooltip>
-					<Tooltip>
-						<TooltipTrigger asChild>
+						) : (
 							<Button
 								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-								onClick={() =>
-									router.navigate({
-										params: { id: installation.id.toString() },
-										to: "/mod-configs/$id",
-										viewTransition: {
-											types: ["warp"],
-										},
-									})
-								}
+								onClick={() => installVersion(installation.version)}
 								variant="outline"
 							>
-								<PackageOpenIcon
+								<DownloadCloudIcon
 									aria-hidden="true"
-									className="-ms-1 opacity-60"
+									className="-ms-1 opacity-60 text-yellow-300"
 									size={16}
 								/>
 							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Edit Mod Configurations</TooltipContent>
-					</Tooltip>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								aria-label="Open folder"
-								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-								onClick={() => onOpenFolder(installation.path)}
-								size="icon"
-								variant="outline"
-							>
-								<FolderIcon
-									aria-hidden="true"
-									className="opacity-60"
-									size={16}
-								/>
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Open folder</TooltipContent>
-					</Tooltip>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-								onClick={() => exportInstallation()}
-								variant="outline"
-							>
-								<FileUpIcon
-									aria-hidden="true"
-									className="-ms-1 opacity-60"
-									size={16}
-								/>
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Export</TooltipContent>
-					</Tooltip>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-								onClick={() =>
-									openDialog("EditInstallationDialog", { installation })
-								}
-								variant="outline"
-							>
-								<WrenchIcon
-									aria-hidden="true"
-									className="-ms-1 opacity-60"
-									size={16}
-								/>
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Edit</TooltipContent>
-					</Tooltip>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								aria-label="Delete"
-								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-								onClick={() =>
-									openDialog("DeleteInstallationDialog", { installation })
-								}
-								size="icon"
-								variant="outline"
-							>
-								<XIcon aria-hidden="true" className="opacity-60" size={16} />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Delete</TooltipContent>
-					</Tooltip>
-				</div>
-			</div>
-			{/* Saves list, animated expand/collapse */}
-			{showSaves &&
-				Array.isArray(installationSaves) &&
-				installationSaves.length > 0 && (
-					<div className="pl-12 pr-2 mt-2 mb-2 flex flex-col gap-1">
-						<span className="text-xs font-semibold text-muted-foreground mb-1">
-							Worlds:
-						</span>
-						{installationSaves.map((save: string, idx: number) => (
-							<div className="flex items-center gap-2 group" key={save || idx}>
-								<span className="flex-1 text-sm">{save}</span>
-								{version ? (
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<Button
-												className="text-success"
-												onClick={(e) => {
-													e.stopPropagation();
-													onPlay({ id: installation.id, save });
-												}}
-												size="icon"
-												variant="outline"
-											>
-												<PlayIcon size={16} />
-											</Button>
-										</TooltipTrigger>
-										<TooltipContent>Play with world</TooltipContent>
-									</Tooltip>
-								) : (
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<Button
-												className="text-warning"
-												onClick={(e) => {
-													e.stopPropagation();
-													installVersion(installation.version);
-												}}
-												size="icon"
-												variant="outline"
-											>
-												<DownloadCloudIcon size={16} />
-											</Button>
-										</TooltipTrigger>
-										<TooltipContent>Install version to play</TooltipContent>
-									</Tooltip>
+						)}
+					</TooltipTrigger>
+					<TooltipContent>
+						{version ? "Play" : `Install ${installation.version}`}
+					</TooltipContent>
+				</Tooltip>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
+							onClick={() => onFavorite(installation.id)}
+							variant="outline"
+						>
+							<StarIcon
+								aria-hidden="true"
+								className={cn(
+									"-ms-1",
+									installation.favorite
+										? "fill-yellow-300 text-yellow-300 opacity-100"
+										: "opacity-60",
 								)}
-							</div>
-						))}
-					</div>
-				)}
+								size={16}
+							/>
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>
+						{installation.favorite ? "Unfavorite" : "Favorite"}
+					</TooltipContent>
+				</Tooltip>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
+							onClick={() =>
+								router.navigate({
+									params: { id: installation.id.toString() },
+									to: "/install-mods/$id",
+									viewTransition: {
+										types: ["warp"],
+									},
+								})
+							}
+							variant="outline"
+						>
+							<PackagePlusIcon
+								aria-hidden="true"
+								className="-ms-1 opacity-60"
+								size={16}
+							/>
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Add Mods</TooltipContent>
+				</Tooltip>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
+							onClick={() =>
+								router.navigate({
+									params: { id: installation.id.toString() },
+									to: "/mod-configs/$id",
+									viewTransition: {
+										types: ["warp"],
+									},
+								})
+							}
+							variant="outline"
+						>
+							<PackageOpenIcon
+								aria-hidden="true"
+								className="-ms-1 opacity-60"
+								size={16}
+							/>
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Edit Mod Configurations</TooltipContent>
+				</Tooltip>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							aria-label="Open folder"
+							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
+							onClick={() => onOpenFolder(installation.path)}
+							size="icon"
+							variant="outline"
+						>
+							<FolderIcon aria-hidden="true" className="opacity-60" size={16} />
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Open folder</TooltipContent>
+				</Tooltip>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
+							onClick={() => exportInstallation()}
+							variant="outline"
+						>
+							<FileUpIcon
+								aria-hidden="true"
+								className="-ms-1 opacity-60"
+								size={16}
+							/>
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Export</TooltipContent>
+				</Tooltip>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
+							onClick={() =>
+								openDialog("EditInstallationDialog", { installation })
+							}
+							variant="outline"
+						>
+							<WrenchIcon
+								aria-hidden="true"
+								className="-ms-1 opacity-60"
+								size={16}
+							/>
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Edit</TooltipContent>
+				</Tooltip>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							aria-label="Delete"
+							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
+							onClick={() =>
+								openDialog("DeleteInstallationDialog", { installation })
+							}
+							size="icon"
+							variant="outline"
+						>
+							<XIcon aria-hidden="true" className="opacity-60" size={16} />
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Delete</TooltipContent>
+				</Tooltip>
+			</div>
 		</div>
 	);
 }

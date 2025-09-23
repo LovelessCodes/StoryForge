@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WorldsRouteImport } from './routes/worlds'
 import { Route as VersionsRouteImport } from './routes/versions'
 import { Route as ServersRouteImport } from './routes/servers'
 import { Route as PublicServersRouteImport } from './routes/public-servers'
@@ -18,6 +19,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ModConfigsIdRouteImport } from './routes/mod-configs/$id'
 import { Route as InstallModsIdRouteImport } from './routes/install-mods/$id'
 
+const WorldsRoute = WorldsRouteImport.update({
+  id: '/worlds',
+  path: '/worlds',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VersionsRoute = VersionsRouteImport.update({
   id: '/versions',
   path: '/versions',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/public-servers': typeof PublicServersRoute
   '/servers': typeof ServersRoute
   '/versions': typeof VersionsRoute
+  '/worlds': typeof WorldsRoute
   '/install-mods/$id': typeof InstallModsIdRoute
   '/mod-configs/$id': typeof ModConfigsIdRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/public-servers': typeof PublicServersRoute
   '/servers': typeof ServersRoute
   '/versions': typeof VersionsRoute
+  '/worlds': typeof WorldsRoute
   '/install-mods/$id': typeof InstallModsIdRoute
   '/mod-configs/$id': typeof ModConfigsIdRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/public-servers': typeof PublicServersRoute
   '/servers': typeof ServersRoute
   '/versions': typeof VersionsRoute
+  '/worlds': typeof WorldsRoute
   '/install-mods/$id': typeof InstallModsIdRoute
   '/mod-configs/$id': typeof ModConfigsIdRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/public-servers'
     | '/servers'
     | '/versions'
+    | '/worlds'
     | '/install-mods/$id'
     | '/mod-configs/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/public-servers'
     | '/servers'
     | '/versions'
+    | '/worlds'
     | '/install-mods/$id'
     | '/mod-configs/$id'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/public-servers'
     | '/servers'
     | '/versions'
+    | '/worlds'
     | '/install-mods/$id'
     | '/mod-configs/$id'
   fileRoutesById: FileRoutesById
@@ -130,12 +142,20 @@ export interface RootRouteChildren {
   PublicServersRoute: typeof PublicServersRoute
   ServersRoute: typeof ServersRoute
   VersionsRoute: typeof VersionsRoute
+  WorldsRoute: typeof WorldsRoute
   InstallModsIdRoute: typeof InstallModsIdRoute
   ModConfigsIdRoute: typeof ModConfigsIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/worlds': {
+      id: '/worlds'
+      path: '/worlds'
+      fullPath: '/worlds'
+      preLoaderRoute: typeof WorldsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/versions': {
       id: '/versions'
       path: '/versions'
@@ -202,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   PublicServersRoute: PublicServersRoute,
   ServersRoute: ServersRoute,
   VersionsRoute: VersionsRoute,
+  WorldsRoute: WorldsRoute,
   InstallModsIdRoute: InstallModsIdRoute,
   ModConfigsIdRoute: ModConfigsIdRoute,
 }

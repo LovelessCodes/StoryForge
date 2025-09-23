@@ -5,6 +5,7 @@ import {
 	CircleFadingPlusIcon,
 	EarthIcon,
 	FolderIcon,
+	GlobeIcon,
 	HomeIcon,
 	MapPinIcon,
 	NewspaperIcon,
@@ -24,6 +25,10 @@ import {
 	SidebarHeader,
 	SidebarMenu,
 	SidebarMenuButton,
+	SidebarMenuItem,
+	SidebarMenuSub,
+	SidebarMenuSubButton,
+	SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import { useVerifyAuth } from "@/hooks/use-verify-auth";
 import { useAccountStore } from "@/stores/accounts";
@@ -196,78 +201,108 @@ export function AppSidebar() {
 			<SidebarContent>
 				<SidebarGroup>
 					<SidebarMenu>
-						<SidebarMenuButton asChild>
-							<Link
-								activeProps={{
-									className: "bg-accent text-accent-foreground",
-								}}
-								to="/"
-								viewTransition={{ types: ["warp"] }}
-							>
-								<HomeIcon />
-								Home
-							</Link>
-						</SidebarMenuButton>
-						<SidebarMenuButton asChild>
-							<Link
-								activeProps={{
-									className: "bg-accent text-accent-foreground",
-								}}
-								to="/news"
-								viewTransition={{ types: ["warp"] }}
-							>
-								<NewspaperIcon />
-								News
-							</Link>
-						</SidebarMenuButton>
-						<SidebarMenuButton asChild>
-							<Link
-								activeProps={{
-									className: "bg-accent text-accent-foreground",
-								}}
-								to="/installations"
-								viewTransition={{ types: ["warp"] }}
-							>
-								<FolderIcon />
-								Installations
-							</Link>
-						</SidebarMenuButton>
-						<SidebarMenuButton asChild>
-							<Link
-								activeProps={{
-									className: "bg-accent text-accent-foreground",
-								}}
-								to="/servers"
-								viewTransition={{ types: ["warp"] }}
-							>
-								<MapPinIcon />
-								Servers
-							</Link>
-						</SidebarMenuButton>
-						<SidebarMenuButton asChild>
-							<Link
-								activeProps={{
-									className: "bg-accent text-accent-foreground",
-								}}
-								to="/public-servers"
-								viewTransition={{ types: ["warp"] }}
-							>
-								<EarthIcon />
-								Public Servers
-							</Link>
-						</SidebarMenuButton>
-						<SidebarMenuButton asChild>
-							<Link
-								activeProps={{
-									className: "bg-accent text-accent-foreground",
-								}}
-								to="/versions"
-								viewTransition={{ types: ["warp"] }}
-							>
-								<CircleFadingPlusIcon />
-								Versions
-							</Link>
-						</SidebarMenuButton>
+						<SidebarMenuItem>
+							<SidebarMenuButton asChild>
+								<Link
+									activeProps={{
+										className: "bg-accent text-accent-foreground",
+									}}
+									to="/"
+									viewTransition={{ types: ["warp"] }}
+								>
+									<HomeIcon />
+									Home
+								</Link>
+							</SidebarMenuButton>
+						</SidebarMenuItem>
+						<SidebarMenuItem>
+							<SidebarMenuButton asChild>
+								<Link
+									activeProps={{
+										className: "bg-accent text-accent-foreground",
+									}}
+									to="/news"
+									viewTransition={{ types: ["warp"] }}
+								>
+									<NewspaperIcon />
+									News
+								</Link>
+							</SidebarMenuButton>
+						</SidebarMenuItem>
+						<SidebarMenuItem>
+							<SidebarMenuButton asChild>
+								<Link
+									activeProps={{
+										className: "bg-accent text-accent-foreground",
+									}}
+									to="/installations"
+									viewTransition={{ types: ["warp"] }}
+								>
+									<FolderIcon />
+									Installations
+								</Link>
+							</SidebarMenuButton>
+							<SidebarMenuSub>
+								<SidebarMenuSubItem>
+									<SidebarMenuSubButton asChild>
+										<Link
+											activeProps={{
+												className: "bg-accent text-accent-foreground",
+											}}
+											to="/worlds"
+											viewTransition={{ types: ["warp"] }}
+										>
+											<EarthIcon />
+											Worlds
+										</Link>
+									</SidebarMenuSubButton>
+								</SidebarMenuSubItem>
+							</SidebarMenuSub>
+						</SidebarMenuItem>
+						<SidebarMenuItem>
+							<SidebarMenuButton asChild>
+								<Link
+									activeProps={{
+										className: "bg-accent text-accent-foreground",
+									}}
+									to="/servers"
+									viewTransition={{ types: ["warp"] }}
+								>
+									<MapPinIcon />
+									Servers
+								</Link>
+							</SidebarMenuButton>
+							<SidebarMenuSub>
+								<SidebarMenuSubItem>
+									<SidebarMenuSubButton asChild>
+										<Link
+											activeProps={{
+												className: "bg-accent text-accent-foreground",
+											}}
+											to="/public-servers"
+											viewTransition={{ types: ["warp"] }}
+										>
+											<GlobeIcon />
+											Public
+										</Link>
+									</SidebarMenuSubButton>
+								</SidebarMenuSubItem>
+							</SidebarMenuSub>
+						</SidebarMenuItem>
+						<SidebarMenuItem>
+							<SidebarMenuButton asChild>
+								<Link
+									activeProps={{
+										className: "bg-accent text-accent-foreground",
+									}}
+									to="/versions"
+									viewTransition={{ types: ["warp"] }}
+								>
+									<CircleFadingPlusIcon />
+									Versions
+								</Link>
+							</SidebarMenuButton>
+						</SidebarMenuItem>
 					</SidebarMenu>
 				</SidebarGroup>
 			</SidebarContent>

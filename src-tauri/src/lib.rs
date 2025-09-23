@@ -49,6 +49,7 @@ pub fn run() {
             servers::fetch_public_servers,
             // Saves
             saves::get_installation_saves,
+            saves::get_all_saves,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
