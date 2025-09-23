@@ -24,16 +24,19 @@ import {
 	SidebarGroup,
 	SidebarHeader,
 	SidebarMenu,
+	SidebarMenuBadge,
 	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarMenuSub,
 	SidebarMenuSubButton,
 	SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { useVerifyAuth } from "@/hooks/use-verify-auth";
 import { useAccountStore } from "@/stores/accounts";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
+import { useServerStore } from "@/stores/servers";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -45,6 +48,8 @@ export function AppSidebar() {
 	const { selectedUser, users, removeUser, setSelectedUser } =
 		useAccountStore();
 	const { installations } = useInstallations();
+	const { data: installedVersions } = useInstalledVersions();
+	const { servers } = useServerStore();
 	const { openDialog } = useDialogStore();
 	const { mutate: verifyAuth } = useVerifyAuth({
 		onError: (error, variables) => {
@@ -242,6 +247,9 @@ export function AppSidebar() {
 									Installations
 								</Link>
 							</SidebarMenuButton>
+							<SidebarMenuBadge className="text-xs text-muted-foreground">
+								{installations.length}
+							</SidebarMenuBadge>
 							<SidebarMenuSub>
 								<SidebarMenuSubItem>
 									<SidebarMenuSubButton asChild>
@@ -272,6 +280,9 @@ export function AppSidebar() {
 									Servers
 								</Link>
 							</SidebarMenuButton>
+							<SidebarMenuBadge className="text-xs text-muted-foreground">
+								{servers.length}
+							</SidebarMenuBadge>
 							<SidebarMenuSub>
 								<SidebarMenuSubItem>
 									<SidebarMenuSubButton asChild>
@@ -302,6 +313,9 @@ export function AppSidebar() {
 									Versions
 								</Link>
 							</SidebarMenuButton>
+							<SidebarMenuBadge className="text-xs text-muted-foreground">
+								{installedVersions?.length}
+							</SidebarMenuBadge>
 						</SidebarMenuItem>
 					</SidebarMenu>
 				</SidebarGroup>
