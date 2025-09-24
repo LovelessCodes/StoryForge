@@ -106,14 +106,13 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
             message: format!("Launch file not found: {}", combined_path.to_string_lossy()),
         });
     }
-    let account_zustand = app
+    let account = app
         .zustand()
-        .get("accounts", "selectedUser")
-        .ok_or_else(|| UiError {
-            name: "no_account".into(),
-            message: "No account selected".into(),
+        .get::<Value>("accounts", "selectedUser")
+        .map_err(|e| UiError {
+            name: "zustand_error".into(),
+            message: format!("Failed to get selected user: {e}"),
         })?;
-    let account: Value = serde_json::from_value(account_zustand).unwrap();
     if account.is_null() {
         return Err(UiError {
             name: "no_account".into(),
