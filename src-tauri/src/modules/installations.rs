@@ -173,7 +173,7 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
                 &options
                     .password
                     .as_ref()
-                    .map(|p| vec!["--password", p.as_str()])
+                    .map(|p| vec!["--pw", p.as_str()])
                     .unwrap_or_default(),
             )
             .args(&start_params.split_whitespace().collect::<Vec<&str>>())
@@ -210,7 +210,7 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
             &options
                 .password
                 .as_ref()
-                .map(|p| vec!["--password", p.as_str()])
+                .map(|p| vec!["--pw", p.as_str()])
                 .unwrap_or_default(),
         )
         .args(&start_params.split_whitespace().collect::<Vec<&str>>())
