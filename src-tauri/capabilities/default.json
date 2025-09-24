@@ -5,12 +5,7 @@
 	"permissions": [
 		"zustand:default",
 		"core:default",
-		"opener:default",
-		"dialog:allow-open",
-		"dialog:default",
 		"os:default",
-		"shell:default",
-		"opener:allow-open-path",
 		"process:default",
 		"updater:default"
 	],

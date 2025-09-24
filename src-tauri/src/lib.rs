@@ -8,9 +8,6 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let app_handle = app.handle();
             let store_path = app.path().app_data_dir().unwrap().join("store");
@@ -22,7 +19,6 @@ pub fn run() {
                 })?;
             Ok(())
         })
-        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             // Authorization
