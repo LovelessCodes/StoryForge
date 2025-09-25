@@ -54,6 +54,10 @@ pub fn run() {
             installations::remove_installation,
             // Servers
             servers::fetch_public_servers,
+            servers::fetch_all_servers,
+            servers::add_server_to_installation,
+            servers::remove_server_from_installation,
+            servers::check_server_in_installation,
             // Saves
             saves::get_installation_saves,
             saves::get_all_saves,
