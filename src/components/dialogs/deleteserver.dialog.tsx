@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -8,6 +9,7 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useRemoveServerFromInstallation } from "@/hooks/use-remove-server-from-installation";
 import { useDialogStore } from "@/stores/dialogs";
 import { type Server, useServerStore } from "@/stores/servers";
 
@@ -21,6 +23,17 @@ export function DeleteServerDialog({
 }: {
 	open: boolean;
 } & DeleteServerDialogProps) {
+	const { mutate } = useRemoveServerFromInstallation({
+		onError: (error) => {
+			toast.error(`Error removing server: ${error}`, {
+				id: `server-remove-${server.id}`,
+			});
+		},
+		onSuccess: () => {
+			removeServer(server.id);
+			closeDialog();
+		},
+	});
 	const { removeServer } = useServerStore();
 	const { closeDialog } = useDialogStore();
 
@@ -39,10 +52,12 @@ export function DeleteServerDialog({
 				<AlertDialogFooter>
 					<AlertDialogCancel>Cancel</AlertDialogCancel>
 					<AlertDialogAction
-						onClick={() => {
-							removeServer(server.id);
-							closeDialog();
-						}}
+						onClick={() =>
+							mutate({
+								installationId: server.installationId,
+								server: `${server.name},${server.ip}${server.port ? `:${server.port}` : ""},${server.password ? `${server.password}` : ""}`,
+							})
+						}
 					>
 						Delete
 					</AlertDialogAction>
