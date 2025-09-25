@@ -180,6 +180,7 @@ function Dashboard() {
 											connectToServer({
 												installationId: s.installationId,
 												ip: `${s.ip}${s.port ? `:${s.port}` : ""}`,
+												name: s.name,
 												password: s.password,
 											})
 										}

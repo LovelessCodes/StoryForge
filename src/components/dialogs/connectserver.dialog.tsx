@@ -85,7 +85,9 @@ export function ConnectServerDialog({
 							connectToServer({
 								installationId: selectedInstallation,
 								ip: server.serverIP,
+								name: server.serverName,
 								password,
+								pub: true,
 							});
 							closeDialog();
 						}}

@@ -57,10 +57,12 @@ export const Route = createFileRoute("/servers")({
 type ServerRowProps = {
 	server: Server;
 	onConnect: ({
+		name,
 		ip,
 		password,
 		installationId,
 	}: {
+		name: string;
 		ip: string;
 		password: string;
 		installationId: number;
@@ -173,6 +175,7 @@ function ServerRow({
 									onConnect({
 										installationId: server.installationId,
 										ip: `${server.ip}${server.port ? `:${server.port}` : ""}`,
+										name: server.name,
 										password: server.password,
 									})
 								}
