@@ -45,6 +45,7 @@ jobs:
           echo "Updated tauri.conf.json to version $NEW_VERSION"
 
           # Update version in src-tauri/Cargo.toml using cargo set-version
+          cd src-tauri
           cargo install cargo-edit --version "^0.11.0" || true # Install cargo-edit if not already installed
           cargo set-version "$NEW_VERSION"
           echo "Updated Cargo.toml to version $NEW_VERSION"
