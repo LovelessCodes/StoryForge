@@ -161,7 +161,13 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
         })?;
         return Command::new(&combined_path.as_os_str())
             .args(&["--dataPath", &pb.as_path().to_string_lossy()])
-            .args(&options.save.as_ref().map(|s| vec!["-o", s.as_str()]).unwrap_or_default())
+            .args(
+                &options
+                    .save
+                    .as_ref()
+                    .map(|s| vec!["-o", s.as_str()])
+                    .unwrap_or_default(),
+            )
             .args(
                 &options
                     .server

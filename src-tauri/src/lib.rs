@@ -1,10 +1,11 @@
 mod modules;
-use modules::{auth, download, installations, mods, news, servers, versions, saves};
+use modules::{auth, download, installations, mods, news, saves, servers, versions};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_os::init())
@@ -12,7 +13,12 @@ pub fn run() {
             let app_handle = app.handle();
             let store_path = app.path().app_data_dir().unwrap().join("store");
             std::fs::create_dir_all(&store_path).unwrap();
-            app_handle.plugin(tauri_plugin_zustand::Builder::new().path(store_path).build())
+            app_handle
+                .plugin(
+                    tauri_plugin_zustand::Builder::new()
+                        .path(store_path)
+                        .build(),
+                )
                 .map_err(|e| {
                     eprintln!("Failed to initialize zustand plugin: {}", e);
                     e

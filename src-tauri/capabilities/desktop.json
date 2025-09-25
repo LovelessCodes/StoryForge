@@ -5,7 +5,8 @@
 		"core:default",
 		"os:default",
 		"process:default",
-		"updater:default"
+		"updater:default",
+		"opener:default"
 	],
 	"platforms": ["macOS", "windows", "linux"],
 	"windows": ["main"]
