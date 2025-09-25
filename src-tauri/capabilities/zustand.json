@@ -5,7 +5,8 @@
 		"core:event:default",
 		"os:default",
 		"process:default",
-		"updater:default"
+		"updater:default",
+		"opener:default"
 	],
 	"windows": ["*"]
 }

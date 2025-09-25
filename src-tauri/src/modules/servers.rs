@@ -1,5 +1,5 @@
 use serde_json::Value;
-use tauri::{command, Manager, AppHandle};
+use tauri::{command, AppHandle, Manager};
 use tauri_plugin_zustand::ManagerExt;
 
 use super::errors::UiError;
@@ -9,7 +9,10 @@ fn extract_servers_from_directory(path: std::path::PathBuf) -> Value {
     let clientsettings_path = path.join("clientsettings.json");
     if let Ok(content) = std::fs::read_to_string(clientsettings_path) {
         if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-            if let Some(multiplayer_servers) = json.get("stringListSettings").and_then(|sl| sl.get("multiplayerservers")) {
+            if let Some(multiplayer_servers) = json
+                .get("stringListSettings")
+                .and_then(|sl| sl.get("multiplayerservers"))
+            {
                 if let Some(array) = servers.as_array_mut() {
                     array.push(multiplayer_servers.clone());
                 }
@@ -27,7 +30,12 @@ pub async fn fetch_all_servers(app: AppHandle) -> Result<Value, UiError> {
         let entry = entry.unwrap();
         if entry.path().is_dir() {
             let servers = extract_servers_from_directory(entry.path());
-            let installation_name = entry.path().file_name().unwrap().to_string_lossy().to_string();
+            let installation_name = entry
+                .path()
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .to_string();
             let mut installation_servers = serde_json::Map::new();
             installation_servers.insert(installation_name, servers);
             all_servers.push(Value::Object(installation_servers));
@@ -37,7 +45,11 @@ pub async fn fetch_all_servers(app: AppHandle) -> Result<Value, UiError> {
 }
 
 #[command]
-pub fn remove_server_from_installation(app: AppHandle, installation_id: u64, server: String) -> Result<(), UiError> {
+pub fn remove_server_from_installation(
+    app: AppHandle,
+    installation_id: u64,
+    server: String,
+) -> Result<(), UiError> {
     let installation_zustand = app.zustand().get("installations", "installations").unwrap();
     let installation_json: Value = serde_json::from_value(installation_zustand).unwrap();
     // Find installation with matching id
@@ -69,14 +81,20 @@ pub fn remove_server_from_installation(app: AppHandle, installation_id: u64, ser
         serde_json::json!({})
     };
     // Extract or create stringListSettings as an object
-    let mut string_list_settings = if let Some(sls) = clientsettings.get_mut("stringListSettings").and_then(|sls| sls.as_object_mut()) {
+    let mut string_list_settings = if let Some(sls) = clientsettings
+        .get_mut("stringListSettings")
+        .and_then(|sls| sls.as_object_mut())
+    {
         sls.clone()
     } else {
         serde_json::Map::new()
     };
 
     // Extract or create multiplayerservers as an array
-    let mut multiplayer_servers = if let Some(ms) = string_list_settings.get_mut("multiplayerservers").and_then(|ms| ms.as_array()) {
+    let mut multiplayer_servers = if let Some(ms) = string_list_settings
+        .get_mut("multiplayerservers")
+        .and_then(|ms| ms.as_array())
+    {
         ms.clone()
     } else {
         Vec::new()
@@ -85,7 +103,10 @@ pub fn remove_server_from_installation(app: AppHandle, installation_id: u64, ser
     multiplayer_servers.retain(|s| s != &Value::String(server.as_str().to_string()));
 
     // Put the updated multiplayerservers back into string_list_settings
-    string_list_settings.insert("multiplayerservers".to_string(), Value::Array(multiplayer_servers));
+    string_list_settings.insert(
+        "multiplayerservers".to_string(),
+        Value::Array(multiplayer_servers),
+    );
 
     // Put the updated string_list_settings back into clientsettings
     clientsettings["stringListSettings"] = Value::Object(string_list_settings);
@@ -101,7 +122,11 @@ pub fn remove_server_from_installation(app: AppHandle, installation_id: u64, ser
 }
 
 #[command]
-pub fn check_server_in_installation(app: AppHandle, installation_id: u64, server: String) -> Result<bool, UiError> {
+pub fn check_server_in_installation(
+    app: AppHandle,
+    installation_id: u64,
+    server: String,
+) -> Result<bool, UiError> {
     let installation_zustand = app.zustand().get("installations", "installations").unwrap();
     let installation_json: Value = serde_json::from_value(installation_zustand).unwrap();
     // Find installation with matching id
@@ -131,7 +156,11 @@ pub fn check_server_in_installation(app: AppHandle, installation_id: u64, server
         name: "parse_error".into(),
         message: format!("Failed to parse clientsettings.json: {e}"),
     })?;
-    if let Some(multiplayer_servers) = clientsettings.get("stringListSettings").and_then(|sl| sl.get("multiplayerservers")).and_then(|ms| ms.as_array()) {
+    if let Some(multiplayer_servers) = clientsettings
+        .get("stringListSettings")
+        .and_then(|sl| sl.get("multiplayerservers"))
+        .and_then(|ms| ms.as_array())
+    {
         for s in multiplayer_servers {
             if s == &Value::String(server.clone()) {
                 return Ok(true);
@@ -142,7 +171,11 @@ pub fn check_server_in_installation(app: AppHandle, installation_id: u64, server
 }
 
 #[command]
-pub fn add_server_to_installation(app: AppHandle, installation_id: u64, server: String) -> Result<(), UiError> {
+pub fn add_server_to_installation(
+    app: AppHandle,
+    installation_id: u64,
+    server: String,
+) -> Result<(), UiError> {
     let installation_zustand = app.zustand().get("installations", "installations").unwrap();
     let installation_json: Value = serde_json::from_value(installation_zustand).unwrap();
     // Find installation with matching id
@@ -174,14 +207,20 @@ pub fn add_server_to_installation(app: AppHandle, installation_id: u64, server: 
         serde_json::json!({})
     };
     // Extract or create stringListSettings as an object
-    let mut string_list_settings = if let Some(sls) = clientsettings.get_mut("stringListSettings").and_then(|sls| sls.as_object_mut()) {
+    let mut string_list_settings = if let Some(sls) = clientsettings
+        .get_mut("stringListSettings")
+        .and_then(|sls| sls.as_object_mut())
+    {
         sls.clone()
     } else {
         serde_json::Map::new()
     };
 
     // Extract or create multiplayerservers as an array
-    let mut multiplayer_servers = if let Some(ms) = string_list_settings.get_mut("multiplayerservers").and_then(|ms| ms.as_array()) {
+    let mut multiplayer_servers = if let Some(ms) = string_list_settings
+        .get_mut("multiplayerservers")
+        .and_then(|ms| ms.as_array())
+    {
         ms.clone()
     } else {
         Vec::new()
@@ -190,7 +229,10 @@ pub fn add_server_to_installation(app: AppHandle, installation_id: u64, server: 
     multiplayer_servers.push(Value::String(server));
 
     // Put the updated multiplayerservers back into string_list_settings
-    string_list_settings.insert("multiplayerservers".to_string(), Value::Array(multiplayer_servers));
+    string_list_settings.insert(
+        "multiplayerservers".to_string(),
+        Value::Array(multiplayer_servers),
+    );
 
     // Put the updated string_list_settings back into clientsettings
     clientsettings["stringListSettings"] = Value::Object(string_list_settings);
