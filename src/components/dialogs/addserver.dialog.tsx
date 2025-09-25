@@ -1,6 +1,7 @@
 import { useForm } from "@tanstack/react-form";
 import clsx from "clsx";
 import { useId } from "react";
+import { toast } from "sonner";
 import z from "zod";
 import { PasswordInput } from "@/components/inputs";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAddServerToInstallation } from "@/hooks/use-add-server-to-installation";
 import { useDialogStore } from "@/stores/dialogs";
 import { type Installation, useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
@@ -60,6 +62,7 @@ export function AddServerDialog({
 	const { closeDialog } = useDialogStore();
 	const { installations } = useInstallations();
 	const { addServer, servers } = useServerStore();
+	const { mutateAsync } = useAddServerToInstallation();
 	const form = useForm({
 		defaultValues: {
 			favorite: false,
@@ -71,22 +74,37 @@ export function AddServerDialog({
 			password: "",
 			port: null as string | null,
 		},
-		onSubmit: ({ value }) => {
-			addServer(
+		onSubmit: async ({ value }) => {
+			await mutateAsync(
 				{
-					favorite: value.favorite,
-					id: Date.now(),
-					index: servers.length,
 					installationId: parseInt(value.installationId, 10),
-					ip: value.ip,
-					name: value.name,
-					password: value.password,
-					port: value.port?.length ? parseInt(value.port, 10) : null,
+					server: `${value.name},${value.ip}${value.port ? `:${value.port}` : ""},${value.password ? `${value.password}` : ""}`,
 				},
-				(status) => {
-					if (status) {
-						closeDialog();
-					}
+				{
+					onError: (error) => {
+						toast.error(`Failed to add server: ${error}`, {
+							id: `add-server-${value.name}-${value.ip}`,
+						});
+					},
+					onSuccess: () => {
+						addServer(
+							{
+								favorite: value.favorite,
+								id: Date.now(),
+								index: servers.length,
+								installationId: parseInt(value.installationId, 10),
+								ip: value.ip,
+								name: value.name,
+								password: value.password,
+								port: value.port?.length ? parseInt(value.port, 10) : null,
+							},
+							(status) => {
+								if (status) {
+									closeDialog();
+								}
+							},
+						);
+					},
 				},
 			);
 		},
