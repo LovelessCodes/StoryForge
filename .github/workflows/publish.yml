@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "storyforge-v[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
   update-version:
@@ -23,11 +23,11 @@ jobs:
         id: bump_version
         run: |
           # Get the new version from the tag that triggered the workflow
-          if [[ "${GITHUB_REF}" =~ refs/tags/v([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+          if [[ "${GITHUB_REF}" =~ refs/tags/storyforge-v([0-9]+\.[0-9]+\.[0-9]+) ]]; then
             NEW_VERSION="${BASH_REMATCH[1]}"
             echo "New version from tag: $NEW_VERSION"
           else
-            echo "Error: This workflow must be triggered by a tag in the format vX.Y.Z"
+            echo "Error: This workflow must be triggered by a tag in the format storyforge-vX.Y.Z"
             exit 1
           fi
 
@@ -60,7 +60,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock
           git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
-          git push origin release
+          git push origin HEAD:release
 
   publish-tauri:
     needs: update-version
