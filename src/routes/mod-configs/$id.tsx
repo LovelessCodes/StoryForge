@@ -2,7 +2,7 @@ import Editor from "@monaco-editor/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -112,7 +112,6 @@ function CodeBlock({
 	return (
 		<>
 			<Editor
-				className="bg-background h-full"
 				language="json"
 				onChange={(v) => setEditableCode(v ?? "")}
 				options={{
@@ -121,16 +120,22 @@ function CodeBlock({
 					minimap: { enabled: false },
 					scrollBeyondLastLine: false,
 				}}
-				theme="vs-dark"
+				theme={
+					document.body.classList.contains("dark") ? "vs-dark" : "vs-light"
+				}
 				value={editableCode}
 			/>
-			<Button
-				className="absolute top-4 right-4 disabled:opacity-15 opacity-50"
-				disabled={!canSave}
-				onClick={() => onSave({ file, newCode: editableCode })}
-			>
-				Save
-			</Button>
+			<div className="absolute top-0 flex justify-start gap-4 right-4 text-sm opacity-50">
+				{canSave ? "Unsaved changes" : "All changes saved"}
+				<Button
+					className="disabled:opacity-15 opacity-50 h-5"
+					disabled={!canSave}
+					onClick={() => onSave({ file, newCode: editableCode })}
+					size="sm"
+				>
+					Save
+				</Button>
+			</div>
 		</>
 	);
 }
