@@ -106,105 +106,77 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
             message: format!("Launch file not found: {}", combined_path.to_string_lossy()),
         });
     }
-    let account = app
-        .zustand()
-        .get::<Value>("accounts", "selectedUser")
-        .map_err(|e| UiError {
-            name: "zustand_error".into(),
-            message: format!("Failed to get selected user: {e}"),
-        })?;
-    if account.is_null() {
-        return Err(UiError {
-            name: "no_account".into(),
-            message: "No account selected".into(),
-        });
-    }
-    let settings = json!({
-        "stringSettings": {
-            "playeruid": account["uid"].as_str().unwrap_or(""),
-            "sessionkey": account["sessionkey"].as_str().unwrap_or(""),
-            "sessionsignature": account["sessionsignature"].as_str().unwrap_or(""),
-            "playername": account["playername"].as_str().unwrap_or(""),
-        }
-    });
-    let settings_path = pb.join("clientsettings.json");
-    // It should create the file if it does not exist, but if it exists it should just overwrite the keys
-    if settings_path.exists() {
-        let mut existing_settings = String::new();
-        File::open(&settings_path)
-            .and_then(|mut f| f.read_to_string(&mut existing_settings))
-            .map_err(|e| UiError {
-                name: "read_failed".into(),
-                message: format!("Failed to read existing clientsettings.json: {e}"),
-            })?;
-        let mut existing_json: Value =
-            serde_json::from_str(&existing_settings).unwrap_or(json!({}));
-        if let Some(obj) = existing_json.as_object_mut() {
-            if let Some(string_settings) = obj
-                .get_mut("stringSettings")
-                .and_then(|v| v.as_object_mut())
-            {
-                for (k, v) in settings["stringSettings"].as_object().unwrap() {
-                    string_settings.insert(k.clone(), v.clone());
-                }
-            } else {
-                obj.insert("stringSettings".into(), settings["stringSettings"].clone());
+    let account_result = app.zustand().get::<Value>("accounts", "selectedUser");
+    let account = match account_result {
+        Ok(val) if !val.is_null() => Some(val),
+        _ => None,
+    };
+
+    if let Some(account) = account {
+        let settings = json!({
+            "stringSettings": {
+                "playeruid": account["uid"].as_str().unwrap_or(""),
+                "sessionkey": account["sessionkey"].as_str().unwrap_or(""),
+                "sessionsignature": account["sessionsignature"].as_str().unwrap_or(""),
+                "playername": account["playername"].as_str().unwrap_or(""),
             }
-        }
-        std::fs::write(
-            &settings_path,
-            serde_json::to_string_pretty(&existing_json).unwrap(),
-        )
-        .map_err(|e| UiError {
-            name: "write_failed".into(),
-            message: format!("Failed to write clientsettings.json: {e}"),
-        })?;
-        return Command::new(&combined_path.as_os_str())
-            .args(&["--dataPath", &pb.as_path().to_string_lossy()])
-            .args(
-                &options
-                    .save
-                    .as_ref()
-                    .map(|s| vec!["-o", s.as_str()])
-                    .unwrap_or_default(),
+        });
+        let settings_path = pb.join("clientsettings.json");
+        // It should create the file if it does not exist, but if it exists it should just overwrite the keys
+        if settings_path.exists() {
+            let mut existing_settings = String::new();
+            File::open(&settings_path)
+                .and_then(|mut f| f.read_to_string(&mut existing_settings))
+                .map_err(|e| UiError {
+                    name: "read_failed".into(),
+                    message: format!("Failed to read existing clientsettings.json: {e}"),
+                })?;
+            let mut existing_json: Value =
+                serde_json::from_str(&existing_settings).unwrap_or(json!({}));
+            if let Some(obj) = existing_json.as_object_mut() {
+                if let Some(string_settings) = obj
+                    .get_mut("stringSettings")
+                    .and_then(|v| v.as_object_mut())
+                {
+                    for (k, v) in settings["stringSettings"].as_object().unwrap() {
+                        string_settings.insert(k.clone(), v.clone());
+                    }
+                } else {
+                    obj.insert("stringSettings".into(), settings["stringSettings"].clone());
+                }
+            }
+            std::fs::write(
+                &settings_path,
+                serde_json::to_string_pretty(&existing_json).unwrap(),
             )
-            .args(
-                &options
-                    .server
-                    .as_ref()
-                    .map(|s| vec!["--connect", s.as_str()])
-                    .unwrap_or_default(),
-            )
-            .args(
-                &options
-                    .password
-                    .as_ref()
-                    .map(|p| vec!["--pw", p.as_str()])
-                    .unwrap_or_default(),
-            )
-            .args(&start_params.split_whitespace().collect::<Vec<&str>>())
-            .spawn()
             .map_err(|e| UiError {
-                name: "launch_failed".into(),
-                message: format!("Failed to launch: {e}"),
-            })
-            .map(|_| "started".into());
-    } else {
-        std::fs::create_dir_all(&settings_path.parent().unwrap()).map_err(|e| UiError {
-            name: "create_dir_failed".into(),
-            message: format!("Failed to create directory for clientsettings.json: {e}"),
-        })?;
-        std::fs::write(
-            &settings_path,
-            serde_json::to_string_pretty(&settings).unwrap(),
-        )
-        .map_err(|e| UiError {
-            name: "write_failed".into(),
-            message: format!("Failed to write clientsettings.json: {e}"),
-        })?;
+                name: "write_failed".into(),
+                message: format!("Failed to write clientsettings.json: {e}"),
+            })?;
+        } else {
+            std::fs::create_dir_all(&settings_path.parent().unwrap()).map_err(|e| UiError {
+                name: "create_dir_failed".into(),
+                message: format!("Failed to create directory for clientsettings.json: {e}"),
+            })?;
+            std::fs::write(
+                &settings_path,
+                serde_json::to_string_pretty(&settings).unwrap(),
+            )
+            .map_err(|e| UiError {
+                name: "write_failed".into(),
+                message: format!("Failed to write clientsettings.json: {e}"),
+            })?;
+        }
     }
     Command::new(&combined_path)
         .args(&["--dataPath", &pb.as_path().to_string_lossy()])
+        .args(
+            &options
+                .save
+                .as_ref()
+                .map(|s| vec!["-o", s.as_str()])
+                .unwrap_or_default(),
+        )
         .args(
             &options
                 .server
