@@ -1,7 +1,8 @@
+import Editor from "@monaco-editor/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -100,7 +101,6 @@ function CodeBlock({
 	file: string;
 	onSave: (params: { file: string; newCode: string }) => void;
 }) {
-	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [editableCode, setEditableCode] = useState(
 		JSON.stringify(code, null, 2),
 	);
@@ -111,11 +111,17 @@ function CodeBlock({
 
 	return (
 		<>
-			<textarea
-				className="h-full p-2 bg-zinc-900 w-full caret-white outline-none font-mono leading-5"
-				onChange={(e) => setEditableCode(e.target.value)}
-				ref={textareaRef}
-				rows={editableCode.split("\n").length}
+			<Editor
+				className="bg-background h-full"
+				language="json"
+				onChange={(v) => setEditableCode(v ?? "")}
+				options={{
+					fontSize: 14,
+					lineNumbers: "off",
+					minimap: { enabled: false },
+					scrollBeyondLastLine: false,
+				}}
+				theme="vs-dark"
 				value={editableCode}
 			/>
 			<Button
