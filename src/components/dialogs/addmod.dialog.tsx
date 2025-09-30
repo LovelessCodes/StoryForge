@@ -3,14 +3,14 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-} from "@/components/ui/dialog";
+	AlertDialog,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import {
 	Select,
 	SelectContent,
@@ -108,25 +108,25 @@ export function AddModDialog({
 	}, [modInfo, installation.version]);
 
 	return (
-		<Dialog
+		<AlertDialog
 			onOpenChange={(op) => {
 				if (op === false) setSelectedVersion(null);
 				closeDialog();
 			}}
 			open={open}
 		>
-			<DialogContent>
-				<DialogHeader>
+			<AlertDialogContent>
+				<AlertDialogHeader>
 					<h3 className="text-lg font-medium leading-6">
 						Add <span className="text-yellow-200">{modInfo?.mod.name}</span> to{" "}
 						<span className="text-blue-200">{installation.name}</span>
 					</h3>
-				</DialogHeader>
-				<DialogDescription>
+				</AlertDialogHeader>
+				<AlertDialogDescription>
 					Select the version of{" "}
 					<span className="text-yellow-200">{modInfo?.mod.name}</span> you want
 					to add to <span className="text-blue-200">{installation.name}</span>.
-				</DialogDescription>
+				</AlertDialogDescription>
 				{/* We need a select, incase the installation version is not compatible */}
 				<div className="mt-2 w-full overflow-hidden">
 					<Select
@@ -178,7 +178,7 @@ export function AddModDialog({
 						</SelectContent>
 					</Select>
 				</div>
-				<DialogFooter>
+				<AlertDialogFooter>
 					<Button
 						disabled={!selectedVersion}
 						onClick={async () => {
@@ -194,8 +194,8 @@ export function AddModDialog({
 					>
 						Add Mod
 					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+				</AlertDialogFooter>
+			</AlertDialogContent>
+		</AlertDialog>
 	);
 }

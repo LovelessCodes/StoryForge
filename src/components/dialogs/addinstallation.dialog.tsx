@@ -6,14 +6,14 @@ import clsx from "clsx";
 import { useId, useRef } from "react";
 import { toast } from "sonner";
 import z from "zod";
-import { Button } from "@/components/ui/button";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
+	AlertDialog,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -182,17 +182,17 @@ export function AddInstallationDialog({ open }: { open: boolean }) {
 		},
 	});
 	return (
-		<Dialog onOpenChange={() => closeDialog()} open={open}>
-			<DialogContent>
+		<AlertDialog onOpenChange={() => closeDialog()} open={open}>
+			<AlertDialogContent>
 				<div className="flex flex-col items-center gap-2">
-					<DialogHeader>
-						<DialogTitle className="sm:text-center">
+					<AlertDialogHeader>
+						<AlertDialogTitle className="sm:text-center">
 							Add installation
-						</DialogTitle>
-						<DialogDescription className="sm:text-center">
+						</AlertDialogTitle>
+						<AlertDialogDescription className="sm:text-center">
 							Enter the new installation's details.
-						</DialogDescription>
-					</DialogHeader>
+						</AlertDialogDescription>
+					</AlertDialogHeader>
 				</div>
 
 				<div className="space-y-5">
@@ -458,7 +458,7 @@ export function AddInstallationDialog({ open }: { open: boolean }) {
 						{form.state.isSubmitting ? "Adding..." : "Add Installation"}
 					</Button>
 				</div>
-			</DialogContent>
-		</Dialog>
+			</AlertDialogContent>
+		</AlertDialog>
 	);
 }

@@ -7,14 +7,14 @@ import { useId } from "react";
 import { toast } from "sonner";
 import z from "zod";
 import { EmailInput, PasswordInput } from "@/components/inputs";
-import { Button } from "@/components/ui/button";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
+	AlertDialog,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
 	Tooltip,
@@ -134,8 +134,8 @@ export function AddUserDialog({ open }: { open: boolean }) {
 		},
 	});
 	return (
-		<Dialog onOpenChange={() => closeDialog()} open={open}>
-			<DialogContent>
+		<AlertDialog onOpenChange={() => closeDialog()} open={open}>
+			<AlertDialogContent>
 				{signInError?.message === "requiretotpcode" ||
 				signInError?.message === "wrongtotpcode" ? (
 					<form.Field name="totpcode">
@@ -150,16 +150,16 @@ export function AddUserDialog({ open }: { open: boolean }) {
 				) : (
 					<>
 						<div className="flex flex-col items-center gap-2">
-							<DialogHeader>
-								<DialogTitle className="sm:text-center">
+							<AlertDialogHeader>
+								<AlertDialogTitle className="sm:text-center">
 									{selectedUser ? "Add user" : "Welcome back"}
-								</DialogTitle>
-								<DialogDescription className="sm:text-center">
+								</AlertDialogTitle>
+								<AlertDialogDescription className="sm:text-center">
 									{selectedUser
 										? "Enter the new user's credentials."
 										: "Enter your credentials to sign in to your account."}
-								</DialogDescription>
-							</DialogHeader>
+								</AlertDialogDescription>
+							</AlertDialogHeader>
 						</div>
 
 						<div className="space-y-5">
@@ -324,8 +324,8 @@ export function AddUserDialog({ open }: { open: boolean }) {
 						</div>
 					</>
 				)}
-			</DialogContent>
-		</Dialog>
+			</AlertDialogContent>
+		</AlertDialog>
 	);
 }
 
@@ -343,14 +343,14 @@ function TOTPComponent({
 	return (
 		<>
 			<div className="flex flex-col items-center gap-2">
-				<DialogHeader>
-					<DialogTitle className="sm:text-center">
+				<AlertDialogHeader>
+					<AlertDialogTitle className="sm:text-center">
 						Enter authenticator code
-					</DialogTitle>
-					<DialogDescription className="sm:text-center">
+					</AlertDialogTitle>
+					<AlertDialogDescription className="sm:text-center">
 						Check the authenticator app and enter the 6-digit code.
-					</DialogDescription>
-				</DialogHeader>
+					</AlertDialogDescription>
+				</AlertDialogHeader>
 			</div>
 			<div className="space-y-4">
 				<div className="flex justify-center">

@@ -4,14 +4,14 @@ import { useId } from "react";
 import { toast } from "sonner";
 import z from "zod";
 import { PasswordInput } from "@/components/inputs";
-import { Button } from "@/components/ui/button";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
+	AlertDialog,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -113,15 +113,17 @@ export function AddServerDialog({
 		},
 	});
 	return (
-		<Dialog onOpenChange={() => closeDialog()} open={open}>
-			<DialogContent>
+		<AlertDialog onOpenChange={() => closeDialog()} open={open}>
+			<AlertDialogContent>
 				<div className="flex flex-col items-center gap-2">
-					<DialogHeader>
-						<DialogTitle className="sm:text-center">Add server</DialogTitle>
-						<DialogDescription className="sm:text-center">
+					<AlertDialogHeader>
+						<AlertDialogTitle className="sm:text-center">
+							Add server
+						</AlertDialogTitle>
+						<AlertDialogDescription className="sm:text-center">
 							Enter the new server's details.
-						</DialogDescription>
-					</DialogHeader>
+						</AlertDialogDescription>
+					</AlertDialogHeader>
 				</div>
 
 				<div className="space-y-5">
@@ -401,7 +403,7 @@ export function AddServerDialog({
 						Add Server
 					</Button>
 				</div>
-			</DialogContent>
-		</Dialog>
+			</AlertDialogContent>
+		</AlertDialog>
 	);
 }

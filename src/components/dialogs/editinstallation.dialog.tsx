@@ -5,14 +5,14 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import clsx from "clsx";
 import { useId, useRef } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
+	AlertDialog,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -156,23 +156,23 @@ export function EditInstallationDialog({
 		},
 	});
 	return (
-		<Dialog
+		<AlertDialog
 			onOpenChange={() => {
 				if (form.state.isSubmitting) return;
 				closeDialog();
 			}}
 			open={open}
 		>
-			<DialogContent>
+			<AlertDialogContent>
 				<div className="flex flex-col items-center gap-2">
-					<DialogHeader>
-						<DialogTitle className="sm:text-center">
+					<AlertDialogHeader>
+						<AlertDialogTitle className="sm:text-center">
 							Edit installation
-						</DialogTitle>
-						<DialogDescription className="sm:text-center">
+						</AlertDialogTitle>
+						<AlertDialogDescription className="sm:text-center">
 							Enter the installation's details.
-						</DialogDescription>
-					</DialogHeader>
+						</AlertDialogDescription>
+					</AlertDialogHeader>
 				</div>
 
 				<div className="space-y-5">
@@ -438,7 +438,7 @@ export function EditInstallationDialog({
 						{form.state.isSubmitting ? "Updating..." : "Update Installation"}
 					</Button>
 				</div>
-			</DialogContent>
-		</Dialog>
+			</AlertDialogContent>
+		</AlertDialog>
 	);
 }

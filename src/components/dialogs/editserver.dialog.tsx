@@ -3,14 +3,14 @@ import clsx from "clsx";
 import { useId } from "react";
 import { serverSchema } from "@/components/dialogs/addserver.dialog";
 import { PasswordInput } from "@/components/inputs";
-import { Button } from "@/components/ui/button";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
+	AlertDialog,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -73,15 +73,17 @@ export function EditServerDialog({
 		},
 	});
 	return (
-		<Dialog onOpenChange={() => closeDialog()} open={open}>
-			<DialogContent>
+		<AlertDialog onOpenChange={() => closeDialog()} open={open}>
+			<AlertDialogContent>
 				<div className="flex flex-col items-center gap-2">
-					<DialogHeader>
-						<DialogTitle className="sm:text-center">Edit server</DialogTitle>
-						<DialogDescription className="sm:text-center">
+					<AlertDialogHeader>
+						<AlertDialogTitle className="sm:text-center">
+							Edit server
+						</AlertDialogTitle>
+						<AlertDialogDescription className="sm:text-center">
 							Enter the server's details.
-						</DialogDescription>
-					</DialogHeader>
+						</AlertDialogDescription>
+					</AlertDialogHeader>
 				</div>
 
 				<div className="space-y-5">
@@ -352,7 +354,7 @@ export function EditServerDialog({
 						Update Server
 					</Button>
 				</div>
-			</DialogContent>
-		</Dialog>
+			</AlertDialogContent>
+		</AlertDialog>
 	);
 }
