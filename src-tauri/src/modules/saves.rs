@@ -4,11 +4,13 @@ use tauri::{command, AppHandle, Manager};
 use tauri_plugin_zustand::ManagerExt;
 
 use super::errors::UiError;
+use super::proto::GameData;
+use prost::Message;
 
 // The result should be a list of objects that contain the name of the save, and the installation it belongs to
 // e.g. [{ name: "Save 1", installation: "Installation 1" }, { name: "Save 2", installation: "Installation 2" }]
 #[command]
-pub fn get_all_saves(app: AppHandle) -> Result<Vec<(String, String)>, UiError> {
+pub fn get_all_saves(app: AppHandle) -> Result<Vec<(GameData, String, String)>, UiError> {
     // Look through all installation folders and collect save names from the .vcdbs files
     let installation_dir_path = app.path().app_data_dir().unwrap().join("installations");
     let mut saves = Vec::new();
@@ -31,13 +33,37 @@ pub fn get_all_saves(app: AppHandle) -> Result<Vec<(String, String)>, UiError> {
                         if save_path.is_file() {
                             if let Some(ext) = save_path.extension() {
                                 if ext == "vcdbs" {
-                                    if let Some(file_stem) = save_path.file_stem() {
-                                        if let Some(save_name) = file_stem.to_str() {
-                                            saves.push((
-                                                save_name.to_string(),
-                                                installation_name.clone(),
-                                            ));
-                                        }
+                                    // Save the string representation before moving save_path
+                                    let save_path_string = save_path.as_os_str().to_os_string().into_string().unwrap_or_default();
+                                    // Open said file as a sqlite database and read from the "gamedata" table, the data column from the first row
+                                    let conn = rusqlite::Connection::open(&save_path).map_err(|e| {
+                                        UiError::from(format!("DB open error: {e}"))
+                                    })?;
+                                    let mut stmt = conn
+                                        .prepare("SELECT data FROM gamedata LIMIT 1")
+                                        .map_err(|e| UiError::from(format!("DB prepare error: {e}")))?;
+                                    let mut rows = stmt
+                                        .query([])
+                                        .map_err(|e| UiError::from(format!("DB query error: {e}")))?;
+                                    if let Some(row) = rows
+                                        .next()
+                                        .map_err(|e| UiError::from(format!("DB row error: {e}")))? 
+                                    {
+                                        let data: Vec<u8> = row
+                                            .get(0)
+                                            .map_err(|e| UiError::from(format!("DB get error: {e}")))?;
+                                        // The data is a protobuf string, we need to parse it to get the save name
+                                        // The save name is stored in the "WorldName" field
+                                        // Use prost to decode the protobuf string
+                                        let gamedata = GameData::decode(
+                                            data.as_slice(),
+                                        )
+                                        .map_err(|e| UiError::from(format!("Protobuf decode error: {e}")))?;
+                                        saves.push((
+                                            gamedata,
+                                            save_path_string,
+                                            installation_name.clone(),
+                                        ));
                                     }
                                 }
                             }
