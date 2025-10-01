@@ -24,7 +24,7 @@ function RouteComponent() {
 	>(null);
 	const { data: worlds } = useSaves();
 	const filteredWorlds = worlds?.filter((world) => {
-		const matchesSearchText = world[0]
+		const matchesSearchText = world[0].world_name
 			.toLowerCase()
 			.includes(searchText.toLowerCase());
 		const matchesInstallation = selectedInstallationId
