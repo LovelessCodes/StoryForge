@@ -9,6 +9,7 @@ import z from "zod";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
+	DialogClose,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
@@ -62,7 +63,7 @@ export function AddInstallationDialog({ open }: { open: boolean }) {
 	const { addInstallation, installations } = useInstallationsStore();
 	const listenRef = useRef<UnlistenFn>(null);
 	const { data: installedVersions } = useInstalledVersions();
-	const { mutateAsync: downloadVersion } = useMutation({
+	const { mutateAsync: downloadVersion, isPending } = useMutation({
 		mutationFn: async (version: string) => {
 			const url = (await invoke("get_download_link", {
 				version,
@@ -123,25 +124,26 @@ export function AddInstallationDialog({ open }: { open: boolean }) {
 			listenRef.current?.();
 		},
 	});
-	const { mutateAsync: initializeGame } = useMutation({
-		mutationFn: (path: string) =>
-			invoke("initialize_game", { path }) as Promise<string>,
-		onError: (error, path) => {
-			toast.error(`Error initializing game: ${error}`, {
-				id: `initialize-game-${path}`,
-			});
-		},
-		onMutate: (path) => {
-			toast.loading(`Initializing game...`, {
-				id: `initialize-game-${path}`,
-			});
-		},
-		onSuccess: (_, path) => {
-			toast.success(`Game initialized`, {
-				id: `initialize-game-${path}`,
-			});
-		},
-	});
+	const { mutateAsync: initializeGame, isPending: initializePending } =
+		useMutation({
+			mutationFn: (path: string) =>
+				invoke("initialize_game", { path }) as Promise<string>,
+			onError: (error, path) => {
+				toast.error(`Error initializing game: ${error}`, {
+					id: `initialize-game-${path}`,
+				});
+			},
+			onMutate: (path) => {
+				toast.loading(`Initializing game...`, {
+					id: `initialize-game-${path}`,
+				});
+			},
+			onSuccess: (_, path) => {
+				toast.success(`Game initialized`, {
+					id: `initialize-game-${path}`,
+				});
+			},
+		});
 	const form = useForm({
 		defaultValues: {
 			favorite: false,
@@ -182,7 +184,16 @@ export function AddInstallationDialog({ open }: { open: boolean }) {
 		},
 	});
 	return (
-		<Dialog onOpenChange={() => closeDialog()} open={open}>
+		<Dialog
+			onOpenChange={() =>
+				!isPending &&
+				!initializePending &&
+				!form.state.isSubmitting &&
+				closeDialog()
+			}
+			open={open}
+		>
+			<DialogClose />
 			<DialogContent>
 				<div className="flex flex-col items-center gap-2">
 					<DialogHeader>

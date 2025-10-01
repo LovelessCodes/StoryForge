@@ -5,15 +5,14 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { useAddModToInstallation } from "@/hooks/use-add-mod-to-installation";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
@@ -22,6 +21,7 @@ import type { ModInfo, ProgressPayload } from "@/lib/types";
 import { makeStringFolderSafe } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
+import { Button } from "../ui/button";
 
 const installationSchema = z.object({
 	mods: z.array(
@@ -92,59 +92,62 @@ export function ImportInstallationDialog({ open }: { open: boolean }) {
 		},
 	});
 
-	const { mutateAsync: initializeGame } = useMutation({
-		mutationFn: (path: string) =>
-			invoke("initialize_game", { path }) as Promise<string>,
-		onError: (error, path) => {
-			toast.error(`Error initializing game: ${error}`, {
-				id: `initialize-game-${path}`,
-			});
-		},
-		onMutate: (path) => {
-			toast.loading(`Initializing game...`, {
-				id: `initialize-game-${path}`,
-			});
-		},
-		onSuccess: async (_, path) => {
-			toast.success(`Game initialized`, {
-				id: `initialize-game-${path}`,
-			});
+	const { mutateAsync: initializeGame, isPending: initializePending } =
+		useMutation({
+			mutationFn: (path: string) =>
+				invoke("initialize_game", { path }) as Promise<string>,
+			onError: (error, path) => {
+				toast.error(`Error initializing game: ${error}`, {
+					id: `initialize-game-${path}`,
+				});
+			},
+			onMutate: (path) => {
+				toast.loading(`Initializing game...`, {
+					id: `initialize-game-${path}`,
+				});
+			},
+			onSuccess: async (_, path) => {
+				toast.success(`Game initialized`, {
+					id: `initialize-game-${path}`,
+				});
 
-			const installation = installationSchema.safeParse(
-				JSON.parse(newInstallation.replace(/[“”]/g, '"').replace(/[‘’]/g, "'")),
-			);
-			if (installation.success) {
-				const installationId = Date.now();
-				const newInstallation = {
-					favorite: false,
-					icon: "",
-					id: installationId,
-					index: installations.length,
-					lastTimePlayed: 0,
-					name: installation.data.name,
-					path,
-					startParams: "",
-					totalTimePlayed: 0,
-					version: installation.data.version,
-				};
-				addInstallation(newInstallation);
+				const installation = installationSchema.safeParse(
+					JSON.parse(
+						newInstallation.replace(/[“”]/g, '"').replace(/[‘’]/g, "'"),
+					),
+				);
+				if (installation.success) {
+					const installationId = Date.now();
+					const newInstallation = {
+						favorite: false,
+						icon: "",
+						id: installationId,
+						index: installations.length,
+						lastTimePlayed: 0,
+						name: installation.data.name,
+						path,
+						startParams: "",
+						totalTimePlayed: 0,
+						version: installation.data.version,
+					};
+					addInstallation(newInstallation);
 
-				for (const mod of installation.data.mods) {
-					const modInfo = (await invoke("fetch_mod_info", {
-						modid: mod.id,
-					})) as ModInfo | null;
-					if (modInfo) {
-						addModToInstallation({
-							emitevent: `import-installation-${installationId}-${mod.id}`,
-							installation: newInstallation,
-							mod: modInfo,
-							version: mod.version,
-						});
+					for (const mod of installation.data.mods) {
+						const modInfo = (await invoke("fetch_mod_info", {
+							modid: mod.id,
+						})) as ModInfo | null;
+						if (modInfo) {
+							addModToInstallation({
+								emitevent: `import-installation-${installationId}-${mod.id}`,
+								installation: newInstallation,
+								mod: modInfo,
+								version: mod.version,
+							});
+						}
 					}
 				}
-			}
-		},
-	});
+			},
+		});
 
 	const handleImportInstallation = async () => {
 		const installation = installationSchema.safeParse(
@@ -158,36 +161,33 @@ export function ImportInstallationDialog({ open }: { open: boolean }) {
 	};
 
 	return (
-		<AlertDialog
-			onOpenChange={() => {
-				if (isPending) return;
-				closeDialog();
-			}}
+		<Dialog
+			onOpenChange={() => !isPending && !initializePending && closeDialog()}
 			open={open}
 		>
-			<AlertDialogContent>
-				<AlertDialogHeader>
-					<AlertDialogTitle>Import a new installation</AlertDialogTitle>
-					<AlertDialogDescription>
+			<DialogClose />
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Import a new installation</DialogTitle>
+					<DialogDescription>
 						Enter the JSON configuration of the installation you want to import.
-					</AlertDialogDescription>
-				</AlertDialogHeader>
+					</DialogDescription>
+				</DialogHeader>
 				<textarea
 					className="w-full h-48 p-2 border rounded resize-none"
 					onChange={(e) => setNewInstallation(e.target.value)}
 					placeholder="Paste installation JSON here..."
 					value={newInstallation}
 				/>
-				<AlertDialogFooter>
-					<AlertDialogCancel>Cancel</AlertDialogCancel>
-					<AlertDialogAction
+				<DialogFooter>
+					<Button
 						disabled={isPending || newInstallation.trim() === ""}
 						onClick={() => handleImportInstallation()}
 					>
 						{isPending ? "Importing..." : "Import"}
-					</AlertDialogAction>
-				</AlertDialogFooter>
-			</AlertDialogContent>
-		</AlertDialog>
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
 	);
 }

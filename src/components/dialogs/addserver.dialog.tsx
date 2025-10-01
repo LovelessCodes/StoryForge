@@ -7,6 +7,7 @@ import { PasswordInput } from "@/components/inputs";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
+	DialogClose,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
@@ -62,7 +63,7 @@ export function AddServerDialog({
 	const { closeDialog } = useDialogStore();
 	const { installations } = useInstallations();
 	const { addServer, servers } = useServerStore();
-	const { mutateAsync } = useAddServerToInstallation();
+	const { mutateAsync, isPending } = useAddServerToInstallation();
 	const form = useForm({
 		defaultValues: {
 			favorite: false,
@@ -113,7 +114,13 @@ export function AddServerDialog({
 		},
 	});
 	return (
-		<Dialog onOpenChange={() => closeDialog()} open={open}>
+		<Dialog
+			onOpenChange={() =>
+				!isPending && !form.state.isSubmitting && closeDialog()
+			}
+			open={open}
+		>
+			<DialogClose />
 			<DialogContent>
 				<div className="flex flex-col items-center gap-2">
 					<DialogHeader>

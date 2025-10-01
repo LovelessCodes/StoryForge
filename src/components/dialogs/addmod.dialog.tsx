@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
+	DialogClose,
 	DialogContent,
 	DialogDescription,
 	DialogFooter,
@@ -48,7 +49,7 @@ export function AddModDialog({
 	const listenRef = useRef<UnlistenFn>(null);
 	const [selectedVersion, setSelectedVersion] = useState<Release | null>(null);
 	const queryClient = useQueryClient();
-	const { mutate: addModToInstallation } = useAddModToInstallation({
+	const { mutate: addModToInstallation, isPending } = useAddModToInstallation({
 		onError: (error, variables) => {
 			toast.error(
 				`Error adding ${variables.mod.mod.name} to ${variables.installation.name}: ${error.message}`,
@@ -110,11 +111,13 @@ export function AddModDialog({
 	return (
 		<Dialog
 			onOpenChange={(op) => {
+				if (isPending) return;
 				if (op === false) setSelectedVersion(null);
 				closeDialog();
 			}}
 			open={open}
 		>
+			<DialogClose />
 			<DialogContent>
 				<DialogHeader>
 					<h3 className="text-lg font-medium leading-6">

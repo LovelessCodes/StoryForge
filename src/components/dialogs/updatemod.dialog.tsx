@@ -179,7 +179,7 @@ export function UpdateModDialog({
 	return (
 		<Dialog
 			onOpenChange={() => {
-				if (isPending) return;
+				if (isPending || removePending) return;
 				closeDialog();
 			}}
 			open={open}

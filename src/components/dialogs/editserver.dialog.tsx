@@ -6,6 +6,7 @@ import { PasswordInput } from "@/components/inputs";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
+	DialogClose,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
@@ -73,7 +74,11 @@ export function EditServerDialog({
 		},
 	});
 	return (
-		<Dialog onOpenChange={() => closeDialog()} open={open}>
+		<Dialog
+			onOpenChange={() => !form.state.isSubmitting && closeDialog()}
+			open={open}
+		>
+			<DialogClose />
 			<DialogContent>
 				<div className="flex flex-col items-center gap-2">
 					<DialogHeader>

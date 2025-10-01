@@ -1,5 +1,5 @@
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import clsx from "clsx";
@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
+	DialogClose,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
@@ -27,7 +28,10 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAppFolder } from "@/hooks/use-app-folder";
-import { useInstalledVersions } from "@/hooks/use-installed-versions";
+import {
+	installedVersionsQueryKey,
+	useInstalledVersions,
+} from "@/hooks/use-installed-versions";
 import { gameVersionsQuery } from "@/lib/queries";
 import type { ProgressPayload } from "@/lib/types";
 import {
@@ -57,9 +61,10 @@ export function EditInstallationDialog({
 	const { closeDialog } = useDialogStore();
 	const { data: installedVersions } = useInstalledVersions();
 	const { appFolder } = useAppFolder();
+	const queryClient = useQueryClient();
 	const listenRef = useRef<UnlistenFn>(null);
 	const { updateInstallation } = useInstallationsStore();
-	const { mutateAsync: downloadVersion } = useMutation({
+	const { mutateAsync: downloadVersion, isPending } = useMutation({
 		mutationFn: async (version: string) => {
 			const url = (await invoke("get_download_link", {
 				version,
@@ -109,12 +114,15 @@ export function EditInstallationDialog({
 				},
 			);
 		},
-		onSuccess: (d, v) => {
+		onSuccess: async (d, v) => {
 			listenRef.current?.();
 			if (d === "already_downloaded") {
 				toast.dismiss(`download-game-version-${v}`);
 				return;
 			}
+			await queryClient.invalidateQueries({
+				queryKey: installedVersionsQueryKey(),
+			});
 			toast.success(`Game version ${v} downloaded`, {
 				id: `download-game-version-${v}`,
 			});
@@ -157,12 +165,12 @@ export function EditInstallationDialog({
 	});
 	return (
 		<Dialog
-			onOpenChange={() => {
-				if (form.state.isSubmitting) return;
-				closeDialog();
-			}}
+			onOpenChange={() =>
+				!form.state.isSubmitting && !isPending && closeDialog()
+			}
 			open={open}
 		>
+			<DialogClose />
 			<DialogContent>
 				<div className="flex flex-col items-center gap-2">
 					<DialogHeader>

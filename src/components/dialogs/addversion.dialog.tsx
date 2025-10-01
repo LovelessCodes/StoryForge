@@ -117,7 +117,12 @@ export function AddVersionDialog({ open }: { open: boolean }) {
 
 	const version = useStore(form.store, (state) => state.values.version);
 	return (
-		<Dialog onOpenChange={() => closeDialog()} open={open}>
+		<Dialog
+			onOpenChange={() =>
+				!isPending && !form.state.isSubmitting && closeDialog()
+			}
+			open={open}
+		>
 			<DialogContent>
 				<div className="flex flex-col items-center gap-2">
 					<DialogHeader>
