@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { formatDistanceToNow } from "date-fns";
 import { DownloadCloudIcon, PlayIcon } from "lucide-react";
 import { useRef } from "react";
 import { toast } from "sonner";
@@ -9,16 +10,18 @@ import {
 	installedVersionsQueryKey,
 	useInstalledVersions,
 } from "@/hooks/use-installed-versions";
+import type { GameData } from "@/hooks/use-saves";
 import type { ProgressPayload } from "@/lib/types";
 import { useInstallations } from "@/stores/installations";
 import { Button } from "../ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
-export const WorldItem = ({ world }: { world: [string, string] }) => {
+export const WorldItem = ({ world }: { world: [GameData, string, string] }) => {
 	const { installations } = useInstallations();
 	const { data: versions } = useInstalledVersions();
+	const worldData = world[0];
 	const installation = installations.find(
-		(installation) => installation.path.split("/").pop() === world[1],
+		(installation) => installation.path.split("/").pop() === world[2],
 	);
 	const version = versions?.find((v) => v === installation?.version);
 	const listenRef = useRef<() => void>(null);
@@ -69,14 +72,60 @@ export const WorldItem = ({ world }: { world: [string, string] }) => {
 		},
 	});
 	if (!installation) return null;
+	if (!worldData) return null;
 	return (
 		<div
 			className="border-b border-b-muted p-2 flex gap-2 w-full"
-			key={world[0]}
+			key={worldData.world_name}
 		>
 			<div className="grid grid-cols-3 justify-between w-full items-center">
-				<p>{world[0]}</p>
-				<p className="text-sm text-muted-foreground">{installation.name}</p>
+				<div className="flex flex-col">
+					<p className="text-sm">{worldData.world_name}</p>
+					<p className="text-xs text-muted-foreground">
+						by{" "}
+						<span className="text-warning-foreground">
+							{worldData.created_by_player_name}
+						</span>
+					</p>
+				</div>
+				<div className="flex flex-col">
+					<p className="text-sm text-muted-foreground">
+						{installation.name}{" "}
+						{worldData.created_game_version !== installation.version &&
+							worldData.last_saved_game_version &&
+							worldData.last_saved_game_version !== installation.version && (
+								<Tooltip>
+									<TooltipTrigger>
+										<span className="text-xs opacity-50">
+											(Outdated Installation)
+										</span>
+									</TooltipTrigger>
+									<TooltipContent>
+										The installation version ({installation.version}) is
+										different from the world's created version (
+										{worldData.created_game_version}) or the last saved version
+										({worldData.last_saved_game_version}).
+									</TooltipContent>
+								</Tooltip>
+							)}
+						<span className="text-xs opacity-50">
+							({worldData.created_game_version}
+							{worldData.last_saved_game_version !==
+							worldData.created_game_version
+								? ` → ${worldData.last_saved_game_version}`
+								: ""}
+							)
+						</span>
+					</p>
+					<p className="text-xs text-muted-foreground">
+						Last played:{" "}
+						{worldData.last_played
+							? formatDistanceToNow(new Date(worldData.last_played), {
+									addSuffix: true,
+								})
+							: "Never"}
+					</p>
+				</div>
 				<div className="inline-flex justify-end -space-x-px rounded-md shadow-xs rtl:space-x-reverse">
 					<Tooltip>
 						<TooltipTrigger asChild>
@@ -86,10 +135,10 @@ export const WorldItem = ({ world }: { world: [string, string] }) => {
 									onClick={() => {
 										invoke("play_game", {
 											installation_id: installation.id,
-											save: world[0],
+											save: world[1].split("/").pop(),
 										});
 										toast.success(
-											`Launching ${installation.name} on ${world[0]}...`,
+											`Launching ${installation.name} on ${worldData.world_name}...`,
 										);
 									}}
 									variant="outline"
