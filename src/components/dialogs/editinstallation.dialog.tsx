@@ -131,7 +131,7 @@ export function EditInstallationDialog({
 	const form = useForm({
 		defaultValues: {
 			favorite: installation.favorite,
-			icon: installation.icon,
+			icon: installation.icon ?? "",
 			id: installation.id,
 			index: installation.index,
 			name: installation.name,
