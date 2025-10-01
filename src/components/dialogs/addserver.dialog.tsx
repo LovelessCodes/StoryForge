@@ -4,14 +4,15 @@ import { useId } from "react";
 import { toast } from "sonner";
 import z from "zod";
 import { PasswordInput } from "@/components/inputs";
-import {
-	AlertDialog,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -62,7 +63,7 @@ export function AddServerDialog({
 	const { closeDialog } = useDialogStore();
 	const { installations } = useInstallations();
 	const { addServer, servers } = useServerStore();
-	const { mutateAsync } = useAddServerToInstallation();
+	const { mutateAsync, isPending } = useAddServerToInstallation();
 	const form = useForm({
 		defaultValues: {
 			favorite: false,
@@ -113,17 +114,21 @@ export function AddServerDialog({
 		},
 	});
 	return (
-		<AlertDialog onOpenChange={() => closeDialog()} open={open}>
-			<AlertDialogContent>
+		<Dialog
+			onOpenChange={() =>
+				!isPending && !form.state.isSubmitting && closeDialog()
+			}
+			open={open}
+		>
+			<DialogClose />
+			<DialogContent>
 				<div className="flex flex-col items-center gap-2">
-					<AlertDialogHeader>
-						<AlertDialogTitle className="sm:text-center">
-							Add server
-						</AlertDialogTitle>
-						<AlertDialogDescription className="sm:text-center">
+					<DialogHeader>
+						<DialogTitle className="sm:text-center">Add server</DialogTitle>
+						<DialogDescription className="sm:text-center">
 							Enter the new server's details.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
+						</DialogDescription>
+					</DialogHeader>
 				</div>
 
 				<div className="space-y-5">
@@ -403,7 +408,7 @@ export function AddServerDialog({
 						Add Server
 					</Button>
 				</div>
-			</AlertDialogContent>
-		</AlertDialog>
+			</DialogContent>
+		</Dialog>
 	);
 }

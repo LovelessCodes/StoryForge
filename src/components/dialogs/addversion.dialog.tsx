@@ -6,14 +6,14 @@ import clsx from "clsx";
 import { useRef } from "react";
 import { toast } from "sonner";
 import z from "zod";
-import {
-	AlertDialog,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
 	Select,
@@ -117,17 +117,20 @@ export function AddVersionDialog({ open }: { open: boolean }) {
 
 	const version = useStore(form.store, (state) => state.values.version);
 	return (
-		<AlertDialog onOpenChange={() => closeDialog()} open={open}>
-			<AlertDialogContent>
+		<Dialog
+			onOpenChange={() =>
+				!isPending && !form.state.isSubmitting && closeDialog()
+			}
+			open={open}
+		>
+			<DialogContent>
 				<div className="flex flex-col items-center gap-2">
-					<AlertDialogHeader>
-						<AlertDialogTitle className="sm:text-center">
-							Add Version
-						</AlertDialogTitle>
-						<AlertDialogDescription className="sm:text-center">
+					<DialogHeader>
+						<DialogTitle className="sm:text-center">Add Version</DialogTitle>
+						<DialogDescription className="sm:text-center">
 							Enter the new version.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
+						</DialogDescription>
+					</DialogHeader>
 				</div>
 				{currentPlatform === "macos" &&
 					sortedVersions &&
@@ -213,7 +216,7 @@ export function AddVersionDialog({ open }: { open: boolean }) {
 						{isPending ? "Adding Version..." : "Add Version"}
 					</Button>
 				</div>
-			</AlertDialogContent>
-		</AlertDialog>
+			</DialogContent>
+		</Dialog>
 	);
 }

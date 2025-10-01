@@ -3,14 +3,15 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import {
-	AlertDialog,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+} from "@/components/ui/dialog";
 import {
 	Select,
 	SelectContent,
@@ -48,7 +49,7 @@ export function AddModDialog({
 	const listenRef = useRef<UnlistenFn>(null);
 	const [selectedVersion, setSelectedVersion] = useState<Release | null>(null);
 	const queryClient = useQueryClient();
-	const { mutate: addModToInstallation } = useAddModToInstallation({
+	const { mutate: addModToInstallation, isPending } = useAddModToInstallation({
 		onError: (error, variables) => {
 			toast.error(
 				`Error adding ${variables.mod.mod.name} to ${variables.installation.name}: ${error.message}`,
@@ -108,25 +109,27 @@ export function AddModDialog({
 	}, [modInfo, installation.version]);
 
 	return (
-		<AlertDialog
+		<Dialog
 			onOpenChange={(op) => {
+				if (isPending) return;
 				if (op === false) setSelectedVersion(null);
 				closeDialog();
 			}}
 			open={open}
 		>
-			<AlertDialogContent>
-				<AlertDialogHeader>
+			<DialogClose />
+			<DialogContent>
+				<DialogHeader>
 					<h3 className="text-lg font-medium leading-6">
 						Add <span className="text-yellow-200">{modInfo?.mod.name}</span> to{" "}
 						<span className="text-blue-200">{installation.name}</span>
 					</h3>
-				</AlertDialogHeader>
-				<AlertDialogDescription>
+				</DialogHeader>
+				<DialogDescription>
 					Select the version of{" "}
 					<span className="text-yellow-200">{modInfo?.mod.name}</span> you want
 					to add to <span className="text-blue-200">{installation.name}</span>.
-				</AlertDialogDescription>
+				</DialogDescription>
 				{/* We need a select, incase the installation version is not compatible */}
 				<div className="mt-2 w-full overflow-hidden">
 					<Select
@@ -178,7 +181,7 @@ export function AddModDialog({
 						</SelectContent>
 					</Select>
 				</div>
-				<AlertDialogFooter>
+				<DialogFooter>
 					<Button
 						disabled={!selectedVersion}
 						onClick={async () => {
@@ -194,8 +197,8 @@ export function AddModDialog({
 					>
 						Add Mod
 					</Button>
-				</AlertDialogFooter>
-			</AlertDialogContent>
-		</AlertDialog>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
 	);
 }

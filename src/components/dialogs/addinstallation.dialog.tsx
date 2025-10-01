@@ -6,14 +6,15 @@ import clsx from "clsx";
 import { useId, useRef } from "react";
 import { toast } from "sonner";
 import z from "zod";
-import {
-	AlertDialog,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -62,7 +63,7 @@ export function AddInstallationDialog({ open }: { open: boolean }) {
 	const { addInstallation, installations } = useInstallationsStore();
 	const listenRef = useRef<UnlistenFn>(null);
 	const { data: installedVersions } = useInstalledVersions();
-	const { mutateAsync: downloadVersion } = useMutation({
+	const { mutateAsync: downloadVersion, isPending } = useMutation({
 		mutationFn: async (version: string) => {
 			const url = (await invoke("get_download_link", {
 				version,
@@ -123,25 +124,26 @@ export function AddInstallationDialog({ open }: { open: boolean }) {
 			listenRef.current?.();
 		},
 	});
-	const { mutateAsync: initializeGame } = useMutation({
-		mutationFn: (path: string) =>
-			invoke("initialize_game", { path }) as Promise<string>,
-		onError: (error, path) => {
-			toast.error(`Error initializing game: ${error}`, {
-				id: `initialize-game-${path}`,
-			});
-		},
-		onMutate: (path) => {
-			toast.loading(`Initializing game...`, {
-				id: `initialize-game-${path}`,
-			});
-		},
-		onSuccess: (_, path) => {
-			toast.success(`Game initialized`, {
-				id: `initialize-game-${path}`,
-			});
-		},
-	});
+	const { mutateAsync: initializeGame, isPending: initializePending } =
+		useMutation({
+			mutationFn: (path: string) =>
+				invoke("initialize_game", { path }) as Promise<string>,
+			onError: (error, path) => {
+				toast.error(`Error initializing game: ${error}`, {
+					id: `initialize-game-${path}`,
+				});
+			},
+			onMutate: (path) => {
+				toast.loading(`Initializing game...`, {
+					id: `initialize-game-${path}`,
+				});
+			},
+			onSuccess: (_, path) => {
+				toast.success(`Game initialized`, {
+					id: `initialize-game-${path}`,
+				});
+			},
+		});
 	const form = useForm({
 		defaultValues: {
 			favorite: false,
@@ -182,17 +184,26 @@ export function AddInstallationDialog({ open }: { open: boolean }) {
 		},
 	});
 	return (
-		<AlertDialog onOpenChange={() => closeDialog()} open={open}>
-			<AlertDialogContent>
+		<Dialog
+			onOpenChange={() =>
+				!isPending &&
+				!initializePending &&
+				!form.state.isSubmitting &&
+				closeDialog()
+			}
+			open={open}
+		>
+			<DialogClose />
+			<DialogContent>
 				<div className="flex flex-col items-center gap-2">
-					<AlertDialogHeader>
-						<AlertDialogTitle className="sm:text-center">
+					<DialogHeader>
+						<DialogTitle className="sm:text-center">
 							Add installation
-						</AlertDialogTitle>
-						<AlertDialogDescription className="sm:text-center">
+						</DialogTitle>
+						<DialogDescription className="sm:text-center">
 							Enter the new installation's details.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
+						</DialogDescription>
+					</DialogHeader>
 				</div>
 
 				<div className="space-y-5">
@@ -458,7 +469,7 @@ export function AddInstallationDialog({ open }: { open: boolean }) {
 						{form.state.isSubmitting ? "Adding..." : "Add Installation"}
 					</Button>
 				</div>
-			</AlertDialogContent>
-		</AlertDialog>
+			</DialogContent>
+		</Dialog>
 	);
 }

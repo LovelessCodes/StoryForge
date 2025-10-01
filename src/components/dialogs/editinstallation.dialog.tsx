@@ -1,18 +1,19 @@
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import clsx from "clsx";
 import { useId, useRef } from "react";
 import { toast } from "sonner";
-import {
-	AlertDialog,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -27,7 +28,10 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAppFolder } from "@/hooks/use-app-folder";
-import { useInstalledVersions } from "@/hooks/use-installed-versions";
+import {
+	installedVersionsQueryKey,
+	useInstalledVersions,
+} from "@/hooks/use-installed-versions";
 import { gameVersionsQuery } from "@/lib/queries";
 import type { ProgressPayload } from "@/lib/types";
 import {
@@ -57,9 +61,10 @@ export function EditInstallationDialog({
 	const { closeDialog } = useDialogStore();
 	const { data: installedVersions } = useInstalledVersions();
 	const { appFolder } = useAppFolder();
+	const queryClient = useQueryClient();
 	const listenRef = useRef<UnlistenFn>(null);
 	const { updateInstallation } = useInstallationsStore();
-	const { mutateAsync: downloadVersion } = useMutation({
+	const { mutateAsync: downloadVersion, isPending } = useMutation({
 		mutationFn: async (version: string) => {
 			const url = (await invoke("get_download_link", {
 				version,
@@ -109,12 +114,15 @@ export function EditInstallationDialog({
 				},
 			);
 		},
-		onSuccess: (d, v) => {
+		onSuccess: async (d, v) => {
 			listenRef.current?.();
 			if (d === "already_downloaded") {
 				toast.dismiss(`download-game-version-${v}`);
 				return;
 			}
+			await queryClient.invalidateQueries({
+				queryKey: installedVersionsQueryKey(),
+			});
 			toast.success(`Game version ${v} downloaded`, {
 				id: `download-game-version-${v}`,
 			});
@@ -156,23 +164,23 @@ export function EditInstallationDialog({
 		},
 	});
 	return (
-		<AlertDialog
-			onOpenChange={() => {
-				if (form.state.isSubmitting) return;
-				closeDialog();
-			}}
+		<Dialog
+			onOpenChange={() =>
+				!form.state.isSubmitting && !isPending && closeDialog()
+			}
 			open={open}
 		>
-			<AlertDialogContent>
+			<DialogClose />
+			<DialogContent>
 				<div className="flex flex-col items-center gap-2">
-					<AlertDialogHeader>
-						<AlertDialogTitle className="sm:text-center">
+					<DialogHeader>
+						<DialogTitle className="sm:text-center">
 							Edit installation
-						</AlertDialogTitle>
-						<AlertDialogDescription className="sm:text-center">
+						</DialogTitle>
+						<DialogDescription className="sm:text-center">
 							Enter the installation's details.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
+						</DialogDescription>
+					</DialogHeader>
 				</div>
 
 				<div className="space-y-5">
@@ -438,7 +446,7 @@ export function EditInstallationDialog({
 						{form.state.isSubmitting ? "Updating..." : "Update Installation"}
 					</Button>
 				</div>
-			</AlertDialogContent>
-		</AlertDialog>
+			</DialogContent>
+		</Dialog>
 	);
 }
