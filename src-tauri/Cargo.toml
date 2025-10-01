@@ -46,6 +46,8 @@ zip-extensions = "0.8"
 walkdir = "2"
 dunce = "1"
 tauri-plugin-opener = "2"
+rusqlite = "0.37.0"
+prost = "0.14.1"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55"
