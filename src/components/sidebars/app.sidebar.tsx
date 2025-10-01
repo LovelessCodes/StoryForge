@@ -226,20 +226,6 @@ export function AppSidebar() {
 									activeProps={{
 										className: "bg-accent text-accent-foreground",
 									}}
-									to="/news"
-									viewTransition={{ types: ["warp"] }}
-								>
-									<NewspaperIcon />
-									News
-								</Link>
-							</SidebarMenuButton>
-						</SidebarMenuItem>
-						<SidebarMenuItem>
-							<SidebarMenuButton asChild>
-								<Link
-									activeProps={{
-										className: "bg-accent text-accent-foreground",
-									}}
 									to="/installations"
 									viewTransition={{ types: ["warp"] }}
 								>
@@ -316,6 +302,20 @@ export function AppSidebar() {
 							<SidebarMenuBadge className="text-xs text-muted-foreground">
 								{installedVersions?.length}
 							</SidebarMenuBadge>
+						</SidebarMenuItem>
+						<SidebarMenuItem>
+							<SidebarMenuButton asChild>
+								<Link
+									activeProps={{
+										className: "bg-accent text-accent-foreground",
+									}}
+									to="/news"
+									viewTransition={{ types: ["warp"] }}
+								>
+									<NewspaperIcon />
+									News
+								</Link>
+							</SidebarMenuButton>
 						</SidebarMenuItem>
 					</SidebarMenu>
 				</SidebarGroup>
