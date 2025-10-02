@@ -67,6 +67,8 @@ pub fn run() {
             // Saves
             saves::get_installation_saves,
             saves::get_all_saves,
+            saves::update_world,
+            saves::remove_world,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
