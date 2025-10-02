@@ -22,4 +22,8 @@ pub struct GameData {
     pub play_style: ::prost::alloc::string::String,
     #[prost(string, tag = "30")]
     pub world_type: ::prost::alloc::string::String,
+    #[prost(string, tag = "34")]
+    pub savegame_identifier: ::prost::alloc::string::String,
+    #[prost(int64, tag = "38")]
+    pub total_game_seconds_start: i64,
 }
