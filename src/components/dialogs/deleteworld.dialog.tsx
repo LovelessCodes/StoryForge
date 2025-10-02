@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { formatDistanceToNow } from "date-fns";
+import { addSeconds, formatDistance, formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import { useId, useState } from "react";
 import { toast } from "sonner";
@@ -77,23 +77,25 @@ export function DeleteWorldDialog({
 						Story Forge.
 						<motion.div
 							animate={{ opacity: 1, y: 0 }}
-							className="my-4 rounded-md border border-warning bg-warning/10 p-3 gap-2 flex flex-col text-warning-foreground"
+							className="my-4 rounded-md border border-warning bg-warning/10 p-3 flex flex-col text-warning-foreground"
 							exit={{ opacity: 0, y: -10 }}
 							initial={{ opacity: 0, y: -10 }}
 							transition={{ duration: 0.3 }}
 						>
-							<p>
+							<p className="mb-4">
 								<b>Warning:</b> This will delete the world from your computer.
 								If you want to keep a backup, make sure to export it before
 								proceeding.
 							</p>
 							<p>
-								Some more info here about <b>{world[0].world_name}</b>, before
-								you delete it;
+								<b>World info:</b>
 							</p>
 							<ul className="list-disc pl-5">
 								<li>
 									World name: <b>{world[0].world_name}</b>
+								</li>
+								<li>
+									Map identifier: <b>{world[0].savegame_identifier}</b>
 								</li>
 								<li>
 									World type: <b>{world[0].world_type}</b>
@@ -112,6 +114,15 @@ export function DeleteWorldDialog({
 													addSuffix: true,
 												})
 											: "Never"}
+									</b>
+								</li>
+								<li>
+									Last session:{" "}
+									<b>
+										{formatDistance(
+											new Date(),
+											addSeconds(new Date(), world[0].total_seconds_played),
+										)}
 									</b>
 								</li>
 								<li>
