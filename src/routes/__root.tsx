@@ -17,8 +17,10 @@ import { ConnectServerDialog } from "@/components/dialogs/connectserver.dialog";
 import { DeleteInstallationDialog } from "@/components/dialogs/deleteinstallation.dialog";
 import { DeleteServerDialog } from "@/components/dialogs/deleteserver.dialog";
 import { DeleteVersionDialog } from "@/components/dialogs/deleteversion.dialog";
+import { DeleteWorldDialog } from "@/components/dialogs/deleteworld.dialog";
 import { EditInstallationDialog } from "@/components/dialogs/editinstallation.dialog";
 import { EditServerDialog } from "@/components/dialogs/editserver.dialog";
+import { EditWorldDialog } from "@/components/dialogs/editworld.dialog";
 import { ImportInstallationDialog } from "@/components/dialogs/importinstallation.dialog";
 import { RemoveModDialog } from "@/components/dialogs/removemod.dialog";
 import { UpdateModDialog } from "@/components/dialogs/updatemod.dialog";
@@ -191,6 +193,22 @@ function RootComponent() {
 					{...((active?.key === "UpdateModDialog"
 						? active.props
 						: {}) as DialogMap["UpdateModDialog"])}
+				/>
+			)}
+			{active?.key === "EditWorldDialog" && (
+				<EditWorldDialog
+					open={active?.key === "EditWorldDialog"}
+					{...((active?.key === "EditWorldDialog"
+						? active.props
+						: {}) as DialogMap["EditWorldDialog"])}
+				/>
+			)}
+			{active?.key === "DeleteWorldDialog" && (
+				<DeleteWorldDialog
+					open={active?.key === "DeleteWorldDialog"}
+					{...((active?.key === "DeleteWorldDialog"
+						? active.props
+						: {}) as DialogMap["DeleteWorldDialog"])}
 				/>
 			)}
 		</React.Fragment>
