@@ -28,7 +28,33 @@
 			"icons/icon.icns",
 			"icons/icon.ico"
 		],
-		"targets": "all"
+		"license": "GNU General Public License (GPL) v3",
+		"linux": {
+			"appimage": {
+				"bundleMediaFramework": false,
+				"files": {}
+			},
+			"deb": {
+				"files": {}
+			},
+			"rpm": {
+				"epoch": 0,
+				"files": {},
+				"release": "1"
+			}
+		},
+		"macOS": {
+			"signingIdentity": "-"
+		},
+		"targets": "all",
+		"windows": {
+			"certificateThumbprint": null,
+			"digestAlgorithm": "sha256",
+			"nsis": {
+				"installerIcon": "icons/icon.ico"
+			},
+			"timestampUrl": ""
+		}
 	},
 	"identifier": "StoryForge",
 	"plugins": {
