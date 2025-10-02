@@ -135,7 +135,7 @@ pub fn get_installation_saves(
 }
 
 #[command]
-pub fn update_world(app: AppHandle, installation_id: u64, world_path: String, name: String) -> Result<(), UiError> {
+pub fn update_world(app: AppHandle, installation_id: u64, world_path: String, name: String, identifier: Option<String>) -> Result<(), UiError> {
     let installation_zustand = app.zustand().get("installations", "installations").unwrap();
     let installation_json: Value = from_value(installation_zustand).unwrap();
     // Find installation with matching id
@@ -190,6 +190,21 @@ pub fn update_world(app: AppHandle, installation_id: u64, world_path: String, na
     // Rename the file to the new name, but sanitize it first and make it lowercase
     let file_name = name.replace(|c: char| !c.is_ascii_alphanumeric() && c != ' ' && c != '_' && c != '-', "").to_lowercase();
     let new_world_path = saves_path.join(format!("{}.vcdbs", file_name));
+    // If an identifier is provided, and a Maps file is found with that identifier, move it too
+    if let Some(id) = identifier {
+        let maps_path = Path::new(&world_path).parent().and_then(|p| p.parent()).map(|p| p.join("Maps").join(format!("{}.db", id)));
+        if let Some(maps_path) = maps_path {
+            if maps_path.exists() && maps_path.is_file() {
+                let new_maps_path = Path::new(installation["path"].as_str().unwrap()).join("Maps").join(format!("{}.db", id));
+                // Ensure the Maps directory exists
+                let maps_dir = new_maps_path.parent().unwrap();
+                if !maps_dir.exists() {
+                    std::fs::create_dir_all(maps_dir).map_err(|e| UiError::from(format!("Create dir error: {e}")))?;
+                }
+                std::fs::rename(maps_path, &new_maps_path).map_err(|e| UiError::from(format!("Rename error: {e}")))?;
+            }
+        }
+    }
     std::fs::rename(world_path, &new_world_path).map_err(|e| UiError::from(format!("Rename error: {e}")))?;
 
     // Update the "WorldName" field in the protobuf data inside the .vcdbs file
