@@ -5,8 +5,10 @@ import type { ConnectServerDialogProps } from "@/components/dialogs/connectserve
 import type { DeleteInstallationDialogProps } from "@/components/dialogs/deleteinstallation.dialog";
 import type { DeleteServerDialogProps } from "@/components/dialogs/deleteserver.dialog";
 import type { DeleteVersionDialogProps } from "@/components/dialogs/deleteversion.dialog";
+import type { DeleteWorldDialogProps } from "@/components/dialogs/deleteworld.dialog";
 import type { EditInstallationDialogProps } from "@/components/dialogs/editinstallation.dialog";
 import type { EditServerDialogProps } from "@/components/dialogs/editserver.dialog";
+import type { EditWorldDialogProps } from "@/components/dialogs/editworld.dialog";
 import type { RemoveModDialogProps } from "@/components/dialogs/removemod.dialog";
 import type { UpdateModDialogProps } from "@/components/dialogs/updatemod.dialog";
 
@@ -25,6 +27,8 @@ export type DialogMap = {
 	ImportInstallationDialog: undefined;
 	RemoveModDialog: RemoveModDialogProps;
 	UpdateModDialog: UpdateModDialogProps;
+	EditWorldDialog: EditWorldDialogProps;
+	DeleteWorldDialog: DeleteWorldDialogProps;
 };
 
 type DialogKey = keyof DialogMap;
