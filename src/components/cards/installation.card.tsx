@@ -1,13 +1,23 @@
-import { Heart, Package, PackagePlusIcon, Play, Settings } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useQueryClient } from "@tanstack/react-query";
+import { listen } from "@tauri-apps/api/event";
 import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
-import type { Installation } from "@/stores/installations";
+	DownloadCloudIcon,
+	PackagePlusIcon,
+	Pencil,
+	Play,
+	Star,
+} from "lucide-react";
+import { useRef } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { useDownloadVersion } from "@/hooks/use-download-version";
+import {
+	installedVersionsQueryKey,
+	useInstalledVersions,
+} from "@/hooks/use-installed-versions";
+import type { ProgressPayload } from "@/lib/types";
+import { type Installation, useInstallations } from "@/stores/installations";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 interface InstallationCardProps {
 	installation: Installation;
@@ -17,28 +27,6 @@ interface InstallationCardProps {
 	onAddMods: (installation: Installation) => void;
 }
 
-function formatPlayTime(minutes: number): string {
-	const hours = Math.floor(minutes / 60);
-	const mins = minutes % 60;
-	if (hours > 0) {
-		return `${hours}h ${mins}m`;
-	}
-	return `${mins}m`;
-}
-
-function formatLastPlayed(timestamp: number): string {
-	const date = new Date(timestamp);
-	const now = new Date();
-	const diffInDays = Math.floor(
-		(now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
-	);
-
-	if (diffInDays === 0) return "Today";
-	if (diffInDays === 1) return "Yesterday";
-	if (diffInDays < 7) return `${diffInDays} days ago`;
-	return date.toLocaleDateString();
-}
-
 export function InstallationCard({
 	installation,
 	onPlay,
@@ -46,88 +34,177 @@ export function InstallationCard({
 	onEdit,
 	onAddMods,
 }: InstallationCardProps) {
-	return (
-		<Card className="hover:shadow-lg transition-shadow">
-			<CardHeader className="pb-3">
-				<div className="flex items-start justify-between">
-					<div className="flex items-center gap-3">
-						{installation.icon ? (
-							<img
-								alt={installation.name}
-								className="w-12 h-12 rounded-lg object-cover"
-								src={installation.icon || "/placeholder.svg"}
-							/>
-						) : (
-							<div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
-								<Package className="w-6 h-6 text-muted-foreground" />
-							</div>
-						)}
-						<div>
-							<CardTitle className="text-lg font-bold">
-								{installation.name}
-							</CardTitle>
-							<Badge className="mt-1" variant="secondary">
-								v{installation.version}
-							</Badge>
-						</div>
-					</div>
-					<Button
-						className="text-destructive hover:text-destructive"
-						onClick={() => onUnfavorite(installation)}
-						size="sm"
-						variant="ghost"
-					>
-						<Heart className="w-4 h-4 fill-current" />
-					</Button>
-				</div>
-			</CardHeader>
-			<CardContent className="space-y-4">
-				<div className="grid grid-cols-2 gap-4 text-sm">
-					<div>
-						<p className="text-muted-foreground">Total Playtime</p>
-						<p className="font-medium">
-							{formatPlayTime(installation.totalTimePlayed)}
-						</p>
-					</div>
-					<div>
-						<p className="text-muted-foreground">Last Played</p>
-						<p className="font-medium">
-							{formatLastPlayed(installation.lastTimePlayed)}
-						</p>
-					</div>
-				</div>
+	const { installations } = useInstallations();
+	const listenRef = useRef<() => void>(null);
+	const queryClient = useQueryClient();
 
-				<div className="flex gap-2">
-					<Button className="flex-1" onClick={() => onPlay(installation)}>
-						<Play className="w-4 h-4 mr-2" />
-						Play
-					</Button>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								onClick={() => onEdit(installation)}
-								size="icon"
-								variant="outline"
-							>
-								<Settings className="w-4 h-4" />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Edit Installation</TooltipContent>
-					</Tooltip>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								onClick={() => onAddMods(installation)}
-								size="icon"
-								variant="outline"
-							>
-								<PackagePlusIcon className="w-4 h-4" />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Add Mods</TooltipContent>
-					</Tooltip>
+	const { mutate: installVersion } = useDownloadVersion({
+		onError: (error, v) => {
+			listenRef.current?.();
+			toast.error(`Error downloading game version: ${error.message}`, {
+				id: `download-game-version-${v}`,
+			});
+		},
+		onMutate: async (v) => {
+			toast.loading(`Starting to download game version ${v}...`, {
+				id: `download-game-version-${v}`,
+			});
+			listenRef.current = await listen<ProgressPayload>(
+				`download://version:${v.replace(/\./g, "_")}`,
+				(event) => {
+					const { phase, percent } = event.payload;
+					if (phase === "download") {
+						toast.loading(
+							`Downloading game version ${v}: ${percent?.toFixed(0)}%`,
+							{
+								id: `download-game-version-${v}`,
+							},
+						);
+					}
+					if (phase === "extract") {
+						toast.loading(`Extracting game version ${v}`, {
+							id: `download-game-version-${v}`,
+						});
+					}
+				},
+			);
+		},
+		onSuccess: (d, v) => {
+			listenRef.current?.();
+			if (d === "already_downloaded") {
+				toast.dismiss(`download-game-version-${v}`);
+				return;
+			}
+			toast.success(`Game version ${v} downloaded`, {
+				id: `download-game-version-${v}`,
+			});
+			queryClient.invalidateQueries({
+				queryKey: installedVersionsQueryKey(),
+			});
+		},
+	});
+
+	const { data: versions } = useInstalledVersions();
+	return (
+		<div
+			className={`flex items-center justify-between px-4 py-3 ${
+				installation !== installations[installations.length - 1]
+					? "border-b border-border"
+					: ""
+			}`}
+			key={installation.id}
+		>
+			<div className="flex items-center gap-3">
+				<div
+					className={`h-2 w-2 rounded-full ${
+						versions.includes(installation.version)
+							? "bg-green-500"
+							: "bg-muted-foreground/40"
+					}`}
+				/>
+				<div>
+					<p className="font-mono text-sm text-foreground">
+						{installation.name}
+					</p>
+					{installation.version && (
+						<p className="font-mono text-xs text-muted-foreground">
+							v{installation.version}
+						</p>
+					)}
 				</div>
-			</CardContent>
-		</Card>
+			</div>
+			<div className="flex items-center gap-1">
+				<Tooltip>
+					{versions.includes(installation.version) ? (
+						<>
+							<TooltipTrigger asChild>
+								<Button
+									className="h-8 w-8 text-muted-foreground hover:text-foreground"
+									onClick={() => onPlay(installation)}
+									size="icon"
+									variant="ghost"
+								>
+									<Play className="h-4 w-4" />
+									<span className="sr-only">Play {installation.name}</span>
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Play {installation.name}</TooltipContent>
+						</>
+					) : (
+						<>
+							<TooltipTrigger asChild>
+								<Button
+									className="h-8 w-8 text-muted-foreground hover:text-foreground"
+									onClick={() => installVersion(installation.version)}
+									size="icon"
+									variant="ghost"
+								>
+									<DownloadCloudIcon className="h-4 w-4" />
+									<span className="sr-only">
+										Download version {installation.version}
+									</span>
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>
+								Download version {installation.version}
+							</TooltipContent>
+						</>
+					)}
+				</Tooltip>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							className="h-8 w-8 text-muted-foreground hover:text-foreground"
+							onClick={() => onAddMods(installation)}
+							size="icon"
+							variant="ghost"
+						>
+							<PackagePlusIcon className="h-4 w-4" />
+							<span className="sr-only">Add mods to {installation.name}</span>
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Add mods</TooltipContent>
+				</Tooltip>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							className="h-8 w-8 text-muted-foreground hover:text-foreground"
+							onClick={() => onEdit(installation)}
+							size="icon"
+							variant="ghost"
+						>
+							<Pencil className="h-4 w-4" />
+							<span className="sr-only">Edit {installation.name}</span>
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Edit {installation.name}</TooltipContent>
+				</Tooltip>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							className="h-8 w-8"
+							onClick={() => onUnfavorite(installation)}
+							size="icon"
+							variant="ghost"
+						>
+							<Star
+								className={`h-4 w-4 ${
+									installation.favorite
+										? "fill-warning text-warning"
+										: "text-muted-foreground hover:text-foreground"
+								}`}
+							/>
+							<span className="sr-only">
+								{installation.favorite ? "Unfavorite" : "Favorite"}{" "}
+								{installation.name}
+							</span>
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>
+						{installation.favorite ? "Unfavorite" : "Favorite"}
+					</TooltipContent>
+				</Tooltip>
+			</div>
+		</div>
 	);
 }
