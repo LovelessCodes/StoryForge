@@ -203,7 +203,7 @@ export function InstallationRow({
 								className={cn(
 									"-ms-1",
 									installation.favorite
-										? "fill-yellow-300 text-yellow-300 opacity-100"
+										? "fill-warning text-warning opacity-100"
 										: "opacity-60",
 								)}
 								size={16}
