@@ -2,7 +2,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { formatDistanceToNow } from "date-fns";
-import { DownloadCloudIcon, PlayIcon, SproutIcon } from "lucide-react";
+import {
+	DownloadCloudIcon,
+	PlayIcon,
+	SproutIcon,
+	WrenchIcon,
+	XIcon,
+} from "lucide-react";
 import { useRef } from "react";
 import { toast } from "sonner";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
@@ -14,6 +20,7 @@ import {
 import type { GameData } from "@/hooks/use-saves";
 import type { ProgressPayload } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
 import { Button } from "../ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
@@ -21,6 +28,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 export const WorldItem = ({ world }: { world: [GameData, string, string] }) => {
 	const { installations } = useInstallations();
 	const { data: versions } = useInstalledVersions();
+	const { openDialog } = useDialogStore();
 	const [copiedText, copyToClipboard] = useCopyToClipboard();
 	const worldData = world[0];
 	const installation = installations.find(
@@ -112,36 +120,41 @@ export const WorldItem = ({ world }: { world: [GameData, string, string] }) => {
 						<span className="text-warning-foreground">
 							{worldData.created_by_player_name}
 						</span>
+						<span className="text-muted-foreground">
+							{" "}
+							in {worldData.created_game_version}
+						</span>
 					</p>
 				</div>
 				<div className="flex flex-col">
 					<p className="text-sm text-muted-foreground">
 						{installation.name}{" "}
-						{worldData.created_game_version !== installation.version &&
-							worldData.last_saved_game_version &&
-							worldData.last_saved_game_version !== installation.version && (
-								<Tooltip>
-									<TooltipTrigger>
-										<span className="text-xs opacity-50">
-											(Outdated Installation)
-										</span>
-									</TooltipTrigger>
-									<TooltipContent>
-										The installation version ({installation.version}) is
-										different from the world's created version (
-										{worldData.created_game_version}) or the last saved version
-										({worldData.last_saved_game_version}).
-									</TooltipContent>
-								</Tooltip>
-							)}
-						<span className="text-xs opacity-50">
-							({worldData.created_game_version}
-							{worldData.last_saved_game_version !==
-							worldData.created_game_version
-								? ` → ${worldData.last_saved_game_version}`
-								: ""}
-							)
-						</span>
+						{worldData.last_saved_game_version &&
+						worldData.last_saved_game_version !== installation.version ? (
+							<Tooltip>
+								<TooltipTrigger>
+									<span className="text-xs text-warning-foreground opacity-50">
+										(Different Version {worldData.last_saved_game_version} →{" "}
+										{installation.version})
+									</span>
+								</TooltipTrigger>
+								<TooltipContent>
+									The installation version ({installation.version}) is different
+									from the world's created version (
+									{worldData.created_game_version}) or the last saved version (
+									{worldData.last_saved_game_version}).
+								</TooltipContent>
+							</Tooltip>
+						) : (
+							<span className="text-xs opacity-50">
+								({worldData.created_game_version}
+								{worldData.last_saved_game_version !==
+								worldData.created_game_version
+									? ` → ${worldData.last_saved_game_version}`
+									: ""}
+								)
+							</span>
+						)}
 					</p>
 					<p className="text-xs text-muted-foreground">
 						Last played:{" "}
@@ -192,6 +205,36 @@ export const WorldItem = ({ world }: { world: [GameData, string, string] }) => {
 						<TooltipContent>
 							{version ? "Play" : `Install ${installation.version}`}
 						</TooltipContent>
+					</Tooltip>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
+								onClick={() => openDialog("EditWorldDialog", { world })}
+								variant="outline"
+							>
+								<WrenchIcon
+									aria-hidden="true"
+									className="-ms-1 opacity-60"
+									size={16}
+								/>
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Edit</TooltipContent>
+					</Tooltip>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								aria-label="Delete"
+								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
+								onClick={() => openDialog("DeleteWorldDialog", { world })}
+								size="icon"
+								variant="outline"
+							>
+								<XIcon aria-hidden="true" className="opacity-60" size={16} />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Delete</TooltipContent>
 					</Tooltip>
 				</div>
 			</div>
