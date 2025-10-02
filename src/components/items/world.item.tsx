@@ -6,8 +6,8 @@ import {
 	DownloadCloudIcon,
 	PlayIcon,
 	SproutIcon,
+	TrashIcon,
 	WrenchIcon,
-	XIcon,
 } from "lucide-react";
 import { useRef } from "react";
 import { toast } from "sonner";
@@ -231,7 +231,11 @@ export const WorldItem = ({ world }: { world: [GameData, string, string] }) => {
 								size="icon"
 								variant="outline"
 							>
-								<XIcon aria-hidden="true" className="opacity-60" size={16} />
+								<TrashIcon
+									aria-hidden="true"
+									className="opacity-60"
+									size={16}
+								/>
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent>Delete</TooltipContent>
