@@ -240,10 +240,7 @@ export function ModList({
 					);
 					return (
 						<div
-							className={cn([
-								"border-b border-b-muted p-2 flex gap-2 absolute top-0 left-0 w-full",
-								installedMod && "bg-green-200/15",
-							])}
+							className="not-last:border-b flex gap-2 absolute top-0 left-0 w-full"
 							data-index={item.index}
 							key={mod.modid}
 							ref={rowVirtualizer.measureElement}
@@ -252,7 +249,13 @@ export function ModList({
 								willChange: "transform",
 							}}
 						>
-							<div className="flex flex-row justify-between w-full items-center">
+							<div
+								className={cn([
+									"flex flex-row p-2 justify-between w-full items-center",
+									installedMod &&
+										"bg-gradient-to-r from-green-600/20 to-transparent",
+								])}
+							>
 								<div className="flex flex-row gap-2">
 									<a
 										href={`https://mods.vintagestory.at/${mod.urlalias ?? "#"}`}

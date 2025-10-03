@@ -5,15 +5,16 @@ import type {
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { listen } from "@tauri-apps/api/event";
+import { formatDistanceToNow } from "date-fns";
 import {
 	DownloadCloudIcon,
 	FileUpIcon,
 	FolderIcon,
 	PackageOpenIcon,
 	PackagePlusIcon,
+	PenIcon,
 	PlayIcon,
 	StarIcon,
-	WrenchIcon,
 	XIcon,
 } from "lucide-react";
 import { useRef } from "react";
@@ -127,7 +128,7 @@ export function InstallationRow({
 	return (
 		<div
 			className={cn([
-				"flex items-center gap-2 border-b border-b-muted py-2 px-2",
+				"flex items-center gap-2 py-2 px-2",
 				isDragging ? "opacity-50 bg-muted" : "opacity-100",
 			])}
 			ref={setNodeRef}
@@ -144,16 +145,26 @@ export function InstallationRow({
 			>
 				≡
 			</span>
-			<span className="flex-1">
-				{installation.name}{" "}
-				<span className="opacity-50 text-xs">
-					(
-					<span className={version ? "text-green-300" : "text-red-300"}>
-						{installation.version}
-					</span>
-					)
-				</span>
-			</span>
+			<div className="flex items-center flex-1 gap-3">
+				<Tooltip>
+					<TooltipTrigger className="flex flex-col justify-start">
+						<p className="text-sm text-foreground">{installation.name}</p>
+						{installation.version && (
+							<p className="text-xs text-muted-foreground">
+								v{installation.version}
+							</p>
+						)}
+					</TooltipTrigger>
+					<TooltipContent>
+						Last played:{" "}
+						{installation.lastTimePlayed
+							? formatDistanceToNow(new Date(installation.lastTimePlayed), {
+									addSuffix: true,
+								})
+							: "Never"}
+					</TooltipContent>
+				</Tooltip>
+			</div>
 			<div className="inline-flex -space-x-px rounded-md shadow-xs rtl:space-x-reverse">
 				<Tooltip>
 					<TooltipTrigger asChild>
@@ -301,7 +312,7 @@ export function InstallationRow({
 							}
 							variant="outline"
 						>
-							<WrenchIcon
+							<PenIcon
 								aria-hidden="true"
 								className="-ms-1 opacity-60"
 								size={16}

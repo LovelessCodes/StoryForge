@@ -29,8 +29,6 @@ If applicable, add screenshots to help explain your problem.
 **Environment (please complete the following information):**
 
 - OS: [e.g. macOS, Windows, Linux]
-- Browser [e.g. chrome, safari]
-- Node version [e.g. 20]
 - App version/commit [if applicable]
 
 **Additional context**

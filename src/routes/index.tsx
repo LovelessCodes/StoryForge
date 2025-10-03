@@ -120,7 +120,7 @@ function Dashboard() {
 											return a.favorite ? -1 : 1;
 										})
 										.slice(0, 5)
-										.map((installation) => (
+										.map((installation, index) => (
 											<motion.div
 												animate={{ opacity: 1, y: 0 }}
 												className="flex items-center justify-between px-4 py-3 not-last:border-b"
@@ -129,10 +129,10 @@ function Dashboard() {
 												key={installation.id}
 												layout
 												transition={{
-													damping: 38,
-													mass: 0.9,
+													damping: 32,
+													delay: index * 0.05, // 50ms incremental stagger based on current index
 													stiffness: 420,
-													type: "spring",
+													type: "spring" as const,
 												}}
 												whileTap={{ scale: 0.985 }}
 											>
@@ -211,7 +211,7 @@ function Dashboard() {
 											return a.favorite ? -1 : 1;
 										})
 										.slice(0, 5)
-										.map((server) => (
+										.map((server, index) => (
 											<motion.div
 												animate={{ opacity: 1, y: 0 }}
 												className="not-last:border-b flex items-center justify-between px-4 py-3"
@@ -220,10 +220,10 @@ function Dashboard() {
 												key={server.id}
 												layout
 												transition={{
-													damping: 38,
-													mass: 0.9,
+													damping: 32,
+													delay: index * 0.05, // 50ms incremental stagger based on current index
 													stiffness: 420,
-													type: "spring",
+													type: "spring" as const,
 												}}
 												whileTap={{ scale: 0.985 }}
 											>

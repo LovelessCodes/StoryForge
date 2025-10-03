@@ -1,6 +1,6 @@
 import { AnimatePresence } from "motion/react";
+import { WorldItem } from "@/components/items/world.item";
 import type { GameData } from "@/hooks/use-saves";
-import { WorldItem } from "../items/world.item";
 
 export function WorldList({
 	worlds,
@@ -8,7 +8,7 @@ export function WorldList({
 	worlds: [GameData, string, string][];
 }) {
 	return (
-		<div className="flex flex-col overflow-y-auto h-full relative">
+		<div className="flex flex-col w-full bg-card p-2 rounded shadow border relative overflow-y-auto">
 			<AnimatePresence>
 				{[...worlds]
 					.sort((a, b) => {
