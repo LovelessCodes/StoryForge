@@ -30,6 +30,7 @@ import {
 	WrenchIcon,
 	XIcon,
 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,21 @@ import { type Server, useServerStore } from "@/stores/servers";
 export const Route = createFileRoute("/servers")({
 	component: RouteComponent,
 });
+
+const itemVariants = {
+	exit: { opacity: 0, transition: { duration: 0.15 }, y: -4 },
+	hidden: { opacity: 0, y: 8 },
+	show: (i: number) => ({
+		opacity: 1,
+		transition: {
+			damping: 32,
+			delay: i * 0.05, // 50ms incremental stagger based on current index
+			stiffness: 420,
+			type: "spring" as const,
+		},
+		y: 0,
+	}),
+};
 
 type ServerRowProps = {
 	server: Server;
@@ -270,10 +286,11 @@ type SortableServerRowProps = Omit<
 	"setNodeRef" | "attributes" | "listeners" | "isDragging" | "style"
 > & {
 	server: Server;
+	index?: number;
 };
 
 function SortableServerRow(props: SortableServerRowProps) {
-	const { server } = props;
+	const { server, index = 0 } = props;
 	const {
 		attributes,
 		listeners,
@@ -282,19 +299,44 @@ function SortableServerRow(props: SortableServerRowProps) {
 		transition,
 		isDragging,
 	} = useSortable({ id: server.id });
-	const style = {
+
+	// Merge DnD transform with motion animations (motion will interpolate style updates).
+	const style: React.CSSProperties = {
+		cursor: isDragging ? "grabbing" : undefined,
 		transform: CSS.Transform.toString(transform),
 		transition,
 	};
+
 	return (
-		<ServerRow
-			{...props}
-			attributes={attributes}
-			isDragging={isDragging}
-			listeners={listeners}
-			setNodeRef={setNodeRef}
+		<motion.div
+			animate="show"
+			custom={index}
+			exit="exit"
+			initial="hidden"
+			layout="position"
+			ref={setNodeRef}
 			style={style}
-		/>
+			variants={itemVariants}
+			whileDrag={{
+				boxShadow: "0 4px 14px rgba(0,0,0,0.35)",
+				scale: 1.02,
+				zIndex: 20,
+			}}
+			whileHover={{
+				backgroundColor: "hsl(var(--muted))",
+				transition: { duration: 0.15 },
+			}}
+			whileTap={{ scale: 0.98 }}
+		>
+			<ServerRow
+				{...props}
+				attributes={attributes}
+				isDragging={isDragging}
+				listeners={listeners}
+				setNodeRef={undefined}
+				style={undefined}
+			/>
+		</motion.div>
 	);
 }
 
@@ -346,19 +388,22 @@ function RouteComponent() {
 						strategy={verticalListSortingStrategy}
 					>
 						<div className="rounded shadow divide-y">
-							{servers
-								.sort((a, b) => a.index - b.index)
-								.map((server) => (
-									<SortableServerRow
-										installation={installations.find(
-											(inst) => inst.id === server.installationId,
-										)}
-										key={server.id}
-										onConnect={connectToServer}
-										onFavorite={toggleFavorite}
-										server={server}
-									/>
-								))}
+							<AnimatePresence>
+								{[...servers]
+									.sort((a, b) => a.index - b.index)
+									.map((server, index) => (
+										<SortableServerRow
+											index={index}
+											installation={installations.find(
+												(inst) => inst.id === server.installationId,
+											)}
+											key={server.id}
+											onConnect={connectToServer}
+											onFavorite={toggleFavorite}
+											server={server}
+										/>
+									))}
+							</AnimatePresence>
 						</div>
 					</SortableContext>
 				</DndContext>
