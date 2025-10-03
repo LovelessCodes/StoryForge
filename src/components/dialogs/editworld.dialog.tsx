@@ -70,6 +70,7 @@ export function EditWorldDialog({
 		},
 		onSubmit: ({ value }) => {
 			updateWorld({
+				identifier: world[0].savegame_identifier,
 				installationId: parseInt(value.installationId, 10),
 				name: value.name,
 				worldPath: world[1],

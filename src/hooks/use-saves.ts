@@ -12,6 +12,8 @@ export type GameData = {
 	created_by_player_name: string;
 	play_style: string;
 	world_type: string;
+	total_game_seconds_start: number;
+	savegame_identifier: string;
 };
 
 // It comes out as [gameData, installationName][]
