@@ -9,6 +9,7 @@ import {
 	TrashIcon,
 	WrenchIcon,
 } from "lucide-react";
+import { motion } from "motion/react";
 import { useRef } from "react";
 import { toast } from "sonner";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
@@ -25,7 +26,28 @@ import { useInstallations } from "@/stores/installations";
 import { Button } from "../ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
-export const WorldItem = ({ world }: { world: [GameData, string, string] }) => {
+const itemVariants = {
+	exit: { opacity: 0, transition: { duration: 0.15 }, y: -4 },
+	hidden: { opacity: 0, y: 8 },
+	show: (i: number) => ({
+		opacity: 1,
+		transition: {
+			damping: 32,
+			delay: i * 0.05, // 50ms incremental stagger based on current index
+			stiffness: 420,
+			type: "spring" as const,
+		},
+		y: 0,
+	}),
+};
+
+export const WorldItem = ({
+	world,
+	index = 0,
+}: {
+	world: [GameData, string, string];
+	index?: number;
+}) => {
 	const { installations } = useInstallations();
 	const { data: versions } = useInstalledVersions();
 	const { openDialog } = useDialogStore();
@@ -85,9 +107,15 @@ export const WorldItem = ({ world }: { world: [GameData, string, string] }) => {
 	if (!installation) return null;
 	if (!worldData) return null;
 	return (
-		<div
+		<motion.div
+			animate="show"
 			className="border-b border-b-muted p-2 flex gap-2 w-full"
+			custom={index}
+			exit="exit"
+			initial="hidden"
 			key={worldData.world_name}
+			layout="position"
+			variants={itemVariants}
 		>
 			<div className="grid grid-cols-3 justify-between w-full items-center">
 				<div className="flex flex-col">
@@ -244,6 +272,6 @@ export const WorldItem = ({ world }: { world: [GameData, string, string] }) => {
 					</Tooltip>
 				</div>
 			</div>
-		</div>
+		</motion.div>
 	);
 };

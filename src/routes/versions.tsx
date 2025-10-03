@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FolderPlusIcon, XIcon } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
@@ -14,10 +15,39 @@ export const Route = createFileRoute("/versions")({
 	component: RouteComponent,
 });
 
-function VersionRow({ version }: { version: string }) {
+const itemVariants = {
+	exit: { opacity: 0, transition: { duration: 0.15 }, y: -4 },
+	hidden: { opacity: 0, y: 8 },
+	show: (i: number) => ({
+		opacity: 1,
+		transition: {
+			damping: 32,
+			delay: i * 0.05, // 50ms incremental stagger based on current index
+			stiffness: 420,
+			type: "spring" as const,
+		},
+		y: 0,
+	}),
+};
+
+function VersionRow({
+	version,
+	index = 0,
+}: {
+	version: string;
+	index?: number;
+}) {
 	const { openDialog } = useDialogStore();
 	return (
-		<div className="flex items-center gap-2 border-b border-b-muted py-2 px-2">
+		<motion.div
+			animate="show"
+			className="flex items-center gap-2 border-b border-b-muted py-2 px-2"
+			custom={index}
+			exit="exit"
+			initial="hidden"
+			layout="position"
+			variants={itemVariants}
+		>
 			<span className="flex-1">{version}</span>
 			<div className="inline-flex -space-x-px rounded-md shadow-xs rtl:space-x-reverse">
 				<Tooltip>
@@ -35,7 +65,7 @@ function VersionRow({ version }: { version: string }) {
 					<TooltipContent>Delete</TooltipContent>
 				</Tooltip>
 			</div>
-		</div>
+		</motion.div>
 	);
 }
 
@@ -56,9 +86,11 @@ function RouteComponent() {
 				</Button>
 			</div>
 			<div className="rounded shadow divide-y">
-				{versions.sort(compareSemverDesc).map((version) => (
-					<VersionRow key={version} version={version} />
-				))}
+				<AnimatePresence>
+					{[...versions].sort(compareSemverDesc).map((version, i) => (
+						<VersionRow index={i} key={version} version={version} />
+					))}
+				</AnimatePresence>
 			</div>
 		</div>
 	);
