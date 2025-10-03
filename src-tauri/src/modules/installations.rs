@@ -2,11 +2,13 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{
     fs::File,
-    io::Read,
+    io::{BufRead, BufReader, Read},
     path::{Path, PathBuf},
-    process::Command,
+    process::{Command, Stdio},
+    thread,
+    time::{Duration, Instant},
 };
-use tauri::{command, AppHandle, Manager};
+use tauri::{command, AppHandle, Manager, Emitter};
 use tauri_plugin_zustand::ManagerExt;
 
 use super::errors::UiError;
@@ -168,7 +170,16 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
             })?;
         }
     }
-    Command::new(&combined_path)
+    // Emit a pre-launch event so the UI can show a loading state
+    let _ = app.emit(
+        &format!("launch-{}", options.installation_id),
+        json!({ "status": "pending", "installationId": options.installation_id }),
+    );
+
+    // Build command with piped stdout/stderr so we can inspect output
+    let mut child = Command::new(&combined_path)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .args(&["--dataPath", &pb.as_path().to_string_lossy()])
         .args(
             &options
@@ -197,6 +208,94 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
             name: "launch_failed".into(),
             message: format!("Failed to launch: {e}"),
         })?;
+
+    // Clone data needed inside watcher threads
+    let app_handle = app.clone();
+    let installation_id = options.installation_id;
+    let target_prefix = "Client Notification] Game Version:"; // substring we look for
+    let timeout = Duration::from_secs(25);
+    let start_instant = Instant::now();
+
+    // Combine stdout & stderr watching: spawn a thread per stream
+    // Use an Arc flag to coordinate (optional simplification)
+    use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
+    let found_flag = Arc::new(AtomicBool::new(false));
+    let found_flag_stdout = found_flag.clone();
+    let found_flag_stderr = found_flag.clone();
+
+    // Helper closure to parse line & emit success
+    let emit_success = move |app_handle: &AppHandle, line: &str| {
+        if let Some(idx) = line.find(target_prefix) {
+            let version_part = line[idx + target_prefix.len()..].trim();
+            let _ = app_handle.emit(
+                &format!("launch-{}", installation_id),
+                json!({
+                    "status": "success",
+                    "installationId": installation_id,
+                    "version": version_part,
+                    "line": line,
+                }),
+            );
+            true
+        } else {
+            false
+        }
+    };
+
+    // stdout watcher
+    if let Some(stdout) = child.stdout.take() {
+        let app_clone = app_handle.clone();
+        thread::spawn(move || {
+            let reader = BufReader::new(stdout);
+            for line_res in reader.lines() {
+                if found_flag_stdout.load(Ordering::SeqCst) { break; }
+                if start_instant.elapsed() > timeout { break; }
+                if let Ok(line) = line_res {
+                    if emit_success(&app_clone, &line) {
+                        found_flag_stdout.store(true, Ordering::SeqCst);
+                        break;
+                    }
+                } else { break; }
+            }
+        });
+    }
+    // stderr watcher (some builds might log there)
+    if let Some(stderr) = child.stderr.take() {
+        let app_clone = app_handle.clone();
+        thread::spawn(move || {
+            let reader = BufReader::new(stderr);
+            for line_res in reader.lines() {
+                if found_flag_stderr.load(Ordering::SeqCst) { break; }
+                if start_instant.elapsed() > timeout { break; }
+                if let Ok(line) = line_res {
+                    if emit_success(&app_clone, &line) {
+                        found_flag_stderr.store(true, Ordering::SeqCst);
+                        break;
+                    }
+                } else { break; }
+            }
+        });
+    }
+
+    // Timeout monitor thread: after timeout if not found emit failure.
+    let app_for_timeout = app_handle.clone();
+    thread::spawn(move || {
+        while start_instant.elapsed() < timeout {
+            if found_flag.load(Ordering::SeqCst) { return; }
+            thread::sleep(Duration::from_millis(150));
+        }
+        if !found_flag.load(Ordering::SeqCst) {
+            let _ = app_for_timeout.emit(
+                &format!("launch-{}", installation_id),
+                json!({
+                    "status": "error",
+                    "installationId": installation_id,
+                    "reason": "timeout",
+                    "waitedMs": timeout.as_millis(),
+                }),
+            );
+        }
+    });
     Ok("started".into())
 }
 
