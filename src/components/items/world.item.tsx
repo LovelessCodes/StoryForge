@@ -4,14 +4,20 @@ import { listen } from "@tauri-apps/api/event";
 import { formatDistanceToNow } from "date-fns";
 import {
 	DownloadCloudIcon,
+	PenIcon,
 	PlayIcon,
 	SproutIcon,
 	TrashIcon,
-	WrenchIcon,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useRef } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import {
@@ -23,8 +29,6 @@ import type { ProgressPayload } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
-import { Button } from "../ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 const itemVariants = {
 	exit: { opacity: 0, transition: { duration: 0.15 }, y: -4 },
@@ -109,7 +113,7 @@ export const WorldItem = ({
 	return (
 		<motion.div
 			animate="show"
-			className="border-b border-b-muted p-2 flex gap-2 w-full"
+			className="not-last:border-b p-2 flex gap-2 w-full"
 			custom={index}
 			exit="exit"
 			initial="hidden"
@@ -243,7 +247,7 @@ export const WorldItem = ({
 								onClick={() => openDialog("EditWorldDialog", { world })}
 								variant="outline"
 							>
-								<WrenchIcon
+								<PenIcon
 									aria-hidden="true"
 									className="-ms-1 opacity-60"
 									size={16}
