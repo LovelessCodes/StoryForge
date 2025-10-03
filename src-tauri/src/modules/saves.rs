@@ -65,8 +65,26 @@ pub fn get_all_saves(app: AppHandle) -> Result<Vec<(GameData, String, String)>, 
                                             data.as_slice(),
                                         )
                                         .map_err(|e| UiError::from(format!("Protobuf decode error: {e}")))?;
+                                        // Only push a part of the gamedata, not the whole thing
+                                        // e.g. only the world_name and savegame_identifier fields
+                                        // This is to reduce the amount of data sent to the frontend
+                                        let compressed_gamedata = GameData {
+                                            world_name: gamedata.world_name.clone(),
+                                            savegame_identifier: gamedata.savegame_identifier.clone(),
+                                            seed: gamedata.seed,
+                                            created_by_player_name: gamedata.created_by_player_name.clone(),
+                                            created_game_version: gamedata.created_game_version.clone(),
+                                            last_saved_game_version: gamedata.last_saved_game_version.clone(),
+                                            last_played: gamedata.last_played,
+                                            total_game_seconds: gamedata.total_game_seconds,
+                                            total_game_seconds_start: gamedata.total_game_seconds_start,
+                                            total_seconds_played: gamedata.total_seconds_played,
+                                            world_type: gamedata.world_type.clone(),
+                                            play_style: gamedata.play_style,
+                                            ..Default::default()
+                                        };
                                         saves.push((
-                                            gamedata,
+                                            compressed_gamedata,
                                             save_path_string,
                                             installation_name.clone(),
                                         ));
