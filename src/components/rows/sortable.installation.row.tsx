@@ -49,6 +49,7 @@ export function SortableInstallationRow(props: SortableInstallationRowProps) {
 	return (
 		<motion.div
 			animate="show"
+			className="not-last:border-b"
 			custom={index}
 			exit="exit"
 			initial="hidden"
@@ -56,16 +57,10 @@ export function SortableInstallationRow(props: SortableInstallationRowProps) {
 			ref={setNodeRef}
 			style={style}
 			variants={itemVariants}
-			whileDrag={{
-				boxShadow: "0 4px 14px rgba(0,0,0,0.35)",
-				scale: 1.02,
-				zIndex: 20,
-			}}
 			whileHover={{
 				backgroundColor: "hsl(var(--muted))",
 				transition: { duration: 0.15 },
 			}}
-			whileTap={{ scale: 0.98 }}
 		>
 			<InstallationRow
 				{...props}
