@@ -1,6 +1,7 @@
 import { Lock, Pencil, Play, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
+import { cn } from "@/lib/utils";
 import { useInstallations } from "@/stores/installations";
 import type { Server } from "@/stores/servers";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
@@ -83,17 +84,18 @@ export function ServerCard({
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
-							className="h-8 w-8"
+							className={cn(
+								"h-8 w-8",
+								server.favorite
+									? "text-warning"
+									: "hover:text-foreground text-muted-foreground",
+							)}
 							onClick={() => onUnfavorite(server)}
 							size="icon"
 							variant="ghost"
 						>
 							<Star
-								className={`h-4 w-4 ${
-									server.favorite
-										? "fill-warning text-warning"
-										: "text-muted-foreground hover:text-foreground"
-								}`}
+								className={cn("h-4 w-4", server.favorite && "fill-warning")}
 							/>
 							<span className="sr-only">
 								{server.favorite ? "Unfavorite" : "Favorite"} {server.name}
