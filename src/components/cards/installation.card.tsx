@@ -16,7 +16,7 @@ import {
 	useInstalledVersions,
 } from "@/hooks/use-installed-versions";
 import type { ProgressPayload } from "@/lib/types";
-import { type Installation, useInstallations } from "@/stores/installations";
+import type { Installation } from "@/stores/installations";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 interface InstallationCardProps {
@@ -34,7 +34,6 @@ export function InstallationCard({
 	onEdit,
 	onAddMods,
 }: InstallationCardProps) {
-	const { installations } = useInstallations();
 	const listenRef = useRef<() => void>(null);
 	const queryClient = useQueryClient();
 
@@ -87,11 +86,7 @@ export function InstallationCard({
 	const { data: versions } = useInstalledVersions();
 	return (
 		<div
-			className={`flex items-center justify-between px-4 py-3 ${
-				installation !== installations[installations.length - 1]
-					? "border-b border-border"
-					: ""
-			}`}
+			className="flex items-center justify-between px-4 py-3 not-last:border-b"
 			key={installation.id}
 		>
 			<div className="flex items-center gap-3">

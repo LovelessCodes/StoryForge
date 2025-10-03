@@ -2,7 +2,7 @@ import { Lock, Pencil, Play, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { useInstallations } from "@/stores/installations";
-import { type Server, useServerStore } from "@/stores/servers";
+import type { Server } from "@/stores/servers";
 
 interface ServerCardProps {
 	server: Server;
@@ -20,7 +20,6 @@ export function ServerCard({
 	const serverAddress = server.port ? `${server.ip}:${server.port}` : server.ip;
 	const hasPassword = server.password && server.password.length > 0;
 	const { installations } = useInstallations();
-	const { servers } = useServerStore();
 	const installation = installations.find(
 		(inst) => inst.id === server.installationId,
 	);
@@ -29,9 +28,7 @@ export function ServerCard({
 
 	return (
 		<div
-			className={`flex items-center justify-between px-4 py-3 ${
-				server.index !== servers.length - 1 ? "border-b border-border" : ""
-			}`}
+			className="flex items-center justify-between px-4 py-3 not-last:border-b"
 			key={server.id}
 		>
 			<div className="flex items-center gap-3">
