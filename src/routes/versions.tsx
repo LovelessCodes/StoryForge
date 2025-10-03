@@ -41,14 +41,21 @@ function VersionRow({
 	return (
 		<motion.div
 			animate="show"
-			className="flex items-center gap-2 border-b border-b-muted py-2 px-2"
+			className="flex items-center gap-2 not-last:border-b py-2 px-2"
 			custom={index}
 			exit="exit"
 			initial="hidden"
 			layout="position"
 			variants={itemVariants}
 		>
-			<span className="flex-1">{version}</span>
+			<span className="flex-1 text-sm">
+				{version}
+				{version.includes("rc") && (
+					<span className="text-xs text-muted-foreground opacity-50 ml-2">
+						(Release Candidate)
+					</span>
+				)}
+			</span>
 			<div className="inline-flex -space-x-px rounded-md shadow-xs rtl:space-x-reverse">
 				<Tooltip>
 					<TooltipTrigger asChild>
@@ -85,12 +92,14 @@ function RouteComponent() {
 					<FolderPlusIcon className="size-4" />
 				</Button>
 			</div>
-			<div className="rounded shadow divide-y">
-				<AnimatePresence>
-					{[...versions].sort(compareSemverDesc).map((version, i) => (
-						<VersionRow index={i} key={version} version={version} />
-					))}
-				</AnimatePresence>
+			<div className="h-full px-4 relative overflow-auto w-full">
+				<div className="flex flex-col w-full bg-card p-2 rounded shadow border relative overflow-y-auto">
+					<AnimatePresence>
+						{[...versions].sort(compareSemverDesc).map((version, i) => (
+							<VersionRow index={i} key={version} version={version} />
+						))}
+					</AnimatePresence>
+				</div>
 			</div>
 		</div>
 	);
