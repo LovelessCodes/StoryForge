@@ -102,7 +102,7 @@ export function PublicServerList({
 					const server = filteredServers[item.index];
 					return (
 						<div
-							className="border-b border-b-muted p-2 flex gap-2 absolute top-0 left-0 w-full"
+							className="not-last:border-b p-2 flex gap-2 absolute top-0 left-0 w-full"
 							data-index={item.index}
 							key={item.index}
 							ref={rowVirtualizer.measureElement}
