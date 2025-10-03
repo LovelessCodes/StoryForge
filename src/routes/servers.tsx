@@ -25,9 +25,9 @@ import clsx from "clsx";
 import {
 	DownloadCloudIcon,
 	MapPinPlusIcon,
+	PenIcon,
 	StarIcon,
 	UnplugIcon,
-	WrenchIcon,
 	XIcon,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -156,7 +156,7 @@ function ServerRow({
 	return (
 		<div
 			className={clsx([
-				"flex items-center gap-2 border-b border-b-muted py-2 px-2",
+				"flex items-center gap-2 py-2 px-2",
 				isDragging ? "opacity-50 bg-muted" : "opacity-100",
 			])}
 			ref={setNodeRef}
@@ -173,14 +173,19 @@ function ServerRow({
 			>
 				≡
 			</span>
-			<span className="flex-1">
-				{server.name}{" "}
-				<span className="opacity-50 text-xs">
-					({server.ip}
-					{server.port ? `:${server.port}` : ""} via{" "}
-					{installation?.name ?? "Unknown Installation"})
-				</span>
-			</span>
+			<div className="flex flex-col flex-1">
+				<p className="text-sm">{server.name}</p>
+				<p className="text-xs text-muted-foreground">
+					<span className="text-warning-foreground">
+						{server.ip}
+						{server.port ? `:${server.port}` : ""}
+					</span>
+					<span className="text-muted-foreground">
+						{" "}
+						via {installation?.name ?? "Unknown Installation"}
+					</span>
+				</p>
+			</div>
 			<div className="inline-flex -space-x-px rounded-md shadow-xs rtl:space-x-reverse">
 				<Tooltip>
 					<TooltipTrigger asChild>
@@ -253,7 +258,7 @@ function ServerRow({
 							onClick={() => openDialog("EditServerDialog", { server })}
 							variant="outline"
 						>
-							<WrenchIcon
+							<PenIcon
 								aria-hidden="true"
 								className="-ms-1 opacity-60"
 								size={16}
@@ -310,6 +315,7 @@ function SortableServerRow(props: SortableServerRowProps) {
 	return (
 		<motion.div
 			animate="show"
+			className="not-last:border-b"
 			custom={index}
 			exit="exit"
 			initial="hidden"
@@ -317,16 +323,10 @@ function SortableServerRow(props: SortableServerRowProps) {
 			ref={setNodeRef}
 			style={style}
 			variants={itemVariants}
-			whileDrag={{
-				boxShadow: "0 4px 14px rgba(0,0,0,0.35)",
-				scale: 1.02,
-				zIndex: 20,
-			}}
 			whileHover={{
 				backgroundColor: "hsl(var(--muted))",
 				transition: { duration: 0.15 },
 			}}
-			whileTap={{ scale: 0.98 }}
 		>
 			<ServerRow
 				{...props}
@@ -387,23 +387,25 @@ function RouteComponent() {
 						items={serverIds}
 						strategy={verticalListSortingStrategy}
 					>
-						<div className="rounded shadow divide-y">
-							<AnimatePresence>
-								{[...servers]
-									.sort((a, b) => a.index - b.index)
-									.map((server, index) => (
-										<SortableServerRow
-											index={index}
-											installation={installations.find(
-												(inst) => inst.id === server.installationId,
-											)}
-											key={server.id}
-											onConnect={connectToServer}
-											onFavorite={toggleFavorite}
-											server={server}
-										/>
-									))}
-							</AnimatePresence>
+						<div className="h-full px-4 relative overflow-auto w-full">
+							<div className="flex flex-col w-full bg-card p-2 rounded shadow border relative overflow-y-auto">
+								<AnimatePresence>
+									{[...servers]
+										.sort((a, b) => a.index - b.index)
+										.map((server, index) => (
+											<SortableServerRow
+												index={index}
+												installation={installations.find(
+													(inst) => inst.id === server.installationId,
+												)}
+												key={server.id}
+												onConnect={connectToServer}
+												onFavorite={toggleFavorite}
+												server={server}
+											/>
+										))}
+								</AnimatePresence>
+							</div>
 						</div>
 					</SortableContext>
 				</DndContext>
