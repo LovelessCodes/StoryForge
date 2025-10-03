@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { listen } from "@tauri-apps/api/event";
+import { formatDistanceToNow } from "date-fns";
 import {
 	DownloadCloudIcon,
 	PackagePlusIcon,
@@ -85,10 +86,7 @@ export function InstallationCard({
 
 	const { data: versions } = useInstalledVersions();
 	return (
-		<div
-			className="flex items-center justify-between px-4 py-3 not-last:border-b"
-			key={installation.id}
-		>
+		<>
 			<div className="flex items-center gap-3">
 				<div
 					className={`h-2 w-2 rounded-full ${
@@ -97,16 +95,26 @@ export function InstallationCard({
 							: "bg-muted-foreground/40"
 					}`}
 				/>
-				<div>
-					<p className="font-mono text-sm text-foreground">
-						{installation.name}
-					</p>
-					{installation.version && (
-						<p className="font-mono text-xs text-muted-foreground">
-							v{installation.version}
+				<Tooltip>
+					<TooltipTrigger className="flex flex-col justify-start">
+						<p className="font-mono text-sm text-foreground">
+							{installation.name}
 						</p>
-					)}
-				</div>
+						{installation.version && (
+							<p className="font-mono text-xs text-muted-foreground">
+								v{installation.version}
+							</p>
+						)}
+					</TooltipTrigger>
+					<TooltipContent>
+						Last played:{" "}
+						{installation.lastTimePlayed
+							? formatDistanceToNow(new Date(installation.lastTimePlayed), {
+									addSuffix: true,
+								})
+							: "Never"}
+					</TooltipContent>
+				</Tooltip>
 			</div>
 			<div className="flex items-center gap-1">
 				<Tooltip>
@@ -200,6 +208,6 @@ export function InstallationCard({
 					</TooltipContent>
 				</Tooltip>
 			</div>
-		</div>
+		</>
 	);
 }

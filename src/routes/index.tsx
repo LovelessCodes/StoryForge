@@ -110,7 +110,7 @@ function Dashboard() {
 						</div>
 
 						{installations.length > 0 ? (
-							<div className="flex flex-col w-full gap-6  bg-card p-4 rounded shadow border">
+							<div className="flex flex-col w-full bg-card p-2 rounded shadow border">
 								<AnimatePresence>
 									{[...installations]
 										.sort((a, b) => {
@@ -123,6 +123,7 @@ function Dashboard() {
 										.map((installation) => (
 											<motion.div
 												animate={{ opacity: 1, y: 0 }}
+												className="flex items-center justify-between px-4 py-3 not-last:border-b"
 												exit={{ opacity: 0, y: -12 }}
 												initial={{ opacity: 0, y: 12 }}
 												key={installation.id}
@@ -200,7 +201,7 @@ function Dashboard() {
 						</div>
 
 						{servers.length > 0 ? (
-							<div className="flex flex-col gap-6 bg-card p-4 rounded shadow border">
+							<div className="flex flex-col bg-card p-2 rounded shadow border">
 								<AnimatePresence>
 									{[...servers]
 										.sort((a, b) => {
@@ -213,6 +214,7 @@ function Dashboard() {
 										.map((server) => (
 											<motion.div
 												animate={{ opacity: 1, y: 0 }}
+												className="not-last:border-b flex items-center justify-between px-4 py-3"
 												exit={{ opacity: 0, y: -12 }}
 												initial={{ opacity: 0, y: 12 }}
 												key={server.id}
