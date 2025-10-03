@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { useInstallations } from "@/stores/installations";
 import type { Server } from "@/stores/servers";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 interface ServerCardProps {
 	server: Server;
@@ -27,10 +28,7 @@ export function ServerCard({
 	if (!installation) return null;
 
 	return (
-		<div
-			className="flex items-center justify-between px-4 py-3 not-last:border-b"
-			key={server.id}
-		>
+		<>
 			<div className="flex items-center gap-3">
 				<div
 					className={`h-2 w-2 rounded-full ${
@@ -54,42 +52,59 @@ export function ServerCard({
 				</div>
 			</div>
 			<div className="flex items-center gap-1">
-				<Button
-					className="h-8 w-8 text-muted-foreground hover:text-foreground"
-					onClick={() => onConnect(server)}
-					size="icon"
-					variant="ghost"
-				>
-					<Play className="h-4 w-4" />
-					<span className="sr-only">Play {server.name}</span>
-				</Button>
-				<Button
-					className="h-8 w-8 text-muted-foreground hover:text-foreground"
-					onClick={() => onEdit(server)}
-					size="icon"
-					variant="ghost"
-				>
-					<Pencil className="h-4 w-4" />
-					<span className="sr-only">Edit {server.name}</span>
-				</Button>
-				<Button
-					className="h-8 w-8"
-					onClick={() => onUnfavorite(server)}
-					size="icon"
-					variant="ghost"
-				>
-					<Star
-						className={`h-4 w-4 ${
-							server.favorite
-								? "fill-warning text-warning"
-								: "text-muted-foreground hover:text-foreground"
-						}`}
-					/>
-					<span className="sr-only">
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							className="h-8 w-8 text-muted-foreground hover:text-foreground"
+							onClick={() => onConnect(server)}
+							size="icon"
+							variant="ghost"
+						>
+							<Play className="h-4 w-4" />
+							<span className="sr-only">Play {server.name}</span>
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Connect to {server.name}</TooltipContent>
+				</Tooltip>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							className="h-8 w-8 text-muted-foreground hover:text-foreground"
+							onClick={() => onEdit(server)}
+							size="icon"
+							variant="ghost"
+						>
+							<Pencil className="h-4 w-4" />
+							<span className="sr-only">Edit {server.name}</span>
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Edit {server.name}</TooltipContent>
+				</Tooltip>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							className="h-8 w-8"
+							onClick={() => onUnfavorite(server)}
+							size="icon"
+							variant="ghost"
+						>
+							<Star
+								className={`h-4 w-4 ${
+									server.favorite
+										? "fill-warning text-warning"
+										: "text-muted-foreground hover:text-foreground"
+								}`}
+							/>
+							<span className="sr-only">
+								{server.favorite ? "Unfavorite" : "Favorite"} {server.name}
+							</span>
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>
 						{server.favorite ? "Unfavorite" : "Favorite"} {server.name}
-					</span>
-				</Button>
+					</TooltipContent>
+				</Tooltip>
 			</div>
-		</div>
+		</>
 	);
 }
