@@ -261,6 +261,40 @@ pub fn remove_world(world_path: String) -> Result<(), UiError> {
             message: format!("World file {} is not a .vcdbs file", world_path.display()),
         });
     }
+
+    // Update the "WorldName" field in the protobuf data inside the .vcdbs file
+    let conn = rusqlite::Connection::open(&world_path).map_err(|e| {
+        UiError::from(format!("DB open error: {e}"))
+    })?;
+    let mut stmt = conn
+        .prepare("SELECT data FROM gamedata LIMIT 1")
+        .map_err(|e| UiError::from(format!("DB prepare error: {e}")))?;
+
+    let mut rows = stmt
+        .query([])
+        .map_err(|e| UiError::from(format!("DB query error: {e}")))?;
+    if let Some(row) = rows
+        .next()
+        .map_err(|e| UiError::from(format!("DB row error: {e}")))? 
+    {
+        let data: Vec<u8> = row
+            .get(0)
+            .map_err(|e| UiError::from(format!("DB get error: {e}")))?;
+        // The data is a protobuf string, we need to parse it to get the save name
+        // The save name is stored in the "WorldName" field
+        // Use prost to decode the protobuf string
+        let gamedata = GameData::decode(
+            data.as_slice(),
+        )
+        .map_err(|e| UiError::from(format!("Protobuf decode error: {e}")))?;
+
+        let maps_path = Path::new(&world_path).parent().and_then(|p| p.parent()).map(|p| p.join("Maps").join(format!("{}.db", gamedata.savegame_identifier)));
+        if let Some(maps_path) = maps_path {
+            if maps_path.exists() && maps_path.is_file() {
+                std::fs::remove_file(maps_path).map_err(|e| UiError::from(format!("Remove file error: {e}")))?;
+            }
+        }
+    }
     std::fs::remove_file(world_path).map_err(|e| UiError::from(format!("Remove file error: {e}")))?;
     Ok(())
 }
