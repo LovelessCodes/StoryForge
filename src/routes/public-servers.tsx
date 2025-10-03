@@ -124,16 +124,18 @@ function RouteComponent() {
 					textUnchecked="Desc"
 				/>
 			</div>
-			<div
-				className="h-full py-2 relative overflow-auto w-full"
-				ref={parentRef}
-			>
-				{publicServers && (
-					<PublicServerList
-						parentRef={parentRef}
-						publicServers={publicServers?.data}
-					/>
-				)}
+			<div className="h-full px-4 w-full overflow-hidden">
+				<div
+					className="w-full bg-card p-2 rounded shadow border relative h-full overflow-auto"
+					ref={parentRef}
+				>
+					{publicServers && (
+						<PublicServerList
+							parentRef={parentRef}
+							publicServers={publicServers?.data}
+						/>
+					)}
+				</div>
 			</div>
 		</div>
 	);
