@@ -8,6 +8,7 @@ import {
 	MapPinPlusIcon,
 	ServerIcon,
 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { InstallationCard } from "@/components/cards/installation.card";
 import { ServerCard } from "@/components/cards/server.card";
 import { VersionItem } from "@/components/items/version.item";
@@ -110,34 +111,50 @@ function Dashboard() {
 
 						{installations.length > 0 ? (
 							<div className="flex flex-col w-full gap-6  bg-card p-4 rounded shadow border">
-								{installations
-									.sort((a, b) => {
-										if (a.favorite === b.favorite) {
-											return a.index - b.index;
-										}
-										return a.favorite ? -1 : 1;
-									})
-									.slice(0, 5)
-									.map((installation) => (
-										<InstallationCard
-											installation={installation}
-											key={installation.id}
-											onAddMods={(i) =>
-												router.navigate({
-													params: { id: i.id.toString() },
-													to: "/install-mods/$id",
-													viewTransition: { types: ["warp"] },
-												})
+								<AnimatePresence>
+									{[...installations]
+										.sort((a, b) => {
+											if (a.favorite === b.favorite) {
+												return a.index - b.index;
 											}
-											onEdit={(i) =>
-												openDialog("EditInstallationDialog", {
-													installation: i,
-												})
-											}
-											onPlay={(i) => playWithInstallation({ id: i.id })}
-											onUnfavorite={(i) => toggleFavoriteInstallation(i.id)}
-										/>
-									))}
+											return a.favorite ? -1 : 1;
+										})
+										.slice(0, 5)
+										.map((installation) => (
+											<motion.div
+												animate={{ opacity: 1, y: 0 }}
+												exit={{ opacity: 0, y: -12 }}
+												initial={{ opacity: 0, y: 12 }}
+												key={installation.id}
+												layout
+												transition={{
+													damping: 38,
+													mass: 0.9,
+													stiffness: 420,
+													type: "spring",
+												}}
+												whileTap={{ scale: 0.985 }}
+											>
+												<InstallationCard
+													installation={installation}
+													onAddMods={(i) =>
+														router.navigate({
+															params: { id: i.id.toString() },
+															to: "/install-mods/$id",
+															viewTransition: { types: ["warp"] },
+														})
+													}
+													onEdit={(i) =>
+														openDialog("EditInstallationDialog", {
+															installation: i,
+														})
+													}
+													onPlay={(i) => playWithInstallation({ id: i.id })}
+													onUnfavorite={(i) => toggleFavoriteInstallation(i.id)}
+												/>
+											</motion.div>
+										))}
+								</AnimatePresence>
 								{installations.length > 5 ? (
 									<Link to="/installations">
 										<Button
@@ -184,32 +201,48 @@ function Dashboard() {
 
 						{servers.length > 0 ? (
 							<div className="flex flex-col gap-6 bg-card p-4 rounded shadow border">
-								{servers
-									.sort((a, b) => {
-										if (a.favorite === b.favorite) {
-											return a.index - b.index;
-										}
-										return a.favorite ? -1 : 1;
-									})
-									.slice(0, 5)
-									.map((server) => (
-										<ServerCard
-											key={server.id}
-											onConnect={(s) =>
-												connectToServer({
-													installationId: s.installationId,
-													ip: `${s.ip}${s.port ? `:${s.port}` : ""}`,
-													name: s.name,
-													password: s.password,
-												})
+								<AnimatePresence>
+									{[...servers]
+										.sort((a, b) => {
+											if (a.favorite === b.favorite) {
+												return a.index - b.index;
 											}
-											onEdit={(s) =>
-												openDialog("EditServerDialog", { server: s })
-											}
-											onUnfavorite={(s) => toggleFavoriteServer(s.id)}
-											server={server}
-										/>
-									))}
+											return a.favorite ? -1 : 1;
+										})
+										.slice(0, 5)
+										.map((server) => (
+											<motion.div
+												animate={{ opacity: 1, y: 0 }}
+												exit={{ opacity: 0, y: -12 }}
+												initial={{ opacity: 0, y: 12 }}
+												key={server.id}
+												layout
+												transition={{
+													damping: 38,
+													mass: 0.9,
+													stiffness: 420,
+													type: "spring",
+												}}
+												whileTap={{ scale: 0.985 }}
+											>
+												<ServerCard
+													onConnect={(s) =>
+														connectToServer({
+															installationId: s.installationId,
+															ip: `${s.ip}${s.port ? `:${s.port}` : ""}`,
+															name: s.name,
+															password: s.password,
+														})
+													}
+													onEdit={(s) =>
+														openDialog("EditServerDialog", { server: s })
+													}
+													onUnfavorite={(s) => toggleFavoriteServer(s.id)}
+													server={server}
+												/>
+											</motion.div>
+										))}
+								</AnimatePresence>
 								{servers.length > 5 ? (
 									<Link to="/servers">
 										<Button
