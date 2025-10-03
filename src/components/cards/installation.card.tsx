@@ -17,6 +17,7 @@ import {
 	useInstalledVersions,
 } from "@/hooks/use-installed-versions";
 import type { ProgressPayload } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import type { Installation } from "@/stores/installations";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
@@ -185,17 +186,21 @@ export function InstallationCard({
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
-							className="h-8 w-8"
+							className={cn(
+								"h-8 w-8",
+								installation.favorite
+									? "text-warning"
+									: "hover:text-foreground text-muted-foreground",
+							)}
 							onClick={() => onUnfavorite(installation)}
 							size="icon"
 							variant="ghost"
 						>
 							<Star
-								className={`h-4 w-4 ${
-									installation.favorite
-										? "fill-warning text-warning"
-										: "text-muted-foreground hover:text-foreground"
-								}`}
+								className={cn(
+									"h-4 w-4",
+									installation.favorite && "fill-warning",
+								)}
 							/>
 							<span className="sr-only">
 								{installation.favorite ? "Unfavorite" : "Favorite"}{" "}
