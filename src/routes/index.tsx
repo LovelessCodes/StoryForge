@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import {
 	CircleFadingPlusIcon,
 	Download,
@@ -79,134 +79,160 @@ function Dashboard() {
 			</header>
 
 			{/* Main Content */}
-			<main className="px-6 py-8 space-y-8 h-full overflow-y-auto">
-				{/* Favorited Installations */}
-				<section>
-					<div className="flex items-center gap-2 mb-6">
-						<FolderHeartIcon className="w-5 h-5 text-primary" />
-						<h2 className="text-xl font-bold">Favorited Installations</h2>
-						<span className="text-sm text-muted-foreground">
-							({installations.filter((i) => i.favorite).length})
-						</span>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									onClick={() =>
-										router.navigate({
-											to: "/installations",
-											viewTransition: { types: ["warp"] },
-										})
-									}
-									size="icon"
-									variant="outline"
-								>
-									<FolderPlusIcon className="size-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Manage Installations</TooltipContent>
-						</Tooltip>
-					</div>
-
-					{installations.filter((i) => i.favorite).length > 0 ? (
-						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-							{installations
-								.filter((i) => i.favorite)
-								.map((installation) => (
-									<InstallationCard
-										installation={installation}
-										key={installation.id}
-										onAddMods={(i) =>
+			<main className="px-6 py-2 space-y-8 h-full overflow-y-auto">
+				<section className="flex gap-6">
+					{/* Installations */}
+					<div className="flex flex-col w-full">
+						<div className="flex items-center gap-2 mb-2">
+							<FolderHeartIcon className="w-5 h-5 text-primary" />
+							<h2 className="text-xl font-bold">Installations</h2>
+							<span className="text-sm text-muted-foreground">
+								({installations.length})
+							</span>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										onClick={() =>
 											router.navigate({
-												params: { id: i.id.toString() },
-												to: "/install-mods/$id",
+												to: "/installations",
 												viewTransition: { types: ["warp"] },
 											})
 										}
-										onEdit={(i) =>
-											openDialog("EditInstallationDialog", { installation: i })
-										}
-										onPlay={(i) => playWithInstallation({ id: i.id })}
-										onUnfavorite={(i) => toggleFavoriteInstallation(i.id)}
-									/>
-								))}
+										size="icon"
+										variant="outline"
+									>
+										<FolderPlusIcon className="size-4" />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>Manage Installations</TooltipContent>
+							</Tooltip>
 						</div>
-					) : (
-						<Card>
-							<CardContent className="py-8 text-center">
+
+						{installations.length > 0 ? (
+							<div className="flex flex-col w-full gap-6  bg-card p-4 rounded shadow border">
+								{installations
+									.sort((a, b) => {
+										if (a.favorite === b.favorite) {
+											return a.index - b.index;
+										}
+										return a.favorite ? -1 : 1;
+									})
+									.slice(0, 5)
+									.map((installation) => (
+										<InstallationCard
+											installation={installation}
+											key={installation.id}
+											onAddMods={(i) =>
+												router.navigate({
+													params: { id: i.id.toString() },
+													to: "/install-mods/$id",
+													viewTransition: { types: ["warp"] },
+												})
+											}
+											onEdit={(i) =>
+												openDialog("EditInstallationDialog", {
+													installation: i,
+												})
+											}
+											onPlay={(i) => playWithInstallation({ id: i.id })}
+											onUnfavorite={(i) => toggleFavoriteInstallation(i.id)}
+										/>
+									))}
+								{installations.length > 5 ? (
+									<Link to="/installations">
+										<Button
+											className="text-center text-sm text-muted-foreground w-full"
+											variant="outline"
+										>
+											And {installations.length - 5} more installation...
+										</Button>
+									</Link>
+								) : null}
+							</div>
+						) : (
+							<div className="flex flex-col w-full gap-6  bg-card p-4 rounded shadow border">
 								<FolderHeartIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-								<p className="text-muted-foreground">
-									No favorited installations yet
-								</p>
-							</CardContent>
-						</Card>
-					)}
-				</section>
-
-				{/* Favorited Servers */}
-				<section>
-					<div className="flex items-center gap-2 mb-6">
-						<MapPinIcon className="w-5 h-5 text-primary" />
-						<h2 className="text-xl font-bold">Favorited Servers</h2>
-						<span className="text-sm text-muted-foreground">
-							({servers.filter((s) => s.favorite).length})
-						</span>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									onClick={() =>
-										router.navigate({
-											to: "/servers",
-											viewTransition: { types: ["warp"] },
-										})
-									}
-									size="icon"
-									variant="outline"
-								>
-									<MapPinPlusIcon className="size-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Manage Servers</TooltipContent>
-						</Tooltip>
+								<p className="text-muted-foreground">No installations yet</p>
+							</div>
+						)}
 					</div>
-
-					{servers.filter((s) => s.favorite).length > 0 ? (
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-							{servers
-								.filter((s) => s.favorite)
-								.map((server) => (
-									<ServerCard
-										key={server.id}
-										onConnect={(s) =>
-											connectToServer({
-												installationId: s.installationId,
-												ip: `${s.ip}${s.port ? `:${s.port}` : ""}`,
-												name: s.name,
-												password: s.password,
+					<div className="flex flex-col w-full">
+						<div className="flex items-center gap-2 mb-2">
+							<MapPinIcon className="w-5 h-5 text-primary" />
+							<h2 className="text-xl font-bold">Servers</h2>
+							<span className="text-sm text-muted-foreground">
+								({servers.length})
+							</span>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										onClick={() =>
+											router.navigate({
+												to: "/servers",
+												viewTransition: { types: ["warp"] },
 											})
 										}
-										onEdit={(s) =>
-											openDialog("EditServerDialog", { server: s })
-										}
-										onUnfavorite={(s) => toggleFavoriteServer(s.id)}
-										server={server}
-									/>
-								))}
+										size="icon"
+										variant="outline"
+									>
+										<MapPinPlusIcon className="size-4" />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>Manage Servers</TooltipContent>
+							</Tooltip>
 						</div>
-					) : (
-						<Card>
-							<CardContent className="py-8 text-center">
+
+						{servers.length > 0 ? (
+							<div className="flex flex-col gap-6 bg-card p-4 rounded shadow border">
+								{servers
+									.sort((a, b) => {
+										if (a.favorite === b.favorite) {
+											return a.index - b.index;
+										}
+										return a.favorite ? -1 : 1;
+									})
+									.slice(0, 5)
+									.map((server) => (
+										<ServerCard
+											key={server.id}
+											onConnect={(s) =>
+												connectToServer({
+													installationId: s.installationId,
+													ip: `${s.ip}${s.port ? `:${s.port}` : ""}`,
+													name: s.name,
+													password: s.password,
+												})
+											}
+											onEdit={(s) =>
+												openDialog("EditServerDialog", { server: s })
+											}
+											onUnfavorite={(s) => toggleFavoriteServer(s.id)}
+											server={server}
+										/>
+									))}
+								{servers.length > 5 ? (
+									<Link to="/servers">
+										<Button
+											className="text-center text-sm text-muted-foreground w-full"
+											variant="outline"
+										>
+											And {servers.length - 5} more server...
+										</Button>
+									</Link>
+								) : null}
+							</div>
+						) : (
+							<div className="flex flex-col w-full gap-6  bg-card p-4 rounded shadow border">
 								<ServerIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-								<p className="text-muted-foreground">
-									No favorited servers yet
-								</p>
-							</CardContent>
-						</Card>
-					)}
+								<p className="text-muted-foreground">No servers yet</p>
+							</div>
+						)}
+					</div>
 				</section>
 
 				{/* Installed Versions */}
 				<section>
-					<div className="flex items-center gap-2 mb-6">
+					<div className="flex items-center gap-2 mb-2">
 						<Download className="w-5 h-5 text-primary" />
 						<h2 className="text-xl font-bold">Installed Versions</h2>
 						<span className="text-sm text-muted-foreground">

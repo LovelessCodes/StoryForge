@@ -173,8 +173,10 @@ export const WorldItem = ({ world }: { world: [GameData, string, string] }) => {
 									className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
 									onClick={() => {
 										invoke("play_game", {
-											installation_id: installation.id,
-											save: world[1].split("/").pop(),
+											options: {
+												installation_id: installation.id,
+												save: world[1].split("/").pop()?.replace(".vcdbs", ""),
+											},
 										});
 										toast.success(
 											`Launching ${installation.name} on ${worldData.world_name}...`,

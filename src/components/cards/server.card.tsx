@@ -1,14 +1,8 @@
-import { Heart, Lock, Settings, Wifi } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Lock, Pencil, Play, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { useInstallations } from "@/stores/installations";
-import type { Server } from "@/stores/servers";
+import { type Server, useServerStore } from "@/stores/servers";
 
 interface ServerCardProps {
 	server: Server;
@@ -26,68 +20,79 @@ export function ServerCard({
 	const serverAddress = server.port ? `${server.ip}:${server.port}` : server.ip;
 	const hasPassword = server.password && server.password.length > 0;
 	const { installations } = useInstallations();
+	const { servers } = useServerStore();
 	const installation = installations.find(
 		(inst) => inst.id === server.installationId,
 	);
+	const { data: versions } = useInstalledVersions();
 	if (!installation) return null;
 
 	return (
-		<Card className="hover:shadow-lg transition-shadow">
-			<CardHeader className="pb-3">
-				<div className="flex items-start justify-between">
-					<div className="flex items-center gap-3">
-						<div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
-							<Wifi className="w-6 h-6 text-accent" />
-						</div>
-						<div>
-							<CardTitle className="text-lg font-bold">{server.name}</CardTitle>
-							<p className="text-sm text-muted-foreground font-mono">
-								{serverAddress}
-							</p>
-						</div>
-					</div>
-					<Button
-						className="text-destructive hover:text-destructive"
-						onClick={() => onUnfavorite(server)}
-						size="sm"
-						variant="ghost"
-					>
-						<Heart className="w-4 h-4 fill-current" />
-					</Button>
-				</div>
-			</CardHeader>
-			<CardContent className="space-y-4">
-				<div className="flex flex-col items-center gap-2">
-					{hasPassword && (
-						<Badge className="text-xs" variant="outline">
-							<Lock className="w-3 h-3 mr-1" />
-							Password Protected
-						</Badge>
+		<div
+			className={`flex items-center justify-between px-4 py-3 ${
+				server.index !== servers.length - 1 ? "border-b border-border" : ""
+			}`}
+			key={server.id}
+		>
+			<div className="flex items-center gap-3">
+				<div
+					className={`h-2 w-2 rounded-full ${
+						versions.includes(installation.version)
+							? "bg-green-500"
+							: "bg-muted-foreground/40"
+					}`}
+				/>
+				<div>
+					<p className="font-mono text-sm text-foreground">
+						{server.name}
+						{hasPassword ? (
+							<Lock className="ml-2 inline h-4 w-4 text-muted-foreground" />
+						) : null}
+					</p>
+					{installation.version && (
+						<p className="font-mono text-xs text-muted-foreground">
+							v{installation.version} - {serverAddress}
+						</p>
 					)}
-					<Badge className="text-xs" variant="secondary">
-						Installation: {installation.name}
-					</Badge>
 				</div>
-
-				<div className="flex gap-2">
-					<Button className="flex-1" onClick={() => onConnect(server)}>
-						<Wifi className="w-4 h-4 mr-2" />
-						Connect
-					</Button>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								onClick={() => onEdit(server)}
-								size="icon"
-								variant="outline"
-							>
-								<Settings className="w-4 h-4" />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Edit Server</TooltipContent>
-					</Tooltip>
-				</div>
-			</CardContent>
-		</Card>
+			</div>
+			<div className="flex items-center gap-1">
+				<Button
+					className="h-8 w-8 text-muted-foreground hover:text-foreground"
+					onClick={() => onConnect(server)}
+					size="icon"
+					variant="ghost"
+				>
+					<Play className="h-4 w-4" />
+					<span className="sr-only">Play {server.name}</span>
+				</Button>
+				<Button
+					className="h-8 w-8 text-muted-foreground hover:text-foreground"
+					onClick={() => onEdit(server)}
+					size="icon"
+					variant="ghost"
+				>
+					<Pencil className="h-4 w-4" />
+					<span className="sr-only">Edit {server.name}</span>
+				</Button>
+				<Button
+					className="h-8 w-8"
+					onClick={() => onUnfavorite(server)}
+					size="icon"
+					variant="ghost"
+				>
+					<Star
+						className={`h-4 w-4 ${
+							server.favorite
+								? "fill-warning text-warning"
+								: "text-muted-foreground hover:text-foreground"
+						}`}
+					/>
+					<span className="sr-only">
+						{server.favorite ? "Unfavorite" : "Favorite"} {server.name}
+					</span>
+				</Button>
+			</div>
+		</div>
 	);
 }

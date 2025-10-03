@@ -31,7 +31,7 @@
 		"license": "GNU General Public License (GPL) v3",
 		"linux": {
 			"appimage": {
-				"bundleMediaFramework": false,
+				"bundleMediaFramework": true,
 				"files": {}
 			},
 			"deb": {
@@ -66,5 +66,5 @@
 		}
 	},
 	"productName": "Story Forge",
-	"version": "0.2.9"
+	"version": "0.3.1"
 }
