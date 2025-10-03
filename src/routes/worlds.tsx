@@ -71,7 +71,7 @@ function RouteComponent() {
 				</DropdownMenu>
 			</div>
 			{filteredWorlds && (
-				<div className="h-full py-2 relative overflow-auto w-full">
+				<div className="h-full px-4 relative overflow-auto w-full">
 					<WorldList worlds={filteredWorlds} />
 				</div>
 			)}
