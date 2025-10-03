@@ -22,31 +22,36 @@ export const usePlayInstallation = (
 			const installation = installations.find(
 				(inst) => inst.id === variable.id,
 			);
-			listenRef.current = await listen<{ status: string; reason?: string }>(
-				`launch-${variable.id}`,
-				(event) => {
-					const { status } = event.payload;
-					if (status === "pending") {
-						toast.loading(`Launching ${installation?.name}...`, {
+			listenRef.current = await listen<{
+				status: string;
+				reason?: string;
+				version?: string;
+				line?: string;
+			}>(`launch-${variable.id}`, (event) => {
+				const { status } = event.payload;
+				if (status === "pending") {
+					toast.loading(`Launching ${installation?.name}...`, {
+						id: `launch-game-${variable.id}`,
+					});
+				}
+				if (status === "success") {
+					toast.success(
+						`Launched${variable.save ? ` world ${variable.save} with` : ""} ${installation?.name}!`,
+						{
+							description: event.payload.version
+								? `Version: ${event.payload.version}`
+								: undefined,
 							id: `launch-game-${variable.id}`,
-						});
-					}
-					if (status === "success") {
-						toast.success(
-							`Launched${variable.save ? ` world ${variable.save} with` : ""} ${installation?.name}!`,
-							{
-								id: `launch-game-${variable.id}`,
-							},
-						);
-						updateLastPlayed(variable.id);
-					}
-					if (status === "error") {
-						toast.error(`Error launching game: ${event.payload.reason}`, {
-							id: `launch-game-${variable.id}`,
-						});
-					}
-				},
-			);
+						},
+					);
+					updateLastPlayed(variable.id);
+				}
+				if (status === "error") {
+					toast.error(`Error launching game: ${event.payload.reason}`, {
+						id: `launch-game-${variable.id}`,
+					});
+				}
+			});
 		},
 	});
 };
