@@ -31,7 +31,7 @@
 		"license": "GNU General Public License (GPL) v3",
 		"linux": {
 			"appimage": {
-				"bundleMediaFramework": false,
+				"bundleMediaFramework": true,
 				"files": {}
 			},
 			"deb": {
