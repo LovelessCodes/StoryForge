@@ -16,6 +16,7 @@ import {
 } from "@dnd-kit/sortable";
 import { createFileRoute } from "@tanstack/react-router";
 import { FileDownIcon, FolderPlusIcon } from "lucide-react";
+import { AnimatePresence } from "motion/react";
 import { SortableInstallationRow } from "@/components/rows/sortable.installation.row";
 import { Button } from "@/components/ui/button";
 import {
@@ -90,11 +91,12 @@ function RouteComponent() {
 					items={installationIds}
 					strategy={verticalListSortingStrategy}
 				>
-					<div className="rounded shadow divide-y">
-						{installations
+					<AnimatePresence>
+						{[...installations]
 							.sort((a, b) => a.index - b.index)
-							.map((installation) => (
+							.map((installation, i) => (
 								<SortableInstallationRow
+									index={i}
 									installation={installation}
 									key={installation.id}
 									onFavorite={toggleFavorite}
@@ -102,7 +104,7 @@ function RouteComponent() {
 									onPlay={playWithInstallation}
 								/>
 							))}
-					</div>
+					</AnimatePresence>
 				</SortableContext>
 			</DndContext>
 		</div>
