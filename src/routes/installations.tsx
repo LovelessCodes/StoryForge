@@ -91,20 +91,24 @@ function RouteComponent() {
 					items={installationIds}
 					strategy={verticalListSortingStrategy}
 				>
-					<AnimatePresence>
-						{[...installations]
-							.sort((a, b) => a.index - b.index)
-							.map((installation, i) => (
-								<SortableInstallationRow
-									index={i}
-									installation={installation}
-									key={installation.id}
-									onFavorite={toggleFavorite}
-									onOpenFolder={openFolder}
-									onPlay={playWithInstallation}
-								/>
-							))}
-					</AnimatePresence>
+					<div className="h-full px-4 relative overflow-auto w-full">
+						<div className="flex flex-col w-full bg-card p-2 rounded shadow border relative overflow-y-auto">
+							<AnimatePresence>
+								{[...installations]
+									.sort((a, b) => a.index - b.index)
+									.map((installation, i) => (
+										<SortableInstallationRow
+											index={i}
+											installation={installation}
+											key={installation.id}
+											onFavorite={toggleFavorite}
+											onOpenFolder={openFolder}
+											onPlay={playWithInstallation}
+										/>
+									))}
+							</AnimatePresence>
+						</div>
+					</div>
 				</SortableContext>
 			</DndContext>
 		</div>
