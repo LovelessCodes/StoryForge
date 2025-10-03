@@ -46,3 +46,9 @@ export const zipfolderprefix = () => {
 	if (pf === "m") return "*.app/";
 	return "";
 };
+
+export const isMac =
+	navigator.platform.includes("Mac") ||
+	/Macintosh|MacIntel|MacPPC|Mac68K/.test(navigator.userAgent);
+
+export const modifierLabel = isMac ? "⌘" : "Ctrl+";
