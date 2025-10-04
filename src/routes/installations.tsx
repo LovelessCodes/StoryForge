@@ -19,6 +19,7 @@ import { FileDownIcon, FolderPlusIcon } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 import { SortableInstallationRow } from "@/components/rows/sortable.installation.row";
 import { Button } from "@/components/ui/button";
+import { ErrorComponent } from "@/components/ui/error";
 import {
 	Tooltip,
 	TooltipContent,
@@ -31,6 +32,7 @@ import { useInstallations } from "@/stores/installations";
 
 export const Route = createFileRoute("/installations")({
 	component: RouteComponent,
+	errorComponent: ErrorComponent,
 });
 
 function RouteComponent() {
