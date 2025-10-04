@@ -5,6 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ErrorComponent } from "@/components/ui/error";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +14,7 @@ import { useInstallations } from "@/stores/installations";
 
 export const Route = createFileRoute("/mod-configs/$id")({
 	component: RouteComponent,
+	errorComponent: ErrorComponent,
 });
 
 function RouteComponent() {
