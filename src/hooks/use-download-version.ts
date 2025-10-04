@@ -28,6 +28,10 @@ export const useDownloadVersion = (
 				zipsubfolderprefix: zipfolderprefix(),
 			}) as Promise<string>;
 		},
+		mutationKey: ["download-version"],
+		scope: {
+			id: "download-version",
+		},
 		...props,
 	});
 };

@@ -38,51 +38,52 @@ export function ServerCard({
 	);
 	const { data: versions } = useInstalledVersions();
 
-	const { mutate: installVersion } = useDownloadVersion({
-		onError: (error, v) => {
-			listenRef.current?.();
-			toast.error(`Error downloading game version: ${error.message}`, {
-				id: `download-game-version-${v}`,
-			});
-		},
-		onMutate: async (v) => {
-			toast.loading(`Starting to download game version ${v}...`, {
-				id: `download-game-version-${v}`,
-			});
-			listenRef.current = await listen<ProgressPayload>(
-				`download://version:${v.replace(/\./g, "_")}`,
-				(event) => {
-					const { phase, percent } = event.payload;
-					if (phase === "download") {
-						toast.loading(
-							`Downloading game version ${v}: ${percent?.toFixed(0)}%`,
-							{
+	const { mutate: installVersion, isPending: isInstalling } =
+		useDownloadVersion({
+			onError: (error, v) => {
+				listenRef.current?.();
+				toast.error(`Error downloading game version: ${error.message}`, {
+					id: `download-game-version-${v}`,
+				});
+			},
+			onMutate: async (v) => {
+				toast.loading(`Starting to download game version ${v}...`, {
+					id: `download-game-version-${v}`,
+				});
+				listenRef.current = await listen<ProgressPayload>(
+					`download://version:${v.replace(/\./g, "_")}`,
+					(event) => {
+						const { phase, percent } = event.payload;
+						if (phase === "download") {
+							toast.loading(
+								`Downloading game version ${v}: ${percent?.toFixed(0)}%`,
+								{
+									id: `download-game-version-${v}`,
+								},
+							);
+						}
+						if (phase === "extract") {
+							toast.loading(`Extracting game version ${v}`, {
 								id: `download-game-version-${v}`,
-							},
-						);
-					}
-					if (phase === "extract") {
-						toast.loading(`Extracting game version ${v}`, {
-							id: `download-game-version-${v}`,
-						});
-					}
-				},
-			);
-		},
-		onSuccess: (d, v) => {
-			listenRef.current?.();
-			if (d === "already_downloaded") {
-				toast.dismiss(`download-game-version-${v}`);
-				return;
-			}
-			toast.success(`Game version ${v} downloaded`, {
-				id: `download-game-version-${v}`,
-			});
-			queryClient.invalidateQueries({
-				queryKey: installedVersionsQueryKey(),
-			});
-		},
-	});
+							});
+						}
+					},
+				);
+			},
+			onSuccess: (d, v) => {
+				listenRef.current?.();
+				if (d === "already_downloaded") {
+					toast.dismiss(`download-game-version-${v}`);
+					return;
+				}
+				toast.success(`Game version ${v} downloaded`, {
+					id: `download-game-version-${v}`,
+				});
+				queryClient.invalidateQueries({
+					queryKey: installedVersionsQueryKey(),
+				});
+			},
+		});
 	if (!installation) return null;
 
 	return (
@@ -131,6 +132,7 @@ export function ServerCard({
 							<TooltipTrigger asChild>
 								<Button
 									className="h-8 w-8 text-muted-foreground hover:text-foreground"
+									disabled={isInstalling}
 									onClick={() => installVersion(installation.version)}
 									size="icon"
 									variant="ghost"
