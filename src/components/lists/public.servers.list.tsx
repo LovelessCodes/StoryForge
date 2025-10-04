@@ -1,5 +1,6 @@
 import { measureElement, useVirtualizer } from "@tanstack/react-virtual";
 import { ListCheckIcon, LockIcon, UnplugIcon, Users2Icon } from "lucide-react";
+import { motion } from "motion/react";
 import { useCallback } from "react";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import type { PublicServer } from "@/hooks/use-public-servers";
@@ -111,7 +112,12 @@ export function PublicServerList({
 								willChange: "transform",
 							}}
 						>
-							<div className="flex flex-row justify-between w-full items-center">
+							<motion.div
+								animate={{ opacity: 1, y: 0 }}
+								className="flex flex-row justify-between w-full items-center"
+								exit={{ opacity: 0, y: 20 }}
+								initial={{ opacity: 0, y: 20 }}
+							>
 								<div className="flex flex-col">
 									<div className="flex gap-1 items-center font-semibold">
 										{server?.serverName}
@@ -163,8 +169,13 @@ export function PublicServerList({
 										)}
 									</div>
 								</div>
-							</div>
-							<div className="flex gap-2 items-center">
+							</motion.div>
+							<motion.div
+								animate={{ opacity: 1, y: 0 }}
+								className="flex gap-2 items-center"
+								exit={{ opacity: 0, y: -12 }}
+								initial={{ opacity: 0, y: -12 }}
+							>
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<Tooltip>
@@ -197,7 +208,7 @@ export function PublicServerList({
 									</TooltipTrigger>
 									<TooltipContent>Connect to {server?.serverIP}</TooltipContent>
 								</Tooltip>
-							</div>
+							</motion.div>
 						</div>
 					);
 				})}
