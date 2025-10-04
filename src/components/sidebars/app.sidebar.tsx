@@ -1,5 +1,4 @@
 import { Link } from "@tanstack/react-router";
-import { invoke } from "@tauri-apps/api/core";
 import {
 	CheckIcon,
 	CircleFadingPlusIcon,
@@ -9,7 +8,6 @@ import {
 	HomeIcon,
 	MapPinIcon,
 	NewspaperIcon,
-	PlayIcon,
 	RefreshCcwIcon,
 	UserMinus2,
 	UserPlus2,
@@ -363,26 +361,6 @@ export function AppSidebar() {
 						</div>
 					</button>
 				</a>
-				{installations.length > 0 && (
-					<button
-						className="group/button relative w-auto cursor-pointer overflow-hidden rounded-md border bg-background p-2 px-6 text-center font-semibold"
-						onClick={() =>
-							invoke("play_game", { installation_id: installations[0].id })
-						}
-						type="button"
-					>
-						<div className="flex items-center justify-center gap-2">
-							<div className="h-2 w-2 rounded-full bg-green-200 transition-all duration-300 absolute opacity-0 group-hover/button:opacity-100 group-hover/button:scale-[100.8]"></div>
-							<span className="inline-block transition-all duration-300 group-hover/button:translate-x-12 group-hover/button:opacity-0">
-								Play Game
-							</span>
-						</div>
-						<div className="absolute top-0 z-10 flex h-full w-full translate-x-12 items-center justify-center gap-2 text-primary-foreground opacity-0 transition-all duration-300 group-hover/button:-translate-x-5 group-hover/button:opacity-100">
-							<span>Play Game</span>
-							<PlayIcon className="size-4" />
-						</div>
-					</button>
-				)}
 			</SidebarFooter>
 		</Sidebar>
 	);
