@@ -352,7 +352,14 @@ export function ModList({
 												<TooltipContent>
 													<span className="text-xs text-muted-foreground">
 														{installedMod.version} →{" "}
-														{modUpdates.updates[mod.modidstrs[0]].modversion}
+														{/* Figure out if the mod.modidstrs[0] is the correct key */}
+														{modUpdates.updates[mod.modidstrs[0] ?? ""]
+															?.modversion ??
+															modUpdates.updates[mod.modid.toString()]
+																?.modversion ??
+															modUpdates.updates[mod.urlalias ?? ""]
+																?.modversion ??
+															"Unknown"}
 													</span>
 												</TooltipContent>
 											</Tooltip>
