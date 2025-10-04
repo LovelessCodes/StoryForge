@@ -63,51 +63,52 @@ export function InstallationRow({
 	const listenRef = useRef<() => void>(null);
 	const { data: versions } = useInstalledVersions();
 	const queryClient = useQueryClient();
-	const { mutate: installVersion } = useDownloadVersion({
-		onError: (error, v) => {
-			listenRef.current?.();
-			toast.error(`Error downloading game version: ${error.message}`, {
-				id: `download-game-version-${v}`,
-			});
-		},
-		onMutate: async (v) => {
-			toast.loading(`Starting to download game version ${v}...`, {
-				id: `download-game-version-${v}`,
-			});
-			listenRef.current = await listen<ProgressPayload>(
-				`download://version:${v.replace(/\./g, "_")}`,
-				(event) => {
-					const { phase, percent } = event.payload;
-					if (phase === "download") {
-						toast.loading(
-							`Downloading game version ${v}: ${percent?.toFixed(0)}%`,
-							{
+	const { mutate: installVersion, isPending: isInstalling } =
+		useDownloadVersion({
+			onError: (error, v) => {
+				listenRef.current?.();
+				toast.error(`Error downloading game version: ${error.message}`, {
+					id: `download-game-version-${v}`,
+				});
+			},
+			onMutate: async (v) => {
+				toast.loading(`Starting to download game version ${v}...`, {
+					id: `download-game-version-${v}`,
+				});
+				listenRef.current = await listen<ProgressPayload>(
+					`download://version:${v.replace(/\./g, "_")}`,
+					(event) => {
+						const { phase, percent } = event.payload;
+						if (phase === "download") {
+							toast.loading(
+								`Downloading game version ${v}: ${percent?.toFixed(0)}%`,
+								{
+									id: `download-game-version-${v}`,
+								},
+							);
+						}
+						if (phase === "extract") {
+							toast.loading(`Extracting game version ${v}`, {
 								id: `download-game-version-${v}`,
-							},
-						);
-					}
-					if (phase === "extract") {
-						toast.loading(`Extracting game version ${v}`, {
-							id: `download-game-version-${v}`,
-						});
-					}
-				},
-			);
-		},
-		onSuccess: (d, v) => {
-			listenRef.current?.();
-			if (d === "already_downloaded") {
-				toast.dismiss(`download-game-version-${v}`);
-				return;
-			}
-			toast.success(`Game version ${v} downloaded`, {
-				id: `download-game-version-${v}`,
-			});
-			queryClient.invalidateQueries({
-				queryKey: installedVersionsQueryKey(),
-			});
-		},
-	});
+							});
+						}
+					},
+				);
+			},
+			onSuccess: (d, v) => {
+				listenRef.current?.();
+				if (d === "already_downloaded") {
+					toast.dismiss(`download-game-version-${v}`);
+					return;
+				}
+				toast.success(`Game version ${v} downloaded`, {
+					id: `download-game-version-${v}`,
+				});
+				queryClient.invalidateQueries({
+					queryKey: installedVersionsQueryKey(),
+				});
+			},
+		});
 	const { data: installationMods } = useInstalledMods(installation.path);
 	const version = versions?.find((v) => v === installation.version);
 	const { openDialog } = useDialogStore();
@@ -187,6 +188,7 @@ export function InstallationRow({
 						) : (
 							<Button
 								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
+								disabled={isInstalling}
 								onClick={() => installVersion(installation.version)}
 								variant="outline"
 							>

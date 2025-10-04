@@ -74,6 +74,10 @@ function RootComponent() {
 							}
 						}),
 				},
+				cancel: {
+					label: "Not now",
+					onClick: () => toast.dismiss("update-available"),
+				},
 				description: `Version ${update.version} is available.`,
 				dismissible: true,
 				duration: Number.POSITIVE_INFINITY,

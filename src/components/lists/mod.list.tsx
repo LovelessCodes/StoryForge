@@ -6,6 +6,7 @@ import {
 	PackageMinusIcon,
 	PackagePlusIcon,
 } from "lucide-react";
+import { motion } from "motion/react";
 import { useCallback } from "react";
 import {
 	Tooltip,
@@ -249,12 +250,15 @@ export function ModList({
 								willChange: "transform",
 							}}
 						>
-							<div
+							<motion.div
+								animate={{ opacity: 1, y: 0 }}
 								className={cn([
 									"flex flex-row p-2 justify-between w-full items-center",
 									installedMod &&
 										"bg-gradient-to-r from-green-600/20 to-transparent",
 								])}
+								exit={{ opacity: 0, y: 12 }}
+								initial={{ opacity: 0, y: 12 }}
 							>
 								<div className="flex flex-row gap-2">
 									<a
@@ -395,7 +399,7 @@ export function ModList({
 											</Tooltip>
 										))}
 								</div>
-							</div>
+							</motion.div>
 						</div>
 					);
 				})}

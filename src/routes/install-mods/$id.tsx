@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDownIcon } from "lucide-react";
 import { useRef } from "react";
@@ -27,10 +27,6 @@ import { type ModsFilters, useModsFilters } from "@/stores/modsFilters";
 
 export const Route = createFileRoute("/install-mods/$id")({
 	component: RouteComponent,
-	loader: ({ context: { queryClient } }) => {
-		queryClient.ensureQueryData(gameVersionsQuery);
-		queryClient.ensureQueryData(modTagsQuery);
-	},
 });
 
 const sortOptions: Record<ModsFilters["sortBy"], string> = {
@@ -61,8 +57,8 @@ function RouteComponent() {
 	const { id } = Route.useParams();
 	const { installations } = useInstallations();
 	const installation = installations.find((inst) => inst.id === Number(id));
-	const { data: gameVersions } = useSuspenseQuery(gameVersionsQuery);
-	const { data: modTags } = useSuspenseQuery(modTagsQuery);
+	const { data: gameVersions } = useQuery(gameVersionsQuery);
+	const { data: modTags } = useQuery(modTagsQuery);
 	const { data: installedMods } = useInstalledMods(installation?.path ?? "", {
 		enabled: !!installation,
 	});

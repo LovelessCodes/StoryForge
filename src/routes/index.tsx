@@ -1,8 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import {
-	CircleFadingPlusIcon,
-	Download,
 	FolderHeartIcon,
+	FolderIcon,
 	FolderPlusIcon,
 	MapPinIcon,
 	MapPinPlusIcon,
@@ -11,17 +10,10 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { InstallationCard } from "@/components/cards/installation.card";
 import { ServerCard } from "@/components/cards/server.card";
-import { VersionItem } from "@/components/items/version.item";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useAppVersion } from "@/hooks/use-app-version";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
-import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
@@ -39,7 +31,6 @@ function Dashboard() {
 	const { installations, toggleFavorite: toggleFavoriteInstallation } =
 		useInstallations();
 	const { servers, toggleFavorite: toggleFavoriteServer } = useServerStore();
-	const { data: versions } = useInstalledVersions();
 	const { data: appVersion } = useAppVersion();
 	const router = useRouter();
 	const { mutate: connectToServer } = useConnectToServer();
@@ -47,9 +38,9 @@ function Dashboard() {
 	const { openDialog } = useDialogStore();
 
 	return (
-		<div className="h-screen w-full grid grid-rows-[min-content,1fr] bg-background">
+		<div className="h-screen w-full grid grid-rows-[min-content] overflow-hidden bg-background">
 			{/* Header */}
-			<header className="border-b bg-card sticky top-0 z-10">
+			<header className="border-b bg-card sticky top-0 z-10 h-fit">
 				<div className="container mx-auto px-6 py-4">
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-3">
@@ -80,38 +71,28 @@ function Dashboard() {
 			</header>
 
 			{/* Main Content */}
-			<main className="px-6 py-2 space-y-8 h-full overflow-y-auto">
-				<section className="flex gap-6">
+			<main className="px-6 py-6 space-y-8 h-full overflow-y-auto">
+				<section className="flex gap-6 h-full">
 					{/* Installations */}
-					<div className="flex flex-col w-full">
-						<div className="flex items-center gap-2 mb-2">
-							<FolderHeartIcon className="w-5 h-5 text-primary" />
-							<h2 className="text-xl font-bold">Installations</h2>
-							<span className="text-sm text-muted-foreground">
-								({installations.length})
-							</span>
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										onClick={() =>
-											router.navigate({
-												to: "/installations",
-												viewTransition: { types: ["warp"] },
-											})
-										}
-										size="icon"
-										variant="outline"
-									>
-										<FolderPlusIcon className="size-4" />
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent>Manage Installations</TooltipContent>
-							</Tooltip>
-						</div>
-
+					<div className="flex flex-col w-full h-full relative overflow-y-auto">
 						{installations.length > 0 ? (
-							<div className="flex flex-col w-full bg-card p-2 rounded shadow border">
+							<div className="flex flex-col w-full bg-card rounded-lg shadow border">
 								<AnimatePresence>
+									<Link className="sticky top-0" to="/installations">
+										<Button
+											className="text-center text-sm rounded-b-none relative text-muted-foreground w-full hover:text-foreground group"
+											variant="secondary"
+										>
+											<Badge
+												className="absolute top-2 left-2 group-hover:text-foreground text-muted-foreground"
+												variant="outline"
+											>
+												{installations.length}
+											</Badge>
+											Installations
+											<FolderIcon className="inline size-3 ml-2" />
+										</Button>
+									</Link>
 									{[...installations]
 										.sort((a, b) => {
 											if (a.favorite === b.favorite) {
@@ -119,7 +100,6 @@ function Dashboard() {
 											}
 											return a.favorite ? -1 : 1;
 										})
-										.slice(0, 5)
 										.map((installation, index) => (
 											<motion.div
 												animate={{ opacity: 1, y: 0 }}
@@ -156,52 +136,48 @@ function Dashboard() {
 											</motion.div>
 										))}
 								</AnimatePresence>
-								{installations.length > 5 ? (
-									<Link to="/installations">
-										<Button
-											className="text-center text-sm text-muted-foreground w-full"
-											variant="outline"
-										>
-											And {installations.length - 5} more installation...
-										</Button>
-									</Link>
-								) : null}
+								<Button
+									className="text-center sticky bottom-0 text-sm text-muted-foreground rounded-t-none w-full"
+									onClick={() => openDialog("AddInstallationDialog")}
+									variant="secondary"
+								>
+									Add Installation
+									<FolderPlusIcon className="size-3 ml-2" />
+								</Button>
 							</div>
 						) : (
 							<div className="flex flex-col w-full gap-6  bg-card p-4 rounded shadow border">
 								<FolderHeartIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
 								<p className="text-muted-foreground">No installations yet</p>
+								<Button
+									className="text-center text-sm text-muted-foreground w-full"
+									onClick={() => openDialog("AddInstallationDialog")}
+									variant="secondary"
+								>
+									Add Installation
+									<FolderPlusIcon className="size-3 ml-2" />
+								</Button>
 							</div>
 						)}
 					</div>
 					<div className="flex flex-col w-full">
-						<div className="flex items-center gap-2 mb-2">
-							<MapPinIcon className="w-5 h-5 text-primary" />
-							<h2 className="text-xl font-bold">Servers</h2>
-							<span className="text-sm text-muted-foreground">
-								({servers.length})
-							</span>
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										onClick={() =>
-											router.navigate({
-												to: "/servers",
-												viewTransition: { types: ["warp"] },
-											})
-										}
-										size="icon"
-										variant="outline"
-									>
-										<MapPinPlusIcon className="size-4" />
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent>Manage Servers</TooltipContent>
-							</Tooltip>
-						</div>
-
 						{servers.length > 0 ? (
-							<div className="flex flex-col bg-card p-2 rounded shadow border">
+							<div className="flex flex-col h-fit overflow-y-auto relative bg-card rounded-lg shadow border">
+								<Link className="sticky top-0" to="/servers">
+									<Button
+										className="text-center text-sm rounded-b-none relative text-muted-foreground w-full hover:text-foreground group"
+										variant="secondary"
+									>
+										<Badge
+											className="absolute top-2 left-2 group-hover:text-foreground text-muted-foreground"
+											variant="outline"
+										>
+											{servers.length}
+										</Badge>
+										Servers
+										<MapPinIcon className="inline size-3 ml-2" />
+									</Button>
+								</Link>
 								<AnimatePresence>
 									{[...servers]
 										.sort((a, b) => {
@@ -210,7 +186,6 @@ function Dashboard() {
 											}
 											return a.favorite ? -1 : 1;
 										})
-										.slice(0, 5)
 										.map((server, index) => (
 											<motion.div
 												animate={{ opacity: 1, y: 0 }}
@@ -245,72 +220,30 @@ function Dashboard() {
 											</motion.div>
 										))}
 								</AnimatePresence>
-								{servers.length > 5 ? (
-									<Link to="/servers">
-										<Button
-											className="text-center text-sm text-muted-foreground w-full"
-											variant="outline"
-										>
-											And {servers.length - 5} more server...
-										</Button>
-									</Link>
-								) : null}
+								<Button
+									className="text-center text-sm sticky bottom-0 text-muted-foreground rounded-t-none w-full"
+									onClick={() => openDialog("AddServerDialog")}
+									variant="secondary"
+								>
+									Add Server
+									<MapPinPlusIcon className="size-3 mr-2" />
+								</Button>
 							</div>
 						) : (
 							<div className="flex flex-col w-full gap-6  bg-card p-4 rounded shadow border">
 								<ServerIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
 								<p className="text-muted-foreground">No servers yet</p>
+								<Button
+									className="text-center text-sm text-muted-foreground w-full"
+									onClick={() => openDialog("AddServerDialog")}
+									variant="secondary"
+								>
+									Add Server
+									<MapPinPlusIcon className="size-3 ml-2" />
+								</Button>
 							</div>
 						)}
 					</div>
-				</section>
-
-				{/* Installed Versions */}
-				<section>
-					<div className="flex items-center gap-2 mb-2">
-						<Download className="w-5 h-5 text-primary" />
-						<h2 className="text-xl font-bold">Installed Versions</h2>
-						<span className="text-sm text-muted-foreground">
-							({versions.length})
-						</span>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									onClick={() =>
-										router.navigate({
-											to: "/versions",
-											viewTransition: { types: ["warp"] },
-										})
-									}
-									size="icon"
-									variant="outline"
-								>
-									<CircleFadingPlusIcon className="size-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Manage Versions</TooltipContent>
-						</Tooltip>
-					</div>
-
-					<Card>
-						<CardHeader>
-							<CardTitle>Game Versions</CardTitle>
-						</CardHeader>
-						<CardContent>
-							{versions.length > 0 ? (
-								<div className="space-y-2">
-									{versions.map((version) => (
-										<VersionItem key={version} version={version} />
-									))}
-								</div>
-							) : (
-								<div className="py-8 text-center">
-									<Download className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-									<p className="text-muted-foreground">No versions installed</p>
-								</div>
-							)}
-						</CardContent>
-					</Card>
 				</section>
 			</main>
 		</div>
