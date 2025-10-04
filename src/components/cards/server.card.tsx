@@ -38,7 +38,7 @@ export function ServerCard({
 							: "bg-muted-foreground/40"
 					}`}
 				/>
-				<div>
+				<div className="text-left">
 					<p className="font-mono text-sm text-foreground">
 						{server.name}
 						{hasPassword ? (
