@@ -10,6 +10,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { ErrorComponent } from "@/components/ui/error";
 
 interface NewsItem {
 	title: string;
@@ -26,6 +27,7 @@ export const newsQueryOptions = {
 
 export const Route = createFileRoute("/news")({
 	component: RouteComponent,
+	errorComponent: ErrorComponent,
 });
 
 function RouteComponent() {

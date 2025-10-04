@@ -12,6 +12,7 @@ import { InstallationCard } from "@/components/cards/installation.card";
 import { ServerCard } from "@/components/cards/server.card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ErrorComponent } from "@/components/ui/error";
 import { useAppVersion } from "@/hooks/use-app-version";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
@@ -21,6 +22,7 @@ import { useServerStore } from "@/stores/servers";
 
 export const Route = createFileRoute("/")({
 	component: RouteComponent,
+	errorComponent: ErrorComponent,
 });
 
 function RouteComponent() {

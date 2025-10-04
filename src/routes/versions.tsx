@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { FolderPlusIcon, XIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Button } from "@/components/ui/button";
+import { ErrorComponent } from "@/components/ui/error";
 import {
 	Tooltip,
 	TooltipContent,
@@ -13,6 +14,7 @@ import { useDialogStore } from "@/stores/dialogs";
 
 export const Route = createFileRoute("/versions")({
 	component: RouteComponent,
+	errorComponent: ErrorComponent,
 });
 
 const itemVariants = {

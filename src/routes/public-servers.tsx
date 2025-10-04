@@ -11,6 +11,7 @@ import {
 	DropdownMenuContent,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ErrorComponent } from "@/components/ui/error";
 import {
 	Select,
 	SelectContent,
@@ -27,6 +28,7 @@ import {
 
 export const Route = createFileRoute("/public-servers")({
 	component: RouteComponent,
+	errorComponent: ErrorComponent,
 });
 
 const sortOptions: Record<ServersFilters["sortBy"], string> = {

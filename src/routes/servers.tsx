@@ -34,6 +34,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ErrorComponent } from "@/components/ui/error";
 import {
 	Tooltip,
 	TooltipContent,
@@ -53,6 +54,7 @@ import { type Server, useServerStore } from "@/stores/servers";
 
 export const Route = createFileRoute("/servers")({
 	component: RouteComponent,
+	errorComponent: ErrorComponent,
 });
 
 const itemVariants = {

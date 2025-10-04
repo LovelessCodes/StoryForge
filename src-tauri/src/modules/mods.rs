@@ -390,11 +390,29 @@ pub fn get_mods(path: String) -> Result<ModsResult, UiError> {
             match serde_json::from_str::<Value>(&contents) {
                 Ok(json) => {
                     // Successfully parsed modinfo.json
+                    // Case-insensitive lookup for a key named "modid"; allow string or number.
                     let modid = json
-                        .get("modid")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("0")
-                        .to_string();
+                        .as_object()
+                        .and_then(|obj| {
+                            obj.iter()
+                                .find(|(k, _)| k.eq_ignore_ascii_case("modid"))
+                                .map(|(_, v)| v)
+                        })
+                        .map(|v| {
+                            if let Some(s) = v.as_str() {
+                                s.to_string()
+                            } else if let Some(n) = v.as_i64() {
+                                n.to_string()
+                            } else if let Some(n) = v.as_u64() {
+                                n.to_string()
+                            } else if let Some(n) = v.as_f64() {
+                                // Avoid scientific notation for whole numbers
+                                if n.fract() == 0.0 { (n as i64).to_string() } else { n.to_string() }
+                            } else {
+                                "0".to_string()
+                            }
+                        })
+                        .unwrap_or_else(|| "0".to_string());
                     let path = path.to_string_lossy().into_owned();
                     let name = json
                         .get("name")
