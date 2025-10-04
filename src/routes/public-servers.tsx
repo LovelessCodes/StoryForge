@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDownIcon } from "lucide-react";
 import { useRef } from "react";
@@ -27,10 +27,6 @@ import {
 
 export const Route = createFileRoute("/public-servers")({
 	component: RouteComponent,
-	loader: ({ context: { queryClient } }) => {
-		queryClient.ensureQueryData(gameVersionsQuery);
-		queryClient.ensureQueryData(publicServersQuery());
-	},
 });
 
 const sortOptions: Record<ServersFilters["sortBy"], string> = {
@@ -44,8 +40,8 @@ const sortOptions: Record<ServersFilters["sortBy"], string> = {
 
 function RouteComponent() {
 	const parentRef = useRef<HTMLDivElement | null>(null);
-	const { data: gameVersions } = useSuspenseQuery(gameVersionsQuery);
-	const { data: publicServers } = useSuspenseQuery(publicServersQuery());
+	const { data: gameVersions } = useQuery(gameVersionsQuery);
+	const { data: publicServers } = useQuery(publicServersQuery());
 	const {
 		searchText,
 		setSearchText,
