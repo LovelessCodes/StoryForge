@@ -97,7 +97,7 @@ export function InstallationCard({
 					}`}
 				/>
 				<Tooltip>
-					<TooltipTrigger className="flex flex-col justify-start">
+					<TooltipTrigger className="flex flex-col justify-start text-left">
 						<p className="font-mono text-sm text-foreground">
 							{installation.name}
 						</p>
