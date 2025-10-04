@@ -106,6 +106,12 @@ function RouteComponent() {
 											onPlay={playWithInstallation}
 										/>
 									))}
+								{installations.length === 0 && (
+									<p className="p-4 text-sm text-muted-foreground select-none">
+										No installations yet. Click "Add installation" to get
+										started.
+									</p>
+								)}
 							</AnimatePresence>
 						</div>
 					</div>

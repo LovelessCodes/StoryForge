@@ -27,6 +27,11 @@ export function WorldList({
 							world={world}
 						/>
 					))}
+				{worlds.length === 0 && (
+					<p className="p-4 text-sm text-muted-foreground select-none">
+						No worlds found yet. Create a world in-game to get started.
+					</p>
+				)}
 			</AnimatePresence>
 		</div>
 	);

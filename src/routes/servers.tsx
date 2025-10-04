@@ -406,6 +406,11 @@ function RouteComponent() {
 												server={server}
 											/>
 										))}
+									{servers.length === 0 && (
+										<p className="p-4 text-sm text-muted-foreground select-none">
+											No servers yet. Click "Add server" to get started.
+										</p>
+									)}
 								</AnimatePresence>
 							</div>
 						</div>
