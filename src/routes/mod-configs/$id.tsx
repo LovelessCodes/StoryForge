@@ -325,7 +325,7 @@ function LiveBlock({
 			return (
 				<div className="flex items-center gap-3" key={kKey}>
 					<label
-						className="w-48 text-xs font-mono text-muted-foreground"
+						className="w-48 text-xs font-mono flex-1 text-muted-foreground"
 						htmlFor={`bool-${kKey}`}
 					>
 						{keyLabel}
@@ -342,13 +342,13 @@ function LiveBlock({
 			return (
 				<div className="flex items-center gap-3" key={kKey}>
 					<label
-						className="w-48 text-xs font-mono text-muted-foreground"
+						className="w-48 text-xs flex-1 font-mono text-muted-foreground"
 						htmlFor={`num-${kKey}`}
 					>
 						{keyLabel}
 					</label>
 					<Input
-						className="h-8"
+						className="h-8 w-fit"
 						id={`num-${kKey}`}
 						onChange={(e) => handlePrimitiveChange(path, e.target.value, value)}
 						type="number"
@@ -361,13 +361,13 @@ function LiveBlock({
 		return (
 			<div className="flex items-center gap-3" key={kKey}>
 				<label
-					className="w-48 text-xs font-mono text-muted-foreground"
+					className="w-48 text-xs flex-1 font-mono text-muted-foreground"
 					htmlFor={`str-${kKey}`}
 				>
 					{keyLabel}
 				</label>
 				<Input
-					className="h-8"
+					className="h-8 w-fit"
 					id={`str-${kKey}`}
 					onChange={(e) => handlePrimitiveChange(path, e.target.value, value)}
 					value={value === null ? "null" : (value as string)}
