@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
 import { Loader2 } from "lucide-react";
@@ -26,14 +26,10 @@ export const newsQueryOptions = {
 
 export const Route = createFileRoute("/news")({
 	component: RouteComponent,
-	errorComponent: () => <div>Error loading news.</div>,
-	loader: ({ context: { queryClient } }) => {
-		return queryClient.ensureQueryData(newsQueryOptions);
-	},
 });
 
 function RouteComponent() {
-	const { data: news, isLoading, error } = useSuspenseQuery(newsQueryOptions);
+	const { data: news, isLoading, error } = useQuery(newsQueryOptions);
 
 	if (isLoading) {
 		return (
