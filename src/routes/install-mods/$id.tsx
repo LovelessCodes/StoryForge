@@ -13,6 +13,7 @@ import {
 	DropdownMenuContent,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ErrorComponent } from "@/components/ui/error";
 import {
 	Select,
 	SelectContent,
@@ -27,6 +28,7 @@ import { type ModsFilters, useModsFilters } from "@/stores/modsFilters";
 
 export const Route = createFileRoute("/install-mods/$id")({
 	component: RouteComponent,
+	errorComponent: ErrorComponent,
 });
 
 const sortOptions: Record<ModsFilters["sortBy"], string> = {
