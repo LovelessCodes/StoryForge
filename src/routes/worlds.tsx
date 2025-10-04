@@ -9,11 +9,13 @@ import {
 	DropdownMenuContent,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ErrorComponent } from "@/components/ui/error";
 import { useSaves } from "@/hooks/use-saves";
 import { useInstallations } from "@/stores/installations";
 
 export const Route = createFileRoute("/worlds")({
 	component: RouteComponent,
+	errorComponent: ErrorComponent,
 });
 
 function RouteComponent() {
