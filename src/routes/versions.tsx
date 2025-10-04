@@ -98,6 +98,11 @@ function RouteComponent() {
 						{[...versions].sort(compareSemverDesc).map((version, i) => (
 							<VersionRow index={i} key={version} version={version} />
 						))}
+						{versions.length === 0 && (
+							<p className="p-4 text-sm text-muted-foreground select-none">
+								No versions yet. Click "Add version" to get started.
+							</p>
+						)}
 					</AnimatePresence>
 				</div>
 			</div>
