@@ -1,5 +1,6 @@
 use reqwest::header::{HeaderMap, HeaderValue, HOST};
 use serde::{Deserialize, Serialize};
+use json5;
 use serde_json::Value;
 use std::{
     fs::File,
@@ -387,7 +388,7 @@ pub fn get_mods(path: String) -> Result<ModsResult, UiError> {
                 continue;
             }
 
-            match serde_json::from_str::<Value>(&contents) {
+            match json5::from_str::<Value>(&contents) {
                 Ok(json) => {
                     // Successfully parsed modinfo.json
                     // Case-insensitive lookup for a key named "modid"; allow string or number.
@@ -527,7 +528,7 @@ pub fn get_mod_configs(app: AppHandle, installation_id: u64) -> Result<Vec<Value
                     let mut content = String::new();
                     file.read_to_string(&mut content)
                         .map_err(|e| UiError::from(format!("Read file error: {e}")))?;
-                    let json_content: Value = serde_json::from_str(&content)
+                    let json_content: Value = json5::from_str(&content)
                         .map_err(|e| UiError::from(format!("Parse JSON error: {e}")))?;
                     configs.push(serde_json::json!({
                         "filename": filename,
