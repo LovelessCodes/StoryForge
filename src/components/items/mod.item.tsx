@@ -18,13 +18,14 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAddLatestModVersion } from "@/hooks/use-add-latest-mod-version";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import {
 	type ModUpdatesResponse,
 	modUpdatesQueryKey,
 } from "@/hooks/use-mod-updates";
 import type { ModInfo, ProgressPayload } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, compareSemverAsc } from "@/lib/utils";
 import type { OutputMod } from "@/routes/install-mods/$id";
 import { useDialogStore } from "@/stores/dialogs";
 import type { Installation } from "@/stores/installations";
@@ -64,6 +65,11 @@ export function ModItem({
 		refetchOnReconnect: false,
 		refetchOnWindowFocus: false,
 	});
+	const { mutate: downloadLatestModVersion, isPending: isDownloading } =
+		useAddLatestModVersion({
+			installation,
+			mod,
+		});
 	const { mutate: removeModFromInstallation, isPending: removePending } =
 		useMutation({
 			mutationFn: ({ path, modpath }: { path: string; modpath: string }) =>
@@ -201,13 +207,11 @@ export function ModItem({
 				</div>
 			</div>
 			<div className="flex items-center">
-				{modUpdates?.statuscode === "200" &&
-					(Object.keys(modUpdates.updates).includes(mod.modidstrs[0]) ||
-						Object.keys(modUpdates.updates).includes(mod.modid.toString()) ||
-						Object.keys(modUpdates.updates).includes(mod.urlalias ?? "")) &&
+				{updateMod &&
 					installation &&
-					updateMod?.modversion !== installedMod?.version &&
-					installedMod && (
+					updateMod &&
+					installedMod &&
+					compareSemverAsc(updateMod.modversion, installedMod.version) > 0 && (
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<Button
@@ -228,17 +232,34 @@ export function ModItem({
 							</TooltipTrigger>
 							<TooltipContent>
 								<span className="text-xs text-muted-foreground">
-									{installedMod.version} →{" "}
-									{modUpdates.updates[mod.modidstrs[0] ?? ""]?.modversion ??
-										modUpdates.updates[mod.modid.toString()]?.modversion ??
-										modUpdates.updates[mod.urlalias ?? ""]?.modversion ??
-										"Unknown"}
+									{installedMod.version} → {updateMod.modversion ?? "Unknown"}
 								</span>
 								<br />
 								Install latest version
 							</TooltipContent>
 						</Tooltip>
 					)}
+				{!installedMod && installation && (
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								aria-label="Delete"
+								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10 text-muted-foreground hover:text-foreground"
+								disabled={isDownloading}
+								onClick={() =>
+									downloadLatestModVersion({
+										path: `${installation.path}/Mods`,
+									})
+								}
+								size="icon"
+								variant="outline"
+							>
+								<DownloadCloudIcon size={4} />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Install latest version</TooltipContent>
+					</Tooltip>
+				)}
 				{installation && installedMod && (
 					<Tooltip>
 						<TooltipTrigger asChild>
