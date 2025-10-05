@@ -1,70 +1,70 @@
 {
-	"$schema": "https://schema.tauri.app/config/2",
-	"app": {
-		"security": {
-			"csp": null
-		},
-		"windows": [
-			{
-				"height": 600,
-				"title": "Story Forge",
-				"width": 800
-			}
-		]
-	},
-	"build": {
-		"beforeBuildCommand": "bun run build",
-		"beforeDevCommand": "bun run dev",
-		"devUrl": "http://localhost:1420",
-		"frontendDist": "../dist"
-	},
-	"bundle": {
-		"active": true,
-		"createUpdaterArtifacts": true,
-		"icon": [
-			"icons/32x32.png",
-			"icons/128x128.png",
-			"icons/128x128@2x.png",
-			"icons/icon.icns",
-			"icons/icon.ico"
-		],
-		"license": "GNU General Public License (GPL) v3",
-		"linux": {
-			"appimage": {
-				"bundleMediaFramework": true,
-				"files": {}
-			},
-			"deb": {
-				"files": {}
-			},
-			"rpm": {
-				"epoch": 0,
-				"files": {},
-				"release": "1"
-			}
-		},
-		"macOS": {
-			"signingIdentity": "-"
-		},
-		"targets": "all",
-		"windows": {
-			"certificateThumbprint": null,
-			"digestAlgorithm": "sha256",
-			"nsis": {
-				"installerIcon": "icons/icon.ico"
-			},
-			"timestampUrl": ""
-		}
-	},
-	"identifier": "StoryForge",
-	"plugins": {
-		"updater": {
-			"endpoints": [
-				"https://github.com/lovelesscodes/storyforge/releases/latest/download/latest.json"
-			],
-			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDhGMEI3NzE4QkNBOTUxNTUKUldSVlVhbThHSGNMais2dzluVDdrQTJ1WWg5M3laWnlYVlNuZ09lMGluU1h1L0RRVnNvTjBhM08K"
-		}
-	},
-	"productName": "Story Forge",
-	"version": "0.3.5"
+  "$schema": "https://schema.tauri.app/config/2",
+  "app": {
+    "security": {
+      "csp": null
+    },
+    "windows": [
+      {
+        "height": 600,
+        "title": "Story Forge",
+        "width": 800
+      }
+    ]
+  },
+  "build": {
+    "beforeBuildCommand": "bun run build",
+    "beforeDevCommand": "bun run dev",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  },
+  "bundle": {
+    "active": true,
+    "createUpdaterArtifacts": true,
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "license": "GNU General Public License (GPL) v3",
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": true,
+        "files": {}
+      },
+      "deb": {
+        "files": {}
+      },
+      "rpm": {
+        "epoch": 0,
+        "files": {},
+        "release": "1"
+      }
+    },
+    "macOS": {
+      "signingIdentity": "-"
+    },
+    "targets": "all",
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "nsis": {
+        "installerIcon": "icons/icon.ico"
+      },
+      "timestampUrl": ""
+    }
+  },
+  "identifier": "StoryForge",
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/lovelesscodes/storyforge/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDhGMEI3NzE4QkNBOTUxNTUKUldSVlVhbThHSGNMais2dzluVDdrQTJ1WWg5M3laWnlYVlNuZ09lMGluU1h1L0RRVnNvTjBhM08K"
+    }
+  },
+  "productName": "Story Forge",
+  "version": "0.3.6"
 }
