@@ -18,6 +18,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAddLatestModVersion } from "@/hooks/use-add-latest-mod-version";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import {
 	type ModUpdatesResponse,
@@ -64,6 +65,11 @@ export function ModItem({
 		refetchOnReconnect: false,
 		refetchOnWindowFocus: false,
 	});
+	const { mutate: downloadLatestModVersion, isPending: isDownloading } =
+		useAddLatestModVersion({
+			installation,
+			mod,
+		});
 	const { mutate: removeModFromInstallation, isPending: removePending } =
 		useMutation({
 			mutationFn: ({ path, modpath }: { path: string; modpath: string }) =>
@@ -233,6 +239,27 @@ export function ModItem({
 							</TooltipContent>
 						</Tooltip>
 					)}
+				{!installedMod && installation && (
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								aria-label="Delete"
+								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10 text-muted-foreground hover:text-foreground"
+								disabled={isDownloading}
+								onClick={() =>
+									downloadLatestModVersion({
+										path: `${installation.path}/Mods`,
+									})
+								}
+								size="icon"
+								variant="outline"
+							>
+								<DownloadCloudIcon size={4} />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Install latest version</TooltipContent>
+					</Tooltip>
+				)}
 				{installation && installedMod && (
 					<Tooltip>
 						<TooltipTrigger asChild>
