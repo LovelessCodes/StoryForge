@@ -1,3 +1,7 @@
+#![allow(dead_code)]
+// NOTE: These proto definitions mirror messages emitted by the Vintage Story API.
+// Some types are not yet instantiated directly in the Rust backend, but we retain
+// them for forward compatibility with serialized data exchanged with the client.
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Copy, PartialEq, Eq, ::prost::Enumeration)]

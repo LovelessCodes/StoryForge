@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changelog in KeepAChangelog format.
 - Biome formatting to the "Bump version" workflow
 
+### Fixed
+
+- Resolved warnings during the build process.
+
 ### Changed
 
 - Extended README by required software.
