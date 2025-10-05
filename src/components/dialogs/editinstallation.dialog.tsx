@@ -423,12 +423,36 @@ export function EditInstallationDialog({
 										value={field.state.value}
 									>
 										<SelectTrigger className="flex gap-1 w-full truncate">
-											{field.state.value ?? "Game version"}
+											<p>
+												{field.state.value ?? "Game version"}
+												{installedVersions.includes(field.state.value) ? (
+													<span className="text-xs text-muted-foreground opacity-50 ml-2">
+														(installed)
+													</span>
+												) : (
+													<span className="text-xs text-muted-foreground opacity-50 ml-2">
+														(will be downloaded)
+													</span>
+												)}
+											</p>
 										</SelectTrigger>
 										<SelectContent align="start">
 											{gameVersions?.sort(compareSemverDesc).map((version) => (
-												<SelectItem key={version} value={version}>
+												<SelectItem
+													className={
+														installedVersions.includes(version)
+															? "bg-success/5"
+															: ""
+													}
+													key={version}
+													value={version}
+												>
 													{version}
+													{installedVersions.includes(version) && (
+														<span className="text-xs text-muted-foreground opacity-50 ml-2">
+															(installed)
+														</span>
+													)}
 												</SelectItem>
 											))}
 										</SelectContent>
