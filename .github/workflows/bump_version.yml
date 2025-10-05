@@ -19,6 +19,11 @@ jobs:
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Setup Biome
+        uses: biomejs/setup-biome@v2
+        with:
+          version: latest
+
       - name: bump version in package.json, Cargo.toml, and tauri.conf.json
         id: bump_version
         run: |
@@ -53,6 +58,11 @@ jobs:
           # Update version in src-tauri/Cargo.lock to keep it consistent
           cargo generate-lockfile
           echo "Updated Cargo.lock to version $NEW_VERSION"
+
+          # Use biome to format the changed files
+          cd ..
+          biome check . ---write
+          echo "Formatted files with Biome"
 
           # Commit and push changes back to the repository
           cd ..
