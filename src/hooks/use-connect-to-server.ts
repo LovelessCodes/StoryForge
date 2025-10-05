@@ -1,5 +1,7 @@
 import { type UseMutationOptions, useMutation } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { useRef } from "react";
 import { toast } from "sonner";
 import { useInstallations } from "@/stores/installations";
 import { useAddServerToInstallation } from "./use-add-server-to-installation";
@@ -34,6 +36,7 @@ export const useConnectToServer = (
 			}
 		},
 	});
+	const listenRef = useRef<UnlistenFn>(null);
 	return useMutation({
 		...props,
 		mutationFn: async ({ name, ip, password, installationId, pub }) => {
@@ -50,11 +53,40 @@ export const useConnectToServer = (
 		onError: (error) => {
 			toast.error(`Error connecting to server: ${error.message}`);
 		},
-		onSuccess: (_, variable) => {
-			toast.success(
-				`Connecting to ${variable.ip}${variable.password.length ? " with password" : " without password"} using ${installations.find((inst) => inst.id === variable.installationId)?.name}!`,
+		onMutate: async (variable) => {
+			const installation = installations.find(
+				(inst) => inst.id === variable.installationId,
 			);
-			updateLastPlayed(variable.installationId);
+			listenRef.current = await listen<{
+				status: string;
+				reason?: string;
+				version?: string;
+				line?: string;
+			}>(`launch-${variable.installationId}`, (event) => {
+				const { status } = event.payload;
+				if (status === "pending") {
+					toast.loading(`Launching ${installation?.name}...`, {
+						id: `launch-game-${variable.installationId}`,
+					});
+				}
+				if (status === "success") {
+					toast.success(
+						`Launched ${installation?.name} and connecting to ${variable.name}!`,
+						{
+							description: event.payload.version
+								? `Version: ${event.payload.version}`
+								: undefined,
+							id: `launch-game-${variable.installationId}`,
+						},
+					);
+					updateLastPlayed(variable.installationId);
+				}
+				if (status === "error") {
+					toast.error(`Error launching game: ${event.payload.reason}`, {
+						id: `launch-game-${variable.installationId}`,
+					});
+				}
+			});
 		},
 	});
 };
