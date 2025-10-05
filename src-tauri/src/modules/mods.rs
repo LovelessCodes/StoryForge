@@ -416,12 +416,22 @@ pub fn get_mods(path: String) -> Result<ModsResult, UiError> {
                         .unwrap_or_else(|| "0".to_string());
                     let path = path.to_string_lossy().into_owned();
                     let name = json
-                        .get("name")
+                        .as_object()
+                        .and_then(|obj| {
+                            obj.iter()
+                                .find(|(k, _)| k.eq_ignore_ascii_case("name"))
+                                .map(|(_, v)| v)
+                        })
                         .and_then(|v| v.as_str())
                         .unwrap_or("Unknown Mod")
                         .to_string();
                     let authors = json
-                        .get("authors")
+                        .as_object()
+                        .and_then(|obj| {
+                            obj.iter()
+                                .find(|(k, _)| k.eq_ignore_ascii_case("authors"))
+                                .map(|(_, v)| v)
+                        })
                         .and_then(|v| v.as_array())
                         .map(|arr| {
                             arr.iter()
@@ -430,7 +440,12 @@ pub fn get_mods(path: String) -> Result<ModsResult, UiError> {
                         })
                         .unwrap_or_else(|| vec!["Unknown".into()]);
                     let version = json
-                        .get("version")
+                        .as_object()
+                        .and_then(|obj| {
+                            obj.iter()
+                                .find(|(k, _)| k.eq_ignore_ascii_case("version"))
+                                .map(|(_, v)| v)
+                        })
                         .and_then(|v| v.as_str())
                         .unwrap_or("0.0.0")
                         .to_string();
