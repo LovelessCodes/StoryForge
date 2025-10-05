@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Changelog in KeepAChangelog format.
+- Biome formatting to the "Bump version" workflow
 
 ### Changed
 
