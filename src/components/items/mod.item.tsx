@@ -24,7 +24,7 @@ import {
 	modUpdatesQueryKey,
 } from "@/hooks/use-mod-updates";
 import type { ModInfo, ProgressPayload } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, compareSemverAsc } from "@/lib/utils";
 import type { OutputMod } from "@/routes/install-mods/$id";
 import { useDialogStore } from "@/stores/dialogs";
 import type { Installation } from "@/stores/installations";
@@ -201,13 +201,11 @@ export function ModItem({
 				</div>
 			</div>
 			<div className="flex items-center">
-				{modUpdates?.statuscode === "200" &&
-					(Object.keys(modUpdates.updates).includes(mod.modidstrs[0]) ||
-						Object.keys(modUpdates.updates).includes(mod.modid.toString()) ||
-						Object.keys(modUpdates.updates).includes(mod.urlalias ?? "")) &&
+				{updateMod &&
 					installation &&
-					updateMod?.modversion !== installedMod?.version &&
-					installedMod && (
+					updateMod &&
+					installedMod &&
+					compareSemverAsc(updateMod.modversion, installedMod.version) > 0 && (
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<Button
@@ -228,11 +226,7 @@ export function ModItem({
 							</TooltipTrigger>
 							<TooltipContent>
 								<span className="text-xs text-muted-foreground">
-									{installedMod.version} →{" "}
-									{modUpdates.updates[mod.modidstrs[0] ?? ""]?.modversion ??
-										modUpdates.updates[mod.modid.toString()]?.modversion ??
-										modUpdates.updates[mod.urlalias ?? ""]?.modversion ??
-										"Unknown"}
+									{installedMod.version} → {updateMod.modversion ?? "Unknown"}
 								</span>
 								<br />
 								Install latest version
