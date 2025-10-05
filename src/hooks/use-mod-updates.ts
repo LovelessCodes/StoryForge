@@ -1,7 +1,7 @@
 import { type UseQueryOptions, useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
-type ModUpdatesResponse = {
+export type ModUpdatesResponse = {
 	statuscode: string;
 	updates: {
 		[key: string]: {

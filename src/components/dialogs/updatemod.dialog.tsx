@@ -187,14 +187,17 @@ export function UpdateModDialog({
 			<DialogContent>
 				<DialogHeader>
 					<h3 className="text-lg font-medium leading-6">
-						Update <span className="text-yellow-200">{modInfo?.mod.name}</span>{" "}
-						in <span className="text-blue-200">{installation.name}</span>
+						{selectedVersion && selectedVersion?.modversion >= versionFrom
+							? "Update"
+							: "Downgrade"}{" "}
+						<span className="text-yellow-200">{modInfo?.mod.name}</span> in{" "}
+						<span className="text-blue-200">{installation.name}</span>
 					</h3>
 				</DialogHeader>
 				<DialogDescription>
 					Select the version of{" "}
 					<span className="text-yellow-200">{modInfo?.mod.name}</span> you want
-					to update in{" "}
+					to change to, in{" "}
 					<span className="text-blue-200">{installation.name}</span>.
 				</DialogDescription>
 				{/* We need a select, incase the installation version is not compatible */}
@@ -268,7 +271,10 @@ export function UpdateModDialog({
 							}
 						}}
 					>
-						Update Mod
+						{selectedVersion && selectedVersion?.modversion >= versionFrom
+							? "Update"
+							: "Downgrade"}{" "}
+						Mod
 					</Button>
 				</DialogFooter>
 			</DialogContent>
