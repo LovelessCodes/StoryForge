@@ -288,6 +288,7 @@ export function ModItem({
 							<TooltipTrigger asChild>
 								<Button
 									aria-label="Add Mod"
+									className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10 text-muted-foreground hover:text-foreground"
 									onClick={() =>
 										openDialog("AddModDialog", {
 											installation,
