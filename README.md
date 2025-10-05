@@ -27,7 +27,7 @@
 
 # Story Forge
 
-**Story Forge** is a modern desktop app for Vintage Story players, designed to make switching between game versions, modpacks, servers, and accounts effortless. 
+**Story Forge** is a modern desktop app for Vintage Story players, designed to make switching between game versions, modpacks, servers, and accounts effortless.
 
 ---
 
@@ -43,17 +43,33 @@
 
 ---
 
+## 🧰 Prerequisites
+
+Set up the following tooling before running Story Forge locally:
+
+- [Node.js](https://nodejs.org/) (v20+)
+- [Bun](https://bun.sh/) (v1.0+)
+- [Rust](https://www.rust-lang.org/tools/install) (v1.70+)
+- [Tauri Prerequisites](https://tauri.app/start/prerequisites/)
+
+---
+
 ## 🚀 Getting Started
 
 1. **Install dependencies**
+
    ```sh
    bun install
    ```
+
 2. **Run the app in development**
+
    ```sh
    bun tauri dev
    ```
+
 3. **Build for release**
+
    ```sh
    bun tauri build
    ```
@@ -72,6 +88,7 @@
 ## 💡 Why Story Forge?
 
 Vintage Story is a sandbox game with a vibrant modding and multiplayer community. Story Forge helps you:
+
 - Keep your installations organized
 - Quickly switch between modpacks and servers
 - Manage multiple accounts for family or friends
@@ -93,11 +110,11 @@ Pull requests and suggestions are welcome! If you have ideas for new features or
 
 ## 📸 Screenshots
 
-![Overview page](/screenshots/Overview.png)     
-![Public servers page](/screenshots/Public_Servers.png)     
-![Installations page](/screenshots/Installations.png)     
-![Mod browser](/screenshots/Mod_Browser.png)     
-![Adding mod](/screenshots/Adding_Mod.png)     
-![Update mod](/screenshots/Update_Mod.png)     
-![User management](/screenshots/User_Management.png)     
-![Mod configurations](/screenshots/Mod_Configs.png)     
+![Overview page](/screenshots/Overview.png)  
+![Public servers page](/screenshots/Public_Servers.png)  
+![Installations page](/screenshots/Installations.png)  
+![Mod browser](/screenshots/Mod_Browser.png)  
+![Adding mod](/screenshots/Adding_Mod.png)  
+![Update mod](/screenshots/Update_Mod.png)  
+![User management](/screenshots/User_Management.png)  
+![Mod configurations](/screenshots/Mod_Configs.png)  
