@@ -185,8 +185,15 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
             &options
                 .save
                 .as_ref()
-                .map(|s| vec!["-o", s.as_str()])
-                .unwrap_or_default(),
+                // Extract the file stem from the save path to use as the output file name. This prevents creating files with double extensions, e.g., "output.mp4.mp4".
+                .map(|s| {
+                    let save_path = Path::new(s);
+                    let file_stem = save_path.file_stem().unwrap_or_default().to_string_lossy();
+                    vec!["-o".to_string(), file_stem.to_string()]
+                })
+                .unwrap_or_default()
+                .into_iter()
+                .collect::<Vec<_>>(),
         )
         .args(
             &options
