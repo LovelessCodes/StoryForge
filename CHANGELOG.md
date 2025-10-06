@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Better version selection process on installations
 - Feedback on connecting to a server
 - [Code of conduct](/CODE_OF_CONDUCT.md) adapted from [Contributor Covenant](https://www.contributor-covenant.org/) 
+- [Contributing document](./CONTRIBUTING.md) to help new contributors
 
 ### Fixed
 
