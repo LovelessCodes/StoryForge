@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Biome formatting to the "Bump version" workflow
 - Better version selection process on installations
 - Feedback on connecting to a server
+- [Contributing document](./CONTRIBUTING.md) to help new contributors
 
 ### Fixed
 
