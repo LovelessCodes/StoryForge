@@ -11,6 +11,8 @@ on:
       - '**.js'
       - '**.jsx'
       - '**.json'
+      - '**.css'
+      - '**.scss'
   pull_request:
     branches:
       - release
@@ -20,6 +22,8 @@ on:
       - '**.js'
       - '**.jsx'
       - '**.json'
+      - '**.css'
+      - '**.scss'
     types:
       - opened
       - synchronize
