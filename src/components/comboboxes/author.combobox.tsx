@@ -17,6 +17,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 type AuthorResponse = {
 	[key: string]: string;
@@ -50,11 +51,20 @@ export const AuthorCombobox = (
 	);
 
 	return (
-		<Popover onOpenChange={setOpen} open={open}>
+		<Popover
+			onOpenChange={(v) => {
+				setOpen(v);
+				setSearch("");
+			}}
+			open={open}
+		>
 			<PopoverTrigger asChild>
 				<Button
 					aria-expanded={open}
-					className="w-[200px] justify-between relative cursor-text"
+					className={cn(
+						"w-[200px] justify-between relative cursor-text",
+						actualValue ? "text-foreground" : "text-muted-foreground",
+					)}
 					role="combobox"
 					variant="outline"
 				>
