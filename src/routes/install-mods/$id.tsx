@@ -14,6 +14,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ErrorComponent } from "@/components/ui/error";
+import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
@@ -22,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { useInstalledMods } from "@/hooks/use-installed-mods";
 import { gameVersionsQuery, modTagsQuery } from "@/lib/queries";
-import { compareSemverDesc } from "@/lib/utils";
+import { cn, compareSemverDesc } from "@/lib/utils";
 import { useInstallations } from "@/stores/installations";
 import { type ModsFilters, useModsFilters } from "@/stores/modsFilters";
 
@@ -104,12 +105,29 @@ function RouteComponent() {
 					value={searchText}
 				/>
 				<DropdownMenu>
-					<DropdownMenuTrigger className="flex gap-1 w-46 truncate">
+					<DropdownMenuTrigger
+						className={cn(
+							"flex gap-1 w-46 relative",
+							selectedGameVersions.length > 0
+								? "text-foreground"
+								: "text-transparent",
+						)}
+					>
+						<span
+							className={cn(
+								"pointer-events-none absolute start-1 z-10 block -translate-y-1/2 inline-flex text-muted-foreground px-2 transition-all",
+								selectedGameVersions.length > 0
+									? "top-0 bg-background"
+									: "top-1/2 bg-transparent",
+							)}
+						>
+							Game Version(s)
+						</span>
 						{selectedGameVersions.length > 0
 							? selectedGameVersions.length > 1
 								? `${selectedGameVersions.length} versions`
 								: selectedGameVersions[0]
-							: "Game version(s)"}
+							: "-"}
 						<ChevronDownIcon className="size-4 opacity-50" />
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="start">
@@ -132,12 +150,29 @@ function RouteComponent() {
 					</DropdownMenuContent>
 				</DropdownMenu>
 				<DropdownMenu>
-					<DropdownMenuTrigger className="w-46 flex gap-1 truncate">
+					<DropdownMenuTrigger
+						className={cn(
+							"w-46 flex gap-1 relative",
+							selectedModTags.length > 0
+								? "text-foreground"
+								: "text-transparent",
+						)}
+					>
+						<span
+							className={cn(
+								"pointer-events-none absolute start-1 z-10 block -translate-y-1/2 inline-flex text-muted-foreground px-2 transition-all",
+								selectedModTags.length > 0
+									? "top-0 bg-background"
+									: "top-1/2 bg-transparent",
+							)}
+						>
+							Mod Tag(s)
+						</span>
 						{selectedModTags.length > 0
 							? selectedModTags.length > 1
 								? `${selectedModTags.length} tags`
 								: selectedModTags[0].name
-							: "Mod tag(s)"}
+							: "-"}
 						<ChevronDownIcon className="size-4 opacity-50" />
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="start">
@@ -163,42 +198,52 @@ function RouteComponent() {
 							))}
 					</DropdownMenuContent>
 				</DropdownMenu>
-				<Select
-					onValueChange={(value) => setSortBy(value as ModsFilters["sortBy"])}
-					value={sortBy}
-				>
-					<SelectTrigger>
-						{sortBy
-							? `${sortOptions[sortBy as keyof typeof sortOptions]}`
-							: "Sort by"}
-					</SelectTrigger>
-					<SelectContent align="start">
-						{Object.entries(sortOptions).map(([key, value]) => (
-							<SelectItem key={key} value={key}>
-								{value}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-				<Select
-					onValueChange={(value) =>
-						setCategory(value as ModsFilters["category"])
-					}
-					value={category}
-				>
-					<SelectTrigger>
-						{category
-							? `${categoryOptions[category as keyof typeof categoryOptions]}`
-							: "Category"}
-					</SelectTrigger>
-					<SelectContent align="start">
-						{Object.entries(categoryOptions).map(([key, value]) => (
-							<SelectItem key={key} value={key}>
-								{value}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
+				<div className="group relative">
+					<Label className="bg-background text-muted-foreground pointer-events-none absolute start-1 top-0 z-10 block -translate-y-1/2 px-2 text-xs font-medium group-has-disabled:opacity-50">
+						Sort by
+					</Label>
+					<Select
+						onValueChange={(value) => setSortBy(value as ModsFilters["sortBy"])}
+						value={sortBy}
+					>
+						<SelectTrigger>
+							{sortBy
+								? `${sortOptions[sortBy as keyof typeof sortOptions]}`
+								: "Sort by"}
+						</SelectTrigger>
+						<SelectContent align="start">
+							{Object.entries(sortOptions).map(([key, value]) => (
+								<SelectItem key={key} value={key}>
+									{value}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
+				<div className="group relative">
+					<Label className="bg-background text-muted-foreground pointer-events-none absolute start-1 top-0 z-10 block -translate-y-1/2 px-2 text-xs font-medium group-has-disabled:opacity-50">
+						Category
+					</Label>
+					<Select
+						onValueChange={(value) =>
+							setCategory(value as ModsFilters["category"])
+						}
+						value={category}
+					>
+						<SelectTrigger>
+							{category
+								? `${categoryOptions[category as keyof typeof categoryOptions]}`
+								: "Category"}
+						</SelectTrigger>
+						<SelectContent align="start">
+							{Object.entries(categoryOptions).map(([key, value]) => (
+								<SelectItem key={key} value={key}>
+									{value}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
 				<TextSwitch
 					checked={orderDirection === "descending"}
 					onCheckedChange={(checked) =>
