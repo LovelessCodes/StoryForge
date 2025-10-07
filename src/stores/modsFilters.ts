@@ -25,7 +25,7 @@ export type ModsFilters = {
 	setOrderDirection: (direction: ModsFilters["orderDirection"]) => void;
 	author: string;
 	setAuthor: (author: ModsFilters["author"]) => void;
-	side: "client" | "server" | "both" | "installed";
+	side: "any" | "client" | "server" | "both" | "installed";
 	setSide: (side: ModsFilters["side"]) => void;
 	category: "mod" | "externaltool" | "other";
 	setCategory: (category: ModsFilters["category"]) => void;
@@ -65,6 +65,6 @@ export const useModsFilters = create<ModsFilters>()((set) => ({
 	setSearchText: (text) => set({ searchText: text }),
 	setSide: (side) => set({ side }),
 	setSortBy: (key) => set({ sortBy: key }),
-	side: "both",
+	side: "any",
 	sortBy: "trending",
 }));
