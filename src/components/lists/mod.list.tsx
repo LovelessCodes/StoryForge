@@ -95,7 +95,9 @@ export function ModList({
 		?.filter((mod) => mod.type === category)
 		?.filter((mod) =>
 			side !== "installed"
-				? mod.side === side
+				? side === "any"
+					? true
+					: mod.side === side
 				: installedMods.some(
 						(installedMod) =>
 							installedMod.modid === mod.modid ||

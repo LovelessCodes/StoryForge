@@ -14,11 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Changelog in KeepAChangelog format.
-- Biome formatting to the "Bump version" workflow
-- Better version selection process on installations
-- Feedback on connecting to a server
-- [Code of conduct](/CODE_OF_CONDUCT.md) adapted from [Contributor Covenant](https://www.contributor-covenant.org/)
-- [Contributing document](./CONTRIBUTING.md) to help new contributors
+- Biome formatting to the "Bump version" workflow.
+- Better version selection process on installations.
+- Feedback on connecting to a server.
+- [Code of conduct](/CODE_OF_CONDUCT.md) adapted from [Contributor Covenant](https://www.contributor-covenant.org/). 
+- [Contributing document](./CONTRIBUTING.md) to help new contributors.
+- "Any" side filtering on mods page.
+- Labels added to selects/dropdowns on mods page.
 
 ### Fixed
 
@@ -29,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Extended README by required software.
+- Pull request template to be enforced.
+- Code quality workflow to only run when certain files have changed.
 
 ## [0.3.6] - 2025-10-05
 

@@ -1,8 +1,32 @@
 name: Code quality
 
 on:
+  merge_group:
   push:
+    branches:
+      - release
+    paths:
+      - '**.ts'
+      - '**.tsx'
+      - '**.js'
+      - '**.jsx'
+      - '**.json'
+      - '**.css'
+      - '**.scss'
   pull_request:
+    branches:
+      - release
+    paths:
+      - '**.ts'
+      - '**.tsx'
+      - '**.js'
+      - '**.jsx'
+      - '**.json'
+      - '**.css'
+      - '**.scss'
+    types:
+      - opened
+      - synchronize
 
 jobs:
   quality:
