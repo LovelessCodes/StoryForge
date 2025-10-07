@@ -117,7 +117,7 @@ function RouteComponent() {
 							className={cn(
 								"pointer-events-none absolute start-1 z-10 block -translate-y-1/2 inline-flex text-muted-foreground px-2 transition-all",
 								selectedGameVersions.length > 0
-									? "top-0 bg-background"
+									? "top-0 bg-background text-xs"
 									: "top-1/2 bg-transparent",
 							)}
 						>
@@ -162,7 +162,7 @@ function RouteComponent() {
 							className={cn(
 								"pointer-events-none absolute start-1 z-10 block -translate-y-1/2 inline-flex text-muted-foreground px-2 transition-all",
 								selectedModTags.length > 0
-									? "top-0 bg-background"
+									? "top-0 bg-background text-xs"
 									: "top-1/2 bg-transparent",
 							)}
 						>
