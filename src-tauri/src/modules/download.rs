@@ -7,6 +7,7 @@ use std::{
     fs::{self, File},
     io::{self, Seek, Write},
     path::{Path, PathBuf},
+    process::Command,
 };
 use tauri::{command, Emitter, Runtime};
 
@@ -238,6 +239,17 @@ pub async fn download_and_maybe_extract<R: Runtime>(
         } else {
             fs::create_dir_all(&destpath)
                 .map_err(|e| UiError::from(format!("create dir error: {e}")))?;
+            let destpath_str = destpath.to_str().unwrap();
+            let mut args = vec!["-xvf", filepath.to_str().unwrap(), "-C", destpath_str];
+            if cfg!(target_os = "macos") {
+                args.push("--strip-components");
+                args.push("1");
+            }
+            if let Some(sp) = zipsubfolderprefix.as_deref() {
+                if !sp.trim_matches('/').to_string().is_empty() {
+                    args.push(sp);
+                }
+            }
 
             app.emit(
                 &emitevent,
@@ -252,38 +264,17 @@ pub async fn download_and_maybe_extract<R: Runtime>(
                 },
             )
             .map_err(|e| UiError::from(format!("emit error: {e}")))?;
-            // If platform is macos, it should use the bsdtar command line tool
-            #[cfg(target_os = "macos")]
-            {
-                use std::process::Command;
-                let status = Command::new("bsdtar")
-                    .arg("--strip-components")
-                    .arg("1")
-                    .arg("-xvf")
-                    .arg(&filepath)
-                    .arg("-C")
-                    .arg(&destpath)
-                    .status()
-                    .map_err(|e| UiError::from(format!("bsdtar command error: {e}")))?;
-                if !status.success() {
-                    return Err(UiError::from(format!(
-                        "bsdtar command failed with status: {}",
-                        status
-                    )));
-                }
+            let status = Command::new(if cfg!(target_os = "macos") {
+                "bsdtar"
+            } else {
+                "tar"
+            })
+            .args(&args)
+            .status()
+            .map_err(|e| UiError::from(format!("tar error: {e}")))?;
+            if !status.success() {
+                return Err(UiError::from("tar failed"));
             }
-            // For other platforms, use flate2 + tar
-            #[cfg(not(target_os = "macos"))]
-            {
-                let targz = File::open(&filepath)
-                    .map_err(|e| UiError::from(format!("open tar.gz error: {e}")))?;
-                let decompressor = flate2::read::GzDecoder::new(targz);
-                let mut archive = tar::Archive::new(decompressor);
-                archive
-                .unpack(&destpath)
-                .map_err(|e| UiError::from(format!("tar unpack error: {e}")))?;
-            }
-
             // Remove the downloaded archive after extraction
             fs::remove_file(&filepath)
                 .map_err(|e| UiError::from(format!("remove file error: {e}")))?;
