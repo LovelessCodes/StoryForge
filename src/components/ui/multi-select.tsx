@@ -356,7 +356,6 @@ const MultipleSelector = React.forwardRef<
 			void exec();
 		}, [debouncedSearchTerm, groupBy, open, triggerSearchOnFocus]);
 
-		// biome-ignore lint/correctness/noNestedComponentDefinitions: technically true
 		const CreatableItem = () => {
 			if (!creatable) return undefined;
 			if (
