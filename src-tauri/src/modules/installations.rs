@@ -327,32 +327,79 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
 pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
     let path = Path::new(&path);
 
+    // Add diagnostic logging
+    eprintln!("reveal_in_file_explorer called with path: {:?}", path);
+    eprintln!("Path exists: {}", path.exists());
+    eprintln!("Path is_file: {}", path.is_file());
+    eprintln!("Path is_dir: {}", path.is_dir());
+
     if cfg!(target_os = "windows") {
-        // If it's a file, use /select, to highlight it. If it's a dir, just open it.
+        // Validate path exists, create directory if needed
+        if !path.exists() {
+            // If path doesn't exist, it should be a directory - create it
+            std::fs::create_dir_all(path).map_err(|e| UiError {
+                name: "create_dir_failed".into(),
+                message: format!("Failed to create directory: {e}"),
+            })?;
+            eprintln!("Created directory: {:?}", path);
+        }
+        
+        // Now that we've ensured the path exists, open it
         if path.is_file() {
+            // If it's a file, use /select to highlight it
             Command::new("explorer")
                 .args(["/select,", &path.as_os_str().to_string_lossy()])
                 .status()
                 .map_err(|e| UiError::from(format!("Failed to open explorer: {e}")))?;
-        } else {
+        } else if path.is_dir() {
+            // If it's a directory, just open it
             Command::new("explorer")
                 .arg(path.as_os_str().to_string_lossy().into_owned())
                 .status()
                 .map_err(|e| UiError::from(format!("Failed to open explorer: {e}")))?;
+        } else {
+            // This shouldn't happen after we created the directory, but handle it anyway
+            return Err(UiError {
+                name: "invalid_path".into(),
+                message: format!("Path is neither a file nor directory: {}", path.display()),
+            });
         }
     } else if cfg!(target_os = "macos") {
+        // Validate path exists, create directory if needed
+        if !path.exists() {
+            std::fs::create_dir_all(path).map_err(|e| UiError {
+                name: "create_dir_failed".into(),
+                message: format!("Failed to create directory: {e}"),
+            })?;
+            eprintln!("Created directory: {:?}", path);
+        }
+        
         if path.is_dir() {
             Command::new("open")
                 .arg(&path.as_os_str())
                 .status()
                 .map_err(|e| UiError::from(format!("Failed to open Finder: {e}")))?;
-        } else {
+        } else if path.is_file() {
             Command::new("open")
                 .args(["-R", &path.as_os_str().to_string_lossy()])
                 .status()
                 .map_err(|e| UiError::from(format!("Failed to open Finder: {e}")))?;
+        } else {
+            return Err(UiError {
+                name: "invalid_path".into(),
+                message: format!("Path is neither a file nor directory: {}", path.display()),
+            });
         }
     } else if cfg!(target_os = "linux") {
+        // Validate path exists, create directory if needed
+        if !path.exists() {
+            std::fs::create_dir_all(path).map_err(|e| UiError {
+                name: "create_dir_failed".into(),
+                message: format!("Failed to create directory: {e}"),
+            })?;
+            eprintln!("Created directory: {:?}", path);
+        }
+        
         // Try xdg-open for general desktops.
         // For files, most DEs open the default app; to "reveal", try the folder.
         let target = if path.is_file() {

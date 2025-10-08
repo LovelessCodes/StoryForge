@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resolve db-wal and db-shm issue on world rename.
 - Resolved Tar issue on some Linux distros
 - Fixed an issue where the game would not load a world if done through the launcher on windows.
+- Fixed an issue where the documents folder would be opened instead of the installation folder on windows.
+- Fixed an issue where, after deleting a version, reinstalling the same version would throw an error.
 
 ### Changed
 
