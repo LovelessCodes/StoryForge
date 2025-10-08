@@ -178,10 +178,8 @@ pub struct ServerWorldPlayerData {
     #[prost(string, tag = "1")]
     pub player_uid: ::prost::alloc::string::String,
     #[prost(map = "string, bytes", tag = "2")]
-    pub inventories_serialized: ::std::collections::HashMap<
-        ::prost::alloc::string::String,
-        ::prost::alloc::vec::Vec<u8>,
-    >,
+    pub inventories_serialized:
+        ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::vec::Vec<u8>>,
     #[prost(bytes, tag = "3")]
     pub entity_player_serialized: ::prost::alloc::vec::Vec<u8>,
     #[prost(enumeration = "EnumGameMode", tag = "4")]
@@ -207,10 +205,8 @@ pub struct ServerWorldPlayerData {
     #[prost(message, optional, tag = "14")]
     pub spawn_position: ::core::option::Option<PlayerSpawnPos>,
     #[prost(map = "string, bytes", tag = "15")]
-    pub mod_data: ::std::collections::HashMap<
-        ::prost::alloc::string::String,
-        ::prost::alloc::vec::Vec<u8>,
-    >,
+    pub mod_data:
+        ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::vec::Vec<u8>>,
     #[prost(float, tag = "16", default = "0")]
     pub previous_picking_range: f32,
     #[prost(int32, tag = "17", default = "0")]
@@ -228,10 +224,8 @@ pub struct GameData {
     #[prost(int32, tag = "3", default = "0")]
     pub map_size_z: i32,
     #[prost(map = "string, message", tag = "4")]
-    pub player_data_by_uid: ::std::collections::HashMap<
-        ::prost::alloc::string::String,
-        ServerWorldPlayerData,
-    >,
+    pub player_data_by_uid:
+        ::std::collections::HashMap<::prost::alloc::string::String, ServerWorldPlayerData>,
     #[prost(int32, tag = "7", default = "0")]
     pub seed: i32,
     #[prost(int64, tag = "8", default = "0")]
@@ -239,10 +233,8 @@ pub struct GameData {
     #[prost(int64, tag = "10", default = "0")]
     pub last_entity_id: i64,
     #[prost(map = "string, bytes", tag = "11")]
-    pub mod_data: ::std::collections::HashMap<
-        ::prost::alloc::string::String,
-        ::prost::alloc::vec::Vec<u8>,
-    >,
+    pub mod_data:
+        ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::vec::Vec<u8>>,
     #[prost(int64, tag = "12")]
     pub total_game_seconds: i64,
     #[prost(string, tag = "13")]
@@ -272,10 +264,7 @@ pub struct GameData {
     #[prost(message, repeated, tag = "27")]
     pub land_claims: ::prost::alloc::vec::Vec<LandClaim>,
     #[prost(map = "string, float", tag = "28")]
-    pub time_speed_modifiers: ::std::collections::HashMap<
-        ::prost::alloc::string::String,
-        f32,
-    >,
+    pub time_speed_modifiers: ::std::collections::HashMap<::prost::alloc::string::String, f32>,
     #[prost(string, tag = "29")]
     pub play_style: ::prost::alloc::string::String,
     #[prost(string, tag = "30")]
@@ -291,10 +280,8 @@ pub struct GameData {
     #[prost(float, tag = "35", default = "0")]
     pub calendar_speed_mul: f32,
     #[prost(map = "string, bool", tag = "36")]
-    pub remappings_applied_by_code: ::std::collections::HashMap<
-        ::prost::alloc::string::String,
-        bool,
-    >,
+    pub remappings_applied_by_code:
+        ::std::collections::HashMap<::prost::alloc::string::String, bool>,
     #[prost(int32, tag = "37", default = "0")]
     pub highest_chunkdata_version: i32,
     #[prost(int64, tag = "38")]
