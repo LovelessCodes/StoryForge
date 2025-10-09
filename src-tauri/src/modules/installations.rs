@@ -457,14 +457,9 @@ pub async fn move_installations_folder(
     let destination_path = std::path::PathBuf::from(destination).join("installations");
 
     if !source_path.exists() || !source_path.is_dir() {
-        return Err(UiError {
-            name: "not_found".into(),
-            message: format!(
-                "Source installations directory not found: {}",
-                source_path.to_string_lossy()
-            ),
-        });
+        return Ok("no_source".into());
     }
+
     std::fs::create_dir_all(&destination_path).map_err(|e| UiError {
         name: "create_dir_failed".into(),
         message: format!(
