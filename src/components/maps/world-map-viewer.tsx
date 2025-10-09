@@ -32,33 +32,42 @@ export function WorldMapViewer({ worldPath }: WorldMapViewerProps) {
 
 	// Initialize viewport when bounds are loaded
 	useEffect(() => {
-		if (bounds && containerRef.current) {
-			const centerX = (bounds.min_x + bounds.max_x) / 2;
-			const centerY = (bounds.min_y + bounds.max_y) / 2;
+		if (bounds && containerRef.current && tiles && tiles.length > 0) {
+			// Calculate normalized extent (remember: X and Y are swapped for screen)
+			const normalizedWidth = bounds.max_y - bounds.min_y + 1; // Y = horizontal
+			const normalizedHeight = bounds.max_x - bounds.min_x + 1; // X = vertical
+
+			// Get first tile to determine tile size
+			const tileSize = tiles[0]?.width || 512;
+
+			// Calculate actual pixel dimensions
+			const mapPixelWidth = normalizedWidth * tileSize;
+			const mapPixelHeight = normalizedHeight * tileSize;
 
 			// Center the view
 			const containerWidth = containerRef.current.clientWidth;
 			const containerHeight = containerRef.current.clientHeight;
 
+			// Calculate zoom to fit the entire map with padding
+			const zoomX = containerWidth / mapPixelWidth;
+			const zoomY = containerHeight / mapPixelHeight;
+			const fitZoom = Math.min(zoomX, zoomY) * 0.9; // 90% for padding
+
 			setViewport({
-				x: centerX - containerWidth / (2 * 512), // Assume 512px tiles
-				y: centerY - containerHeight / (2 * 512),
-				zoom: 0.5,
+				x: normalizedWidth / 2 - containerWidth / (2 * tileSize * fitZoom),
+				y: normalizedHeight / 2 - containerHeight / (2 * tileSize * fitZoom),
+				zoom: fitZoom,
 			});
 		}
-	}, [bounds]);
+	}, [bounds, tiles]);
 
 	// Load and cache images when tiles change
 	useEffect(() => {
 		if (!tiles) return;
 
-		const newCache = new Map(imageCache);
-		let hasNewImages = false;
-
 		for (const tile of tiles) {
 			const key = `${tile.x},${tile.y}`;
-			if (!newCache.has(key)) {
-				hasNewImages = true;
+			if (!imageCache.has(key)) {
 				const img = new Image();
 				img.src = imageDataToDataUrl(tile.image_data);
 				img.onload = () => {
@@ -66,7 +75,7 @@ export function WorldMapViewer({ worldPath }: WorldMapViewerProps) {
 				};
 			}
 		}
-	}, [tiles]);
+	}, [tiles, imageCache]);
 
 	// Render the map
 	useEffect(() => {
@@ -85,15 +94,26 @@ export function WorldMapViewer({ worldPath }: WorldMapViewerProps) {
 		ctx.fillStyle = "#1a1a1a";
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+		// Find min coordinates to normalize tile positions
+		const minX = Math.min(...tiles.map((t) => t.x));
+		const minY = Math.min(...tiles.map((t) => t.y));
+
 		// Draw tiles
 		for (const tile of tiles) {
 			const img = imageCache.get(`${tile.x},${tile.y}`);
 			if (!img || !img.complete) continue;
 
-			// Convert tile coords to screen coords
+			// Normalize coordinates relative to minimum
+			const normalizedX = tile.x - minX;
+			const normalizedY = tile.y - minY;
+
+			// IMPORTANT: Swap X and Y for screen coordinates!
+			// In Vintage Story's coordinate system:
+			// - tile.x corresponds to vertical position (rows)
+			// - tile.y corresponds to horizontal position (columns)
 			const tileSize = tile.width;
-			const screenX = (tile.x * tileSize - viewport.x * tileSize) * viewport.zoom;
-			const screenY = (tile.y * tileSize - viewport.y * tileSize) * viewport.zoom;
+			const screenX = (normalizedY * tileSize - viewport.x * tileSize) * viewport.zoom;
+			const screenY = (normalizedX * tileSize - viewport.y * tileSize) * viewport.zoom;
 			const screenSize = tileSize * viewport.zoom;
 
 			// Only draw if visible
