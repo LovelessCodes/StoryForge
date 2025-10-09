@@ -111,7 +111,6 @@ pub fn get_all_saves(
                                             total_seconds_played: gamedata.total_seconds_played,
                                             world_type: gamedata.world_type.clone(),
                                             play_style: gamedata.play_style,
-                                            mod_data: gamedata.mod_data.clone(),
                                             ..Default::default()
                                         };
                                         let map_markers = gamedata
