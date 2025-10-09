@@ -75,13 +75,7 @@ pub async fn move_versions_folder(source: String, destination: String) -> Result
     let destination_path = std::path::PathBuf::from(destination).join("versions");
 
     if !source_path.exists() || !source_path.is_dir() {
-        return Err(UiError {
-            name: "not_found".into(),
-            message: format!(
-                "Source directory not found: {}",
-                source_path.to_string_lossy()
-            ),
-        });
+        return Ok("no_source".into());
     }
 
     if destination_path.exists() {
