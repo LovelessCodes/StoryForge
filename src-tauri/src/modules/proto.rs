@@ -321,3 +321,33 @@ pub struct MapMarker {
     #[prost(string, tag = "11")]
     pub id: ::prost::alloc::string::String,
 }
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, ::prost::Message)]
+pub struct ProspectReading {
+    #[prost(double, tag = "2")]
+    pub depth: f64,
+    #[prost(double, tag = "3")]
+    pub quality: f64,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, ::prost::Message)]
+pub struct ProspectingResult {
+    #[prost(string, tag = "1")]
+    pub ore_code: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "2")]
+    pub readings: ::core::option::Option<ProspectReading>,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, ::prost::Message)]
+pub struct ProspectMarker {
+    #[prost(message, optional, tag = "1")]
+    pub position: ::core::option::Option<MapMarkerPos>,
+    #[prost(message, repeated, tag = "2")]
+    pub readings: ::prost::alloc::vec::Vec<ProspectingResult>,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, ::prost::Message)]
+pub struct ProspectingLog {
+    #[prost(message, repeated, tag = "1")]
+    pub markers: ::prost::alloc::vec::Vec<ProspectMarker>,
+}

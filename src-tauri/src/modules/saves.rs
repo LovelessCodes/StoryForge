@@ -3,10 +3,8 @@ use std::{ffi::OsStr, path::Path};
 use tauri::{command, AppHandle, Manager};
 use tauri_plugin_zustand::ManagerExt;
 
-use super::utils::{decode_prospecting_results, log_marker_fields, ProspectingResult};
-
 use super::errors::UiError;
-use super::proto::{GameData, MapMarkers};
+use super::proto::{GameData, MapMarkers, ProspectingLog};
 use prost::Message;
 use rusqlite::OpenFlags;
 
@@ -21,7 +19,7 @@ pub fn get_all_saves(
         String,
         String,
         Option<Option<MapMarkers>>,
-        Vec<(String, Vec<ProspectingResult>)>,
+        Vec<(String, Vec<ProspectingLog>)>,
     )>,
     UiError,
 > {
@@ -113,9 +111,6 @@ pub fn get_all_saves(
                                             play_style: gamedata.play_style,
                                             ..Default::default()
                                         };
-                                        gamedata.mod_data.get("playerMapMarkers_v2").map(|data| {
-                                            log_marker_fields(&data);
-                                        });
                                         let map_markers = gamedata
                                             .mod_data
                                             .get("playerMapMarkers_v2")
@@ -129,9 +124,14 @@ pub fn get_all_saves(
                                             if key.starts_with("oreMapMarkers-") {
                                                 let player_uid =
                                                     key.strip_prefix("oreMapMarkers-").unwrap();
-                                                let items = decode_prospecting_results(value);
+                                                let items = ProspectingLog::decode(&**value)
+                                                    .map_err(|e| {
+                                                        UiError::from(format!(
+                                                            "Protobuf decode error: {e}"
+                                                        ))
+                                                    })?;
                                                 prospecting_results
-                                                    .push((player_uid.to_string(), items));
+                                                    .push((player_uid.to_string(), vec![items]));
                                             }
                                         }
 
