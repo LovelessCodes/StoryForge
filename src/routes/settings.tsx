@@ -23,7 +23,8 @@ import {
 } from "@/components/ui/tooltip";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { installedVersionsQueryKey } from "@/hooks/use-installed-versions";
-import { cn } from "@/lib/utils";
+import { cn, pathDelimiter } from "@/lib/utils";
+import { useInstallationsStore } from "@/stores/installations";
 import { type SetParentConfigProps, useSettingsStore } from "@/stores/settings";
 
 export const Route = createFileRoute("/settings")({
@@ -39,6 +40,7 @@ const settingsSchema = z.object({
 
 function RouteComponent() {
 	const settingsStore = useSettingsStore();
+	const { updateInstallation, installations } = useInstallationsStore();
 	const { appFolder } = useAppFolder();
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [pendingField, setPendingField] = useState<
@@ -86,6 +88,18 @@ function RouteComponent() {
 				toast.success("Installations folder moved", {
 					id: "move-installations-folder",
 				});
+				// Update all installations paths
+				if (v.path !== null && configs?.installationsParent.moveCurrentData) {
+					installations.forEach((inst) => {
+						const oldPath = inst.path.split(
+							`${pathDelimiter}installations${pathDelimiter}`,
+						)[1];
+						if (!oldPath) return;
+						const newPath = `${v.path}${v.path?.endsWith(pathDelimiter) ? "" : pathDelimiter}installations${pathDelimiter}${oldPath}`;
+						const newInst = { ...inst, path: newPath };
+						updateInstallation(newInst);
+					});
+				}
 			}
 		},
 	});
