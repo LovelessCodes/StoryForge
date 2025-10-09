@@ -27,15 +27,23 @@ export function ViewMapDialog({
 	return (
 		<Dialog onOpenChange={closeDialog} open={open}>
 			<DialogClose />
-			<DialogContent className="max-w-[90vw] max-h-[90vh] h-[90vh]">
-				<DialogHeader>
+			<DialogContent 
+				className="p-0 gap-0 flex flex-col"
+				style={{
+					width: "80vw",
+					height: "80vh",
+					maxWidth: "80vw",
+					maxHeight: "80vh",
+				}}
+			>
+				<DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
 					<DialogTitle>{worldData.world_name} - World Map</DialogTitle>
 					<DialogDescription>
 						Interactive map viewer • Drag to pan • Scroll to zoom
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className="flex-1 h-full overflow-hidden">
+				<div className="flex-1 min-h-0 w-full overflow-hidden p-4">
 					<WorldMapViewer worldPath={worldPath} />
 				</div>
 			</DialogContent>
