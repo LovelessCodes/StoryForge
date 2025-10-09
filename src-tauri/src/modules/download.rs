@@ -240,12 +240,18 @@ pub async fn download_and_maybe_extract<R: Runtime>(
             fs::create_dir_all(&destpath)
                 .map_err(|e| UiError::from(format!("create dir error: {e}")))?;
             let destpath_str = destpath.to_str().unwrap();
-            let xvf_arg = format!("-xvf={}", filepath.to_str().unwrap());
-            let c_arg = format!("-C={}", destpath_str);
-            let mut args = vec!["--strip-components=1", &xvf_arg, &c_arg];
-            if let Some(sp) = zipsubfolderprefix.as_deref() {
-                if !sp.trim_matches('/').to_string().is_empty() {
-                    args.push(sp);
+            let mut args = vec![
+                "--strip-components=1",
+                "-xvf",
+                filepath.to_str().unwrap(),
+                "-C",
+                destpath_str,
+            ];
+            if cfg!(target_os = "macos") {
+                if let Some(sp) = zipsubfolderprefix.as_deref() {
+                    if !sp.trim_matches('/').to_string().is_empty() {
+                        args.push(sp);
+                    }
                 }
             }
 
