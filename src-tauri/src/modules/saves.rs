@@ -119,13 +119,13 @@ pub fn get_all_saves(
                                             .map(|data| decode_map_markers(data));
 
                                         // Save all prospecting results found in mod_data entries that start with "oreMapMarkers",
-                                        // After the `oreMapMarkers_` part, the rest is a player uid that also needs to be saved
+                                        // After the `oreMapMarkers-` part, the rest is a player uid that also needs to be saved
                                         // for later use
                                         let mut prospecting_results = Vec::new();
                                         for (key, value) in &gamedata.mod_data {
-                                            if key.starts_with("oreMapMarkers_") {
+                                            if key.starts_with("oreMapMarkers-") {
                                                 let player_uid =
-                                                    key.strip_prefix("oreMapMarkers_").unwrap();
+                                                    key.strip_prefix("oreMapMarkers-").unwrap();
                                                 let items = decode_prospecting_results(value);
                                                 prospecting_results
                                                     .push((player_uid.to_string(), items));
