@@ -31,9 +31,9 @@ export function ViewMapDialog({
 				className="p-0 gap-0 flex flex-col"
 				style={{
 					width: "80vw",
-					height: "80vh",
+					height: "85vh",
 					maxWidth: "80vw",
-					maxHeight: "80vh",
+					maxHeight: "85vh",
 				}}
 			>
 				<DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">

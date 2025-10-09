@@ -161,34 +161,38 @@ export function WorldMapViewer({ worldPath }: WorldMapViewerProps) {
 	}, [tiles, viewport, imageCache, bounds, containerSize]);
 
 	// Mouse wheel zoom
-	const handleWheel = useCallback((e: React.WheelEvent) => {
-		e.preventDefault();
+	const handleWheel = useCallback(
+		(e: React.WheelEvent) => {
+			e.preventDefault();
 
-		const canvas = canvasRef.current;
-		if (!canvas) return;
+			const canvas = canvasRef.current;
+			if (!canvas || !tiles || tiles.length === 0) return;
 
-		const rect = canvas.getBoundingClientRect();
-		const mouseX = e.clientX - rect.left;
-		const mouseY = e.clientY - rect.top;
+			const rect = canvas.getBoundingClientRect();
+			const mouseX = e.clientX - rect.left;
+			const mouseY = e.clientY - rect.top;
 
-		setViewport((prev) => {
-			const delta = e.deltaY > 0 ? 0.9 : 1.1;
-			const newZoom = Math.max(0.1, Math.min(5, prev.zoom * delta));
+			const tileSize = tiles[0]?.width || 512;
 
-			// Zoom towards mouse position
-			const worldMouseX = mouseX / (prev.zoom * 512) + prev.x;
-			const worldMouseY = mouseY / (prev.zoom * 512) + prev.y;
+			setViewport((prev) => {
+				const delta = e.deltaY > 0 ? 0.9 : 1.1;
+				const newZoom = Math.max(0.1, Math.min(5, prev.zoom * delta));
 
-			const newX = worldMouseX - mouseX / (newZoom * 512);
-			const newY = worldMouseY - mouseY / (newZoom * 512);
+				const worldMouseX = mouseX / (prev.zoom * tileSize) + prev.x;
+				const worldMouseY = mouseY / (prev.zoom * tileSize) + prev.y;
 
-			return {
-				x: newX,
-				y: newY,
-				zoom: newZoom,
-			};
-		});
-	}, []);
+				const newX = worldMouseX - mouseX / (newZoom * tileSize);
+				const newY = worldMouseY - mouseY / (newZoom * tileSize);
+
+				return {
+					x: newX,
+					y: newY,
+					zoom: newZoom,
+				};
+			});
+		},
+		[tiles],
+	);
 
 	// Mouse panning
 	const handleMouseDown = useCallback((e: React.MouseEvent) => {
