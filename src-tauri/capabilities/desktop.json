@@ -6,7 +6,8 @@
 		"os:default",
 		"process:default",
 		"updater:default",
-		"opener:default"
+		"opener:default",
+		"dialog:default"
 	],
 	"platforms": ["macOS", "windows", "linux"],
 	"windows": ["main"]

@@ -49,6 +49,7 @@ tauri-plugin-opener = "2"
 rusqlite = { version = "0.37.0", features = ["bundled"] }
 prost = "0.14.1"
 json5 = "0.4.1"
+tauri-plugin-dialog = "2"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55"
