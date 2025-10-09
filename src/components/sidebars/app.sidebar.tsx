@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import {
 	CheckIcon,
 	CircleFadingPlusIcon,
+	CogIcon,
 	EarthIcon,
 	FolderIcon,
 	GlobeIcon,
@@ -319,6 +320,21 @@ export function AppSidebar() {
 				</SidebarGroup>
 			</SidebarContent>
 			<SidebarFooter>
+				<Link to="/settings" viewTransition={{ types: ["warp"] }}>
+					<button
+						className="group/button relative w-auto cursor-pointer overflow-hidden rounded-md border bg-background p-2 px-6 text-center font-semibold w-full"
+						type="button"
+					>
+						<div className="flex items-center justify-center gap-2">
+							<div className="h-2 w-2 rounded-full bg-primary transition-all duration-300 absolute opacity-0 group-hover/button:opacity-100 group-hover/button:scale-[100.8]"></div>
+							<CogIcon className="w-4 h-4 inline-block transition-all duration-300 group-hover/button:translate-x-12 group-hover/button:opacity-0" />
+						</div>
+						<div className="absolute top-0 z-10 flex h-full w-full translate-x-12 items-center justify-center gap-2 text-primary-foreground opacity-0 transition-all duration-300 group-hover/button:-translate-x-5 group-hover/button:opacity-100">
+							<span>Settings</span>
+							<CogIcon className="w-4 h-4 inline-block" />
+						</div>
+					</button>
+				</Link>
 				<a
 					className="w-full"
 					href="https://discord.gg/gByx63peUC"
