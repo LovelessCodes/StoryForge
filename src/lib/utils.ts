@@ -42,7 +42,6 @@ export const zipfolderprefix = () => {
 	const currentPlatform = platform();
 	const pf = currentPlatform.charAt(0).toLowerCase();
 	if (pf === "w") return "app/";
-	if (pf === "l") return "AppImage/";
 	if (pf === "m") return "*.app/";
 	return "";
 };

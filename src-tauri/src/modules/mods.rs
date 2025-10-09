@@ -1,6 +1,6 @@
+use json5;
 use reqwest::header::{HeaderMap, HeaderValue, HOST};
 use serde::{Deserialize, Serialize};
-use json5;
 use serde_json::Value;
 use std::{
     fs::File,
@@ -408,7 +408,11 @@ pub fn get_mods(path: String) -> Result<ModsResult, UiError> {
                                 n.to_string()
                             } else if let Some(n) = v.as_f64() {
                                 // Avoid scientific notation for whole numbers
-                                if n.fract() == 0.0 { (n as i64).to_string() } else { n.to_string() }
+                                if n.fract() == 0.0 {
+                                    (n as i64).to_string()
+                                } else {
+                                    n.to_string()
+                                }
                             } else {
                                 "0".to_string()
                             }

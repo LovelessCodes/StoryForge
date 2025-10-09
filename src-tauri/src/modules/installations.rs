@@ -8,7 +8,7 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-use tauri::{command, AppHandle, Manager, Emitter};
+use tauri::{command, AppHandle, Emitter, Manager};
 use tauri_plugin_zustand::ManagerExt;
 
 use super::errors::UiError;
@@ -225,7 +225,10 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
 
     // Combine stdout & stderr watching: spawn a thread per stream
     // Use an Arc flag to coordinate (optional simplification)
-    use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
+    use std::sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    };
     let found_flag = Arc::new(AtomicBool::new(false));
     let found_flag_stdout = found_flag.clone();
     let found_flag_stderr = found_flag.clone();
@@ -255,14 +258,20 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
         thread::spawn(move || {
             let reader = BufReader::new(stdout);
             for line_res in reader.lines() {
-                if found_flag_stdout.load(Ordering::SeqCst) { break; }
-                if start_instant.elapsed() > timeout { break; }
+                if found_flag_stdout.load(Ordering::SeqCst) {
+                    break;
+                }
+                if start_instant.elapsed() > timeout {
+                    break;
+                }
                 if let Ok(line) = line_res {
                     if emit_success(&app_clone, &line) {
                         found_flag_stdout.store(true, Ordering::SeqCst);
                         break;
                     }
-                } else { break; }
+                } else {
+                    break;
+                }
             }
         });
     }
@@ -272,14 +281,20 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
         thread::spawn(move || {
             let reader = BufReader::new(stderr);
             for line_res in reader.lines() {
-                if found_flag_stderr.load(Ordering::SeqCst) { break; }
-                if start_instant.elapsed() > timeout { break; }
+                if found_flag_stderr.load(Ordering::SeqCst) {
+                    break;
+                }
+                if start_instant.elapsed() > timeout {
+                    break;
+                }
                 if let Ok(line) = line_res {
                     if emit_success(&app_clone, &line) {
                         found_flag_stderr.store(true, Ordering::SeqCst);
                         break;
                     }
-                } else { break; }
+                } else {
+                    break;
+                }
             }
         });
     }
@@ -288,7 +303,9 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
     let app_for_timeout = app_handle.clone();
     thread::spawn(move || {
         while start_instant.elapsed() < timeout {
-            if found_flag.load(Ordering::SeqCst) { return; }
+            if found_flag.load(Ordering::SeqCst) {
+                return;
+            }
             thread::sleep(Duration::from_millis(150));
         }
         if !found_flag.load(Ordering::SeqCst) {

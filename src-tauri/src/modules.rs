@@ -4,7 +4,7 @@ pub mod errors;
 pub mod installations;
 pub mod mods;
 pub mod news;
+pub mod proto;
 pub mod saves;
 pub mod servers;
 pub mod versions;
-pub mod proto;

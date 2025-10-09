@@ -241,16 +241,17 @@ pub async fn download_and_maybe_extract<R: Runtime>(
                 .map_err(|e| UiError::from(format!("create dir error: {e}")))?;
             let destpath_str = destpath.to_str().unwrap();
             let mut args = vec![
-                "--strip-components",
-                "1",
+                "--strip-components=1",
                 "-xvf",
                 filepath.to_str().unwrap(),
                 "-C",
                 destpath_str,
             ];
-            if let Some(sp) = zipsubfolderprefix.as_deref() {
-                if !sp.trim_matches('/').to_string().is_empty() {
-                    args.push(sp);
+            if cfg!(target_os = "macos") {
+                if let Some(sp) = zipsubfolderprefix.as_deref() {
+                    if !sp.trim_matches('/').to_string().is_empty() {
+                        args.push(sp);
+                    }
                 }
             }
 
@@ -276,7 +277,7 @@ pub async fn download_and_maybe_extract<R: Runtime>(
             .status()
             .map_err(|e| UiError::from(format!("tar error: {e}")))?;
             if !status.success() {
-                return Err(UiError::from("tar failed"));
+                return Err(UiError::from(format!("tar failed: {}", status.to_string())));
             }
             // Remove the downloaded archive after extraction
             fs::remove_file(&filepath)
