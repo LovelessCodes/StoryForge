@@ -291,3 +291,33 @@ pub struct GameData {
     #[prost(message, optional, tag = "40")]
     pub default_spawn: ::core::option::Option<PlayerSpawnPos>,
 }
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, ::prost::Message)]
+pub struct MapMarkers {
+    #[prost(message, repeated, tag = "1")]
+    pub markers: ::prost::alloc::vec::Vec<MapMarker>,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, ::prost::Message)]
+pub struct MapMarkerPos {
+    #[prost(double, tag = "1")]
+    pub x: f64,
+    #[prost(double, tag = "2")]
+    pub z: f64,
+    #[prost(double, tag = "3")]
+    pub y: f64,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, ::prost::Message)]
+pub struct MapMarker {
+    #[prost(string, tag = "2")]
+    pub icon: ::prost::alloc::string::String,
+    #[prost(string, tag = "4")]
+    pub player_uid: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "6")]
+    pub position: ::core::option::Option<MapMarkerPos>,
+    #[prost(string, tag = "10")]
+    pub label: ::prost::alloc::string::String,
+    #[prost(string, tag = "11")]
+    pub id: ::prost::alloc::string::String,
+}

@@ -3,10 +3,10 @@ use std::{ffi::OsStr, path::Path};
 use tauri::{command, AppHandle, Manager};
 use tauri_plugin_zustand::ManagerExt;
 
-use super::utils::{decode_map_markers, decode_prospecting_results, MapMarker, ProspectingResult};
+use super::utils::{decode_prospecting_results, log_marker_fields, ProspectingResult};
 
 use super::errors::UiError;
-use super::proto::GameData;
+use super::proto::{GameData, MapMarkers};
 use prost::Message;
 use rusqlite::OpenFlags;
 
@@ -20,7 +20,7 @@ pub fn get_all_saves(
         GameData,
         String,
         String,
-        Option<Vec<MapMarker>>,
+        Option<Option<MapMarkers>>,
         Vec<(String, Vec<ProspectingResult>)>,
     )>,
     UiError,
@@ -113,10 +113,13 @@ pub fn get_all_saves(
                                             play_style: gamedata.play_style,
                                             ..Default::default()
                                         };
+                                        gamedata.mod_data.get("playerMapMarkers_v2").map(|data| {
+                                            log_marker_fields(&data);
+                                        });
                                         let map_markers = gamedata
                                             .mod_data
                                             .get("playerMapMarkers_v2")
-                                            .map(|data| decode_map_markers(data));
+                                            .map(|data| MapMarkers::decode(data.as_slice()).ok());
 
                                         // Save all prospecting results found in mod_data entries that start with "oreMapMarkers",
                                         // After the `oreMapMarkers-` part, the rest is a player uid that also needs to be saved

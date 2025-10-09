@@ -35,16 +35,6 @@ fn read_varint(buf: &[u8], i: &mut usize) -> Option<u64> {
     None
 }
 
-fn read_len<'a>(buf: &'a [u8], i: &mut usize) -> Option<&'a [u8]> {
-    let len = read_varint(buf, i)? as usize;
-    if *i + len > buf.len() {
-        return None;
-    }
-    let s = &buf[*i..*i + len];
-    *i += len;
-    Some(s)
-}
-
 fn read_f64_le(buf: &[u8], i: &mut usize) -> Option<f64> {
     if *i + 8 > buf.len() {
         return None;
@@ -52,163 +42,6 @@ fn read_f64_le(buf: &[u8], i: &mut usize) -> Option<f64> {
     let bytes: [u8; 8] = buf[*i..*i + 8].try_into().ok()?;
     *i += 8;
     Some(f64::from_le_bytes(bytes))
-}
-
-fn is_uuid(s: &str) -> bool {
-    let parts: Vec<&str> = s.split('-').collect();
-    if parts.len() != 5 {
-        return false;
-    }
-    let lens = [8, 4, 4, 4, 12];
-    parts
-        .iter()
-        .zip(lens.iter())
-        .all(|(p, &n)| p.len() == n && p.chars().all(|c| c.is_ascii_hexdigit()))
-}
-
-fn looks_player_uid(s: &str) -> bool {
-    if is_uuid(s) {
-        return false;
-    }
-    let len_ok = (20..=64).contains(&s.len());
-    let ok_chars = s
-        .chars()
-        .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_');
-    len_ok && ok_chars
-}
-
-fn is_kind(s: &str) -> bool {
-    let len_ok = (3..=24).contains(&s.len());
-    len_ok
-        && s.chars()
-            .all(|c| c.is_ascii_lowercase() || c == '_' || c.is_ascii_digit())
-}
-
-fn is_human_label(s: &str) -> bool {
-    if is_uuid(s) || looks_player_uid(s) {
-        return false;
-    }
-    let len_ok = (3..=64).contains(&s.len());
-    let has_space_or_upper = s.chars().any(|c| c == ' ' || c.is_ascii_uppercase());
-    len_ok && has_space_or_upper
-}
-
-// recursively parse any submessage, collecting strings and doubles
-fn parse_msg(
-    msg: &[u8],
-    label_icon: &mut Option<String>,
-    label: &mut Option<String>,
-    id: &mut Option<String>,
-    player_uid: &mut Option<String>,
-    doubles: &mut Vec<f64>,
-) {
-    let mut j = 0usize;
-    while j < msg.len() {
-        let Some(key) = read_varint(msg, &mut j) else {
-            break;
-        };
-        let wire = (key & 0x07) as u8;
-
-        match wire {
-            0 => {
-                let _ = read_varint(msg, &mut j);
-            }
-            1 => {
-                if let Some(v) = read_f64_le(msg, &mut j) {
-                    doubles.push(v);
-                } else {
-                    break;
-                }
-            }
-            2 => {
-                if let Some(inner) = read_len(msg, &mut j) {
-                    // Try UTF-8 first
-                    if let Ok(s0) = std::str::from_utf8(inner) {
-                        let s = s0.trim_matches(char::from(0));
-                        if id.is_none() && is_uuid(s) {
-                            *id = Some(s.to_string());
-                        } else if player_uid.is_none() && looks_player_uid(s) {
-                            *player_uid = Some(s.to_string());
-                        } else if label_icon.is_none() && is_kind(s) {
-                            *label_icon = Some(s.to_string());
-                        } else if is_human_label(s) {
-                            if label.as_ref().map_or(true, |prev| s.len() > prev.len()) {
-                                *label = Some(s.to_string());
-                            }
-                        } else {
-                            // It is a valid string but not clearly classifiable; ignore.
-                            // Important: it could also be a nested submessage serialized as bytes.
-                            // We will attempt to parse it as a submessage, too.
-                            parse_msg(inner, label_icon, label, id, player_uid, doubles);
-                        }
-                    } else {
-                        // binary; attempt nested message parse
-                        parse_msg(inner, label_icon, label, id, player_uid, doubles);
-                    }
-                }
-            }
-            5 => {
-                // 32-bit
-                j = j.saturating_add(4);
-            }
-            _ => break,
-        }
-    }
-}
-
-fn parse_record(rec: &[u8]) -> MapMarker {
-    let mut label_icon = None;
-    let mut label = None;
-    let mut id = None;
-    let mut player_uid = None;
-    let mut doubles: Vec<f64> = Vec::new();
-
-    // parse the record recursively
-    parse_msg(
-        rec,
-        &mut label_icon,
-        &mut label,
-        &mut id,
-        &mut player_uid,
-        &mut doubles,
-    );
-
-    // Assign first two doubles as x, y (order as encountered)
-    let mut x = None;
-    let mut y = None;
-    if let Some(a) = doubles.get(0).copied() {
-        x = Some(a);
-    }
-    if let Some(b) = doubles.get(1).copied() {
-        y = Some(b);
-    }
-
-    MapMarker {
-        label_icon,
-        label,
-        id,
-        player_uid,
-        x,
-        y,
-    }
-}
-
-pub fn decode_map_markers(buf: &[u8]) -> Vec<MapMarker> {
-    let mut i = 0usize;
-    let mut res = Vec::new();
-    while i < buf.len() {
-        if buf[i] == 0x0A {
-            i += 1;
-            if let Some(sub) = read_len(buf, &mut i) {
-                res.push(parse_record(sub));
-                continue;
-            } else {
-                break;
-            }
-        }
-        i += 1; // resync
-    }
-    res
 }
 
 fn read_len_delim<'a>(buf: &'a [u8], i: &mut usize) -> Option<&'a [u8]> {
@@ -350,4 +183,114 @@ pub fn decode_prospecting_results(buf: &[u8]) -> Vec<ProspectingResult> {
     }
 
     items
+}
+
+pub fn log_marker_fields(buf: &[u8]) {
+    fn read_varint(b: &[u8], i: &mut usize) -> Option<u64> {
+        let mut x = 0u64;
+        let mut s = 0u32;
+        for _ in 0..10 {
+            if *i >= b.len() {
+                return None;
+            }
+            let byte = b[*i];
+            *i += 1;
+            x |= ((byte & 0x7F) as u64) << s;
+            if byte & 0x80 == 0 {
+                return Some(x);
+            }
+            s += 7;
+        }
+        None
+    }
+    fn read_len<'a>(b: &'a [u8], i: &mut usize) -> Option<&'a [u8]> {
+        let len = read_varint(b, i)? as usize;
+        if *i + len > b.len() {
+            return None;
+        }
+        let s = &b[*i..*i + len];
+        *i += len;
+        Some(s)
+    }
+    fn read_f64(b: &[u8], i: &mut usize) -> Option<f64> {
+        if *i + 8 > b.len() {
+            return None;
+        }
+        let mut a = [0u8; 8];
+        a.copy_from_slice(&b[*i..*i + 8]);
+        *i += 8;
+        Some(f64::from_le_bytes(a))
+    }
+    fn walk(msg: &[u8], depth: usize) {
+        let mut i = 0usize;
+        while i < msg.len() {
+            let Some(key) = read_varint(msg, &mut i) else {
+                break;
+            };
+            let field_no = (key >> 3) as u32;
+            let wire = (key & 0x07) as u8;
+            match wire {
+                0 => {
+                    let _ = read_varint(msg, &mut i);
+                }
+                1 => {
+                    if let Some(v) = read_f64(msg, &mut i) {
+                        println!(
+                            "{:indent$}double field {} -> {}",
+                            "",
+                            field_no,
+                            v,
+                            indent = depth * 2
+                        );
+                    } else {
+                        break;
+                    }
+                }
+                2 => {
+                    if let Some(ld) = read_len(msg, &mut i) {
+                        if let Ok(s) = std::str::from_utf8(ld) {
+                            let preview = s.replace('\n', " ");
+                            println!(
+                                "{:indent$}string field {} -> {:?}",
+                                "",
+                                field_no,
+                                preview,
+                                indent = depth * 2
+                            );
+                        } else {
+                            println!(
+                                "{:indent$}submessage field {} ({} bytes)",
+                                "",
+                                field_no,
+                                ld.len(),
+                                indent = depth * 2
+                            );
+                            walk(ld, depth + 1);
+                        }
+                    }
+                }
+                5 => {
+                    i += 4;
+                }
+                _ => break,
+            }
+        }
+    }
+    // Top-level: repeated field 1 with markers
+    let mut i = 0usize;
+    let mut rec_idx = 0usize;
+    while i < buf.len() {
+        if buf[i] == 0x0A {
+            i += 1;
+            if let Some(rec) = read_len(buf, &mut i) {
+                println!("=== record {} ===", rec_idx);
+                walk(rec, 1);
+                rec_idx += 1;
+                continue;
+            } else {
+                break;
+            }
+        }
+        i += 1;
+    }
 }
