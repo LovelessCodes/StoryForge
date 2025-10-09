@@ -3,7 +3,7 @@ import { appDataDir } from "@tauri-apps/api/path";
 import { createTauriStore } from "@tauri-store/zustand";
 import { create } from "zustand";
 
-type SetParentConfigProps = {
+export type SetParentConfigProps = {
 	deleteCurrentData: boolean;
 	moveCurrentData: boolean;
 };
