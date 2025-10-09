@@ -3,6 +3,8 @@ use std::{ffi::OsStr, path::Path};
 use tauri::{command, AppHandle, Manager};
 use tauri_plugin_zustand::ManagerExt;
 
+use super::utils::{decode_map_markers, decode_prospecting_results, MapMarker, ProspectingResult};
+
 use super::errors::UiError;
 use super::proto::GameData;
 use prost::Message;
@@ -11,7 +13,18 @@ use rusqlite::OpenFlags;
 // The result should be a list of objects that contain the name of the save, and the installation it belongs to
 // e.g. [{ name: "Save 1", installation: "Installation 1" }, { name: "Save 2", installation: "Installation 2" }]
 #[command]
-pub fn get_all_saves(app: AppHandle) -> Result<Vec<(GameData, String, String)>, UiError> {
+pub fn get_all_saves(
+    app: AppHandle,
+) -> Result<
+    Vec<(
+        GameData,
+        String,
+        String,
+        Option<Vec<MapMarker>>,
+        Vec<(String, Vec<ProspectingResult>)>,
+    )>,
+    UiError,
+> {
     // Look through all installation folders and collect save names from the .vcdbs files
     let installation_dir_path = app.path().app_data_dir().unwrap().join("installations");
     let mut saves = Vec::new();
@@ -98,12 +111,34 @@ pub fn get_all_saves(app: AppHandle) -> Result<Vec<(GameData, String, String)>, 
                                             total_seconds_played: gamedata.total_seconds_played,
                                             world_type: gamedata.world_type.clone(),
                                             play_style: gamedata.play_style,
+                                            mod_data: gamedata.mod_data.clone(),
                                             ..Default::default()
                                         };
+                                        let map_markers = gamedata
+                                            .mod_data
+                                            .get("playerMapMarkers_v2")
+                                            .map(|data| decode_map_markers(data));
+
+                                        // Save all prospecting results found in mod_data entries that start with "oreMapMarkers",
+                                        // After the `oreMapMarkers_` part, the rest is a player uid that also needs to be saved
+                                        // for later use
+                                        let mut prospecting_results = Vec::new();
+                                        for (key, value) in &gamedata.mod_data {
+                                            if key.starts_with("oreMapMarkers_") {
+                                                let player_uid =
+                                                    key.strip_prefix("oreMapMarkers_").unwrap();
+                                                let items = decode_prospecting_results(value);
+                                                prospecting_results
+                                                    .push((player_uid.to_string(), items));
+                                            }
+                                        }
+
                                         saves.push((
                                             compressed_gamedata,
                                             save_path_string,
                                             installation_name.clone(),
+                                            map_markers,
+                                            prospecting_results,
                                         ));
                                     }
                                 }
