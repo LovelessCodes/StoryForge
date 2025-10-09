@@ -28,7 +28,11 @@ import { useAppFolder } from "@/hooks/use-app-folder";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { gameVersionsQuery } from "@/lib/queries";
-import { compareSemverDesc, makeStringFolderSafe } from "@/lib/utils";
+import {
+	compareSemverDesc,
+	makeStringFolderSafe,
+	pathDelimiter,
+} from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import {
 	type Installation,
@@ -154,7 +158,7 @@ export function EditInstallationDialog({
 												const safeName = makeStringFolderSafe(e.target.value);
 												form.setFieldValue(
 													"path",
-													`${installationsParent ?? appFolder}/installations/${safeName}`,
+													`${installationsParent ?? appFolder}${pathDelimiter}installations${pathDelimiter}${safeName}`,
 												);
 											} else {
 												form.resetField("path");

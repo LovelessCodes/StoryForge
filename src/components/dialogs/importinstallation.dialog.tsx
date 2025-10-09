@@ -18,7 +18,7 @@ import { useAppFolder } from "@/hooks/use-app-folder";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import type { ModInfo, ProgressPayload } from "@/lib/types";
-import { makeStringFolderSafe } from "@/lib/utils";
+import { makeStringFolderSafe, pathDelimiter } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
 import { useSettingsStore } from "@/stores/settings";
@@ -157,7 +157,7 @@ export function ImportInstallationDialog({ open }: { open: boolean }) {
 		);
 		if (installation.success) {
 			await initializeGame(
-				`${installationsParent ?? appFolder}/installations/${makeStringFolderSafe(installation.data.name)}`,
+				`${installationsParent ?? appFolder}${pathDelimiter}installations${pathDelimiter}${makeStringFolderSafe(installation.data.name)}`,
 			);
 		}
 	};

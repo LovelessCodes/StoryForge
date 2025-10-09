@@ -8,7 +8,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useRef } from "react";
 import { toast } from "sonner";
 import type { ProgressPayload } from "@/lib/types";
-import { zipfolderprefix } from "@/lib/utils";
+import { pathDelimiter, zipfolderprefix } from "@/lib/utils";
 import { useSettingsStore } from "@/stores/settings";
 import { useAppFolder } from "./use-app-folder";
 import { installedVersionsQueryKey } from "./use-installed-versions";
@@ -33,10 +33,10 @@ export const useDownloadVersion = (
 				throw new Error("App folder not found");
 			}
 			return invoke("download_and_maybe_extract", {
-				destpath: `${versionsParent ?? appFolder}/versions/${version}`,
+				destpath: `${versionsParent ?? appFolder}${pathDelimiter}versions${pathDelimiter}${version}`,
 				emitevent: `download://version:${version.replace(/\./g, "_")}`,
 				extract: true,
-				extractdir: `${versionsParent ?? appFolder}/versions/${version}`,
+				extractdir: `${versionsParent ?? appFolder}${pathDelimiter}versions${pathDelimiter}${version}`,
 				url: downloadUrl,
 				zipsubfolderprefix: zipfolderprefix(),
 			}) as Promise<string>;

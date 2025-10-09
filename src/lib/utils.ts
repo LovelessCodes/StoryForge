@@ -46,8 +46,10 @@ export const zipfolderprefix = () => {
 	return "";
 };
 
-export const isMac =
-	navigator.platform.includes("Mac") ||
-	/Macintosh|MacIntel|MacPPC|Mac68K/.test(navigator.userAgent);
+export const isMac = platform() === "macos";
 
 export const modifierLabel = isMac ? "⌘" : "Ctrl+";
+
+export const isWindows = platform() === "windows";
+
+export const pathDelimiter = isWindows ? "\\" : "/";

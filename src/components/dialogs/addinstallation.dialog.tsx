@@ -31,7 +31,11 @@ import { useAppFolder } from "@/hooks/use-app-folder";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { gameVersionsQuery } from "@/lib/queries";
-import { compareSemverDesc, makeStringFolderSafe } from "@/lib/utils";
+import {
+	compareSemverDesc,
+	makeStringFolderSafe,
+	pathDelimiter,
+} from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallationsStore } from "@/stores/installations";
 import { useSettingsStore } from "@/stores/settings";
@@ -87,7 +91,9 @@ export function AddInstallationDialog({ open }: { open: boolean }) {
 			id: Date.now(),
 			index: installations.length,
 			name: "",
-			path: appFolder ? `${appFolder}/installations/new` : "",
+			path: appFolder
+				? `${appFolder}${pathDelimiter}installations${pathDelimiter}new`
+				: "",
 			startParams: "",
 			version:
 				gameVersions
@@ -186,7 +192,7 @@ export function AddInstallationDialog({ open }: { open: boolean }) {
 												const safeName = makeStringFolderSafe(e.target.value);
 												form.setFieldValue(
 													"path",
-													`${installationsParent ?? appFolder}/installations/${safeName}`,
+													`${installationsParent ?? appFolder}${pathDelimiter}installations${pathDelimiter}${safeName}`,
 												);
 											} else {
 												form.resetField("path");
