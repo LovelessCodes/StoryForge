@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resolved warnings during the build process.
 - Resolve db-wal and db-shm issue on world rename.
 - Resolved Tar issue on some Linux distros
+- Fixed an issue where the game would not load a world if done through the launcher on windows.
 
 ### Changed
 
