@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Fixed
+- Resolve an issue where modPaths don't get updated accordingly when clientsettings.json gets imported.
 
 ### Changed
 
