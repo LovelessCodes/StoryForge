@@ -43,6 +43,7 @@ import { cn } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { type Installation, useInstallations } from "@/stores/installations";
 import { type Server, useServerStore } from "@/stores/servers";
+import { useSettingsStore } from "@/stores/settings";
 
 export const Route = createFileRoute("/servers")({
 	component: RouteComponent,
@@ -98,6 +99,7 @@ function ServerRow({
 	style,
 }: ServerRowProps) {
 	const { openDialog } = useDialogStore();
+	const { streamMode } = useSettingsStore();
 	const { data: versions } = useInstalledVersions();
 
 	const { mutate: installVersion, isPending: isInstalling } =
@@ -125,10 +127,14 @@ function ServerRow({
 			<div className="flex flex-col flex-1">
 				<p className="text-sm">{server.name}</p>
 				<p className="text-xs text-muted-foreground">
-					<span className="text-warning-foreground">
-						{server.ip}
-						{server.port ? `:${server.port}` : ""}
-					</span>
+					{streamMode ? (
+						<span className="text-warning-foreground">hidden</span>
+					) : (
+						<span className="text-warning-foreground">
+							{server.ip}
+							{server.port ? `:${server.port}` : ""}
+						</span>
+					)}
 					<span className="text-muted-foreground">
 						{" "}
 						via {installation?.name ?? "Unknown Installation"}
