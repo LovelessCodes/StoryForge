@@ -271,6 +271,9 @@ pub async fn download_and_maybe_extract<R: Runtime>(
             .status()
             .map_err(|e| UiError::from(format!("tar error: {e}")))?;
             if !status.success() {
+                // Print the arguments for debugging
+                println!("tar command failed with status: {}", status);
+                println!("tar command arguments: {:?}", args);
                 return Err(UiError::from(format!("tar failed: {}", status.to_string())));
             }
             // Remove the downloaded archive after extraction
