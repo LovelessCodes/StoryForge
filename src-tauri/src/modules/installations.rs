@@ -153,11 +153,9 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
                         .get_mut("modPaths")
                         .and_then(|v| v.as_array_mut())
                     {
-                        if !mod_paths.iter().any(|p| p.as_str() == Some(&mods_path)) {
-                            mod_paths.push(json!(mods_path));
-                        }
+                        *mod_paths = vec![json!(mods_path), json!("Mods")];
                     } else {
-                        string_list_settings.insert("modPaths".into(), json!([mods_path]));
+                        string_list_settings.insert("modPaths".into(), json!([mods_path, "Mods"]));
                     }
                 } else {
                     obj.insert(
