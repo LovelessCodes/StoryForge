@@ -16,20 +16,57 @@ export type GameData = {
 	savegame_identifier: string;
 };
 
-// It comes out as [gameData, installationName][]
+export type Position = {
+	x: number;
+	y: number;
+	z: number;
+};
+
+export type MapMarkers = {
+	markers: MapMarker[];
+};
+
+export type MapMarker = {
+	icon: string;
+	player_uid: string;
+	position: Position;
+	label: string;
+	id: string;
+};
+
+export type ProspectingLog = {
+	markers: ProspectingMarker[];
+};
+
+export type ProspectResult = {
+	ore_code: string;
+	readings: ProspectReading[];
+};
+
+export type ProspectReading = {
+	depth: number;
+	quality: number;
+};
+
+export type ProspectingMarker = {
+	position: Position;
+	results: ProspectResult[];
+};
+
+export type Save = [
+	GameData,
+	string,
+	string,
+	MapMarkers,
+	[key: string, ProspectingLog],
+];
+
+// Vec<(String, ProspectingLog)>
 export const useSaves = (
-	props?: Omit<
-		UseQueryOptions<
-			[GameData, string, string][],
-			Error,
-			[GameData, string, string][]
-		>,
-		"queryKey" | "queryFn"
-	>,
+	props?: Omit<UseQueryOptions<Save[], Error, Save[]>, "queryKey" | "queryFn">,
 ) =>
 	useQuery({
-		queryFn: () =>
-			invoke("get_all_saves") as Promise<[GameData, string, string][]>,
+		queryFn: () => invoke("get_all_saves") as Promise<Save[]>,
 		queryKey: ["saves"],
 		...props,
 	});

@@ -1,12 +1,8 @@
 import { AnimatePresence } from "motion/react";
 import { WorldItem } from "@/components/items/world.item";
-import type { GameData } from "@/hooks/use-saves";
+import type { Save } from "@/hooks/use-saves";
 
-export function WorldList({
-	worlds,
-}: {
-	worlds: [GameData, string, string][];
-}) {
+export function WorldList({ worlds }: { worlds: Save[] }) {
 	return (
 		<div className="flex flex-col w-full bg-card p-2 rounded shadow border relative overflow-y-auto">
 			<AnimatePresence>

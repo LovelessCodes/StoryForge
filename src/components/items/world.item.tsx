@@ -24,7 +24,7 @@ import {
 	installedVersionsQueryKey,
 	useInstalledVersions,
 } from "@/hooks/use-installed-versions";
-import type { GameData } from "@/hooks/use-saves";
+import type { Save } from "@/hooks/use-saves";
 import type { ProgressPayload } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
@@ -49,7 +49,7 @@ export const WorldItem = ({
 	world,
 	index = 0,
 }: {
-	world: [GameData, string, string];
+	world: Save;
 	index?: number;
 }) => {
 	const { installations } = useInstallations();
