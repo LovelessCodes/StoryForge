@@ -12,7 +12,7 @@ use tauri::{command, AppHandle, Emitter};
 use tauri_plugin_zustand::ManagerExt;
 
 use super::errors::UiError;
-use super::utils::versions_folder;
+use super::utils::{move_folder, versions_folder};
 
 #[command]
 pub async fn initialize_game(path: String) -> Result<String, UiError> {
@@ -453,27 +453,10 @@ pub async fn move_installations_folder(
     source: String,
     destination: String,
 ) -> Result<String, UiError> {
-    let source_path = std::path::PathBuf::from(source).join("installations");
-    let destination_path = std::path::PathBuf::from(destination).join("installations");
-
-    if !source_path.exists() || !source_path.is_dir() {
-        return Ok("no_source".into());
-    }
-
-    std::fs::create_dir_all(&destination_path).map_err(|e| UiError {
-        name: "create_dir_failed".into(),
-        message: format!(
-            "Failed to create destination directory: {}: {e}",
-            destination_path.to_string_lossy()
-        ),
-    })?;
-    std::fs::rename(&source_path, &destination_path).map_err(|e| UiError {
-        name: "move_failed".into(),
-        message: format!(
-            "Failed to move installations directory: {e}. \
-             Please ensure no other application is using the files."
-        ),
-    })?;
+    move_folder(
+        std::path::PathBuf::from(source).join("installations"),
+        std::path::PathBuf::from(destination).join("installations"),
+    )?;
     Ok("moved".into())
 }
 

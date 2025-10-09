@@ -1,5 +1,7 @@
 use tauri::{command, AppHandle};
 
+use crate::modules::utils::move_folder;
+
 use super::errors::UiError;
 use super::utils::versions_folder;
 
@@ -71,28 +73,10 @@ pub async fn fetch_versions() -> Result<Vec<String>, UiError> {
 
 #[command]
 pub async fn move_versions_folder(source: String, destination: String) -> Result<String, UiError> {
-    let source_path = std::path::PathBuf::from(source).join("versions");
-    let destination_path = std::path::PathBuf::from(destination).join("versions");
-
-    if !source_path.exists() || !source_path.is_dir() {
-        return Ok("no_source".into());
-    }
-
-    if destination_path.exists() {
-        return Err(UiError {
-            name: "already_exists".into(),
-            message: format!(
-                "Destination directory already exists: {}",
-                destination_path.to_string_lossy()
-            ),
-        });
-    }
-
-    std::fs::rename(&source_path, &destination_path).map_err(|e| UiError {
-        name: "move_failed".into(),
-        message: format!("Failed to move directory: {e}"),
-    })?;
-
+    move_folder(
+        std::path::PathBuf::from(source).join("versions"),
+        std::path::PathBuf::from(destination).join("versions"),
+    )?;
     Ok("moved".into())
 }
 
