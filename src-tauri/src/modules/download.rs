@@ -38,6 +38,34 @@ pub async fn download_and_maybe_extract<R: Runtime>(
     // Use "" or None to extract all
     zipsubfolderprefix: Option<String>,
 ) -> Result<String, UiError> {
+    let destpath = PathBuf::from(&destpath);
+    
+    // Check if already installed (has vintagestory executable)
+    if extract && destpath.exists() {
+        let mut already_installed = false;
+        for entry in walkdir::WalkDir::new(&destpath) {
+            if let Ok(entry) = entry {
+                if entry.file_type().is_file() {
+                    let fname = entry.file_name().to_string_lossy();
+                    if fname.eq_ignore_ascii_case("vintagestory")
+                        || fname.eq_ignore_ascii_case("vintagestory.exe")
+                    {
+                        already_installed = true;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if already_installed {
+            return Ok("already_downloaded".into());
+        } else {
+            // Directory exists but no exe found - clean up partial installation
+            fs::remove_dir_all(&destpath)
+                .map_err(|e| UiError::from(format!("Failed to clean up incomplete installation: {e}")))?;
+        }
+    }
+    
     // 1) Download
     let resp = get(&url).await.map_err(|e| format!("request error: {e}"))?;
 
@@ -74,7 +102,6 @@ pub async fn download_and_maybe_extract<R: Runtime>(
         return Err(UiError::from(format!("HTTP error: {}", resp.status())));
     }
 
-    let destpath = PathBuf::from(&destpath);
     if !destpath.exists() {
         fs::create_dir_all(&destpath)
             .map_err(|e| UiError::from(format!("create dir error: {e}")))?;

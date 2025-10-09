@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resolved Tar issue on some Linux distros
 - Fixed an issue where the game would not load a world if done through the launcher on windows.
 - Fixed issue on windows with _some_ paths on installations and versions.
+- Fixed an issue where the documents folder would be opened instead of the installation folder on windows.
+- Fixed an issue where, after deleting a version, reinstalling the same version would throw an error.
 
 ### Changed
 
