@@ -5,6 +5,7 @@ import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { cn } from "@/lib/utils";
 import { useInstallations } from "@/stores/installations";
 import type { Server } from "@/stores/servers";
+import { useSettingsStore } from "@/stores/settings";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 interface ServerCardProps {
@@ -23,6 +24,7 @@ export function ServerCard({
 	const serverAddress = server.port ? `${server.ip}:${server.port}` : server.ip;
 	const hasPassword = server.password && server.password.length > 0;
 	const { installations } = useInstallations();
+	const { streamMode } = useSettingsStore();
 	const installation = installations.find(
 		(inst) => inst.id === server.installationId,
 	);
@@ -51,7 +53,7 @@ export function ServerCard({
 					</p>
 					{installation.version && (
 						<p className="font-mono text-xs text-muted-foreground">
-							v{installation.version} - {serverAddress}
+							v{installation.version} - {streamMode ? "hidden" : serverAddress}
 						</p>
 					)}
 				</div>
