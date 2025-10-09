@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Contributing document](./CONTRIBUTING.md) to help new contributors.
 - "Any" side filtering on mods page.
 - Labels added to selects/dropdowns on mods page.
+- Ability to change theme.
+- Ability to enable stream mode to hide server ip addresses.
+- Ability to change where versions and installation folders are stored.
 
 ### Fixed
 
@@ -28,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resolve db-wal and db-shm issue on world rename.
 - Resolved Tar issue on some Linux distros
 - Fixed an issue where the game would not load a world if done through the launcher on windows.
+- Fixed issue on windows with _some_ paths on installations and versions.
 - Fixed an issue where the documents folder would be opened instead of the installation folder on windows.
 - Fixed an issue where, after deleting a version, reinstalling the same version would throw an error.
 

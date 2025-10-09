@@ -1,10 +1,7 @@
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
-import { useId, useRef } from "react";
-import { toast } from "sonner";
+import { useId } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -28,22 +25,20 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAppFolder } from "@/hooks/use-app-folder";
-import {
-	installedVersionsQueryKey,
-	useInstalledVersions,
-} from "@/hooks/use-installed-versions";
+import { useDownloadVersion } from "@/hooks/use-download-version";
+import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { gameVersionsQuery } from "@/lib/queries";
-import type { ProgressPayload } from "@/lib/types";
 import {
 	compareSemverDesc,
 	makeStringFolderSafe,
-	zipfolderprefix,
+	pathDelimiter,
 } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import {
 	type Installation,
 	useInstallationsStore,
 } from "@/stores/installations";
+import { useSettingsStore } from "@/stores/settings";
 import { installationSchema } from "./addinstallation.dialog";
 
 export type EditInstallationDialogProps = {
@@ -61,73 +56,9 @@ export function EditInstallationDialog({
 	const { closeDialog } = useDialogStore();
 	const { data: installedVersions } = useInstalledVersions();
 	const { appFolder } = useAppFolder();
-	const queryClient = useQueryClient();
-	const listenRef = useRef<UnlistenFn>(null);
+	const { installationsParent } = useSettingsStore();
 	const { updateInstallation } = useInstallationsStore();
-	const { mutateAsync: downloadVersion, isPending } = useMutation({
-		mutationFn: async (version: string) => {
-			const url = (await invoke("get_download_link", {
-				version,
-			})) as string;
-			if (!url) {
-				throw new Error("Download URL not found in response");
-			}
-			const downloadUrl = url;
-			if (!appFolder) {
-				throw new Error("App folder not found");
-			}
-			return invoke("download_and_maybe_extract", {
-				destpath: `${appFolder}/versions/${version}`,
-				emitevent: `download://version:${version.replace(/\./g, "_")}`,
-				extract: true,
-				extractdir: `${appFolder}/versions/${version}`,
-				url: downloadUrl,
-				zipsubfolderprefix: zipfolderprefix(),
-			}) as Promise<string>;
-		},
-		onError: (error, v) => {
-			toast.error(`Error downloading game version: ${error.message}`, {
-				id: `download-game-version-${v}`,
-			});
-			listenRef.current?.();
-		},
-		onMutate: async (v) => {
-			toast.loading(`Starting to download game version ${v}...`, {
-				id: `download-game-version-${v}`,
-			});
-			listenRef.current = await listen<ProgressPayload>(
-				`download://version:${v.replace(/\./g, "_")}`,
-				(event) => {
-					const { phase, percent } = event.payload;
-					if (phase === "download") {
-						toast.loading(
-							`Downloading game version ${v}: ${percent?.toFixed(0)}%`,
-							{
-								id: `download-game-version-${v}`,
-							},
-						);
-					} else if (phase === "extract") {
-						toast.loading(`Extracting game version ${v}...`, {
-							id: `download-game-version-${v}`,
-						});
-					}
-				},
-			);
-		},
-		onSuccess: async (d, v) => {
-			listenRef.current?.();
-			if (d === "already_downloaded") {
-				toast.dismiss(`download-game-version-${v}`);
-				return;
-			}
-			await queryClient.invalidateQueries({
-				queryKey: installedVersionsQueryKey(),
-			});
-			toast.success(`Game version ${v} downloaded`, {
-				id: `download-game-version-${v}`,
-			});
-		},
-	});
+	const { mutateAsync: downloadVersion, isPending } = useDownloadVersion();
 	const form = useForm({
 		defaultValues: {
 			favorite: installation.favorite,
@@ -227,7 +158,7 @@ export function EditInstallationDialog({
 												const safeName = makeStringFolderSafe(e.target.value);
 												form.setFieldValue(
 													"path",
-													`${appFolder}/installations/${safeName}`,
+													`${installationsParent ?? appFolder}${pathDelimiter}installations${pathDelimiter}${safeName}`,
 												);
 											} else {
 												form.resetField("path");

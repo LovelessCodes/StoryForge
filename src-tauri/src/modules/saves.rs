@@ -1,10 +1,11 @@
 use serde_json::{from_value, Value};
 use std::{ffi::OsStr, path::Path};
-use tauri::{command, AppHandle, Manager};
+use tauri::{command, AppHandle};
 use tauri_plugin_zustand::ManagerExt;
 
 use super::errors::UiError;
 use super::proto::GameData;
+use super::utils::installations_folder;
 use prost::Message;
 use rusqlite::OpenFlags;
 
@@ -13,7 +14,7 @@ use rusqlite::OpenFlags;
 #[command]
 pub fn get_all_saves(app: AppHandle) -> Result<Vec<(GameData, String, String)>, UiError> {
     // Look through all installation folders and collect save names from the .vcdbs files
-    let installation_dir_path = app.path().app_data_dir().unwrap().join("installations");
+    let installation_dir_path = installations_folder(app.clone()).join("installations");
     let mut saves = Vec::new();
     if installation_dir_path.exists() && installation_dir_path.is_dir() {
         for entry in std::fs::read_dir(installation_dir_path)

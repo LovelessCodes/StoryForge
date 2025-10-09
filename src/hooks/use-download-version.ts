@@ -1,12 +1,25 @@
-import { type UseMutationOptions, useMutation } from "@tanstack/react-query";
+import {
+	type UseMutationOptions,
+	useMutation,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { zipfolderprefix } from "@/lib/utils";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { useRef } from "react";
+import { toast } from "sonner";
+import type { ProgressPayload } from "@/lib/types";
+import { pathDelimiter, zipfolderprefix } from "@/lib/utils";
+import { useSettingsStore } from "@/stores/settings";
 import { useAppFolder } from "./use-app-folder";
+import { installedVersionsQueryKey } from "./use-installed-versions";
 
 export const useDownloadVersion = (
 	props?: UseMutationOptions<string, Error, string>,
 ) => {
 	const { appFolder } = useAppFolder();
+	const { versionsParent } = useSettingsStore();
+	const queryClient = useQueryClient();
+	const listenRef = useRef<UnlistenFn>(null);
 	return useMutation({
 		mutationFn: async (version: string) => {
 			const url = (await invoke("get_download_link", {
@@ -20,15 +33,57 @@ export const useDownloadVersion = (
 				throw new Error("App folder not found");
 			}
 			return invoke("download_and_maybe_extract", {
-				destpath: `${appFolder}/versions/${version}`,
+				destpath: `${versionsParent ?? appFolder}${pathDelimiter}versions${pathDelimiter}${version}`,
 				emitevent: `download://version:${version.replace(/\./g, "_")}`,
 				extract: true,
-				extractdir: `${appFolder}/versions/${version}`,
+				extractdir: `${versionsParent ?? appFolder}${pathDelimiter}versions${pathDelimiter}${version}`,
 				url: downloadUrl,
 				zipsubfolderprefix: zipfolderprefix(),
 			}) as Promise<string>;
 		},
 		mutationKey: ["download-version"],
+		onError: (error, v) => {
+			toast.error(`Error downloading game version: ${error.message}`, {
+				id: `download-game-version-${v}`,
+			});
+			listenRef.current?.();
+		},
+		onMutate: async (v) => {
+			toast.loading(`Starting to download game version ${v}...`, {
+				id: `download-game-version-${v}`,
+			});
+			listenRef.current = await listen<ProgressPayload>(
+				`download://version:${v.replace(/\./g, "_")}`,
+				(event) => {
+					const { phase, percent } = event.payload;
+					if (phase === "download") {
+						toast.loading(
+							`Downloading game version ${v}: ${percent?.toFixed(0)}%`,
+							{
+								id: `download-game-version-${v}`,
+							},
+						);
+					} else if (phase === "extract") {
+						toast.loading(`Extracting game version ${v}...`, {
+							id: `download-game-version-${v}`,
+						});
+					}
+				},
+			);
+		},
+		onSuccess: async (d, v) => {
+			listenRef.current?.();
+			if (d === "already_downloaded") {
+				toast.dismiss(`download-game-version-${v}`);
+				return;
+			}
+			await queryClient.invalidateQueries({
+				queryKey: installedVersionsQueryKey(),
+			});
+			toast.success(`Game version ${v} downloaded`, {
+				id: `download-game-version-${v}`,
+			});
+		},
 		scope: {
 			id: "download-version",
 		},

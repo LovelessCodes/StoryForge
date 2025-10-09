@@ -1,8 +1,9 @@
 use serde_json::Value;
-use tauri::{command, AppHandle, Manager};
+use tauri::{command, AppHandle};
 use tauri_plugin_zustand::ManagerExt;
 
 use super::errors::UiError;
+use super::utils::installations_folder;
 
 fn extract_servers_from_directory(path: std::path::PathBuf) -> Value {
     let mut servers = Value::Array(vec![]);
@@ -24,7 +25,7 @@ fn extract_servers_from_directory(path: std::path::PathBuf) -> Value {
 
 #[command]
 pub async fn fetch_all_servers(app: AppHandle) -> Result<Value, UiError> {
-    let installation_paths = app.path().app_data_dir().unwrap().join("installations");
+    let installation_paths = installations_folder(app.clone()).join("installations");
     let mut all_servers = Vec::new();
     for entry in std::fs::read_dir(installation_paths).unwrap() {
         let entry = entry.unwrap();
