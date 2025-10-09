@@ -1,4 +1,4 @@
-import type { GameData } from "@/hooks/use-saves";
+import type { GameData, MapMarkers, ProspectingLog } from "@/hooks/use-saves";
 import {
 	Dialog,
 	DialogClose,
@@ -11,7 +11,7 @@ import { useDialogStore } from "@/stores/dialogs";
 import { WorldMapViewer } from "@/components/maps/world-map-viewer";
 
 export type ViewMapDialogProps = {
-	world: [GameData, string, string];
+	world: [GameData, string, string, MapMarkers | null | undefined, [string, ProspectingLog][]];
 };
 
 export function ViewMapDialog({
@@ -23,6 +23,8 @@ export function ViewMapDialog({
 	const { closeDialog } = useDialogStore();
 	const worldData = world[0];
 	const worldPath = world[1];
+	const mapMarkers = world[3];
+	const prospectingLogs = world[4];
 
 	return (
 		<Dialog onOpenChange={closeDialog} open={open}>
@@ -44,7 +46,11 @@ export function ViewMapDialog({
 				</DialogHeader>
 
 				<div className="flex-1 min-h-0 w-full overflow-hidden p-4">
-					<WorldMapViewer worldPath={worldPath} />
+					<WorldMapViewer 
+						worldPath={worldPath} 
+						mapMarkers={mapMarkers}
+						prospectingLogs={prospectingLogs}
+					/>
 				</div>
 			</DialogContent>
 		</Dialog>

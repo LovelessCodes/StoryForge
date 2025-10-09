@@ -40,7 +40,7 @@ export type ProspectingLog = {
 
 export type ProspectResult = {
 	ore_code: string;
-	readings: ProspectReading[];
+	readings: ProspectReading | null;
 };
 
 export type ProspectReading = {
@@ -49,7 +49,7 @@ export type ProspectReading = {
 };
 
 export type ProspectingMarker = {
-	position: Position;
+	position: Position | null;
 	results: ProspectResult[];
 };
 
@@ -57,8 +57,8 @@ export type Save = [
 	GameData,
 	string,
 	string,
-	MapMarkers,
-	[key: string, ProspectingLog],
+	MapMarkers | null | undefined,
+	[string, ProspectingLog][],
 ];
 
 // Vec<(String, ProspectingLog)>

@@ -1,13 +1,16 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { Loader2Icon, MapIcon } from "lucide-react";
 import { useAllMapTiles, useMapBounds, imageDataToDataUrl } from "@/hooks/use-world-map";
+import type { MapMarkers, ProspectingLog } from "@/hooks/use-saves";
 import { Card } from "@/components/ui/card";
 
 type WorldMapViewerProps = {
 	worldPath: string;
+	mapMarkers?: MapMarkers | null | undefined;
+	prospectingLogs?: [string, ProspectingLog][];
 };
 
-export function WorldMapViewer({ worldPath }: WorldMapViewerProps) {
+export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: WorldMapViewerProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 
@@ -118,6 +121,7 @@ export function WorldMapViewer({ worldPath }: WorldMapViewerProps) {
 		// Find min coordinates to normalize tile positions
 		const minX = Math.min(...tiles.map((t) => t.x));
 		const minY = Math.min(...tiles.map((t) => t.y));
+		const tileSize = tiles[0]?.width || 512;
 
 		// Draw tiles
 		for (const tile of tiles) {
@@ -132,7 +136,6 @@ export function WorldMapViewer({ worldPath }: WorldMapViewerProps) {
 			// In Vintage Story's coordinate system:
 			// - tile.x corresponds to vertical position (rows)
 			// - tile.y corresponds to horizontal position (columns)
-			const tileSize = tile.width;
 			const screenX = (normalizedY * tileSize - viewport.x * tileSize) * viewport.zoom;
 			const screenY = (normalizedX * tileSize - viewport.y * tileSize) * viewport.zoom;
 			const screenSize = tileSize * viewport.zoom;
@@ -148,6 +151,198 @@ export function WorldMapViewer({ worldPath }: WorldMapViewerProps) {
 			}
 		}
 
+		// Draw map markers
+		if (mapMarkers?.markers) {
+			let drawnCount = 0;
+			let debugMarkerInfo = "";
+			
+			for (const marker of mapMarkers.markers) {
+				if (!marker.position) continue;
+
+				// Vintage Story coordinates: X = east-west, Y = north-south, Z = altitude
+				// Map uses X and Y (horizontal plane), Z is height and not used for 2D map
+				// Map chunks are at 1:32 scale (each map chunk unit = 32 blocks)
+				// NOTE: X and Y are swapped to match map orientation
+				const mapChunkSize = 32;
+				
+				// Calculate which tile the marker is in
+				const markerTileX = Math.floor(marker.position.y / mapChunkSize); // Swap: use Y for tileX
+				const markerTileY = Math.floor(marker.position.x / mapChunkSize); // Swap: use X for tileY
+				
+				// Calculate position WITHIN the tile (0-1 range)
+				const offsetWithinTileX = (marker.position.y % mapChunkSize) / mapChunkSize;
+				const offsetWithinTileY = (marker.position.x % mapChunkSize) / mapChunkSize;
+
+				const normalizedX = markerTileX - minX;
+				const normalizedY = markerTileY - minY;
+
+				// Calculate pixel-perfect position including offset within tile
+				// Swap X and Y for screen coordinates (same as tiles)
+				const screenX = ((normalizedY + offsetWithinTileY) * tileSize - viewport.x * tileSize) * viewport.zoom;
+				const screenY = ((normalizedX + offsetWithinTileX) * tileSize - viewport.y * tileSize) * viewport.zoom;
+				
+				// Store first marker's detailed info for debugging
+				if (!debugMarkerInfo) {
+					debugMarkerInfo = `M1: icon="${marker.icon}" label="${marker.label}"`;
+				}
+
+				// Only draw if visible
+				if (
+					screenX > -20 &&
+					screenX < canvas.width + 20 &&
+					screenY > -20 &&
+					screenY < canvas.height + 20
+				) {
+					// Parse icon string for color
+					// Icon format can be "circle-<color>" or just a color name
+					let markerColor = "#ff0000"; // Default red
+					
+					if (marker.icon) {
+						// Map color names to hex values (supporting various formats)
+						const colorMap: Record<string, string> = {
+							red: "#ff0000",
+							blue: "#0066ff",
+							green: "#00ff00",
+							yellow: "#ffff00",
+							orange: "#ff8800",
+							purple: "#aa00ff",
+							pink: "#ff00ff",
+							white: "#ffffff",
+							black: "#000000",
+							cyan: "#00ffff",
+							lime: "#88ff00",
+							brown: "#8b4513",
+						};
+						
+						// Try to extract color from icon string
+						const iconLower = marker.icon.toLowerCase();
+						
+						// Check if it starts with "circle-" and extract color
+						if (iconLower.startsWith("circle-")) {
+							const colorName = iconLower.replace("circle-", "");
+							markerColor = colorMap[colorName] || markerColor;
+						} 
+						// Check if the icon itself is a color name
+						else if (colorMap[iconLower]) {
+							markerColor = colorMap[iconLower];
+						}
+						// Check if it's a hex color
+						else if (iconLower.startsWith("#")) {
+							markerColor = marker.icon;
+						}
+					}
+
+					// Scale marker size with zoom - smaller base size
+					const baseSize = 5;
+					const markerSize = Math.max(4, Math.min(10, baseSize * viewport.zoom));
+					
+					// Draw marker pin
+					ctx.fillStyle = markerColor;
+					ctx.strokeStyle = "#ffffff";
+					ctx.lineWidth = 2;
+
+					// Draw pin shape
+					ctx.beginPath();
+					ctx.arc(screenX, screenY, markerSize, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.stroke();
+
+					// Draw label if zoomed in enough
+					if (viewport.zoom > 0.3 && marker.label) {
+						const fontSize = Math.max(10, Math.min(14, 12 * viewport.zoom));
+						ctx.font = `${fontSize}px sans-serif`;
+						const textWidth = ctx.measureText(marker.label).width;
+						
+						ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+						ctx.fillRect(
+							screenX + markerSize + 4,
+							screenY - fontSize / 2 - 2,
+							textWidth + 8,
+							fontSize + 4
+						);
+						ctx.fillStyle = "#ffffff";
+						ctx.fillText(
+							marker.label,
+							screenX + markerSize + 8,
+							screenY + fontSize / 2 - 2
+						);
+					}
+					
+					drawnCount++;
+				}
+			}
+		}
+
+		// Draw prospecting markers
+		if (prospectingLogs) {
+			for (const [_playerUid, log] of prospectingLogs) {
+				for (const marker of log.markers) {
+					if (!marker.position) continue;
+
+					const mapChunkSize = 32;
+					
+					// Calculate which tile the marker is in
+					const markerTileX = Math.floor(marker.position.y / mapChunkSize); // Swap: use Y for tileX
+					const markerTileY = Math.floor(marker.position.x / mapChunkSize); // Swap: use X for tileY
+					
+					// Calculate position WITHIN the tile (0-1 range)
+					const offsetWithinTileX = (marker.position.y % mapChunkSize) / mapChunkSize;
+					const offsetWithinTileY = (marker.position.x % mapChunkSize) / mapChunkSize;
+
+					const normalizedX = markerTileX - minX;
+					const normalizedY = markerTileY - minY;
+
+					// Calculate pixel-perfect position including offset within tile
+					const screenX = ((normalizedY + offsetWithinTileY) * tileSize - viewport.x * tileSize) * viewport.zoom;
+					const screenY = ((normalizedX + offsetWithinTileX) * tileSize - viewport.y * tileSize) * viewport.zoom;
+
+					if (
+						screenX > -20 &&
+						screenX < canvas.width + 20 &&
+						screenY > -20 &&
+						screenY < canvas.height + 20
+					) {
+						// Scale marker size with zoom - smaller base size
+						const baseSize = 4;
+						const markerSize = Math.max(3, Math.min(8, baseSize * viewport.zoom));
+						
+						// Draw prospecting marker (orange square)
+						ctx.fillStyle = "#ffaa00";
+						ctx.strokeStyle = "#ffffff";
+						ctx.lineWidth = 2;
+
+						// Draw square marker for prospecting
+						ctx.beginPath();
+						ctx.rect(screenX - markerSize, screenY - markerSize, markerSize * 2, markerSize * 2);
+						ctx.fill();
+						ctx.stroke();
+
+						// Show ore info if zoomed in
+						if (viewport.zoom > 0.5 && marker.results.length > 0) {
+							const oreNames = marker.results.map(r => r.ore_code.split('-').pop()).join(", ");
+							const fontSize = Math.max(10, Math.min(12, 11 * viewport.zoom));
+							ctx.font = `${fontSize}px sans-serif`;
+							const textWidth = ctx.measureText(oreNames).width;
+							
+							ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+							ctx.fillRect(
+								screenX + markerSize + 4,
+								screenY - fontSize / 2 - 2,
+								textWidth + 8,
+								fontSize + 4
+							);
+							ctx.fillStyle = "#ffaa00";
+							ctx.fillText(
+								oreNames,
+								screenX + markerSize + 8,
+								screenY + fontSize / 2 - 2
+							);
+						}
+					}
+				}
+			}
+		}
+
 		// Draw debug info
 		if (bounds) {
 			ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
@@ -158,7 +353,7 @@ export function WorldMapViewer({ worldPath }: WorldMapViewerProps) {
 				20,
 			);
 		}
-	}, [tiles, viewport, imageCache, bounds, containerSize]);
+	}, [tiles, viewport, imageCache, bounds, containerSize, mapMarkers, prospectingLogs]);
 
 	// Mouse wheel zoom
 	const handleWheel = useCallback(
