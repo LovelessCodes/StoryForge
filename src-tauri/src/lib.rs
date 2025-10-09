@@ -53,12 +53,14 @@ pub fn run() {
             versions::fetch_versions,
             versions::get_installed_versions,
             versions::remove_installed_version,
+            versions::move_versions_folder,
             // Installations
             installations::play_game,
             installations::confirm_vintage_story_exe,
             installations::initialize_game,
             installations::reveal_in_file_explorer,
             installations::remove_installation,
+            installations::move_installations_folder,
             // Servers
             servers::fetch_public_servers,
             servers::fetch_all_servers,
