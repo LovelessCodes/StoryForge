@@ -60,7 +60,7 @@ jobs:
 
           # Use biome to format the changed files
           cd ..
-          biome check . ---write
+          biome check . --write
           echo "Formatted files with Biome"
 
           # Commit and push changes back to the repository
