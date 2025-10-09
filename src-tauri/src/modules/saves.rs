@@ -19,7 +19,7 @@ pub fn get_all_saves(
         String,
         String,
         Option<Option<MapMarkers>>,
-        Vec<(String, Vec<ProspectingLog>)>,
+        Vec<(String, ProspectingLog)>,
     )>,
     UiError,
 > {
@@ -131,7 +131,7 @@ pub fn get_all_saves(
                                                         ))
                                                     })?;
                                                 prospecting_results
-                                                    .push((player_uid.to_string(), vec![items]));
+                                                    .push((player_uid.to_string(), items));
                                             }
                                         }
 
