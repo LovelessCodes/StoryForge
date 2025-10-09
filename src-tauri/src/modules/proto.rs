@@ -343,7 +343,7 @@ pub struct ProspectMarker {
     #[prost(message, optional, tag = "1")]
     pub position: ::core::option::Option<MapMarkerPos>,
     #[prost(message, repeated, tag = "2")]
-    pub readings: ::prost::alloc::vec::Vec<ProspectingResult>,
+    pub results: ::prost::alloc::vec::Vec<ProspectingResult>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, ::prost::Message)]

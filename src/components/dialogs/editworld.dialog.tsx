@@ -25,13 +25,13 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { GameData } from "@/hooks/use-saves";
+import type { Save } from "@/hooks/use-saves";
 import { useUpdateWorld } from "@/hooks/use-update-world";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
 
 export type EditWorldDialogProps = {
-	world: [GameData, string, string];
+	world: Save;
 };
 
 const worldSchema = z.object({

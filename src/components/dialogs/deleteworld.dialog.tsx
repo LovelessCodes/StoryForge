@@ -14,12 +14,12 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import type { GameData } from "@/hooks/use-saves";
+import type { Save } from "@/hooks/use-saves";
 import { useDialogStore } from "@/stores/dialogs";
 import { Checkbox } from "../ui/checkbox";
 
 export type DeleteWorldDialogProps = {
-	world: [GameData, string, string];
+	world: Save;
 };
 
 export function DeleteWorldDialog({
@@ -32,7 +32,7 @@ export function DeleteWorldDialog({
 	const queryClient = useQueryClient();
 	const { closeDialog } = useDialogStore();
 	const { mutate: removeWorld, isPending } = useMutation({
-		mutationFn: (world: [GameData, string, string]) =>
+		mutationFn: (world: Save) =>
 			invoke("remove_world", { worldPath: world[1] }),
 		onError: (error) => {
 			toast.error(`Failed to delete world ${world[0].world_name}: ${error}`, {
@@ -134,6 +134,9 @@ export function DeleteWorldDialog({
 								<li>
 									Last saved in version:{" "}
 									<b>{world[0].last_saved_game_version}</b>
+								</li>
+								<li>
+									<pre>{JSON.stringify(world[3])}</pre>
 								</li>
 							</ul>
 						</motion.div>
