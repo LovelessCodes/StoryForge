@@ -8,10 +8,11 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-use tauri::{command, AppHandle, Emitter, Manager};
+use tauri::{command, AppHandle, Emitter};
 use tauri_plugin_zustand::ManagerExt;
 
 use super::errors::UiError;
+use super::utils::versions_folder;
 
 #[command]
 pub async fn initialize_game(path: String) -> Result<String, UiError> {
@@ -65,10 +66,7 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
             name: "not_found".into(),
             message: format!("Installation with id {} not found", options.installation_id),
         })?;
-    let version_path = app
-        .path()
-        .app_data_dir()
-        .unwrap()
+    let version_path = versions_folder(app.clone())
         .join("versions")
         .join(installation["version"].as_str().unwrap());
     if !version_path.exists() || !version_path.is_dir() {
