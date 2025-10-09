@@ -447,3 +447,37 @@ pub fn remove_installation(app: AppHandle, id: i64) -> Result<String, UiError> {
         })
     }
 }
+
+#[command]
+pub async fn move_installations_folder(
+    source: String,
+    destination: String,
+) -> Result<String, UiError> {
+    let source_path = std::path::PathBuf::from(source).join("installations");
+    let destination_path = std::path::PathBuf::from(destination).join("installations");
+
+    if !source_path.exists() || !source_path.is_dir() {
+        return Err(UiError {
+            name: "not_found".into(),
+            message: format!(
+                "Source installations directory not found: {}",
+                source_path.to_string_lossy()
+            ),
+        });
+    }
+    std::fs::create_dir_all(&destination_path).map_err(|e| UiError {
+        name: "create_dir_failed".into(),
+        message: format!(
+            "Failed to create destination directory: {}: {e}",
+            destination_path.to_string_lossy()
+        ),
+    })?;
+    std::fs::rename(&source_path, &destination_path).map_err(|e| UiError {
+        name: "move_failed".into(),
+        message: format!(
+            "Failed to move installations directory: {e}. \
+             Please ensure no other application is using the files."
+        ),
+    })?;
+    Ok("moved".into())
+}
