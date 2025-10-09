@@ -1,6 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import ReactDOM from "react-dom/client";
 import { Toaster } from "sonner";
 import { SidebarProvider } from "./components/ui/sidebar";
@@ -10,14 +9,14 @@ import { tauriInstallationsHandler } from "./stores/installations";
 import { tauriServersHandler } from "./stores/servers";
 import { tauriSettingsHandler } from "./stores/settings";
 
-const theme = await getCurrentWindow().theme();
-if (theme === "dark") {
+await tauriSettingsHandler.start();
+const dark = tauriSettingsHandler.store.getState().darkMode;
+if (dark) {
 	document.body.classList.add("dark");
 } else {
 	document.body.classList.remove("dark");
 }
 
-await tauriSettingsHandler.start();
 await tauriServersHandler.start();
 await tauriAccountsHandler.start();
 await tauriInstallationsHandler.start();
