@@ -310,12 +310,6 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
 pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
     let path = Path::new(&path);
 
-    // Add diagnostic logging
-    eprintln!("reveal_in_file_explorer called with path: {:?}", path);
-    eprintln!("Path exists: {}", path.exists());
-    eprintln!("Path is_file: {}", path.is_file());
-    eprintln!("Path is_dir: {}", path.is_dir());
-
     if cfg!(target_os = "windows") {
         // Validate path exists, create directory if needed
         if !path.exists() {
@@ -324,7 +318,6 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
                 name: "create_dir_failed".into(),
                 message: format!("Failed to create directory: {e}"),
             })?;
-            eprintln!("Created directory: {:?}", path);
         }
         
         // Now that we've ensured the path exists, open it
@@ -354,7 +347,6 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
                 name: "create_dir_failed".into(),
                 message: format!("Failed to create directory: {e}"),
             })?;
-            eprintln!("Created directory: {:?}", path);
         }
         
         if path.is_dir() {
@@ -380,7 +372,6 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
                 name: "create_dir_failed".into(),
                 message: format!("Failed to create directory: {e}"),
             })?;
-            eprintln!("Created directory: {:?}", path);
         }
         
         // Try xdg-open for general desktops.
