@@ -64,7 +64,6 @@ jobs:
           echo "Formatted files with Biome"
 
           # Commit and push changes back to the repository
-          cd ..
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock
