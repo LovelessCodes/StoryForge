@@ -481,3 +481,22 @@ pub async fn move_installations_folder(
     })?;
     Ok("moved".into())
 }
+
+#[command]
+pub async fn remove_all_installations(source: String) -> Result<String, UiError> {
+    let source_path = std::path::PathBuf::from(source).join("installations");
+    if !source_path.exists() || !source_path.is_dir() {
+        return Err(UiError {
+            name: "not_found".into(),
+            message: format!(
+                "Source installations directory not found: {}",
+                source_path.to_string_lossy()
+            ),
+        });
+    }
+    std::fs::remove_dir_all(&source_path).map_err(|e| UiError {
+        name: "remove_failed".into(),
+        message: format!("Failed to remove installations directory: {e}"),
+    })?;
+    Ok("removed".into())
+}
