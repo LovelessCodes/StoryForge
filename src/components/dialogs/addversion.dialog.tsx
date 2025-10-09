@@ -1,10 +1,7 @@
 import { useForm, useStore } from "@tanstack/react-form";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { useQuery } from "@tanstack/react-query";
 import { platform } from "@tauri-apps/plugin-os";
 import clsx from "clsx";
-import { useRef } from "react";
-import { toast } from "sonner";
 import z from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,12 +24,8 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useDownloadVersion } from "@/hooks/use-download-version";
-import {
-	installedVersionsQueryKey,
-	useInstalledVersions,
-} from "@/hooks/use-installed-versions";
+import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { gameVersionsQuery } from "@/lib/queries";
-import type { ProgressPayload } from "@/lib/types";
 import { compareSemverDesc } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 
@@ -41,10 +34,8 @@ export const versionSchema = z.object({
 });
 
 export function AddVersionDialog({ open }: { open: boolean }) {
-	const queryClient = useQueryClient();
 	const { data: gameVersions } = useQuery(gameVersionsQuery);
 	const { closeDialog } = useDialogStore();
-	const listenRef = useRef<UnlistenFn>(null);
 	const { data: installedVersions } = useInstalledVersions();
 	const currentPlatform = platform();
 
@@ -54,52 +45,7 @@ export function AddVersionDialog({ open }: { open: boolean }) {
 
 	const sortedVersions = gameVersions?.sort(compareSemverDesc);
 
-	const { mutateAsync: downloadVersion, isPending } = useDownloadVersion({
-		onError: (error, v) => {
-			listenRef.current?.();
-			toast.error(`Error downloading game version: ${error.message}`, {
-				id: `download-game-version-${v}`,
-			});
-		},
-		onMutate: async (v) => {
-			toast.loading(`Starting to download game version ${v}...`, {
-				id: `download-game-version-${v}`,
-			});
-			listenRef.current = await listen<ProgressPayload>(
-				`download://version:${v.replace(/\./g, "_")}`,
-				(event) => {
-					const { phase, percent } = event.payload;
-					if (phase === "download") {
-						toast.loading(
-							`Downloading game version ${v}: ${percent?.toFixed(0)}%`,
-							{
-								id: `download-game-version-${v}`,
-							},
-						);
-					}
-					if (phase === "extract") {
-						toast.loading(`Extracting game version ${v}`, {
-							id: `download-game-version-${v}`,
-						});
-					}
-				},
-			);
-		},
-		onSuccess: (d, v) => {
-			listenRef.current?.();
-			if (d === "already_downloaded") {
-				toast.dismiss(`download-game-version-${v}`);
-				return;
-			}
-			toast.success(`Game version ${v} downloaded`, {
-				id: `download-game-version-${v}`,
-			});
-			queryClient.invalidateQueries({
-				queryKey: installedVersionsQueryKey(),
-			});
-			closeDialog();
-		},
-	});
+	const { mutateAsync: downloadVersion, isPending } = useDownloadVersion();
 	const form = useForm({
 		defaultValues: {
 			version:
