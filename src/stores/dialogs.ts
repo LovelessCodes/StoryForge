@@ -11,6 +11,7 @@ import type { EditServerDialogProps } from "@/components/dialogs/editserver.dial
 import type { EditWorldDialogProps } from "@/components/dialogs/editworld.dialog";
 import type { RemoveModDialogProps } from "@/components/dialogs/removemod.dialog";
 import type { UpdateModDialogProps } from "@/components/dialogs/updatemod.dialog";
+import type { ViewMapDialogProps } from "@/components/dialogs/viewmap.dialog";
 
 export type DialogMap = {
 	AddInstallationDialog: undefined;
@@ -29,6 +30,7 @@ export type DialogMap = {
 	UpdateModDialog: UpdateModDialogProps;
 	EditWorldDialog: EditWorldDialogProps;
 	DeleteWorldDialog: DeleteWorldDialogProps;
+	ViewMapDialog: ViewMapDialogProps;
 };
 
 type DialogKey = keyof DialogMap;

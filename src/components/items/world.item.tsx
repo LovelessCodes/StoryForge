@@ -4,6 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import { formatDistanceToNow } from "date-fns";
 import {
 	DownloadCloudIcon,
+	MapIcon,
 	PenIcon,
 	PlayIcon,
 	SproutIcon,
@@ -241,6 +242,22 @@ export const WorldItem = ({
 						<TooltipContent>
 							{version ? "Play" : `Install ${installation.version}`}
 						</TooltipContent>
+					</Tooltip>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
+								onClick={() => openDialog("ViewMapDialog", { world })}
+								variant="outline"
+							>
+								<MapIcon
+									aria-hidden="true"
+									className="-ms-1 opacity-60 text-blue-300"
+									size={16}
+								/>
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>View Map</TooltipContent>
 					</Tooltip>
 					<Tooltip>
 						<TooltipTrigger asChild>

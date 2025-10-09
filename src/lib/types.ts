@@ -58,3 +58,33 @@ export type ModInfo = {
 	};
 	statuscode: string;
 };
+
+// Map-related types
+export type TableInfo = {
+	name: string;
+	schema: string;
+};
+
+export type MapDatabaseInfo = {
+	exists: boolean;
+	tables: TableInfo[];
+	tile_count: number;
+	sample_positions: number[];
+};
+
+export type MapTile = {
+	x: number;
+	y: number;
+	position: number;
+	image_data: number[]; // Vec<u8> from Rust
+	width: number;
+	height: number;
+};
+
+export type MapBounds = {
+	min_x: number;
+	max_x: number;
+	min_y: number;
+	max_y: number;
+	tile_count: number;
+};

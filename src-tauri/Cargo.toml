@@ -49,6 +49,7 @@ tauri-plugin-opener = "2"
 rusqlite = { version = "0.37.0", features = ["bundled"] }
 prost = "0.14.1"
 json5 = "0.4.1"
+image = { version = "0.25", default-features = false, features = ["png"] }
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55"
