@@ -28,6 +28,10 @@
 		}
 	},
 	"linter": {
+		"domains": {
+			"project": "recommended",
+			"react": "recommended"
+		},
 		"enabled": true,
 		"rules": {
 			"recommended": true
