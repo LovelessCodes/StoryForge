@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Fixed
+- Resolves an issue where installation absolute paths don't get updated accordingly.
 
 ### Changed
 
