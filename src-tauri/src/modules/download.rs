@@ -58,11 +58,9 @@ pub async fn download_and_maybe_extract<R: Runtime>(
         }
         
         if already_installed {
-            eprintln!("Version already downloaded at: {:?}", destpath);
             return Ok("already_downloaded".into());
         } else {
             // Directory exists but no exe found - clean up partial installation
-            eprintln!("Cleaning up incomplete installation at: {:?}", destpath);
             fs::remove_dir_all(&destpath)
                 .map_err(|e| UiError::from(format!("Failed to clean up incomplete installation: {e}")))?;
         }
