@@ -179,20 +179,23 @@ export function WorldMapViewer({ worldPath }: WorldMapViewerProps) {
 
 	const handleMouseMove = useCallback(
 		(e: React.MouseEvent) => {
-			if (!isPanning) return;
+			if (!isPanning || !tiles || tiles.length === 0) return;
 
 			const dx = e.clientX - lastMousePos.x;
 			const dy = e.clientY - lastMousePos.y;
 
+			const tileSize = tiles[0]?.width || 512;
+			
 			setViewport((prev) => ({
 				...prev,
-				x: prev.x - dx / (prev.zoom * 512),
-				y: prev.y - dy / (prev.zoom * 512),
+				// Convert screen pixels to viewport coords using previous zoom
+				x: prev.x - dx / (tileSize * prev.zoom),
+				y: prev.y - dy / (tileSize * prev.zoom),
 			}));
 
 			setLastMousePos({ x: e.clientX, y: e.clientY });
 		},
-		[isPanning, lastMousePos],
+		[isPanning, lastMousePos, tiles],
 	);
 
 	const handleMouseUp = useCallback(() => {
