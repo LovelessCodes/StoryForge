@@ -8,6 +8,7 @@ import { routeTree } from "./routeTree.gen";
 import { tauriAccountsHandler } from "./stores/accounts";
 import { tauriInstallationsHandler } from "./stores/installations";
 import { tauriServersHandler } from "./stores/servers";
+import { tauriSettingsHandler } from "./stores/settings";
 
 const theme = await getCurrentWindow().theme();
 if (theme === "dark") {
@@ -16,6 +17,7 @@ if (theme === "dark") {
 	document.body.classList.remove("dark");
 }
 
+await tauriSettingsHandler.start();
 await tauriServersHandler.start();
 await tauriAccountsHandler.start();
 await tauriInstallationsHandler.start();
