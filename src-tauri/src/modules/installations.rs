@@ -144,6 +144,27 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
                 } else {
                     obj.insert("stringSettings".into(), settings["stringSettings"].clone());
                 }
+                let mods_path = pb.join("Mods").to_string_lossy().into_owned();
+                if let Some(string_list_settings) = obj
+                    .get_mut("stringListSettings")
+                    .and_then(|v| v.as_object_mut())
+                {
+                    if let Some(mod_paths) = string_list_settings
+                        .get_mut("modPaths")
+                        .and_then(|v| v.as_array_mut())
+                    {
+                        if !mod_paths.iter().any(|p| p.as_str() == Some(&mods_path)) {
+                            mod_paths.push(json!(mods_path));
+                        }
+                    } else {
+                        string_list_settings.insert("modPaths".into(), json!([mods_path]));
+                    }
+                } else {
+                    obj.insert(
+                        "stringListSettings".into(),
+                        json!({ "modPaths": [mods_path, "Mods"] }),
+                    );
+                }
             }
             std::fs::write(
                 &settings_path,
@@ -334,7 +355,7 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
                 message: format!("Failed to create directory: {e}"),
             })?;
         }
-        
+
         // Now that we've ensured the path exists, open it
         if path.is_file() {
             // If it's a file, use /select to highlight it
@@ -363,7 +384,7 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
                 message: format!("Failed to create directory: {e}"),
             })?;
         }
-        
+
         if path.is_dir() {
             Command::new("open")
                 .arg(&path.as_os_str())
@@ -388,7 +409,7 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
                 message: format!("Failed to create directory: {e}"),
             })?;
         }
-        
+
         // Try xdg-open for general desktops.
         // For files, most DEs open the default app; to "reveal", try the folder.
         let target = if path.is_file() {
