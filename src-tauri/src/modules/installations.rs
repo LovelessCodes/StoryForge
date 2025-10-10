@@ -144,6 +144,25 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
                 } else {
                     obj.insert("stringSettings".into(), settings["stringSettings"].clone());
                 }
+                let mods_path = pb.join("Mods").to_string_lossy().into_owned();
+                if let Some(string_list_settings) = obj
+                    .get_mut("stringListSettings")
+                    .and_then(|v| v.as_object_mut())
+                {
+                    if let Some(mod_paths) = string_list_settings
+                        .get_mut("modPaths")
+                        .and_then(|v| v.as_array_mut())
+                    {
+                        *mod_paths = vec![json!(mods_path), json!("Mods")];
+                    } else {
+                        string_list_settings.insert("modPaths".into(), json!([mods_path, "Mods"]));
+                    }
+                } else {
+                    obj.insert(
+                        "stringListSettings".into(),
+                        json!({ "modPaths": [mods_path, "Mods"] }),
+                    );
+                }
             }
             std::fs::write(
                 &settings_path,
