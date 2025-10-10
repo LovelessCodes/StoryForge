@@ -35,6 +35,7 @@ type InstallationsStore = {
 	moveInstallation: (id: number, newIndex: number) => void;
 	toggleFavorite: (id: number) => void;
 	updateParent: (newPath: string) => void;
+	removeAll: () => void;
 };
 
 export const useInstallationsStore = create<InstallationsStore>((set) => ({
@@ -89,6 +90,7 @@ export const useInstallationsStore = create<InstallationsStore>((set) => ({
 			}));
 			return { ...state, installations: reindexed };
 		}),
+	removeAll: () => set({ installations: [], selectedInstallation: null }),
 	removeInstallation: (id) =>
 		set((state) => ({
 			installations: state.installations.filter((inst) => inst.id !== id),
@@ -162,6 +164,7 @@ export const useInstallations = () => {
 		toggleFavorite,
 		updateLastPlayed,
 		updateParent,
+		removeAll,
 	} = useInstallationsStore();
 
 	const outInstallations = [...installations]
@@ -172,6 +175,7 @@ export const useInstallations = () => {
 		addInstallation,
 		installations: outInstallations,
 		moveInstallation,
+		removeAll,
 		removeInstallation,
 		selectedInstallation,
 		setSelectedInstallation,

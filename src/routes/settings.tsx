@@ -40,7 +40,7 @@ const settingsSchema = z.object({
 
 function RouteComponent() {
 	const settingsStore = useSettingsStore();
-	const { updateParent } = useInstallationsStore();
+	const { updateParent, removeAll } = useInstallationsStore();
 	const { appFolder } = useAppFolder();
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [pendingField, setPendingField] = useState<
@@ -70,8 +70,16 @@ function RouteComponent() {
 			config?: SetParentConfigProps;
 		}) => settingsStore.setInstallationsParent(path, config),
 		onError: (error, v) => {
-			if (settingsStore.installationsParent !== v.path) {
+			if (v.config?.moveCurrentData) {
 				toast.error(`Failed to move installations folder: ${error.message}`, {
+					id: "move-installations-folder",
+				});
+			} else if (v.config?.deleteCurrentData) {
+				toast.error(`Failed to delete installations data: ${error.message}`, {
+					id: "move-installations-folder",
+				});
+			} else {
+				toast.error(`Failed to set installations folder: ${error.message}`, {
 					id: "move-installations-folder",
 				});
 			}
@@ -81,18 +89,34 @@ function RouteComponent() {
 				toast.loading("Moving installations folder...", {
 					id: "move-installations-folder",
 				});
+			} else if (v.config?.deleteCurrentData) {
+				toast.loading("Deleting installations data...", {
+					id: "move-installations-folder",
+				});
+			} else {
+				toast.loading("Setting installations folder...", {
+					id: "move-installations-folder",
+				});
 			}
 		},
-		onSuccess: (_, v) => {
-			if (settingsStore.installationsParent !== v.path) {
+		onSuccess: async (_, v) => {
+			if (v.config?.moveCurrentData) {
 				toast.success("Installations folder moved", {
 					id: "move-installations-folder",
 				});
 				// Update all installations paths
-				if (v.path !== null && configs?.installationsParent.moveCurrentData) {
-					updateParent(v.path);
-				}
+				updateParent(v.path ?? appFolder ?? "");
+			} else if (v.config?.deleteCurrentData) {
+				toast.success("Installations data deleted", {
+					id: "move-installations-folder",
+				});
+				removeAll();
+			} else if (settingsStore.installationsParent !== v.path) {
+				toast.success("Installations folder set", {
+					id: "move-installations-folder",
+				});
 			}
+			await queryClient.invalidateQueries({ queryKey: ["saves"] });
 		},
 	});
 
@@ -105,25 +129,54 @@ function RouteComponent() {
 			config?: SetParentConfigProps;
 		}) => settingsStore.setVersionsParent(path, config),
 		onError: (error, v) => {
-			if (settingsStore.versionsParent !== v.path) {
+			if (v.config?.moveCurrentData) {
 				toast.error(`Failed to move versions folder: ${error.message}`, {
+					id: "move-versions-folder",
+				});
+			} else if (v.config?.deleteCurrentData) {
+				toast.error(`Failed to delete versions data: ${error.message}`, {
+					id: "move-versions-folder",
+				});
+			} else {
+				toast.error(`Failed to set versions folder: ${error.message}`, {
 					id: "move-versions-folder",
 				});
 			}
 		},
 		onMutate: (v) => {
 			if (settingsStore.versionsParent !== v.path) {
-				toast.loading("Moving versions folder...", {
-					id: "move-versions-folder",
-				});
+				if (v.config?.moveCurrentData) {
+					toast.loading("Moving versions folder...", {
+						id: "move-versions-folder",
+					});
+				} else if (v.config?.deleteCurrentData) {
+					toast.loading("Deleting versions data...", {
+						id: "move-versions-folder",
+					});
+				} else {
+					toast.loading("Setting versions folder...", {
+						id: "move-versions-folder",
+					});
+				}
 			}
 		},
-		onSuccess: (_, v) => {
-			if (settingsStore.versionsParent !== v.path) {
+		onSuccess: async (_, v) => {
+			if (v.config?.moveCurrentData) {
 				toast.success("Versions folder moved", {
 					id: "move-versions-folder",
 				});
+			} else if (v.config?.deleteCurrentData) {
+				toast.success("Versions data deleted", {
+					id: "move-versions-folder",
+				});
+			} else if (settingsStore.versionsParent !== v.path) {
+				toast.success("Versions folder set", {
+					id: "move-versions-folder",
+				});
 			}
+			await queryClient.invalidateQueries({
+				queryKey: installedVersionsQueryKey(),
+			});
 		},
 	});
 
@@ -173,10 +226,6 @@ function RouteComponent() {
 			if (value.darkMode !== settingsStore.darkMode) {
 				settingsStore.toggleDarkMode();
 			}
-			await queryClient.invalidateQueries({ queryKey: ["saves"] });
-			await queryClient.invalidateQueries({
-				queryKey: installedVersionsQueryKey(),
-			});
 			toast.success("Settings saved");
 		},
 		validators: {
