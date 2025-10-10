@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Fixed
+- Resolve an issue where mods were linking to the Mod site homepage.
 
 - Resolve an issue where some mods were shown as installed, even when they weren't installed.
 
