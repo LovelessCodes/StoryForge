@@ -46,10 +46,7 @@ export function ModItem({
 	const listenRef = useRef<UnlistenFn>(null);
 	const emitevent = `mod-download-${mod.modid}-${installation?.id}`;
 	const installedMod = installedMods.find(
-		(i) =>
-			i.modid === mod.modid ||
-			i.modid.toString() === mod.urlalias ||
-			mod.modidstrs.includes(i.modid.toString()),
+		(i) => i.modid === mod.modid || mod.modidstrs.includes(i.modid.toString()),
 	);
 	const updateMod =
 		modUpdates?.updates[mod.modidstrs[0]] ??
