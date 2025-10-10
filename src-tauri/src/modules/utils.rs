@@ -35,13 +35,7 @@ pub fn installations_folder(app: AppHandle) -> PathBuf {
 
 pub fn move_folder(source_path: PathBuf, destination_path: PathBuf) -> Result<bool, UiError> {
     if !source_path.exists() || !source_path.is_dir() {
-        return Err(UiError {
-            name: "not_found".into(),
-            message: format!(
-                "Source directory not found: {}",
-                source_path.to_string_lossy()
-            ),
-        });
+        return Ok(false);
     }
 
     let mut options = CopyOptions::new();

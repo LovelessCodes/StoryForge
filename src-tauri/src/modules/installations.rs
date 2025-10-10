@@ -334,7 +334,7 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
                 message: format!("Failed to create directory: {e}"),
             })?;
         }
-        
+
         // Now that we've ensured the path exists, open it
         if path.is_file() {
             // If it's a file, use /select to highlight it
@@ -363,7 +363,7 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
                 message: format!("Failed to create directory: {e}"),
             })?;
         }
-        
+
         if path.is_dir() {
             Command::new("open")
                 .arg(&path.as_os_str())
@@ -388,7 +388,7 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
                 message: format!("Failed to create directory: {e}"),
             })?;
         }
-        
+
         // Try xdg-open for general desktops.
         // For files, most DEs open the default app; to "reveal", try the folder.
         let target = if path.is_file() {
@@ -490,25 +490,18 @@ pub fn remove_installation(app: AppHandle, id: i64) -> Result<String, UiError> {
 pub async fn move_installations_folder(
     source: String,
     destination: String,
-) -> Result<String, UiError> {
+) -> Result<bool, UiError> {
     move_folder(
         std::path::PathBuf::from(source).join("installations"),
         std::path::PathBuf::from(destination).join("installations"),
-    )?;
-    Ok("moved".into())
+    )
 }
 
 #[command]
 pub async fn remove_all_installations(source: String) -> Result<String, UiError> {
     let source_path = std::path::PathBuf::from(source).join("installations");
     if !source_path.exists() || !source_path.is_dir() {
-        return Err(UiError {
-            name: "not_found".into(),
-            message: format!(
-                "Source installations directory not found: {}",
-                source_path.to_string_lossy()
-            ),
-        });
+        return Ok("not_exists".into());
     }
     std::fs::remove_dir_all(&source_path).map_err(|e| UiError {
         name: "remove_failed".into(),
