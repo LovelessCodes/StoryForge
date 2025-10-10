@@ -91,9 +91,10 @@ export function AddInstallationDialog({ open }: { open: boolean }) {
 			id: Date.now(),
 			index: installations.length,
 			name: "",
-			path: appFolder
-				? `${appFolder}${pathDelimiter}installations${pathDelimiter}new`
-				: "",
+			path:
+				installationsParent || appFolder
+					? `${installationsParent ?? appFolder}${pathDelimiter}installations${pathDelimiter}new`
+					: "",
 			startParams: "",
 			version:
 				gameVersions
