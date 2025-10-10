@@ -259,12 +259,15 @@ function RouteComponent() {
 		if (pendingField === "installationsParent") {
 			setConfigs({
 				installationsParent: config,
-				versionsParent: { deleteCurrentData: false, moveCurrentData: false },
+				versionsParent: configs?.versionsParent ?? {
+					deleteCurrentData: false,
+					moveCurrentData: false,
+				},
 			});
 			form.setFieldValue("installationsParent", pendingPath ?? "");
 		} else if (pendingField === "versionsParent") {
 			setConfigs({
-				installationsParent: {
+				installationsParent: configs?.installationsParent ?? {
 					deleteCurrentData: false,
 					moveCurrentData: false,
 				},

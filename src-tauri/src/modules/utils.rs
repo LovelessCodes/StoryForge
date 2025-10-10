@@ -1,4 +1,4 @@
-use fs_extra::dir::{move_dir, CopyOptions};
+use fs_extra::dir::{copy, CopyOptions};
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_zustand::ManagerExt;
@@ -34,19 +34,34 @@ pub fn installations_folder(app: AppHandle) -> PathBuf {
 }
 
 pub fn move_folder(source_path: PathBuf, destination_path: PathBuf) -> Result<bool, UiError> {
+    if !destination_path.exists() {
+        std::fs::create_dir_all(&destination_path).map_err(|e| UiError {
+            name: "create_failed".into(),
+            message: format!("Failed to create destination directory: {e}"),
+        })?;
+    }
+
     if !source_path.exists() || !source_path.is_dir() {
         return Ok(false);
     }
 
-    let mut options = CopyOptions::new();
-    options.overwrite = true;
-    options.copy_inside = true;
-    options.skip_exist = true;
-
-    move_dir(&source_path, &destination_path, &options).map_err(|e| UiError {
-        name: "move_failed".into(),
-        message: format!("Failed to move directory: {e}"),
-    })?;
+    match std::fs::rename(&source_path, &destination_path) {
+        Ok(_) => return Ok(true),
+        Err(_) => {
+            let mut options = CopyOptions::new();
+            options.overwrite = true;
+            options.copy_inside = false;
+            let dst_parent = destination_path.parent().unwrap();
+            copy(&source_path, &dst_parent, &options).map_err(|e| UiError {
+                name: "move_failed".into(),
+                message: format!("Failed to move directory: {e}"),
+            })?;
+            std::fs::remove_dir_all(&source_path).map_err(|e| UiError {
+                name: "remove_failed".into(),
+                message: format!("Failed to remove source directory after move: {e}"),
+            })?;
+        }
+    }
 
     Ok(true)
 }
