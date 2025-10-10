@@ -85,7 +85,7 @@ function RouteComponent() {
 			}
 		},
 		onMutate: (v) => {
-			if (settingsStore.installationsParent !== v.path) {
+			if (v.config?.moveCurrentData) {
 				toast.loading("Moving installations folder...", {
 					id: "move-installations-folder",
 				});
@@ -111,7 +111,7 @@ function RouteComponent() {
 					id: "move-installations-folder",
 				});
 				removeAll();
-			} else if (settingsStore.installationsParent !== v.path) {
+			} else {
 				toast.success("Installations folder set", {
 					id: "move-installations-folder",
 				});
@@ -169,7 +169,7 @@ function RouteComponent() {
 				toast.success("Versions data deleted", {
 					id: "move-versions-folder",
 				});
-			} else if (settingsStore.versionsParent !== v.path) {
+			} else {
 				toast.success("Versions folder set", {
 					id: "move-versions-folder",
 				});
