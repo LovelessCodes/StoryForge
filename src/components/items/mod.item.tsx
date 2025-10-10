@@ -150,7 +150,7 @@ export function ModItem({
 		>
 			<div className="flex flex-row gap-2">
 				<a
-					href={`https://mods.vintagestory.at/${mod.urlalias ?? "#"}`}
+					href={`https://mods.vintagestory.at/${mod.urlalias ?? `show/mod/${mod.assetid}`}`}
 					rel="noreferrer"
 					target="_blank"
 				>
@@ -167,7 +167,7 @@ export function ModItem({
 					<div className="flex gap-1 items-center">
 						<a
 							className="hover:underline font-semibold"
-							href={`https://mods.vintagestory.at/${mod.urlalias ?? "#"}`}
+							href={`https://mods.vintagestory.at/${mod.urlalias ?? `show/mod/${mod.assetid}`}`}
 							rel="noreferrer"
 							target="_blank"
 						>
