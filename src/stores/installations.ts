@@ -1,6 +1,7 @@
 import { createTauriStore } from "@tauri-store/zustand";
 import { toast } from "sonner";
 import { create } from "zustand/react";
+import { makeStringFolderSafe, pathDelimiter } from "@/lib/utils";
 
 export type Installation = {
 	id: number;
@@ -33,6 +34,7 @@ type InstallationsStore = {
 	) => void;
 	moveInstallation: (id: number, newIndex: number) => void;
 	toggleFavorite: (id: number) => void;
+	updateParent: (newPath: string) => void;
 };
 
 export const useInstallationsStore = create<InstallationsStore>((set) => ({
@@ -139,6 +141,13 @@ export const useInstallationsStore = create<InstallationsStore>((set) => ({
 				inst.id === id ? { ...inst, lastTimePlayed: Date.now() } : inst,
 			),
 		})),
+	updateParent: (newPath: string) =>
+		set((state) => ({
+			installations: state.installations.map((inst) => ({
+				...inst,
+				path: `${newPath}${newPath.endsWith(pathDelimiter) ? "" : pathDelimiter}installations${pathDelimiter}${makeStringFolderSafe(inst.name)}`,
+			})),
+		})),
 }));
 
 export const useInstallations = () => {
@@ -152,6 +161,7 @@ export const useInstallations = () => {
 		setSelectedInstallation,
 		toggleFavorite,
 		updateLastPlayed,
+		updateParent,
 	} = useInstallationsStore();
 
 	const outInstallations = [...installations]
@@ -168,6 +178,7 @@ export const useInstallations = () => {
 		toggleFavorite,
 		updateInstallation,
 		updateLastPlayed,
+		updateParent,
 	};
 };
 
