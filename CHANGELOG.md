@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Resolve an issue where modPaths don't get updated accordingly when clientsettings.json gets imported.
+- Resolves an issue where installation absolute paths don't get updated accordingly.
 
 ### Changed
 
