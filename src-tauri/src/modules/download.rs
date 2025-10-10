@@ -39,7 +39,7 @@ pub async fn download_and_maybe_extract<R: Runtime>(
     zipsubfolderprefix: Option<String>,
 ) -> Result<String, UiError> {
     let destpath = PathBuf::from(&destpath);
-    
+
     // Check if already installed (has vintagestory executable)
     if extract && destpath.exists() {
         let mut already_installed = false;
@@ -56,16 +56,17 @@ pub async fn download_and_maybe_extract<R: Runtime>(
                 }
             }
         }
-        
+
         if already_installed {
             return Ok("already_downloaded".into());
         } else {
             // Directory exists but no exe found - clean up partial installation
-            fs::remove_dir_all(&destpath)
-                .map_err(|e| UiError::from(format!("Failed to clean up incomplete installation: {e}")))?;
+            fs::remove_dir_all(&destpath).map_err(|e| {
+                UiError::from(format!("Failed to clean up incomplete installation: {e}"))
+            })?;
         }
     }
-    
+
     // 1) Download
     let resp = get(&url).await.map_err(|e| format!("request error: {e}"))?;
 
