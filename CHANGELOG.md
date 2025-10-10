@@ -13,10 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Fixed
-- Resolve an issue where modPaths don't get updated accordingly when clientsettings.json gets imported.
-- Resolves an issue where installation absolute paths don't get updated accordingly.
 
 ### Changed
+
+## [0.4.1] - 2025-10-10
+### Fixed
+- Resolve an issue where modPaths don't get updated accordingly when clientsettings.json gets imported.
+- Resolves an issue where installation absolute paths don't get updated accordingly.
 
 ## [0.4.0] - 2025-10-09
 ### Added
@@ -190,6 +193,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stabilized login dialog and authentication flow.
 
 <!-- Version links for diff and release pages -->
+[0.4.1]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.4.1
 [0.4.0]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.4.0
 [0.3.6]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.3.6
 [0.3.5]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.3.5
