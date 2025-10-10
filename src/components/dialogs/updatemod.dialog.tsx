@@ -20,6 +20,7 @@ import {
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import type { ProgressPayload } from "@/lib/types";
+import { pathDelimiter } from "@/lib/utils";
 import type { OutputMod } from "@/routes/install-mods/$id";
 import { useDialogStore } from "@/stores/dialogs";
 import type { Installation } from "@/stores/installations";
@@ -114,7 +115,7 @@ export function UpdateModDialog({
 			},
 			onSuccess: () => {
 				addModToInstallation({
-					path: `${installation.path}/Mods`,
+					path: `${installation.path}${pathDelimiter}Mods`,
 					url: selectedVersion?.mainfile || "",
 				});
 			},
