@@ -16,7 +16,7 @@ pub fn versions_folder(app: AppHandle) -> PathBuf {
     } else {
         app.path().app_data_dir().unwrap()
     };
-    return data_dir;
+    data_dir
 }
 
 pub fn installations_folder(app: AppHandle) -> PathBuf {
@@ -30,7 +30,7 @@ pub fn installations_folder(app: AppHandle) -> PathBuf {
     } else {
         app.path().app_data_dir().unwrap()
     };
-    return data_dir;
+    data_dir
 }
 
 pub fn move_folder(source_path: PathBuf, destination_path: PathBuf) -> Result<bool, UiError> {
@@ -52,7 +52,7 @@ pub fn move_folder(source_path: PathBuf, destination_path: PathBuf) -> Result<bo
             options.overwrite = true;
             options.copy_inside = false;
             let dst_parent = destination_path.parent().unwrap();
-            copy(&source_path, &dst_parent, &options).map_err(|e| UiError {
+            copy(&source_path, dst_parent, &options).map_err(|e| UiError {
                 name: "move_failed".into(),
                 message: format!("Failed to move directory: {e}"),
             })?;

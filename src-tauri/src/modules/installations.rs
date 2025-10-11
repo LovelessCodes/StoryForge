@@ -173,7 +173,7 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
                 message: format!("Failed to write clientsettings.json: {e}"),
             })?;
         } else {
-            std::fs::create_dir_all(&settings_path.parent().unwrap()).map_err(|e| UiError {
+            std::fs::create_dir_all(settings_path.parent().unwrap()).map_err(|e| UiError {
                 name: "create_dir_failed".into(),
                 message: format!("Failed to create directory for clientsettings.json: {e}"),
             })?;
@@ -197,9 +197,9 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
     let mut child = Command::new(&combined_path)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .args(&["--dataPath", &pb.as_path().to_string_lossy()])
+        .args(["--dataPath", &pb.as_path().to_string_lossy()])
         .args(
-            &options
+            options
                 .save
                 .as_ref()
                 // Extract the file stem from the save path to use as the output file name. This prevents creating files with double extensions, e.g., "output.mp4.mp4".
@@ -213,20 +213,20 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
                 .collect::<Vec<_>>(),
         )
         .args(
-            &options
+            options
                 .server
                 .as_ref()
                 .map(|s| vec!["--connect", s.as_str()])
                 .unwrap_or_default(),
         )
         .args(
-            &options
+            options
                 .password
                 .as_ref()
                 .map(|p| vec!["--pw", p.as_str()])
                 .unwrap_or_default(),
         )
-        .args(&start_params.split_whitespace().collect::<Vec<&str>>())
+        .args(start_params.split_whitespace().collect::<Vec<&str>>())
         .spawn()
         .map_err(|e| UiError {
             name: "launch_failed".into(),
@@ -385,7 +385,7 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
 
         if path.is_dir() {
             Command::new("open")
-                .arg(&path.as_os_str())
+                .arg(path.as_os_str())
                 .status()
                 .map_err(|e| UiError::from(format!("Failed to open Finder: {e}")))?;
         } else if path.is_file() {

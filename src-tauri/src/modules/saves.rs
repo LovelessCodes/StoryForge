@@ -316,7 +316,7 @@ pub fn remove_world(world_path: String) -> Result<(), UiError> {
     }
 
     // Update the "WorldName" field in the protobuf data inside the .vcdbs file
-    let conn = rusqlite::Connection::open(&world_path)
+    let conn = rusqlite::Connection::open(world_path)
         .map_err(|e| UiError::from(format!("DB open error: {e}")))?;
     let mut stmt = conn
         .prepare("SELECT data FROM gamedata LIMIT 1")
