@@ -9,13 +9,18 @@ edition = "2021"
 
 [profile.dev]
 incremental = true
+debug = 2
+opt-level = 1
+lto = false
+codegen-units = 16
 
 [profile.release]
 codegen-units = 1
-lto = true
-opt-level = "s"
+lto = "fat"
+opt-level = "z"
 panic = "abort"
 strip = true
+debug = false
 
 [lib]
 # The `_lib` suffix may seem redundant but it is necessary
@@ -29,31 +34,34 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
 tauri-plugin-os = "2"
 tauri-plugin-process = "2"
+tauri-plugin-opener = "2"
 tauri-plugin-zustand = "1"
 tauri-plugin-window-state = "2"
 log = "0.4"
-reqwest = { version = "0.12", features = ["json", "stream", "rustls-tls"] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
+tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "macros"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 quick-xml = { version = "0.38", default-features = false, features = ["serialize"] }
-which = "5"
-zip = "5"
+which = "8"
+zip = { version = "6", default-features = false, features = ["deflate"] }
 futures-util = "0.3"
 zip-extensions = "0.8"
 walkdir = "2"
 dunce = "1"
-tauri-plugin-opener = "2"
-rusqlite = { version = "0.37.0", features = ["bundled"] }
 prost = "0.14.1"
 json5 = "0.4.1"
-tauri-plugin-dialog = "2"
 fs_extra = "1.3.0"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55"
+rusqlite = { version = "0.37", features = ["bundled"] }
+
+[target.'cfg(unix)'.dependencies]
+rusqlite = "0.37"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2"
