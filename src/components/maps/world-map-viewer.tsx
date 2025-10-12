@@ -644,7 +644,7 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 			</div>
 
 			{/* Controls hint */}
-			<div className="absolute bottom-4 right-4 bg-background/90 backdrop-blur-sm border rounded-md px-3 py-2 text-xs text-muted-foreground">
+			<div className="absolute bottom-1 right-1 bg-background/90 backdrop-blur-sm border rounded-md px-3 py-2 text-xs text-muted-foreground">
 				<p>🖱️ Drag to pan • 🔍 Scroll to zoom</p>
 			</div>
 		</Card>
