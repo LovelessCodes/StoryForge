@@ -3,7 +3,7 @@ use tauri::{command, AppHandle};
 use tauri_plugin_zustand::ManagerExt;
 
 use super::errors::UiError;
-use super::utils::installations_folder;
+use super::utils::{installations_folder, installations_subdir};
 
 fn extract_servers_from_directory(path: std::path::PathBuf) -> Value {
     let mut servers = Value::Array(vec![]);
@@ -25,7 +25,8 @@ fn extract_servers_from_directory(path: std::path::PathBuf) -> Value {
 
 #[command]
 pub async fn fetch_all_servers(app: AppHandle) -> Result<Value, UiError> {
-    let installation_paths = installations_folder(app.clone()).join("installations");
+    let subdir = installations_subdir(app.clone());
+    let installation_paths = installations_folder(app.clone()).join(&subdir);
     let mut all_servers = Vec::new();
     for entry in std::fs::read_dir(installation_paths).unwrap() {
         let entry = entry.unwrap();

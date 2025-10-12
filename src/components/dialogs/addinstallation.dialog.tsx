@@ -32,9 +32,9 @@ import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { gameVersionsQuery } from "@/lib/queries";
 import {
+	buildInstallationPath,
 	compareSemverDesc,
 	makeStringFolderSafe,
-	pathDelimiter,
 } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallationsStore } from "@/stores/installations";
@@ -58,7 +58,7 @@ export const installationSchema = z.object({
 export function AddInstallationDialog({ open }: { open: boolean }) {
 	const id = useId();
 	const { data: gameVersions } = useQuery(gameVersionsQuery);
-	const { installationsParent } = useSettingsStore();
+	const { installationsParent, installationsSubdir } = useSettingsStore();
 	const { appFolder } = useAppFolder();
 	const { closeDialog } = useDialogStore();
 	const { addInstallation, installations } = useInstallationsStore();
@@ -91,10 +91,13 @@ export function AddInstallationDialog({ open }: { open: boolean }) {
 			id: Date.now(),
 			index: installations.length,
 			name: "",
-			path:
-				installationsParent || appFolder
-					? `${installationsParent ?? appFolder}${pathDelimiter}installations${pathDelimiter}new`
-					: "",
+			path: appFolder
+				? buildInstallationPath(
+						installationsParent ?? appFolder,
+						"new",
+						installationsSubdir,
+					)
+				: "",
 			startParams: "",
 			version:
 				gameVersions
@@ -193,7 +196,11 @@ export function AddInstallationDialog({ open }: { open: boolean }) {
 												const safeName = makeStringFolderSafe(e.target.value);
 												form.setFieldValue(
 													"path",
-													`${installationsParent ?? appFolder}${pathDelimiter}installations${pathDelimiter}${safeName}`,
+													buildInstallationPath(
+														installationsParent ?? appFolder,
+														safeName,
+														installationsSubdir,
+													),
 												);
 											} else {
 												form.resetField("path");

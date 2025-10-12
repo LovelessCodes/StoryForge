@@ -10,22 +10,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-### Added
-
-### Fixed
-- Resolve an issue where mods were linking to the Mod site homepage.
-
-- Resolve an issue where some mods were shown as installed, even when they weren't installed.
 
 ### Changed
 
+- Cleaned up code handling paths to make the application more robust.
+
+## [0.4.2] - 2025-10-10
+
+### Fixed
+
+- Resolve an issue where mods were linking to the Mod site homepage.
+- Resolve an issue where some mods were shown as installed, even when they weren't installed.
+
 ## [0.4.1] - 2025-10-10
+
 ### Fixed
 
 - Resolve an issue where modPaths don't get updated accordingly when clientsettings.json gets imported.
 - Resolves an issue where installation absolute paths don't get updated accordingly.
 
 ## [0.4.0] - 2025-10-09
+
 ### Added
 
 - Changelog in KeepAChangelog format.
@@ -197,6 +202,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stabilized login dialog and authentication flow.
 
 <!-- Version links for diff and release pages -->
+[0.4.2]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.4.2
 [0.4.1]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.4.1
 [0.4.0]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.4.0
 [0.3.6]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.3.6
