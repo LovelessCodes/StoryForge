@@ -230,8 +230,11 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 					// Try to get the icon from cache
 					const icon = marker.icon ? iconCache.get(marker.icon) : null;
 					
+					// Track what size was actually drawn for label positioning
+					let drawnSize = iconSize;
+					
 					if (icon && icon.complete && icon.naturalWidth > 0) {
-						// Draw the actual icon
+						// Draw the actual icon in red using an offscreen canvas
 						ctx.save();
 						
 						// Add a subtle glow/shadow for visibility
@@ -240,19 +243,35 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 						ctx.shadowOffsetX = 1;
 						ctx.shadowOffsetY = 1;
 						
-						// Draw icon centered at marker position
-						ctx.drawImage(
-							icon,
-							screenX - iconSize / 2,
-							screenY - iconSize / 2,
-							iconSize,
-							iconSize
-						);
+						// Create temporary canvas for color transformation
+						const tempCanvas = document.createElement('canvas');
+						tempCanvas.width = iconSize;
+						tempCanvas.height = iconSize;
+						const tempCtx = tempCanvas.getContext('2d');
+						
+						if (tempCtx) {
+							// Draw icon on temp canvas
+							tempCtx.drawImage(icon, 0, 0, iconSize, iconSize);
+							
+							// Apply red color only to non-transparent pixels
+							tempCtx.globalCompositeOperation = 'source-in';
+							tempCtx.fillStyle = '#ff0000';
+							tempCtx.fillRect(0, 0, iconSize, iconSize);
+							
+							// Draw the colored icon to main canvas
+							ctx.drawImage(
+								tempCanvas,
+								screenX - iconSize / 2,
+								screenY - iconSize / 2
+							);
+						}
 						
 						ctx.restore();
 					} else {
 						// Fallback to colored circle if icon not loaded
 						const markerSize = Math.max(4, Math.min(10, 5 * viewport.zoom));
+						drawnSize = markerSize;
+						
 						ctx.fillStyle = "#ff0000"; // Default red
 						ctx.strokeStyle = "#ffffff";
 						ctx.lineWidth = 2;
@@ -271,7 +290,7 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 						// Background for label
 						ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
 						ctx.fillRect(
-							screenX + iconSize / 2 + 4,
+							screenX + drawnSize / 2 + 4,
 							screenY - fontSize / 2 - 2,
 							textWidth + 8,
 							fontSize + 4
@@ -281,7 +300,7 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 						ctx.fillStyle = "#ffffff";
 						ctx.fillText(
 							marker.label,
-							screenX + iconSize / 2 + 8,
+							screenX + drawnSize / 2 + 8,
 							screenY + fontSize / 2 - 2
 						);
 					}
@@ -337,10 +356,32 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 
 						// Show ore info if zoomed in
 						if (viewport.zoom > 0.5 && marker.results.length > 0) {
-							const oreNames = marker.results.map(r => r.ore_code.split('-').pop()).join(", ");
+							// Sort results by quality (highest first)
+							const sortedResults = [...marker.results].sort((a, b) => {
+								const qualityA = a.readings?.quality ?? 0;
+								const qualityB = b.readings?.quality ?? 0;
+								return qualityB - qualityA;
+							});
+							
+							// Show all ores when zoomed in to 3x+, otherwise show top 3
+							const showAll = viewport.zoom >= 3.0;
+							const displayCount = showAll ? sortedResults.length : 3;
+							
+							// Format ores with quality values
+							const oresWithQuality = sortedResults.slice(0, displayCount).map(r => {
+								const oreName = r.ore_code.split('-').pop();
+								const quality = r.readings?.quality ?? 0;
+								return `${oreName}(${quality.toFixed(2)})`;
+							});
+							
+							const remainingCount = sortedResults.length - displayCount;
+							const oreText = remainingCount > 0 
+								? `${oresWithQuality.join(", ")} +${remainingCount}`
+								: oresWithQuality.join(", ");
+							
 							const fontSize = Math.max(10, Math.min(12, 11 * viewport.zoom));
 							ctx.font = `${fontSize}px sans-serif`;
-							const textWidth = ctx.measureText(oreNames).width;
+							const textWidth = ctx.measureText(oreText).width;
 							
 							ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
 							ctx.fillRect(
@@ -351,7 +392,7 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 							);
 							ctx.fillStyle = "#ffaa00";
 							ctx.fillText(
-								oreNames,
+								oreText,
 								screenX + markerSize + 8,
 								screenY + fontSize / 2 - 2
 							);
