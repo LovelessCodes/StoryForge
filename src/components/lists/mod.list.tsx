@@ -101,7 +101,6 @@ export function ModList({
 				: installedMods.some(
 						(installedMod) =>
 							installedMod.modid === mod.modid ||
-							installedMod.modid.toString() === mod.urlalias ||
 							mod.modidstrs.includes(installedMod.modid.toString()),
 					),
 		)

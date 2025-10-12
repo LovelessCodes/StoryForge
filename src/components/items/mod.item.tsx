@@ -25,7 +25,7 @@ import {
 	modUpdatesQueryKey,
 } from "@/hooks/use-mod-updates";
 import type { ModInfo, ProgressPayload } from "@/lib/types";
-import { cn, compareSemverAsc } from "@/lib/utils";
+import { cn, compareSemverAsc, pathDelimiter } from "@/lib/utils";
 import type { OutputMod } from "@/routes/install-mods/$id";
 import { useDialogStore } from "@/stores/dialogs";
 import type { Installation } from "@/stores/installations";
@@ -46,14 +46,12 @@ export function ModItem({
 	const listenRef = useRef<UnlistenFn>(null);
 	const emitevent = `mod-download-${mod.modid}-${installation?.id}`;
 	const installedMod = installedMods.find(
-		(i) =>
-			i.modid === mod.modid ||
-			i.modid.toString() === mod.urlalias ||
-			mod.modidstrs.includes(i.modid.toString()),
+		(i) => i.modid === mod.modid || mod.modidstrs.includes(i.modid.toString()),
 	);
 	const updateMod =
 		modUpdates?.updates[mod.modidstrs[0]] ??
 		modUpdates?.updates[mod.modid.toString()] ??
+		modUpdates?.updates[mod.assetid.toString()] ??
 		modUpdates?.updates[mod.urlalias ?? ""];
 	const { data: modInfo } = useQuery({
 		enabled: !!updateMod,
@@ -84,7 +82,7 @@ export function ModItem({
 			},
 			onSuccess: () => {
 				addModToInstallation({
-					path: `${installation?.path}/Mods`,
+					path: `${installation?.path}${pathDelimiter}Mods`,
 					url: updateMod?.mainfile || "",
 				});
 			},
@@ -150,7 +148,7 @@ export function ModItem({
 		>
 			<div className="flex flex-row gap-2">
 				<a
-					href={`https://mods.vintagestory.at/${mod.urlalias ?? "#"}`}
+					href={`https://mods.vintagestory.at/${mod.urlalias ?? `show/mod/${mod.assetid}`}`}
 					rel="noreferrer"
 					target="_blank"
 				>
@@ -167,7 +165,7 @@ export function ModItem({
 					<div className="flex gap-1 items-center">
 						<a
 							className="hover:underline font-semibold"
-							href={`https://mods.vintagestory.at/${mod.urlalias ?? "#"}`}
+							href={`https://mods.vintagestory.at/${mod.urlalias ?? `show/mod/${mod.assetid}`}`}
 							rel="noreferrer"
 							target="_blank"
 						>
@@ -248,7 +246,7 @@ export function ModItem({
 								disabled={isDownloading}
 								onClick={() =>
 									downloadLatestModVersion({
-										path: `${installation.path}/Mods`,
+										path: `${installation.path}${pathDelimiter}Mods`,
 									})
 								}
 								size="icon"

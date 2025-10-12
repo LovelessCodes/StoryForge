@@ -38,6 +38,33 @@ pub async fn download_and_maybe_extract<R: Runtime>(
     // Use "" or None to extract all
     zipsubfolderprefix: Option<String>,
 ) -> Result<String, UiError> {
+    let destpath = PathBuf::from(&destpath);
+
+    // Check if already installed (has vintagestory executable)
+    if extract && destpath.exists() {
+        let mut already_installed = false;
+        for entry in walkdir::WalkDir::new(&destpath).into_iter().flatten() {
+            if entry.file_type().is_file() {
+                let fname = entry.file_name().to_string_lossy();
+                if fname.eq_ignore_ascii_case("vintagestory")
+                    || fname.eq_ignore_ascii_case("vintagestory.exe")
+                {
+                    already_installed = true;
+                    break;
+                }
+            }
+        }
+
+        if already_installed {
+            return Ok("already_downloaded".into());
+        } else {
+            // Directory exists but no exe found - clean up partial installation
+            fs::remove_dir_all(&destpath).map_err(|e| {
+                UiError::from(format!("Failed to clean up incomplete installation: {e}"))
+            })?;
+        }
+    }
+
     // 1) Download
     let resp = get(&url).await.map_err(|e| format!("request error: {e}"))?;
 
@@ -59,7 +86,7 @@ pub async fn download_and_maybe_extract<R: Runtime>(
         })
         .unwrap_or_else(|| {
             url.split('/')
-                .last()
+                .next_back()
                 .unwrap_or(if cfg!(target_os = "windows") {
                     "downloaded_file.zip"
                 } else {
@@ -74,7 +101,6 @@ pub async fn download_and_maybe_extract<R: Runtime>(
         return Err(UiError::from(format!("HTTP error: {}", resp.status())));
     }
 
-    let destpath = PathBuf::from(&destpath);
     if !destpath.exists() {
         fs::create_dir_all(&destpath)
             .map_err(|e| UiError::from(format!("create dir error: {e}")))?;
@@ -82,7 +108,7 @@ pub async fn download_and_maybe_extract<R: Runtime>(
 
     let total = resp.content_length();
     let mut file =
-        File::create(&filepath).map_err(|e| UiError::from(format!("file create error: {e}")))?;
+        File::create(filepath).map_err(|e| UiError::from(format!("file create error: {e}")))?;
 
     let mut stream = resp.bytes_stream();
     let mut downloaded: u64 = 0;
@@ -124,7 +150,7 @@ pub async fn download_and_maybe_extract<R: Runtime>(
             fs::create_dir_all(&extract_dir)
                 .map_err(|e| format!("create extract dir error: {e}"))?;
 
-            let mut zip_file = File::open(&filepath).map_err(|e| format!("open zip error: {e}"))?;
+            let mut zip_file = File::open(filepath).map_err(|e| format!("open zip error: {e}"))?;
             zip_file
                 .rewind()
                 .map_err(|e| UiError::from(format!("rewind error: {e}")))?;
@@ -154,7 +180,7 @@ pub async fn download_and_maybe_extract<R: Runtime>(
             let mut processed: u64 = 0;
             // Reopen archive to reset cursor (simplest)
             let mut zip_file =
-                File::open(&filepath).map_err(|e| UiError::from(format!("open zip error: {e}")))?;
+                File::open(filepath).map_err(|e| UiError::from(format!("open zip error: {e}")))?;
             let mut archive = zip::ZipArchive::new(&mut zip_file)
                 .map_err(|e| UiError::from(format!("zip open error: {e}")))?;
 
@@ -215,7 +241,7 @@ pub async fn download_and_maybe_extract<R: Runtime>(
                 .map_err(|e| UiError::from(format!("emit error: {e}")))?;
             }
             // Remove the downloaded archive after extraction
-            fs::remove_file(&filepath)
+            fs::remove_file(filepath)
                 .map_err(|e| UiError::from(format!("remove file error: {e}")))?;
             // Traverse the destination path and try to find Vintagestory executable
             let mut found_exe = false;
@@ -277,10 +303,10 @@ pub async fn download_and_maybe_extract<R: Runtime>(
             .status()
             .map_err(|e| UiError::from(format!("tar error: {e}")))?;
             if !status.success() {
-                return Err(UiError::from(format!("tar failed: {}", status.to_string())));
+                return Err(UiError::from(format!("tar failed: {}", status)));
             }
             // Remove the downloaded archive after extraction
-            fs::remove_file(&filepath)
+            fs::remove_file(filepath)
                 .map_err(|e| UiError::from(format!("remove file error: {e}")))?;
 
             // Traverse the destination path and try to find Vintagestory executable

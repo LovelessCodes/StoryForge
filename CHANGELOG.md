@@ -10,7 +10,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
 
+### Fixed
+- Resolve an issue where mods were linking to the Mod site homepage.
+
+- Resolve an issue where some mods were shown as installed, even when they weren't installed.
+
+### Changed
+
+## [0.4.1] - 2025-10-10
+### Fixed
+
+- Resolve an issue where modPaths don't get updated accordingly when clientsettings.json gets imported.
+- Resolves an issue where installation absolute paths don't get updated accordingly.
+
+## [0.4.0] - 2025-10-09
 ### Added
 
 - Changelog in KeepAChangelog format.
@@ -21,6 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Contributing document](./CONTRIBUTING.md) to help new contributors.
 - "Any" side filtering on mods page.
 - Labels added to selects/dropdowns on mods page.
+- Ability to change theme.
+- Ability to enable stream mode to hide server ip addresses.
+- Ability to change where versions and installation folders are stored.
 
 ### Fixed
 
@@ -28,6 +46,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resolve db-wal and db-shm issue on world rename.
 - Resolved Tar issue on some Linux distros
 - Fixed an issue where the game would not load a world if done through the launcher on windows.
+- Fixed issue on windows with _some_ paths on installations and versions.
+- Fixed an issue where the documents folder would be opened instead of the installation folder on windows.
+- Fixed an issue where, after deleting a version, reinstalling the same version would throw an error.
 
 ### Changed
 
@@ -176,6 +197,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stabilized login dialog and authentication flow.
 
 <!-- Version links for diff and release pages -->
+[0.4.1]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.4.1
+[0.4.0]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.4.0
 [0.3.6]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.3.6
 [0.3.5]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.3.5
 [0.3.4]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.3.4

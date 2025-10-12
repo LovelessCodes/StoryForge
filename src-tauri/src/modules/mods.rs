@@ -164,7 +164,7 @@ pub async fn fetch_mods(options: FetchModsParams) -> Result<Vec<Mod>, UiError> {
     let mut params = Vec::new();
     if !options.versions.is_empty() {
         for version in options.versions {
-            params.push((format!("gameversions[]"), version.to_string()));
+            params.push(("gameversions[]".to_string(), version.to_string()));
         }
     }
     if !options.search.is_empty() {
@@ -247,7 +247,7 @@ pub async fn add_mod_to_installation(path: String, url: String) -> Result<String
     }
     let filename = url
         .split('=')
-        .last()
+        .next_back()
         .ok_or_else(|| UiError::from("Invalid URL"))?;
     let filepath = pb.join(filename);
     let mut file = File::create(&filepath).map_err(|e| UiError {

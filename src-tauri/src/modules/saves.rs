@@ -1,10 +1,11 @@
 use serde_json::{from_value, Value};
 use std::{ffi::OsStr, path::Path};
-use tauri::{command, AppHandle, Manager};
+use tauri::{command, AppHandle};
 use tauri_plugin_zustand::ManagerExt;
 
 use super::errors::UiError;
 use super::proto::{GameData, MapMarkers, ProspectingLog};
+use super::utils::installations_folder;
 use prost::Message;
 use rusqlite::OpenFlags;
 
@@ -24,7 +25,7 @@ pub fn get_all_saves(
     UiError,
 > {
     // Look through all installation folders and collect save names from the .vcdbs files
-    let installation_dir_path = app.path().app_data_dir().unwrap().join("installations");
+    let installation_dir_path = installations_folder(app.clone()).join("installations");
     let mut saves = Vec::new();
     if installation_dir_path.exists() && installation_dir_path.is_dir() {
         for entry in std::fs::read_dir(installation_dir_path)
@@ -352,7 +353,7 @@ pub fn remove_world(world_path: String) -> Result<(), UiError> {
     }
 
     // Update the "WorldName" field in the protobuf data inside the .vcdbs file
-    let conn = rusqlite::Connection::open(&world_path)
+    let conn = rusqlite::Connection::open(world_path)
         .map_err(|e| UiError::from(format!("DB open error: {e}")))?;
     let mut stmt = conn
         .prepare("SELECT data FROM gamedata LIMIT 1")

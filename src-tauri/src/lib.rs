@@ -5,6 +5,7 @@ use tauri::Manager;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -52,12 +53,16 @@ pub fn run() {
             versions::fetch_versions,
             versions::get_installed_versions,
             versions::remove_installed_version,
+            versions::move_versions_folder,
+            versions::remove_all_versions,
             // Installations
             installations::play_game,
             installations::confirm_vintage_story_exe,
             installations::initialize_game,
             installations::reveal_in_file_explorer,
             installations::remove_installation,
+            installations::move_installations_folder,
+            installations::remove_all_installations,
             // Servers
             servers::fetch_public_servers,
             servers::fetch_all_servers,

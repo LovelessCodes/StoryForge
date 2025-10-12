@@ -8,10 +8,11 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-use tauri::{command, AppHandle, Emitter, Manager};
+use tauri::{command, AppHandle, Emitter};
 use tauri_plugin_zustand::ManagerExt;
 
 use super::errors::UiError;
+use super::utils::{move_folder, versions_folder};
 
 #[command]
 pub async fn initialize_game(path: String) -> Result<String, UiError> {
@@ -65,10 +66,7 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
             name: "not_found".into(),
             message: format!("Installation with id {} not found", options.installation_id),
         })?;
-    let version_path = app
-        .path()
-        .app_data_dir()
-        .unwrap()
+    let version_path = versions_folder(app.clone())
         .join("versions")
         .join(installation["version"].as_str().unwrap());
     if !version_path.exists() || !version_path.is_dir() {
@@ -146,6 +144,25 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
                 } else {
                     obj.insert("stringSettings".into(), settings["stringSettings"].clone());
                 }
+                let mods_path = pb.join("Mods").to_string_lossy().into_owned();
+                if let Some(string_list_settings) = obj
+                    .get_mut("stringListSettings")
+                    .and_then(|v| v.as_object_mut())
+                {
+                    if let Some(mod_paths) = string_list_settings
+                        .get_mut("modPaths")
+                        .and_then(|v| v.as_array_mut())
+                    {
+                        *mod_paths = vec![json!(mods_path), json!("Mods")];
+                    } else {
+                        string_list_settings.insert("modPaths".into(), json!([mods_path, "Mods"]));
+                    }
+                } else {
+                    obj.insert(
+                        "stringListSettings".into(),
+                        json!({ "modPaths": [mods_path, "Mods"] }),
+                    );
+                }
             }
             std::fs::write(
                 &settings_path,
@@ -156,7 +173,7 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
                 message: format!("Failed to write clientsettings.json: {e}"),
             })?;
         } else {
-            std::fs::create_dir_all(&settings_path.parent().unwrap()).map_err(|e| UiError {
+            std::fs::create_dir_all(settings_path.parent().unwrap()).map_err(|e| UiError {
                 name: "create_dir_failed".into(),
                 message: format!("Failed to create directory for clientsettings.json: {e}"),
             })?;
@@ -180,9 +197,9 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
     let mut child = Command::new(&combined_path)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .args(&["--dataPath", &pb.as_path().to_string_lossy()])
+        .args(["--dataPath", &pb.as_path().to_string_lossy()])
         .args(
-            &options
+            options
                 .save
                 .as_ref()
                 // Extract the file stem from the save path to use as the output file name. This prevents creating files with double extensions, e.g., "output.mp4.mp4".
@@ -196,20 +213,20 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
                 .collect::<Vec<_>>(),
         )
         .args(
-            &options
+            options
                 .server
                 .as_ref()
                 .map(|s| vec!["--connect", s.as_str()])
                 .unwrap_or_default(),
         )
         .args(
-            &options
+            options
                 .password
                 .as_ref()
                 .map(|p| vec!["--pw", p.as_str()])
                 .unwrap_or_default(),
         )
-        .args(&start_params.split_whitespace().collect::<Vec<&str>>())
+        .args(start_params.split_whitespace().collect::<Vec<&str>>())
         .spawn()
         .map_err(|e| UiError {
             name: "launch_failed".into(),
@@ -328,31 +345,69 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
     let path = Path::new(&path);
 
     if cfg!(target_os = "windows") {
-        // If it's a file, use /select, to highlight it. If it's a dir, just open it.
+        // Validate path exists, create directory if needed
+        if !path.exists() {
+            // If path doesn't exist, it should be a directory - create it
+            std::fs::create_dir_all(path).map_err(|e| UiError {
+                name: "create_dir_failed".into(),
+                message: format!("Failed to create directory: {e}"),
+            })?;
+        }
+
+        // Now that we've ensured the path exists, open it
         if path.is_file() {
+            // If it's a file, use /select to highlight it
             Command::new("explorer")
                 .args(["/select,", &path.as_os_str().to_string_lossy()])
                 .status()
                 .map_err(|e| UiError::from(format!("Failed to open explorer: {e}")))?;
-        } else {
+        } else if path.is_dir() {
+            // If it's a directory, just open it
             Command::new("explorer")
                 .arg(path.as_os_str().to_string_lossy().into_owned())
                 .status()
                 .map_err(|e| UiError::from(format!("Failed to open explorer: {e}")))?;
+        } else {
+            // This shouldn't happen after we created the directory, but handle it anyway
+            return Err(UiError {
+                name: "invalid_path".into(),
+                message: format!("Path is neither a file nor directory: {}", path.display()),
+            });
         }
     } else if cfg!(target_os = "macos") {
+        // Validate path exists, create directory if needed
+        if !path.exists() {
+            std::fs::create_dir_all(path).map_err(|e| UiError {
+                name: "create_dir_failed".into(),
+                message: format!("Failed to create directory: {e}"),
+            })?;
+        }
+
         if path.is_dir() {
             Command::new("open")
-                .arg(&path.as_os_str())
+                .arg(path.as_os_str())
                 .status()
                 .map_err(|e| UiError::from(format!("Failed to open Finder: {e}")))?;
-        } else {
+        } else if path.is_file() {
             Command::new("open")
                 .args(["-R", &path.as_os_str().to_string_lossy()])
                 .status()
                 .map_err(|e| UiError::from(format!("Failed to open Finder: {e}")))?;
+        } else {
+            return Err(UiError {
+                name: "invalid_path".into(),
+                message: format!("Path is neither a file nor directory: {}", path.display()),
+            });
         }
     } else if cfg!(target_os = "linux") {
+        // Validate path exists, create directory if needed
+        if !path.exists() {
+            std::fs::create_dir_all(path).map_err(|e| UiError {
+                name: "create_dir_failed".into(),
+                message: format!("Failed to create directory: {e}"),
+            })?;
+        }
+
         // Try xdg-open for general desktops.
         // For files, most DEs open the default app; to "reveal", try the folder.
         let target = if path.is_file() {
@@ -448,4 +503,28 @@ pub fn remove_installation(app: AppHandle, id: i64) -> Result<String, UiError> {
             message: format!("Installation with id {} not found", id),
         })
     }
+}
+
+#[command]
+pub async fn move_installations_folder(
+    source: String,
+    destination: String,
+) -> Result<bool, UiError> {
+    move_folder(
+        std::path::PathBuf::from(source).join("installations"),
+        std::path::PathBuf::from(destination).join("installations"),
+    )
+}
+
+#[command]
+pub async fn remove_all_installations(source: String) -> Result<String, UiError> {
+    let source_path = std::path::PathBuf::from(source).join("installations");
+    if !source_path.exists() || !source_path.is_dir() {
+        return Ok("not_exists".into());
+    }
+    std::fs::remove_dir_all(&source_path).map_err(|e| UiError {
+        name: "remove_failed".into(),
+        message: format!("Failed to remove installations directory: {e}"),
+    })?;
+    Ok("removed".into())
 }
