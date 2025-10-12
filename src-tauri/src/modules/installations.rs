@@ -2,7 +2,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{
     fs::File,
-    io::{BufRead, BufReader, Read},
+    io::{BufRead, BufReader, Read, Write},
     path::{Path, PathBuf},
     process::{Command, Stdio},
     thread,
@@ -11,6 +11,7 @@ use std::{
 use tauri::{command, AppHandle, Emitter};
 use tauri_plugin_zustand::ManagerExt;
 
+use super::auth::refresh_session;
 use super::errors::UiError;
 use super::utils::{move_folder, versions_folder};
 
@@ -48,7 +49,7 @@ pub struct PlayGameParams {
 }
 
 #[command]
-pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<String, UiError> {
+pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<String, UiError> {
     let options = options.ok_or_else(|| UiError {
         name: "invalid_params".into(),
         message: "Invalid play game parameters.".into(),
@@ -112,80 +113,119 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
         _ => None,
     };
 
-    if let Some(account) = account {
-        let settings = json!({
-            "stringSettings": {
-                "playeruid": account["uid"].as_str().unwrap_or(""),
-                "sessionkey": account["sessionkey"].as_str().unwrap_or(""),
-                "sessionsignature": account["sessionsignature"].as_str().unwrap_or(""),
-                "playername": account["playername"].as_str().unwrap_or(""),
-            }
-        });
-        let settings_path = pb.join("clientsettings.json");
-        // It should create the file if it does not exist, but if it exists it should just overwrite the keys
-        if settings_path.exists() {
-            let mut existing_settings = String::new();
-            File::open(&settings_path)
-                .and_then(|mut f| f.read_to_string(&mut existing_settings))
-                .map_err(|e| UiError {
-                    name: "read_failed".into(),
-                    message: format!("Failed to read existing clientsettings.json: {e}"),
-                })?;
-            let mut existing_json: Value =
-                serde_json::from_str(&existing_settings).unwrap_or(json!({}));
-            if let Some(obj) = existing_json.as_object_mut() {
-                if let Some(string_settings) = obj
-                    .get_mut("stringSettings")
-                    .and_then(|v| v.as_object_mut())
-                {
-                    for (k, v) in settings["stringSettings"].as_object().unwrap() {
-                        string_settings.insert(k.clone(), v.clone());
-                    }
-                } else {
-                    obj.insert("stringSettings".into(), settings["stringSettings"].clone());
-                }
-                let mods_path = pb.join("Mods").to_string_lossy().into_owned();
-                if let Some(string_list_settings) = obj
-                    .get_mut("stringListSettings")
-                    .and_then(|v| v.as_object_mut())
-                {
-                    if let Some(mod_paths) = string_list_settings
-                        .get_mut("modPaths")
-                        .and_then(|v| v.as_array_mut())
-                    {
-                        *mod_paths = vec![json!(mods_path), json!("Mods")];
-                    } else {
-                        string_list_settings.insert("modPaths".into(), json!([mods_path, "Mods"]));
-                    }
-                } else {
-                    obj.insert(
-                        "stringListSettings".into(),
-                        json!({ "modPaths": [mods_path, "Mods"] }),
-                    );
-                }
-            }
-            std::fs::write(
-                &settings_path,
-                serde_json::to_string_pretty(&existing_json).unwrap(),
-            )
-            .map_err(|e| UiError {
-                name: "write_failed".into(),
-                message: format!("Failed to write clientsettings.json: {e}"),
-            })?;
-        } else {
-            std::fs::create_dir_all(settings_path.parent().unwrap()).map_err(|e| UiError {
-                name: "create_dir_failed".into(),
-                message: format!("Failed to create directory for clientsettings.json: {e}"),
-            })?;
-            std::fs::write(
-                &settings_path,
-                serde_json::to_string_pretty(&settings).unwrap(),
-            )
-            .map_err(|e| UiError {
-                name: "write_failed".into(),
-                message: format!("Failed to write clientsettings.json: {e}"),
-            })?;
+    // Validate that a user is selected
+    let account = account.ok_or_else(|| UiError {
+        name: "no_user_selected".into(),
+        message: "No user account selected. Please select a user before launching the game.".into(),
+    })?;
+
+    // Validate required account fields
+    let email = account["email"].as_str().ok_or_else(|| UiError {
+        name: "invalid_account".into(),
+        message: "User account is missing email.".into(),
+    })?;
+
+    let uid = account["uid"].as_str().ok_or_else(|| UiError {
+        name: "invalid_account".into(),
+        message: "User account is missing UID.".into(),
+    })?;
+
+    let sessionkey = account["sessionkey"].as_str().ok_or_else(|| UiError {
+        name: "invalid_account".into(),
+        message: "User account is missing session key.".into(),
+    })?;
+
+    // Refresh session to ensure it's valid before launching
+    let refreshed_session = refresh_session(
+        email.to_string(),
+        String::new(), // We don't store passwords, so pass empty string
+        uid.to_string(),
+        sessionkey.to_string(),
+    )
+    .await
+    .map_err(|e| UiError {
+        name: "session_refresh_failed".into(),
+        message: format!(
+            "Failed to refresh session: {}. Please sign in again.",
+            e.message
+        ),
+    })?;
+
+    // Use refreshed credentials or fall back to existing ones
+    let final_sessionkey = refreshed_session
+        .sessionkey
+        .as_deref()
+        .unwrap_or(sessionkey);
+    let final_sessionsignature = refreshed_session
+        .sessionsignature
+        .as_deref()
+        .or_else(|| account["sessionsignature"].as_str())
+        .unwrap_or("");
+    let final_playername = refreshed_session
+        .playername
+        .as_deref()
+        .or_else(|| account["playername"].as_str())
+        .unwrap_or("");
+
+    let settings = json!({
+        "stringSettings": {
+            "playeruid": uid,
+            "sessionkey": final_sessionkey,
+            "sessionsignature": final_sessionsignature,
+            "playername": final_playername,
         }
+    });
+
+    let settings_path = pb.join("clientsettings.json");
+    // It should create the file if it does not exist, but if it exists it should just overwrite the keys
+    if settings_path.exists() {
+        let mut existing_settings = String::new();
+        File::open(&settings_path)
+            .and_then(|mut f| f.read_to_string(&mut existing_settings))
+            .map_err(|e| UiError {
+                name: "read_failed".into(),
+                message: format!("Failed to read existing clientsettings.json: {e}"),
+            })?;
+        let mut existing_json: Value =
+            serde_json::from_str(&existing_settings).unwrap_or(json!({}));
+        if let Some(obj) = existing_json.as_object_mut() {
+            if let Some(string_settings) = obj
+                .get_mut("stringSettings")
+                .and_then(|v| v.as_object_mut())
+            {
+                for (k, v) in settings["stringSettings"].as_object().unwrap() {
+                    string_settings.insert(k.clone(), v.clone());
+                }
+            } else {
+                obj.insert("stringSettings".into(), settings["stringSettings"].clone());
+            }
+            let mods_path = pb.join("Mods").to_string_lossy().into_owned();
+            if let Some(string_list_settings) = obj
+                .get_mut("stringListSettings")
+                .and_then(|v| v.as_object_mut())
+            {
+                if let Some(mod_paths) = string_list_settings
+                    .get_mut("modPaths")
+                    .and_then(|v| v.as_array_mut())
+                {
+                    *mod_paths = vec![json!(mods_path), json!("Mods")];
+                } else {
+                    string_list_settings.insert("modPaths".into(), json!([mods_path, "Mods"]));
+                }
+            } else {
+                obj.insert(
+                    "stringListSettings".into(),
+                    json!({ "modPaths": [mods_path, "Mods"] }),
+                );
+            }
+        }
+        write_settings_with_permissions(&settings_path, &existing_json)?;
+    } else {
+        std::fs::create_dir_all(settings_path.parent().unwrap()).map_err(|e| UiError {
+            name: "create_dir_failed".into(),
+            message: format!("Failed to create directory for clientsettings.json: {e}"),
+        })?;
+        write_settings_with_permissions(&settings_path, &settings)?;
     }
     // Emit a pre-launch event so the UI can show a loading state
     let _ = app.emit(
@@ -338,6 +378,59 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
         }
     });
     Ok("started".into())
+}
+
+/// Helper function to write settings file with proper permissions across all OS
+fn write_settings_with_permissions(path: &Path, settings: &Value) -> Result<(), UiError> {
+    // Write the file
+    let content = serde_json::to_string_pretty(settings).map_err(|e| UiError {
+        name: "json_error".into(),
+        message: format!("Failed to serialize settings: {e}"),
+    })?;
+
+    std::fs::write(path, content).map_err(|e| UiError {
+        name: "write_failed".into(),
+        message: format!("Failed to write clientsettings.json: {e}"),
+    })?;
+
+    // Set proper file permissions on Unix-like systems
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = std::fs::metadata(path)
+            .map_err(|e| UiError {
+                name: "permissions_failed".into(),
+                message: format!("Failed to get file metadata: {e}"),
+            })?
+            .permissions();
+
+        // Set to 0644 (rw-r--r--)
+        perms.set_mode(0o644);
+        std::fs::set_permissions(path, perms).map_err(|e| UiError {
+            name: "permissions_failed".into(),
+            message: format!("Failed to set file permissions: {e}"),
+        })?;
+    }
+
+    // On Windows, the default permissions are usually adequate
+    // but we can ensure the file is not read-only
+    #[cfg(windows)]
+    {
+        let mut perms = std::fs::metadata(path)
+            .map_err(|e| UiError {
+                name: "permissions_failed".into(),
+                message: format!("Failed to get file metadata: {e}"),
+            })?
+            .permissions();
+
+        perms.set_readonly(false);
+        std::fs::set_permissions(path, perms).map_err(|e| UiError {
+            name: "permissions_failed".into(),
+            message: format!("Failed to set file permissions: {e}"),
+        })?;
+    }
+
+    Ok(())
 }
 
 #[command]

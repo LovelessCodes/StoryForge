@@ -72,6 +72,37 @@ pub async fn verify(uid: String, sessionkey: String) -> Result<AuthVerifyRespons
 }
 
 #[command]
+pub async fn refresh_session(
+    email: String,
+    password: String,
+    uid: String,
+    sessionkey: String,
+) -> Result<GameLoginResponse, UiError> {
+    // First, verify if the current session is still valid
+    match verify(uid.clone(), sessionkey.clone()).await {
+        Ok(verify_response) if verify_response.valid == 1 => {
+            // Session is still valid, return current credentials
+            Ok(GameLoginResponse {
+                sessionkey: Some(sessionkey),
+                sessionsignature: None, // We don't have this from verify
+                mptoken: verify_response.mptoken,
+                uid: Some(uid),
+                entitlements: None,
+                playername: None,
+                hasgameserver: Some(verify_response.hasgameserver),
+                valid: 1,
+                reason: None,
+                prelogintoken: None,
+            })
+        }
+        _ => {
+            // Session is invalid or expired, perform a fresh login
+            login(email, password, None, None).await
+        }
+    }
+}
+
+#[command]
 pub async fn login(
     email: String,
     password: String,
