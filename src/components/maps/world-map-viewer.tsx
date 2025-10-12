@@ -33,6 +33,11 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 		new Map(),
 	);
 
+	// Cache for marker icons
+	const [iconCache, setIconCache] = useState<Map<string, HTMLImageElement>>(
+		new Map(),
+	);
+
 	// Track container size for re-rendering on resize
 	const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
@@ -100,6 +105,31 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 			}
 		}
 	}, [tiles, imageCache]);
+
+	// Load and cache marker icons
+	useEffect(() => {
+		if (!mapMarkers?.markers) return;
+
+		const uniqueIcons = new Set(
+			mapMarkers.markers.map(marker => marker.icon).filter(Boolean)
+		);
+
+		for (const iconName of uniqueIcons) {
+			if (!iconCache.has(iconName)) {
+				const img = new Image();
+				// Try to load the icon from assets
+				// Using relative path that Vite will resolve
+				img.src = `/src/assets/map-icons/${iconName}.svg`;
+				img.onload = () => {
+					setIconCache((prev) => new Map(prev).set(iconName, img));
+				};
+				img.onerror = () => {
+					// Icon not found - mark as missing so we don't try again
+					setIconCache((prev) => new Map(prev).set(iconName, new Image()));
+				};
+			}
+		}
+	}, [mapMarkers, iconCache]);
 
 	// Render the map
 	useEffect(() => {
@@ -193,59 +223,44 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 					screenY > -20 &&
 					screenY < canvas.height + 20
 				) {
-					// Parse icon string for color
-					// Icon format can be "circle-<color>" or just a color name
-					let markerColor = "#ff0000"; // Default red
+					// Scale marker size with zoom
+					const baseSize = 16; // Base size for icon in pixels
+					const iconSize = Math.max(12, Math.min(32, baseSize * viewport.zoom));
 					
-					if (marker.icon) {
-						// Map color names to hex values (supporting various formats)
-						const colorMap: Record<string, string> = {
-							red: "#ff0000",
-							blue: "#0066ff",
-							green: "#00ff00",
-							yellow: "#ffff00",
-							orange: "#ff8800",
-							purple: "#aa00ff",
-							pink: "#ff00ff",
-							white: "#ffffff",
-							black: "#000000",
-							cyan: "#00ffff",
-							lime: "#88ff00",
-							brown: "#8b4513",
-						};
+					// Try to get the icon from cache
+					const icon = marker.icon ? iconCache.get(marker.icon) : null;
+					
+					if (icon && icon.complete && icon.naturalWidth > 0) {
+						// Draw the actual icon
+						ctx.save();
 						
-						// Try to extract color from icon string
-						const iconLower = marker.icon.toLowerCase();
+						// Add a subtle glow/shadow for visibility
+						ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+						ctx.shadowBlur = 4;
+						ctx.shadowOffsetX = 1;
+						ctx.shadowOffsetY = 1;
 						
-						// Check if it starts with "circle-" and extract color
-						if (iconLower.startsWith("circle-")) {
-							const colorName = iconLower.replace("circle-", "");
-							markerColor = colorMap[colorName] || markerColor;
-						} 
-						// Check if the icon itself is a color name
-						else if (colorMap[iconLower]) {
-							markerColor = colorMap[iconLower];
-						}
-						// Check if it's a hex color
-						else if (iconLower.startsWith("#")) {
-							markerColor = marker.icon;
-						}
+						// Draw icon centered at marker position
+						ctx.drawImage(
+							icon,
+							screenX - iconSize / 2,
+							screenY - iconSize / 2,
+							iconSize,
+							iconSize
+						);
+						
+						ctx.restore();
+					} else {
+						// Fallback to colored circle if icon not loaded
+						const markerSize = Math.max(4, Math.min(10, 5 * viewport.zoom));
+						ctx.fillStyle = "#ff0000"; // Default red
+						ctx.strokeStyle = "#ffffff";
+						ctx.lineWidth = 2;
+						ctx.beginPath();
+						ctx.arc(screenX, screenY, markerSize, 0, Math.PI * 2);
+						ctx.fill();
+						ctx.stroke();
 					}
-
-					// Scale marker size with zoom - smaller base size
-					const baseSize = 5;
-					const markerSize = Math.max(4, Math.min(10, baseSize * viewport.zoom));
-					
-					// Draw marker pin
-					ctx.fillStyle = markerColor;
-					ctx.strokeStyle = "#ffffff";
-					ctx.lineWidth = 2;
-
-					// Draw pin shape
-					ctx.beginPath();
-					ctx.arc(screenX, screenY, markerSize, 0, Math.PI * 2);
-					ctx.fill();
-					ctx.stroke();
 
 					// Draw label if zoomed in enough
 					if (viewport.zoom > 0.3 && marker.label) {
@@ -253,17 +268,20 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 						ctx.font = `${fontSize}px sans-serif`;
 						const textWidth = ctx.measureText(marker.label).width;
 						
+						// Background for label
 						ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
 						ctx.fillRect(
-							screenX + markerSize + 4,
+							screenX + iconSize / 2 + 4,
 							screenY - fontSize / 2 - 2,
 							textWidth + 8,
 							fontSize + 4
 						);
+						
+						// Label text
 						ctx.fillStyle = "#ffffff";
 						ctx.fillText(
 							marker.label,
-							screenX + markerSize + 8,
+							screenX + iconSize / 2 + 8,
 							screenY + fontSize / 2 - 2
 						);
 					}
@@ -353,7 +371,7 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 				20,
 			);
 		}
-	}, [tiles, viewport, imageCache, bounds, containerSize, mapMarkers, prospectingLogs]);
+	}, [tiles, viewport, imageCache, iconCache, bounds, containerSize, mapMarkers, prospectingLogs]);
 
 	// Mouse wheel zoom
 	const handleWheel = useCallback(
