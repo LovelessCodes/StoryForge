@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useRef } from "react";
 import { toast } from "sonner";
+import { useAccountStore } from "@/stores/accounts";
 import { useInstallations } from "@/stores/installations";
 import { useAddServerToInstallation } from "./use-add-server-to-installation";
 import { useCheckServerInInstallation } from "./use-check-server-in-installation";
@@ -21,6 +22,7 @@ export const useConnectToServer = (
 	>,
 ) => {
 	const { installations, updateLastPlayed } = useInstallations();
+	const { selectedUser } = useAccountStore();
 	const { mutateAsync: addServer } = useAddServerToInstallation({
 		onError: (error) => {
 			throw error;
@@ -40,6 +42,20 @@ export const useConnectToServer = (
 	return useMutation({
 		...props,
 		mutationFn: async ({ name, ip, password, installationId, pub }) => {
+			// Validate that a user is selected before launching
+			if (!selectedUser) {
+				throw new Error(
+					"No user account selected. Please sign in or select a user account before connecting to a server.",
+				);
+			}
+
+			// Validate that the selected user has required credentials
+			if (!selectedUser.uid || !selectedUser.sessionkey) {
+				throw new Error(
+					"Selected user account is missing required credentials. Please sign in again.",
+				);
+			}
+
 			if (!pub) {
 				await mutateAsync({
 					installationId,

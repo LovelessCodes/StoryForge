@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useRef } from "react";
 import { toast } from "sonner";
+import { useAccountStore } from "@/stores/accounts";
 import { useInstallations } from "@/stores/installations";
 
 export const usePlayInstallation = (
@@ -11,10 +12,27 @@ export const usePlayInstallation = (
 ) => {
 	const listenRef = useRef<UnlistenFn>(null);
 	const { installations, updateLastPlayed } = useInstallations();
+	const { selectedUser } = useAccountStore();
+
 	return useMutation({
 		...props,
-		mutationFn: ({ id, save }) =>
-			invoke("play_game", { options: { installation_id: id, save } }),
+		mutationFn: ({ id, save }) => {
+			// Validate that a user is selected before launching
+			if (!selectedUser) {
+				throw new Error(
+					"No user account selected. Please sign in or select a user account before launching the game.",
+				);
+			}
+
+			// Validate that the selected user has required credentials
+			if (!selectedUser.uid || !selectedUser.sessionkey) {
+				throw new Error(
+					"Selected user account is missing required credentials. Please sign in again.",
+				);
+			}
+
+			return invoke("play_game", { options: { installation_id: id, save } });
+		},
 		onError: (error) => {
 			toast.error(`Error playing with installation: ${error.message}`);
 		},
