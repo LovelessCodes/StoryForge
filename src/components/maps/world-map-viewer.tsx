@@ -281,9 +281,9 @@ export function WorldMapViewer({
 
 	// Choose LOD level based on zoom
 	const chooseLodLevel = useCallback((zoom: number) => {
-		if (zoom >= 0.6) return 0;
-		if (zoom >= 0.3) return 1;
-		if (zoom >= 0.15) return 2;
+		if (zoom >= 1) return 0;
+		if (zoom >= 0.5) return 1;
+		if (zoom >= 0.25) return 2;
 		return 3;
 	}, []);
 
