@@ -113,10 +113,7 @@ pub fn get_all_saves(app: AppHandle) -> Result<Vec<World>, UiError> {
                                             ..Default::default()
                                         };
                                         // Check for if the map exists in the Maps folder in the installation folder
-                                        let has_map = installation_dir_path
-                                            .parent()
-                                            .unwrap()
-                                            .join(&installation_name)
+                                        let has_map = path
                                             .join("Maps")
                                             .join(format!("{}.db", gamedata.savegame_identifier))
                                             .exists();
