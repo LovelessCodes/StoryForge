@@ -2,7 +2,11 @@ use prost::Message;
 use rusqlite::OpenFlags;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_value, Value};
-use std::{ffi::OsStr, path::Path};
+use std::{
+    ffi::OsStr,
+    fs::{create_dir_all, read_dir, remove_file, rename},
+    path::Path,
+};
 use tauri::{command, AppHandle};
 use tauri_plugin_zustand::ManagerExt;
 
@@ -29,7 +33,7 @@ pub fn get_all_saves(app: AppHandle) -> Result<Vec<World>, UiError> {
     let installation_dir_path = installations_folder(app.clone()).join(&subdir);
     let mut saves: Vec<World> = Vec::new();
     if installation_dir_path.exists() && installation_dir_path.is_dir() {
-        for entry in std::fs::read_dir(&installation_dir_path)
+        for entry in read_dir(&installation_dir_path)
             .map_err(|e| UiError::from(format!("Read dir error: {e}")))?
         {
             let entry = entry.map_err(|e| UiError::from(format!("Dir entry error: {e}")))?;
@@ -38,7 +42,7 @@ pub fn get_all_saves(app: AppHandle) -> Result<Vec<World>, UiError> {
             if path.is_dir() {
                 let saves_path = path.join("Saves");
                 if saves_path.exists() && saves_path.is_dir() {
-                    for save_entry in std::fs::read_dir(saves_path)
+                    for save_entry in read_dir(saves_path)
                         .map_err(|e| UiError::from(format!("Read dir error: {e}")))?
                     {
                         let save_entry = save_entry
@@ -192,8 +196,8 @@ pub fn get_installation_saves(
     // Traverse the saves directory and collect save names from the .vcdbs files
     let mut saves = Vec::new();
     if saves_path.exists() && saves_path.is_dir() {
-        for entry in std::fs::read_dir(saves_path)
-            .map_err(|e| UiError::from(format!("Read dir error: {e}")))?
+        for entry in
+            read_dir(saves_path).map_err(|e| UiError::from(format!("Read dir error: {e}")))?
         {
             let entry = entry.map_err(|e| UiError::from(format!("Dir entry error: {e}")))?;
             let path = entry.path();
@@ -243,8 +247,7 @@ pub fn update_world(
 
     let saves_path = Path::new(installation["path"].as_str().unwrap()).join("Saves");
     if !saves_path.exists() {
-        std::fs::create_dir_all(&saves_path)
-            .map_err(|e| UiError::from(format!("Create dir error: {e}")))?;
+        create_dir_all(&saves_path).map_err(|e| UiError::from(format!("Create dir error: {e}")))?;
     }
     let world_path = Path::new(&world_path);
     if !world_path.exists() || !world_path.is_file() {
@@ -293,16 +296,15 @@ pub fn update_world(
                 // Ensure the Maps directory exists
                 let maps_dir = new_maps_path.parent().unwrap();
                 if !maps_dir.exists() {
-                    std::fs::create_dir_all(maps_dir)
+                    create_dir_all(maps_dir)
                         .map_err(|e| UiError::from(format!("Create dir error: {e}")))?;
                 }
-                std::fs::rename(maps_path, &new_maps_path)
+                rename(maps_path, &new_maps_path)
                     .map_err(|e| UiError::from(format!("Rename error: {e}")))?;
             }
         }
     }
-    std::fs::rename(world_path, &new_world_path)
-        .map_err(|e| UiError::from(format!("Rename error: {e}")))?;
+    rename(world_path, &new_world_path).map_err(|e| UiError::from(format!("Rename error: {e}")))?;
 
     // Update the "WorldName" field in the protobuf data inside the .vcdbs file
     let conn = rusqlite::Connection::open_with_flags(
@@ -391,12 +393,11 @@ pub fn remove_world(world_path: String) -> Result<(), UiError> {
             });
         if let Some(maps_path) = maps_path {
             if maps_path.exists() && maps_path.is_file() {
-                std::fs::remove_file(maps_path)
+                remove_file(maps_path)
                     .map_err(|e| UiError::from(format!("Remove file error: {e}")))?;
             }
         }
     }
-    std::fs::remove_file(world_path)
-        .map_err(|e| UiError::from(format!("Remove file error: {e}")))?;
+    remove_file(world_path).map_err(|e| UiError::from(format!("Remove file error: {e}")))?;
     Ok(())
 }

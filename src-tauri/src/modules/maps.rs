@@ -1,11 +1,15 @@
+use image::{ImageBuffer, ImageFormat, ImageReader, Rgba};
+use prost::Message;
+use rusqlite::{Connection, OpenFlags};
 use serde::{Deserialize, Serialize};
-use std::path::Path;
+use std::{
+    io::Cursor,
+    path::{Path, PathBuf},
+};
 use tauri::command;
 
 use super::errors::UiError;
 use super::proto::{GameData, MapPieceDb};
-use prost::Message;
-use rusqlite::OpenFlags;
 
 /// Information about the Maps database structure
 #[derive(Serialize, Deserialize, Debug)]
@@ -54,7 +58,7 @@ fn decode_position(position: i64) -> (i32, i32) {
 }
 
 /// Get the path to the Maps database for a given world
-fn get_maps_db_path(world_path: &str) -> Result<std::path::PathBuf, UiError> {
+fn get_maps_db_path(world_path: &str) -> Result<PathBuf, UiError> {
     let world_path_obj = Path::new(world_path);
     if !world_path_obj.exists() || !world_path_obj.is_file() {
         return Err(UiError {
@@ -65,7 +69,7 @@ fn get_maps_db_path(world_path: &str) -> Result<std::path::PathBuf, UiError> {
 
     // Open world database to get savegame_identifier
     let uri = format!("file:{}?immutable=1", world_path);
-    let conn = rusqlite::Connection::open_with_flags(
+    let conn = Connection::open_with_flags(
         &uri,
         OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
     )
@@ -126,7 +130,7 @@ pub fn inspect_map_database(world_path: String) -> Result<MapDatabaseInfo, UiErr
 
     // Open in immutable read-only mode
     let uri = format!("file:{}?immutable=1", world_path);
-    let conn = rusqlite::Connection::open_with_flags(
+    let conn = Connection::open_with_flags(
         &uri,
         OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
     )
@@ -181,7 +185,7 @@ pub fn inspect_map_database(world_path: String) -> Result<MapDatabaseInfo, UiErr
 
     // 3. Inspect the Maps database
     let maps_uri = format!("file:{}?immutable=1", maps_path.to_string_lossy());
-    let map_conn = rusqlite::Connection::open_with_flags(
+    let map_conn = Connection::open_with_flags(
         &maps_uri,
         OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
     )
@@ -267,7 +271,7 @@ pub fn get_map_bounds(world_path: String) -> Result<MapBounds, UiError> {
     let maps_path = get_maps_db_path(&world_path)?;
 
     let maps_uri = format!("file:{}?immutable=1", maps_path.to_string_lossy());
-    let map_conn = rusqlite::Connection::open_with_flags(
+    let map_conn = Connection::open_with_flags(
         &maps_uri,
         OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
     )
@@ -331,7 +335,7 @@ pub fn get_map_tile(world_path: String, position: i64) -> Result<MapTile, UiErro
     let maps_path = get_maps_db_path(&world_path)?;
 
     let maps_uri = format!("file:{}?immutable=1", maps_path.to_string_lossy());
-    let map_conn = rusqlite::Connection::open_with_flags(
+    let map_conn = Connection::open_with_flags(
         &maps_uri,
         OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
     )
@@ -390,7 +394,7 @@ pub fn get_all_map_tiles(world_path: String) -> Result<Vec<MapTile>, UiError> {
     let maps_path = get_maps_db_path(&world_path)?;
 
     let maps_uri = format!("file:{}?immutable=1", maps_path.to_string_lossy());
-    let map_conn = rusqlite::Connection::open_with_flags(
+    let map_conn = Connection::open_with_flags(
         &maps_uri,
         OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
     )
@@ -451,8 +455,6 @@ pub fn get_all_map_tiles(world_path: String) -> Result<Vec<MapTile>, UiError> {
 
 /// Convert pixel array to PNG image
 fn pixels_to_png(pixels: &[i32], width: u32, height: u32) -> Result<Vec<u8>, UiError> {
-    use image::{ImageBuffer, Rgba};
-
     let mut img: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::new(width, height);
 
     for (i, pixel) in pixels.iter().enumerate() {
@@ -473,20 +475,14 @@ fn pixels_to_png(pixels: &[i32], width: u32, height: u32) -> Result<Vec<u8>, UiE
     }
 
     let mut png_bytes = Vec::new();
-    img.write_to(
-        &mut std::io::Cursor::new(&mut png_bytes),
-        image::ImageFormat::Png,
-    )
-    .map_err(|e| UiError::from(format!("PNG encoding error: {e}")))?;
+    img.write_to(&mut Cursor::new(&mut png_bytes), ImageFormat::Png)
+        .map_err(|e| UiError::from(format!("PNG encoding error: {e}")))?;
 
     Ok(png_bytes)
 }
 
 /// Try to detect image dimensions from raw image data
 fn detect_image_dimensions(data: &[u8]) -> Option<(u32, u32)> {
-    use image::ImageReader;
-    use std::io::Cursor;
-
     let reader = ImageReader::new(Cursor::new(data))
         .with_guessed_format()
         .ok()?;

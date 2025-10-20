@@ -1,9 +1,13 @@
-use json5;
-use reqwest::header::{HeaderMap, HeaderValue, HOST};
+use json5::from_str as json5_from_str;
+use reqwest::{
+    get,
+    header::{HeaderMap, HeaderValue, HOST},
+    Client,
+};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{from_str, from_value, json, Value};
 use std::{
-    fs::File,
+    fs::{create_dir_all, read_dir, remove_file, File},
     io::{Read, Write},
     path::{Path, PathBuf},
     str::FromStr,
@@ -135,7 +139,7 @@ pub struct ModError {
 
 #[command]
 pub async fn fetch_mod_tags() -> Result<Vec<ModTags>, UiError> {
-    let res = reqwest::get("https://mods.vintagestory.at/api/tags")
+    let res = get("https://mods.vintagestory.at/api/tags")
         .await
         .map_err(|e| format!("Request error: {e}"))?;
 
@@ -157,7 +161,7 @@ pub async fn fetch_mod_tags() -> Result<Vec<ModTags>, UiError> {
 #[command]
 pub async fn fetch_mods(options: FetchModsParams) -> Result<Vec<Mod>, UiError> {
     // Use the parameters for a GET request with search parameters
-    let client = reqwest::Client::new();
+    let client = Client::new();
     let mut headers = HeaderMap::new();
     headers.insert(HOST, HeaderValue::from_static("mods.vintagestory.at"));
 
@@ -196,33 +200,33 @@ pub async fn fetch_mods(options: FetchModsParams) -> Result<Vec<Mod>, UiError> {
 #[command]
 pub async fn fetch_mod_info(modid: String) -> Result<Value, UiError> {
     let url = format!("https://mods.vintagestory.at/api/mod/{}", modid);
-    let res = reqwest::get(&url)
+    let res = get(&url)
         .await
         .map_err(|e| UiError::from(format!("Request error: {e}")))?
         .text()
         .await
         .map_err(|e| UiError::from(format!("Read error: {e}")))?;
 
-    let json: serde_json::Value =
-        serde_json::from_str(&res).map_err(|e| UiError::from(format!("JSON parse error: {e}")))?;
+    let json: Value =
+        from_str(&res).map_err(|e| UiError::from(format!("JSON parse error: {e}")))?;
     Ok(json)
 }
 
 #[command]
-pub async fn fetch_authors(search: String) -> Result<serde_json::Value, UiError> {
+pub async fn fetch_authors(search: String) -> Result<Value, UiError> {
     let url = format!(
         "https://mods.vintagestory.at/api/v2/users/by-name/{}?contributors-only=true",
         search
     );
-    let res = reqwest::get(&url)
+    let res = get(&url)
         .await
         .map_err(|e| UiError::from(format!("Request error: {e}")))?
         .text()
         .await
         .map_err(|e| UiError::from(format!("Read error: {e}")))?;
 
-    let json: serde_json::Value =
-        serde_json::from_str(&res).map_err(|e| UiError::from(format!("JSON parse error: {e}")))?;
+    let json: Value =
+        from_str(&res).map_err(|e| UiError::from(format!("JSON parse error: {e}")))?;
     Ok(json)
 }
 
@@ -231,12 +235,12 @@ pub async fn add_mod_to_installation(path: String, url: String) -> Result<String
     // Download the mod from the url and save it to the Mods directory inside the path
     let pb = PathBuf::from(path).join("Mods");
     if !pb.exists() {
-        std::fs::create_dir_all(&pb).map_err(|e| UiError {
+        create_dir_all(&pb).map_err(|e| UiError {
             name: "create_dir_failed".into(),
             message: format!("Failed to create directory: {e}"),
         })?;
     }
-    let response = reqwest::get(&url)
+    let response = get(&url)
         .await
         .map_err(|e| UiError::from(format!("Request error: {e}")))?;
     if !response.status().is_success() {
@@ -278,7 +282,7 @@ pub fn get_mods(path: String) -> Result<ModsResult, UiError> {
     let mut mods: Vec<OutputMod> = Vec::new();
     let mut errors: Vec<ModError> = Vec::new();
 
-    let read_dir = match std::fs::read_dir(&mods_path) {
+    let read_dir = match read_dir(&mods_path) {
         Ok(rd) => rd,
         Err(e) => {
             return Err(UiError {
@@ -388,7 +392,7 @@ pub fn get_mods(path: String) -> Result<ModsResult, UiError> {
                 continue;
             }
 
-            match json5::from_str::<Value>(&contents) {
+            match json5_from_str::<Value>(&contents) {
                 Ok(json) => {
                     // Successfully parsed modinfo.json
                     // Case-insensitive lookup for a key named "modid"; allow string or number.
@@ -501,7 +505,7 @@ pub fn get_mods(path: String) -> Result<ModsResult, UiError> {
 #[command]
 pub fn get_mod_configs(app: AppHandle, installation_id: u64) -> Result<Vec<Value>, UiError> {
     let installation_zustand = app.zustand().get("installations", "installations").unwrap();
-    let installation_json: Value = serde_json::from_value(installation_zustand).unwrap();
+    let installation_json: Value = from_value(installation_zustand).unwrap();
     // Find installation with matching id
     let installation = installation_json.as_array().and_then(|arr| {
         arr.iter()
@@ -528,8 +532,8 @@ pub fn get_mod_configs(app: AppHandle, installation_id: u64) -> Result<Vec<Value
     }
     // Traverse the ModConfig directory and read all .json files
     let mut configs = Vec::new();
-    for entry in std::fs::read_dir(mod_config_path)
-        .map_err(|e| UiError::from(format!("Read dir error: {e}")))?
+    for entry in
+        read_dir(mod_config_path).map_err(|e| UiError::from(format!("Read dir error: {e}")))?
     {
         let entry = entry.map_err(|e| UiError::from(format!("Dir entry error: {e}")))?;
         let path = entry.path();
@@ -547,9 +551,9 @@ pub fn get_mod_configs(app: AppHandle, installation_id: u64) -> Result<Vec<Value
                     let mut content = String::new();
                     file.read_to_string(&mut content)
                         .map_err(|e| UiError::from(format!("Read file error: {e}")))?;
-                    let json_content: Value = json5::from_str(&content)
+                    let json_content: Value = json5_from_str(&content)
                         .map_err(|e| UiError::from(format!("Parse JSON error: {e}")))?;
-                    configs.push(serde_json::json!({
+                    configs.push(json!({
                         "filename": filename,
                         "content": json_content
                     }));
@@ -570,7 +574,7 @@ pub fn save_mod_config(
 ) -> Result<(), UiError> {
     // Find installation path from zustand
     let installation_zustand = app.zustand().get("installations", "installations").unwrap();
-    let installation_json: Value = serde_json::from_value(installation_zustand).unwrap();
+    let installation_json: Value = from_value(installation_zustand).unwrap();
     let installation = installation_json.as_array().and_then(|arr| {
         arr.iter()
             .find(|inst| inst["id"].as_u64() == Some(installation_id))
@@ -617,11 +621,8 @@ pub fn save_mod_config(
 
 #[command]
 pub async fn get_mod_updates(params: String) -> Result<Value, UiError> {
-    let client = reqwest::Client::new();
     let url = format!("https://mods.vintagestory.at/api/updates?mods={}", params);
-    let res = client
-        .get(&url)
-        .send()
+    let res = get(&url)
         .await
         .map_err(|e| UiError::from(format!("Request error: {e}")))?;
     if !res.status().is_success() {
@@ -635,14 +636,14 @@ pub async fn get_mod_updates(params: String) -> Result<Value, UiError> {
         .await
         .map_err(|e| UiError::from(format!("Read error: {e}")))?;
     let json: Value =
-        serde_json::from_str(&res_text).map_err(|e| UiError::from(format!("Parse error: {e}")))?;
+        from_str(&res_text).map_err(|e| UiError::from(format!("Parse error: {e}")))?;
     Ok(json)
 }
 
 #[command]
 pub fn get_installation_mods(app: AppHandle, id: i64) -> Result<Vec<OutputMod>, UiError> {
     let installations_zustand = app.zustand().get("installations", "installations").unwrap();
-    let installations_json: Value = serde_json::from_value(installations_zustand).unwrap();
+    let installations_json: Value = from_value(installations_zustand).unwrap();
     let installation = installations_json
         .as_array()
         .and_then(|arr| arr.iter().find(|inst| inst["id"].as_i64() == Some(id)))
@@ -685,7 +686,7 @@ pub async fn remove_mod_from_installation(params: ModRemoveParams) -> Result<Str
             ),
         });
     }
-    std::fs::remove_file(&mod_file).map_err(|e| UiError {
+    remove_file(&mod_file).map_err(|e| UiError {
         name: "remove_failed".into(),
         message: format!("Failed to remove mod file: {e}"),
     })?;
