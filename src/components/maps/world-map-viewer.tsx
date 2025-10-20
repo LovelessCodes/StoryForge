@@ -690,9 +690,9 @@ export function WorldMapViewer({
 									{prospectingMarker.results
 										.sort(sortByQuality)
 										.map((result, index) => (
-											// biome-ignore lint/suspicious/noArrayIndexKey: Needed to display correctly
 											<li
 												className="text-xs flex gap-2"
+												// biome-ignore lint/suspicious/noArrayIndexKey: Needed to display correctly
 												key={result.ore_code + index}
 											>
 												<p>
