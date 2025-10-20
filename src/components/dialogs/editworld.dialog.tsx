@@ -25,13 +25,13 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { Save } from "@/hooks/use-saves";
 import { useUpdateWorld } from "@/hooks/use-update-world";
+import type { World } from "@/lib/types";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
 
 export type EditWorldDialogProps = {
-	world: Save;
+	world: World;
 };
 
 const worldSchema = z.object({
@@ -55,7 +55,7 @@ export function EditWorldDialog({
 			toast.error(`Error updating world: ${error.message}`);
 		},
 		onSuccess: async () => {
-			toast.success(`World ${world[0].world_name} updated successfully`);
+			toast.success(`World ${world.data.world_name} updated successfully`);
 			await queryClient.invalidateQueries({ queryKey: ["saves"] });
 			closeDialog();
 		},
@@ -64,16 +64,18 @@ export function EditWorldDialog({
 		defaultValues: {
 			installationId:
 				installations
-					.find((inst) => inst.path.split("/").pop() === world[2])
+					.find(
+						(inst) => inst.path.split("/").pop() === world.installation_name,
+					)
 					?.id.toString() || "",
-			name: world[0].world_name || "",
+			name: world.data.world_name || "",
 		},
 		onSubmit: ({ value }) => {
 			updateWorld({
-				identifier: world[0].savegame_identifier,
+				identifier: world.data.savegame_identifier,
 				installationId: parseInt(value.installationId, 10),
 				name: value.name,
-				worldPath: world[1],
+				worldPath: world.path,
 			});
 		},
 		validators: {

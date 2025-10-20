@@ -14,12 +14,12 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import type { Save } from "@/hooks/use-saves";
+import type { World } from "@/lib/types";
 import { useDialogStore } from "@/stores/dialogs";
 import { Checkbox } from "../ui/checkbox";
 
 export type DeleteWorldDialogProps = {
-	world: Save;
+	world: World;
 };
 
 export function DeleteWorldDialog({
@@ -32,21 +32,21 @@ export function DeleteWorldDialog({
 	const queryClient = useQueryClient();
 	const { closeDialog } = useDialogStore();
 	const { mutate: removeWorld, isPending } = useMutation({
-		mutationFn: (world: Save) =>
-			invoke("remove_world", { worldPath: world[1] }),
+		mutationFn: (world: World) =>
+			invoke("remove_world", { worldPath: world.path }),
 		onError: (error) => {
-			toast.error(`Failed to delete world ${world[0].world_name}: ${error}`, {
-				id: `world-delete-${world[0].world_name}`,
+			toast.error(`Failed to delete world ${world.data.world_name}: ${error}`, {
+				id: `world-delete-${world.data.world_name}`,
 			});
 		},
 		onMutate: () => {
-			toast.loading(`Deleting world ${world[0].world_name}...`, {
-				id: `world-delete-${world[0].world_name}`,
+			toast.loading(`Deleting world ${world.data.world_name}...`, {
+				id: `world-delete-${world.data.world_name}`,
 			});
 		},
 		onSuccess: async () => {
-			toast.success(`World ${world[0].world_name} deleted`, {
-				id: `world-delete-${world[0].world_name}`,
+			toast.success(`World ${world.data.world_name} deleted`, {
+				id: `world-delete-${world.data.world_name}`,
 			});
 			await queryClient.invalidateQueries({
 				queryKey: ["saves"],
@@ -69,12 +69,12 @@ export function DeleteWorldDialog({
 				<AlertDialogHeader>
 					<AlertDialogTitle>
 						Are you sure you want to delete the world{" "}
-						<span className="text-destructive">{world[0].world_name}</span>?
+						<span className="text-destructive">{world.data.world_name}</span>?
 					</AlertDialogTitle>
 					<AlertDialogDescription>
 						This action cannot be undone. This will permanently delete world{" "}
-						<span className="text-destructive">{world[0].world_name}</span> from
-						Story Forge.
+						<span className="text-destructive">{world.data.world_name}</span>{" "}
+						from Story Forge.
 						<motion.div
 							animate={{ opacity: 1, y: 0 }}
 							className="my-4 rounded-md border border-warning bg-warning/10 p-3 flex flex-col text-warning-foreground"
@@ -92,25 +92,25 @@ export function DeleteWorldDialog({
 							</p>
 							<ul className="list-disc pl-5">
 								<li>
-									World name: <b>{world[0].world_name}</b>
+									World name: <b>{world.data.world_name}</b>
 								</li>
 								<li>
-									Map identifier: <b>{world[0].savegame_identifier}</b>
+									Map identifier: <b>{world.data.savegame_identifier}</b>
 								</li>
 								<li>
-									World type: <b>{world[0].world_type}</b>
+									World type: <b>{world.data.world_type}</b>
 								</li>
 								<li>
-									Play style: <b>{world[0].play_style}</b>
+									Play style: <b>{world.data.play_style}</b>
 								</li>
 								<li>
-									Created by: <b>{world[0].created_by_player_name}</b>
+									Created by: <b>{world.data.created_by_player_name}</b>
 								</li>
 								<li>
 									Last played:{" "}
 									<b>
-										{world[0].last_played
-											? formatDistanceToNow(new Date(world[0].last_played), {
+										{world.data.last_played
+											? formatDistanceToNow(new Date(world.data.last_played), {
 													addSuffix: true,
 												})
 											: "Never"}
@@ -121,22 +121,19 @@ export function DeleteWorldDialog({
 									<b>
 										{formatDistance(
 											new Date(),
-											addSeconds(new Date(), world[0].total_seconds_played),
+											addSeconds(new Date(), world.data.total_seconds_played),
 										)}
 									</b>
 								</li>
 								<li>
-									Seed: <b>{world[0].seed}</b>
+									Seed: <b>{world.data.seed}</b>
 								</li>
 								<li>
-									Created in version: <b>{world[0].created_game_version}</b>
+									Created in version: <b>{world.data.created_game_version}</b>
 								</li>
 								<li>
 									Last saved in version:{" "}
-									<b>{world[0].last_saved_game_version}</b>
-								</li>
-								<li>
-									<pre>{JSON.stringify(world[3])}</pre>
+									<b>{world.data.last_saved_game_version}</b>
 								</li>
 							</ul>
 						</motion.div>

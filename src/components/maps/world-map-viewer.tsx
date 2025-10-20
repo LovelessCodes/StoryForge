@@ -1,8 +1,12 @@
-import { useRef, useEffect, useState, useCallback } from "react";
 import { Loader2Icon, MapIcon } from "lucide-react";
-import { useAllMapTiles, useMapBounds, imageDataToDataUrl } from "@/hooks/use-world-map";
-import type { MapMarkers, ProspectingLog } from "@/hooks/use-saves";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
+import {
+	imageDataToDataUrl,
+	useAllMapTiles,
+	useMapBounds,
+} from "@/hooks/use-world-map";
+import type { MapMarkers, ProspectingLog } from "@/lib/types";
 
 type WorldMapViewerProps = {
 	worldPath: string;
@@ -10,11 +14,19 @@ type WorldMapViewerProps = {
 	prospectingLogs?: [string, ProspectingLog][];
 };
 
-export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: WorldMapViewerProps) {
+export function WorldMapViewer({
+	worldPath,
+	mapMarkers,
+	prospectingLogs,
+}: WorldMapViewerProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 
-	const { data: tiles, isLoading: tilesLoading, error: tilesError } = useAllMapTiles(worldPath);
+	const {
+		data: tiles,
+		isLoading: tilesLoading,
+		error: tilesError,
+	} = useAllMapTiles(worldPath);
 	const { data: bounds, isLoading: boundsLoading } = useMapBounds(worldPath);
 
 	// Viewport state (x, y = top-left corner in world coords, zoom = scale factor)
@@ -29,7 +41,13 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 	const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
 
 	// Cursor coordinates state
-	const [cursorCoords, setCursorCoords] = useState<{ x: number; y: number; z?: number; screenX: number; screenY: number } | null>(null);
+	const [cursorCoords, setCursorCoords] = useState<{
+		x: number;
+		y: number;
+		z?: number;
+		screenX: number;
+		screenY: number;
+	} | null>(null);
 
 	// Cache loaded images
 	const [imageCache, setImageCache] = useState<Map<string, HTMLImageElement>>(
@@ -42,13 +60,19 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 	);
 
 	// Track container size for re-rendering on resize
-	const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+	const [containerSize, setContainerSize] = useState({ height: 0, width: 0 });
 
 	// Pre-calculate spawn offset (Vintage Story worlds spawn around block coordinate 512000)
 	const SPAWN_COORDINATE = 512000;
 	const MAP_CHUNK_SIZE = 32;
-	const spawnOffsetX = bounds ? Math.round((bounds.min_y * MAP_CHUNK_SIZE) / SPAWN_COORDINATE) * SPAWN_COORDINATE : 0;
-	const spawnOffsetY = bounds ? Math.round((bounds.min_x * MAP_CHUNK_SIZE) / SPAWN_COORDINATE) * SPAWN_COORDINATE : 0;
+	const spawnOffsetX = bounds
+		? Math.round((bounds.min_y * MAP_CHUNK_SIZE) / SPAWN_COORDINATE) *
+			SPAWN_COORDINATE
+		: 0;
+	const spawnOffsetY = bounds
+		? Math.round((bounds.min_x * MAP_CHUNK_SIZE) / SPAWN_COORDINATE) *
+			SPAWN_COORDINATE
+		: 0;
 
 	// Observe container resize to trigger re-render
 	useEffect(() => {
@@ -57,7 +81,7 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 		const resizeObserver = new ResizeObserver((entries) => {
 			for (const entry of entries) {
 				const { width, height } = entry.contentRect;
-				setContainerSize({ width, height });
+				setContainerSize({ height, width });
 			}
 		});
 
@@ -120,7 +144,7 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 		if (!mapMarkers?.markers) return;
 
 		const uniqueIcons = new Set(
-			mapMarkers.markers.map(marker => marker.icon).filter(Boolean)
+			mapMarkers.markers.map((marker) => marker.icon).filter(Boolean),
 		);
 
 		for (const iconName of uniqueIcons) {
@@ -141,6 +165,7 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 	}, [mapMarkers, iconCache]);
 
 	// Render the map
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Needed for rendering on viewport change
 	useEffect(() => {
 		if (!canvasRef.current || !tiles || !containerRef.current) return;
 
@@ -175,8 +200,10 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 			// In Vintage Story's coordinate system:
 			// - tile.x corresponds to vertical position (rows)
 			// - tile.y corresponds to horizontal position (columns)
-			const screenX = (normalizedY * tileSize - viewport.x * tileSize) * viewport.zoom;
-			const screenY = (normalizedX * tileSize - viewport.y * tileSize) * viewport.zoom;
+			const screenX =
+				(normalizedY * tileSize - viewport.x * tileSize) * viewport.zoom;
+			const screenY =
+				(normalizedX * tileSize - viewport.y * tileSize) * viewport.zoom;
 			const screenSize = tileSize * viewport.zoom;
 
 			// Only draw if visible
@@ -192,9 +219,8 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 
 		// Draw map markers
 		if (mapMarkers?.markers) {
-			let drawnCount = 0;
 			let debugMarkerInfo = "";
-			
+
 			for (const marker of mapMarkers.markers) {
 				if (!marker.position) continue;
 
@@ -203,23 +229,31 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 				// Map chunks are at 1:32 scale (each map chunk unit = 32 blocks)
 				// NOTE: X and Y are swapped to match map orientation
 				const mapChunkSize = 32;
-				
+
 				// Calculate which tile the marker is in
 				const markerTileX = Math.floor(marker.position.y / mapChunkSize); // Swap: use Y for tileX
 				const markerTileY = Math.floor(marker.position.x / mapChunkSize); // Swap: use X for tileY
-				
+
 				// Calculate position WITHIN the tile (0-1 range)
-				const offsetWithinTileX = (marker.position.y % mapChunkSize) / mapChunkSize;
-				const offsetWithinTileY = (marker.position.x % mapChunkSize) / mapChunkSize;
+				const offsetWithinTileX =
+					(marker.position.y % mapChunkSize) / mapChunkSize;
+				const offsetWithinTileY =
+					(marker.position.x % mapChunkSize) / mapChunkSize;
 
 				const normalizedX = markerTileX - minX;
 				const normalizedY = markerTileY - minY;
 
 				// Calculate pixel-perfect position including offset within tile
 				// Swap X and Y for screen coordinates (same as tiles)
-				const screenX = ((normalizedY + offsetWithinTileY) * tileSize - viewport.x * tileSize) * viewport.zoom;
-				const screenY = ((normalizedX + offsetWithinTileX) * tileSize - viewport.y * tileSize) * viewport.zoom;
-				
+				const screenX =
+					((normalizedY + offsetWithinTileY) * tileSize -
+						viewport.x * tileSize) *
+					viewport.zoom;
+				const screenY =
+					((normalizedX + offsetWithinTileX) * tileSize -
+						viewport.y * tileSize) *
+					viewport.zoom;
+
 				// Store first marker's detailed info for debugging
 				if (!debugMarkerInfo) {
 					debugMarkerInfo = `M1: icon="${marker.icon}" label="${marker.label}"`;
@@ -235,52 +269,52 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 					// Scale marker size with zoom
 					const baseSize = 16; // Base size for icon in pixels
 					const iconSize = Math.max(12, Math.min(32, baseSize * viewport.zoom));
-					
+
 					// Try to get the icon from cache
 					const icon = marker.icon ? iconCache.get(marker.icon) : null;
-					
+
 					// Track what size was actually drawn for label positioning
 					let drawnSize = iconSize;
-					
-					if (icon && icon.complete && icon.naturalWidth > 0) {
+
+					if (icon?.complete && icon.naturalWidth > 0) {
 						// Draw the actual icon in red using an offscreen canvas
 						ctx.save();
-						
+
 						// Add a subtle glow/shadow for visibility
 						ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
 						ctx.shadowBlur = 4;
 						ctx.shadowOffsetX = 1;
 						ctx.shadowOffsetY = 1;
-						
+
 						// Create temporary canvas for color transformation
-						const tempCanvas = document.createElement('canvas');
+						const tempCanvas = document.createElement("canvas");
 						tempCanvas.width = iconSize;
 						tempCanvas.height = iconSize;
-						const tempCtx = tempCanvas.getContext('2d');
-						
+						const tempCtx = tempCanvas.getContext("2d");
+
 						if (tempCtx) {
 							// Draw icon on temp canvas
 							tempCtx.drawImage(icon, 0, 0, iconSize, iconSize);
-							
+
 							// Apply red color only to non-transparent pixels
-							tempCtx.globalCompositeOperation = 'source-in';
-							tempCtx.fillStyle = '#ff0000';
+							tempCtx.globalCompositeOperation = "source-in";
+							tempCtx.fillStyle = `rgba(${(marker.color >> 16) & 0xff}, ${(marker.color >> 8) & 0xff}, ${marker.color & 0xff}, ${Math.min(Math.max(marker.opacity / 255, 0), 1)})`;
 							tempCtx.fillRect(0, 0, iconSize, iconSize);
-							
+
 							// Draw the colored icon to main canvas
 							ctx.drawImage(
 								tempCanvas,
 								screenX - iconSize / 2,
-								screenY - iconSize / 2
+								screenY - iconSize / 2,
 							);
 						}
-						
+
 						ctx.restore();
 					} else {
 						// Fallback to colored circle if icon not loaded
 						const markerSize = Math.max(4, Math.min(10, 5 * viewport.zoom));
 						drawnSize = markerSize;
-						
+
 						ctx.fillStyle = "#ff0000"; // Default red
 						ctx.strokeStyle = "#ffffff";
 						ctx.lineWidth = 2;
@@ -295,26 +329,24 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 						const fontSize = Math.max(10, Math.min(14, 12 * viewport.zoom));
 						ctx.font = `${fontSize}px sans-serif`;
 						const textWidth = ctx.measureText(marker.label).width;
-						
+
 						// Background for label
 						ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
 						ctx.fillRect(
 							screenX + drawnSize / 2 + 4,
 							screenY - fontSize / 2 - 2,
 							textWidth + 8,
-							fontSize + 4
+							fontSize + 4,
 						);
-						
+
 						// Label text
 						ctx.fillStyle = "#ffffff";
 						ctx.fillText(
 							marker.label,
 							screenX + drawnSize / 2 + 8,
-							screenY + fontSize / 2 - 2
+							screenY + fontSize / 2 - 2,
 						);
 					}
-					
-					drawnCount++;
 				}
 			}
 		}
@@ -326,21 +358,29 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 					if (!marker.position) continue;
 
 					const mapChunkSize = 32;
-					
+
 					// Calculate which tile the marker is in
 					const markerTileX = Math.floor(marker.position.y / mapChunkSize); // Swap: use Y for tileX
 					const markerTileY = Math.floor(marker.position.x / mapChunkSize); // Swap: use X for tileY
-					
+
 					// Calculate position WITHIN the tile (0-1 range)
-					const offsetWithinTileX = (marker.position.y % mapChunkSize) / mapChunkSize;
-					const offsetWithinTileY = (marker.position.x % mapChunkSize) / mapChunkSize;
+					const offsetWithinTileX =
+						(marker.position.y % mapChunkSize) / mapChunkSize;
+					const offsetWithinTileY =
+						(marker.position.x % mapChunkSize) / mapChunkSize;
 
 					const normalizedX = markerTileX - minX;
 					const normalizedY = markerTileY - minY;
 
 					// Calculate pixel-perfect position including offset within tile
-					const screenX = ((normalizedY + offsetWithinTileY) * tileSize - viewport.x * tileSize) * viewport.zoom;
-					const screenY = ((normalizedX + offsetWithinTileX) * tileSize - viewport.y * tileSize) * viewport.zoom;
+					const screenX =
+						((normalizedY + offsetWithinTileY) * tileSize -
+							viewport.x * tileSize) *
+						viewport.zoom;
+					const screenY =
+						((normalizedX + offsetWithinTileX) * tileSize -
+							viewport.y * tileSize) *
+						viewport.zoom;
 
 					if (
 						screenX > -20 &&
@@ -350,8 +390,11 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 					) {
 						// Scale marker size with zoom - smaller base size
 						const baseSize = 4;
-						const markerSize = Math.max(3, Math.min(8, baseSize * viewport.zoom));
-						
+						const markerSize = Math.max(
+							3,
+							Math.min(8, baseSize * viewport.zoom),
+						);
+
 						// Draw prospecting marker (orange square)
 						ctx.fillStyle = "#ffaa00";
 						ctx.strokeStyle = "#ffffff";
@@ -359,7 +402,12 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 
 						// Draw square marker for prospecting
 						ctx.beginPath();
-						ctx.rect(screenX - markerSize, screenY - markerSize, markerSize * 2, markerSize * 2);
+						ctx.rect(
+							screenX - markerSize,
+							screenY - markerSize,
+							markerSize * 2,
+							markerSize * 2,
+						);
 						ctx.fill();
 						ctx.stroke();
 
@@ -371,39 +419,42 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 								const qualityB = b.readings?.quality ?? 0;
 								return qualityB - qualityA;
 							});
-							
+
 							// Show all ores when zoomed in to 3x+, otherwise show top 3
 							const showAll = viewport.zoom >= 3.0;
 							const displayCount = showAll ? sortedResults.length : 3;
-							
+
 							// Format ores with quality values
-							const oresWithQuality = sortedResults.slice(0, displayCount).map(r => {
-								const oreName = r.ore_code.split('-').pop();
-								const quality = r.readings?.quality ?? 0;
-								return `${oreName}(${quality.toFixed(2)})`;
-							});
-							
+							const oresWithQuality = sortedResults
+								.slice(0, displayCount)
+								.map((r) => {
+									const oreName = r.ore_code.split("-").pop();
+									const quality = r.readings?.quality ?? 0;
+									return `${oreName}(${quality.toFixed(2)})`;
+								});
+
 							const remainingCount = sortedResults.length - displayCount;
-							const oreText = remainingCount > 0 
-								? `${oresWithQuality.join(", ")} +${remainingCount}`
-								: oresWithQuality.join(", ");
-							
+							const oreText =
+								remainingCount > 0
+									? `${oresWithQuality.join(", ")} +${remainingCount}`
+									: oresWithQuality.join(", ");
+
 							const fontSize = Math.max(10, Math.min(12, 11 * viewport.zoom));
 							ctx.font = `${fontSize}px sans-serif`;
 							const textWidth = ctx.measureText(oreText).width;
-							
+
 							ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
 							ctx.fillRect(
 								screenX + markerSize + 4,
 								screenY - fontSize / 2 - 2,
 								textWidth + 8,
-								fontSize + 4
+								fontSize + 4,
 							);
 							ctx.fillStyle = "#ffaa00";
 							ctx.fillText(
 								oreText,
 								screenX + markerSize + 8,
-								screenY + fontSize / 2 - 2
+								screenY + fontSize / 2 - 2,
 							);
 						}
 					}
@@ -421,20 +472,41 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 				20,
 			);
 		}
-	}, [tiles, viewport, imageCache, iconCache, bounds, containerSize, mapMarkers, prospectingLogs]);
+	}, [
+		tiles,
+		viewport,
+		imageCache,
+		iconCache,
+		bounds,
+		containerSize,
+		mapMarkers,
+		prospectingLogs,
+	]);
 
 	// Helper function to convert marker position to screen coordinates
-	const markerToScreen = useCallback((position: { x: number; y: number; z: number }, minX: number, minY: number, tileSize: number) => {
-		const markerTileX = Math.floor(position.y / MAP_CHUNK_SIZE);
-		const markerTileY = Math.floor(position.x / MAP_CHUNK_SIZE);
-		const offsetWithinTileX = (position.y % MAP_CHUNK_SIZE) / MAP_CHUNK_SIZE;
-		const offsetWithinTileY = (position.x % MAP_CHUNK_SIZE) / MAP_CHUNK_SIZE;
-		const normalizedX = markerTileX - minX;
-		const normalizedY = markerTileY - minY;
-		const screenX = ((normalizedY + offsetWithinTileY) * tileSize - viewport.x * tileSize) * viewport.zoom;
-		const screenY = ((normalizedX + offsetWithinTileX) * tileSize - viewport.y * tileSize) * viewport.zoom;
-		return { screenX, screenY };
-	}, [viewport]);
+	const markerToScreen = useCallback(
+		(
+			position: { x: number; y: number; z: number },
+			minX: number,
+			minY: number,
+			tileSize: number,
+		) => {
+			const markerTileX = Math.floor(position.y / MAP_CHUNK_SIZE);
+			const markerTileY = Math.floor(position.x / MAP_CHUNK_SIZE);
+			const offsetWithinTileX = (position.y % MAP_CHUNK_SIZE) / MAP_CHUNK_SIZE;
+			const offsetWithinTileY = (position.x % MAP_CHUNK_SIZE) / MAP_CHUNK_SIZE;
+			const normalizedX = markerTileX - minX;
+			const normalizedY = markerTileY - minY;
+			const screenX =
+				((normalizedY + offsetWithinTileY) * tileSize - viewport.x * tileSize) *
+				viewport.zoom;
+			const screenY =
+				((normalizedX + offsetWithinTileX) * tileSize - viewport.y * tileSize) *
+				viewport.zoom;
+			return { screenX, screenY };
+		},
+		[viewport],
+	);
 
 	// Mouse wheel zoom
 	const handleWheel = useCallback(
@@ -502,27 +574,41 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 			// Check if hovering over any marker
 			let hoveredMarker = null;
 			const hoverThreshold = 20;
-			
+
 			// Check waypoint markers
 			if (mapMarkers?.markers) {
 				for (const marker of mapMarkers.markers) {
 					if (!marker.position) continue;
-					const { screenX, screenY } = markerToScreen(marker.position, minX, minY, tileSize);
-					const distance = Math.sqrt(Math.pow(mouseX - screenX, 2) + Math.pow(mouseY - screenY, 2));
+					const { screenX, screenY } = markerToScreen(
+						marker.position,
+						minX,
+						minY,
+						tileSize,
+					);
+					const distance = Math.sqrt(
+						(mouseX - screenX) ** 2 + (mouseY - screenY) ** 2,
+					);
 					if (distance < hoverThreshold) {
 						hoveredMarker = marker;
 						break;
 					}
 				}
 			}
-			
+
 			// Check prospecting markers if no waypoint hovered
 			if (!hoveredMarker && prospectingLogs) {
 				for (const [_playerUid, log] of prospectingLogs) {
 					for (const marker of log.markers) {
 						if (!marker.position) continue;
-						const { screenX, screenY } = markerToScreen(marker.position, minX, minY, tileSize);
-						const distance = Math.sqrt(Math.pow(mouseX - screenX, 2) + Math.pow(mouseY - screenY, 2));
+						const { screenX, screenY } = markerToScreen(
+							marker.position,
+							minX,
+							minY,
+							tileSize,
+						);
+						const distance = Math.sqrt(
+							(mouseX - screenX) ** 2 + (mouseY - screenY) ** 2,
+						);
 						if (distance < hoverThreshold) {
 							hoveredMarker = marker;
 							break;
@@ -534,15 +620,20 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 
 			// Update cursor coordinates
 			if (hoveredMarker?.position) {
-				setCursorCoords({ 
-					x: Math.round(hoveredMarker.position.x - spawnOffsetX), 
+				setCursorCoords({
+					screenX: e.clientX,
+					screenY: e.clientY,
+					x: Math.round(hoveredMarker.position.x - spawnOffsetX),
 					y: Math.round(hoveredMarker.position.z),
-					z: Math.round(hoveredMarker.position.y - spawnOffsetY), 
-					screenX: e.clientX, 
-					screenY: e.clientY 
+					z: Math.round(hoveredMarker.position.y - spawnOffsetY),
 				});
 			} else {
-				setCursorCoords({ x: vsX, y: vsY, screenX: e.clientX, screenY: e.clientY });
+				setCursorCoords({
+					screenX: e.clientX,
+					screenY: e.clientY,
+					x: vsX,
+					y: vsY,
+				});
 			}
 
 			// Handle panning
@@ -557,7 +648,18 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 				setLastMousePos({ x: e.clientX, y: e.clientY });
 			}
 		},
-		[isPanning, lastMousePos, tiles, viewport, bounds, mapMarkers, prospectingLogs, markerToScreen, spawnOffsetX, spawnOffsetY],
+		[
+			isPanning,
+			lastMousePos,
+			tiles,
+			viewport,
+			bounds,
+			mapMarkers,
+			prospectingLogs,
+			markerToScreen,
+			spawnOffsetX,
+			spawnOffsetY,
+		],
 	);
 
 	const handleMouseUp = useCallback(() => {
@@ -611,36 +713,35 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 	return (
 		<Card className="relative h-full min-h-[400px] overflow-hidden">
 			<div
-				ref={containerRef}
 				className="w-full h-full"
+				ref={containerRef}
 				style={{ cursor: isPanning ? "grabbing" : "grab" }}
 			>
 				<canvas
-					ref={canvasRef}
 					className="w-full h-full"
-					onWheel={handleWheel}
 					onMouseDown={handleMouseDown}
+					onMouseLeave={handleMouseLeave}
 					onMouseMove={handleMouseMove}
 					onMouseUp={handleMouseUp}
-					onMouseLeave={handleMouseLeave}
+					onWheel={handleWheel}
+					ref={canvasRef}
 				/>
-				
-			{/* Cursor coordinates display */}
-			{cursorCoords && canvasRef.current && (
-				<div
-					className="absolute pointer-events-none bg-background/95 backdrop-blur-sm border rounded px-2 py-1 text-xs font-mono shadow-lg"
-					style={{
-						left: `${cursorCoords.screenX - canvasRef.current.getBoundingClientRect().left + 10}px`,
-						top: `${cursorCoords.screenY - canvasRef.current.getBoundingClientRect().top + 60}px`,
-						transform: 'translate(0, -100%)',
-					}}
-				>
-					{cursorCoords.z !== undefined 
-						? `${cursorCoords.x}, ${cursorCoords.y}, ${cursorCoords.z}`
-						: `${cursorCoords.x}, ${cursorCoords.y}`
-					}
-				</div>
-			)}
+
+				{/* Cursor coordinates display */}
+				{cursorCoords && canvasRef.current && (
+					<div
+						className="absolute pointer-events-none bg-background/95 backdrop-blur-sm border rounded px-2 py-1 text-xs font-mono shadow-lg"
+						style={{
+							left: `${cursorCoords.screenX - canvasRef.current.getBoundingClientRect().left + 10}px`,
+							top: `${cursorCoords.screenY - canvasRef.current.getBoundingClientRect().top + 60}px`,
+							transform: "translate(0, -100%)",
+						}}
+					>
+						{cursorCoords.z !== undefined
+							? `${cursorCoords.x}, ${cursorCoords.y}, ${cursorCoords.z}`
+							: `${cursorCoords.x}, ${cursorCoords.y}`}
+					</div>
+				)}
 			</div>
 
 			{/* Controls hint */}
@@ -650,4 +751,3 @@ export function WorldMapViewer({ worldPath, mapMarkers, prospectingLogs }: World
 		</Card>
 	);
 }
-

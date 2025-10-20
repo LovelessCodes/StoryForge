@@ -26,12 +26,13 @@ function RouteComponent() {
 	>(null);
 	const { data: worlds } = useSaves();
 	const filteredWorlds = worlds?.filter((world) => {
-		const matchesSearchText = world[0].world_name
+		const matchesSearchText = world.data.world_name
 			.toLowerCase()
 			.includes(searchText.toLowerCase());
 		const matchesInstallation = selectedInstallationId
 			? installations.find(
-					(installation) => installation.path.split("/").pop() === world[1],
+					(installation) =>
+						installation.path.split("/").pop() === world.installation_name,
 				)?.id === selectedInstallationId
 			: true;
 		return matchesSearchText && matchesInstallation;

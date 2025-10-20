@@ -1,4 +1,4 @@
-import type { GameData, MapMarkers, ProspectingLog } from "@/hooks/use-saves";
+import { WorldMapViewer } from "@/components/maps/world-map-viewer";
 import {
 	Dialog,
 	DialogClose,
@@ -7,11 +7,11 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import type { World } from "@/lib/types";
 import { useDialogStore } from "@/stores/dialogs";
-import { WorldMapViewer } from "@/components/maps/world-map-viewer";
 
 export type ViewMapDialogProps = {
-	world: [GameData, string, string, MapMarkers | null | undefined, [string, ProspectingLog][]];
+	world: World;
 };
 
 export function ViewMapDialog({
@@ -21,21 +21,21 @@ export function ViewMapDialog({
 	open: boolean;
 } & ViewMapDialogProps) {
 	const { closeDialog } = useDialogStore();
-	const worldData = world[0];
-	const worldPath = world[1];
-	const mapMarkers = world[3];
-	const prospectingLogs = world[4];
+	const worldData = world.data;
+	const worldPath = world.path;
+	const mapMarkers = world.map_markers;
+	const prospectingLogs = world.prospecting_logs;
 
 	return (
 		<Dialog onOpenChange={closeDialog} open={open}>
 			<DialogClose />
-			<DialogContent 
+			<DialogContent
 				className="p-0 gap-0 flex flex-col"
 				style={{
-					width: "80vw",
 					height: "85vh",
-					maxWidth: "80vw",
 					maxHeight: "85vh",
+					maxWidth: "80vw",
+					width: "80vw",
 				}}
 			>
 				<DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
@@ -46,14 +46,13 @@ export function ViewMapDialog({
 				</DialogHeader>
 
 				<div className="flex-1 min-h-0 w-full overflow-hidden p-4">
-					<WorldMapViewer 
-						worldPath={worldPath} 
+					<WorldMapViewer
 						mapMarkers={mapMarkers}
 						prospectingLogs={prospectingLogs}
+						worldPath={worldPath}
 					/>
 				</div>
 			</DialogContent>
 		</Dialog>
 	);
 }
-
