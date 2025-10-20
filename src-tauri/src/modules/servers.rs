@@ -1,15 +1,20 @@
-use serde_json::Value;
+use reqwest::get;
+use serde_json::{from_str, from_value, json, to_string_pretty, Map, Value};
+use std::{
+    fs::{read_dir, read_to_string, write},
+    path::{Path, PathBuf},
+};
 use tauri::{command, AppHandle};
 use tauri_plugin_zustand::ManagerExt;
 
 use super::errors::UiError;
 use super::utils::{installations_folder, installations_subdir};
 
-fn extract_servers_from_directory(path: std::path::PathBuf) -> Value {
+fn extract_servers_from_directory(path: PathBuf) -> Value {
     let mut servers = Value::Array(vec![]);
     let clientsettings_path = path.join("clientsettings.json");
-    if let Ok(content) = std::fs::read_to_string(clientsettings_path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    if let Ok(content) = read_to_string(clientsettings_path) {
+        if let Ok(json) = from_str::<Value>(&content) {
             if let Some(multiplayer_servers) = json
                 .get("stringListSettings")
                 .and_then(|sl| sl.get("multiplayerservers"))
@@ -28,7 +33,7 @@ pub async fn fetch_all_servers(app: AppHandle) -> Result<Value, UiError> {
     let subdir = installations_subdir(app.clone());
     let installation_paths = installations_folder(app.clone()).join(&subdir);
     let mut all_servers = Vec::new();
-    for entry in std::fs::read_dir(installation_paths).unwrap() {
+    for entry in read_dir(installation_paths).unwrap() {
         let entry = entry.unwrap();
         if entry.path().is_dir() {
             let servers = extract_servers_from_directory(entry.path());
@@ -38,7 +43,7 @@ pub async fn fetch_all_servers(app: AppHandle) -> Result<Value, UiError> {
                 .unwrap()
                 .to_string_lossy()
                 .to_string();
-            let mut installation_servers = serde_json::Map::new();
+            let mut installation_servers = Map::new();
             installation_servers.insert(installation_name, servers);
             all_servers.push(Value::Object(installation_servers));
         }
@@ -53,7 +58,7 @@ pub fn remove_server_from_installation(
     server: String,
 ) -> Result<(), UiError> {
     let installation_zustand = app.zustand().get("installations", "installations").unwrap();
-    let installation_json: Value = serde_json::from_value(installation_zustand).unwrap();
+    let installation_json: Value = from_value(installation_zustand).unwrap();
     // Find installation with matching id
     let installation = installation_json
         .as_array()
@@ -69,18 +74,18 @@ pub fn remove_server_from_installation(
         name: "invalid_data".into(),
         message: "Installation path is not a string".into(),
     })?;
-    let clientsettings_path = std::path::Path::new(installation_path).join("clientsettings.json");
+    let clientsettings_path = Path::new(installation_path).join("clientsettings.json");
     let mut clientsettings: Value = if clientsettings_path.exists() {
-        let content = std::fs::read_to_string(&clientsettings_path).map_err(|e| UiError {
+        let content = read_to_string(&clientsettings_path).map_err(|e| UiError {
             name: "io_error".into(),
             message: format!("Failed to read clientsettings.json: {e}"),
         })?;
-        serde_json::from_str(&content).map_err(|e| UiError {
+        from_str(&content).map_err(|e| UiError {
             name: "parse_error".into(),
             message: format!("Failed to parse clientsettings.json: {e}"),
         })?
     } else {
-        serde_json::json!({})
+        json!({})
     };
     // Extract or create stringListSettings as an object
     let mut string_list_settings = if let Some(sls) = clientsettings
@@ -89,7 +94,7 @@ pub fn remove_server_from_installation(
     {
         sls.clone()
     } else {
-        serde_json::Map::new()
+        Map::new()
     };
 
     // Extract or create multiplayerservers as an array
@@ -112,11 +117,11 @@ pub fn remove_server_from_installation(
 
     // Put the updated string_list_settings back into clientsettings
     clientsettings["stringListSettings"] = Value::Object(string_list_settings);
-    let new_content = serde_json::to_string_pretty(&clientsettings).map_err(|e| UiError {
+    let new_content = to_string_pretty(&clientsettings).map_err(|e| UiError {
         name: "serialize_error".into(),
         message: format!("Failed to serialize clientsettings.json: {e}"),
     })?;
-    std::fs::write(&clientsettings_path, new_content).map_err(|e| UiError {
+    write(&clientsettings_path, new_content).map_err(|e| UiError {
         name: "io_error".into(),
         message: format!("Failed to write clientsettings.json: {e}"),
     })?;
@@ -130,7 +135,7 @@ pub fn check_server_in_installation(
     server: String,
 ) -> Result<bool, UiError> {
     let installation_zustand = app.zustand().get("installations", "installations").unwrap();
-    let installation_json: Value = serde_json::from_value(installation_zustand).unwrap();
+    let installation_json: Value = from_value(installation_zustand).unwrap();
     // Find installation with matching id
     let installation = installation_json
         .as_array()
@@ -146,15 +151,15 @@ pub fn check_server_in_installation(
         name: "invalid_data".into(),
         message: "Installation path is not a string".into(),
     })?;
-    let clientsettings_path = std::path::Path::new(installation_path).join("clientsettings.json");
+    let clientsettings_path = Path::new(installation_path).join("clientsettings.json");
     if !clientsettings_path.exists() {
         return Ok(false);
     }
-    let content = std::fs::read_to_string(&clientsettings_path).map_err(|e| UiError {
+    let content = read_to_string(&clientsettings_path).map_err(|e| UiError {
         name: "io_error".into(),
         message: format!("Failed to read clientsettings.json: {e}"),
     })?;
-    let clientsettings: Value = serde_json::from_str(&content).map_err(|e| UiError {
+    let clientsettings: Value = from_str(&content).map_err(|e| UiError {
         name: "parse_error".into(),
         message: format!("Failed to parse clientsettings.json: {e}"),
     })?;
@@ -179,7 +184,7 @@ pub fn add_server_to_installation(
     server: String,
 ) -> Result<(), UiError> {
     let installation_zustand = app.zustand().get("installations", "installations").unwrap();
-    let installation_json: Value = serde_json::from_value(installation_zustand).unwrap();
+    let installation_json: Value = from_value(installation_zustand).unwrap();
     // Find installation with matching id
     let installation = installation_json
         .as_array()
@@ -195,18 +200,18 @@ pub fn add_server_to_installation(
         name: "invalid_data".into(),
         message: "Installation path is not a string".into(),
     })?;
-    let clientsettings_path = std::path::Path::new(installation_path).join("clientsettings.json");
+    let clientsettings_path = Path::new(installation_path).join("clientsettings.json");
     let mut clientsettings: Value = if clientsettings_path.exists() {
-        let content = std::fs::read_to_string(&clientsettings_path).map_err(|e| UiError {
+        let content = read_to_string(&clientsettings_path).map_err(|e| UiError {
             name: "io_error".into(),
             message: format!("Failed to read clientsettings.json: {e}"),
         })?;
-        serde_json::from_str(&content).map_err(|e| UiError {
+        from_str(&content).map_err(|e| UiError {
             name: "parse_error".into(),
             message: format!("Failed to parse clientsettings.json: {e}"),
         })?
     } else {
-        serde_json::json!({})
+        json!({})
     };
     // Extract or create stringListSettings as an object
     let mut string_list_settings = if let Some(sls) = clientsettings
@@ -215,7 +220,7 @@ pub fn add_server_to_installation(
     {
         sls.clone()
     } else {
-        serde_json::Map::new()
+        Map::new()
     };
 
     // Extract or create multiplayerservers as an array
@@ -238,11 +243,11 @@ pub fn add_server_to_installation(
 
     // Put the updated string_list_settings back into clientsettings
     clientsettings["stringListSettings"] = Value::Object(string_list_settings);
-    let new_content = serde_json::to_string_pretty(&clientsettings).map_err(|e| UiError {
+    let new_content = to_string_pretty(&clientsettings).map_err(|e| UiError {
         name: "serialize_error".into(),
         message: format!("Failed to serialize clientsettings.json: {e}"),
     })?;
-    std::fs::write(&clientsettings_path, new_content).map_err(|e| UiError {
+    write(&clientsettings_path, new_content).map_err(|e| UiError {
         name: "io_error".into(),
         message: format!("Failed to write clientsettings.json: {e}"),
     })?;
@@ -251,11 +256,8 @@ pub fn add_server_to_installation(
 
 #[command]
 pub async fn fetch_public_servers() -> Result<Value, UiError> {
-    let client = reqwest::Client::new();
     let url = "https://masterserver.vintagestory.at/api/v1/servers/list";
-    let res = client
-        .get(url)
-        .send()
+    let res = get(url)
         .await
         .map_err(|e| UiError::from(format!("Request error: {e}")))?;
     if !res.status().is_success() {
@@ -269,6 +271,6 @@ pub async fn fetch_public_servers() -> Result<Value, UiError> {
         .await
         .map_err(|e| UiError::from(format!("Read error: {e}")))?;
     let json: Value =
-        serde_json::from_str(&res_text).map_err(|e| UiError::from(format!("Parse error: {e}")))?;
+        from_str(&res_text).map_err(|e| UiError::from(format!("Parse error: {e}")))?;
     Ok(json)
 }

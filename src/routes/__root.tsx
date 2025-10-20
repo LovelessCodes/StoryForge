@@ -24,6 +24,7 @@ import { EditWorldDialog } from "@/components/dialogs/editworld.dialog";
 import { ImportInstallationDialog } from "@/components/dialogs/importinstallation.dialog";
 import { RemoveModDialog } from "@/components/dialogs/removemod.dialog";
 import { UpdateModDialog } from "@/components/dialogs/updatemod.dialog";
+import { ViewMapDialog } from "@/components/dialogs/viewmap.dialog";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useUpdater } from "@/hooks/use-updater";
 import { type DialogMap, useDialogStore } from "@/stores/dialogs";
@@ -213,6 +214,14 @@ function RootComponent() {
 					{...((active?.key === "DeleteWorldDialog"
 						? active.props
 						: {}) as DialogMap["DeleteWorldDialog"])}
+				/>
+			)}
+			{active?.key === "ViewMapDialog" && (
+				<ViewMapDialog
+					open={active?.key === "ViewMapDialog"}
+					{...((active?.key === "ViewMapDialog"
+						? active.props
+						: {}) as DialogMap["ViewMapDialog"])}
 				/>
 			)}
 		</React.Fragment>

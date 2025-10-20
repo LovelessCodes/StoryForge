@@ -1,29 +1,25 @@
 import { AnimatePresence } from "motion/react";
 import { WorldItem } from "@/components/items/world.item";
-import type { GameData } from "@/hooks/use-saves";
+import type { World } from "@/lib/types";
 
-export function WorldList({
-	worlds,
-}: {
-	worlds: [GameData, string, string][];
-}) {
+export function WorldList({ worlds }: { worlds: World[] }) {
 	return (
 		<div className="flex flex-col w-full bg-card p-2 rounded shadow border relative overflow-y-auto">
 			<AnimatePresence>
 				{[...worlds]
 					.sort((a, b) => {
-						const aLastPlayed = a[0].last_played
-							? new Date(a[0].last_played).getTime()
+						const aLastPlayed = a.data.last_played
+							? new Date(a.data.last_played).getTime()
 							: 0;
-						const bLastPlayed = b[0].last_played
-							? new Date(b[0].last_played).getTime()
+						const bLastPlayed = b.data.last_played
+							? new Date(b.data.last_played).getTime()
 							: 0;
 						return bLastPlayed - aLastPlayed;
 					})
 					.map((world, i) => (
 						<WorldItem
 							index={i}
-							key={world[0].world_name + world[1]}
+							key={world.data.world_name + world.installation_name}
 							world={world}
 						/>
 					))}

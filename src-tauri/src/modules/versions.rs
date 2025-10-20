@@ -1,3 +1,7 @@
+use std::{
+    fs::{read_dir, remove_dir_all},
+    path::PathBuf,
+};
 use tauri::{command, AppHandle};
 
 use crate::modules::utils::move_folder;
@@ -15,7 +19,7 @@ pub fn get_installed_versions(app: AppHandle) -> Result<Vec<String>, UiError> {
         return Ok(vec![]);
     }
     let mut versions = vec![];
-    for entry in std::fs::read_dir(versions_dir).map_err(|e| UiError {
+    for entry in read_dir(versions_dir).map_err(|e| UiError {
         name: "io_error".into(),
         message: format!("Failed to read versions directory: {e}"),
     })? {
@@ -45,7 +49,7 @@ pub fn remove_installed_version(version: String, app: AppHandle) -> Result<Strin
             ),
         });
     }
-    std::fs::remove_dir_all(&versions_path).map_err(|e| UiError {
+    remove_dir_all(&versions_path).map_err(|e| UiError {
         name: "remove_failed".into(),
         message: format!("Failed to remove version directory: {e}"),
     })?;
@@ -80,21 +84,21 @@ pub async fn move_versions_folder(
     subdir: String,
 ) -> Result<String, UiError> {
     move_folder(
-        std::path::PathBuf::from(source).join(&subdir),
-        std::path::PathBuf::from(destination).join(&subdir),
+        PathBuf::from(source).join(&subdir),
+        PathBuf::from(destination).join(&subdir),
     )?;
     Ok("moved".into())
 }
 
 #[command]
 pub async fn remove_all_versions(source: String, subdir: String) -> Result<String, UiError> {
-    let source_path = std::path::PathBuf::from(source).join(&subdir);
+    let source_path = PathBuf::from(source).join(&subdir);
 
     if !source_path.exists() || !source_path.is_dir() {
         return Ok("not_exists".into());
     }
 
-    std::fs::remove_dir_all(&source_path).map_err(|e| UiError {
+    remove_dir_all(&source_path).map_err(|e| UiError {
         name: "remove_failed".into(),
         message: format!("Failed to remove versions directory: {e}"),
     })?;

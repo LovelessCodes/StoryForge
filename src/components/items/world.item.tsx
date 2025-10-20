@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { formatDistanceToNow } from "date-fns";
 import {
 	DownloadCloudIcon,
+	MapIcon,
 	PenIcon,
 	PlayIcon,
 	SproutIcon,
@@ -18,7 +19,7 @@ import {
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
-import type { GameData } from "@/hooks/use-saves";
+import type { World } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
@@ -42,16 +43,17 @@ export const WorldItem = ({
 	world,
 	index = 0,
 }: {
-	world: [GameData, string, string];
+	world: World;
 	index?: number;
 }) => {
 	const { installations } = useInstallations();
 	const { data: versions } = useInstalledVersions();
 	const { openDialog } = useDialogStore();
 	const [copiedText, copyToClipboard] = useCopyToClipboard();
-	const worldData = world[0];
+	const worldData = world.data;
 	const installation = installations.find(
-		(installation) => installation.path.split("/").pop() === world[2],
+		(installation) =>
+			installation.path.split("/").pop() === world.installation_name,
 	);
 	const version = versions?.find((v) => v === installation?.version);
 	const { mutate: installVersion, isPending: isInstalling } =
@@ -155,7 +157,10 @@ export const WorldItem = ({
 										invoke("play_game", {
 											options: {
 												installation_id: installation.id,
-												save: world[1].split("/").pop()?.replace(".vcdbs", ""),
+												save: world.path
+													.split("/")
+													.pop()
+													?.replace(".vcdbs", ""),
 											},
 										});
 										toast.success(
@@ -189,6 +194,42 @@ export const WorldItem = ({
 							{version ? "Play" : `Install ${installation.version}`}
 						</TooltipContent>
 					</Tooltip>
+					{world.has_map ? (
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
+									onClick={() => openDialog("ViewMapDialog", { world })}
+									variant="outline"
+								>
+									<MapIcon
+										aria-hidden="true"
+										className="-ms-1 opacity-60 text-blue-300"
+										size={16}
+									/>
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>View Map</TooltipContent>
+						</Tooltip>
+					) : (
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10 cursor-not-allowed"
+									variant="outline"
+								>
+									<MapIcon
+										aria-hidden="true"
+										className="-ms-1 opacity-30 text-destructive"
+										size={16}
+									/>
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>
+								No map available for {worldData.world_name}
+							</TooltipContent>
+						</Tooltip>
+					)}
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<Button

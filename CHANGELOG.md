@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Introduced a map viewer on worlds, complete with map markers and prospect readings.
+
 ### Changed
 
 - Cleaned up code handling paths to make the application more robust.

@@ -1,35 +1,16 @@
 import { type UseQueryOptions, useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
+import type { World } from "@/lib/types";
 
-export type GameData = {
-	seed: number;
-	world_name: string;
-	total_game_seconds: number;
-	total_seconds_played: number;
-	last_played: string | null;
-	created_game_version: string;
-	last_saved_game_version: string | null;
-	created_by_player_name: string;
-	play_style: string;
-	world_type: string;
-	total_game_seconds_start: number;
-	savegame_identifier: string;
-};
-
-// It comes out as [gameData, installationName][]
+// Vec<(String, ProspectingLog)>
 export const useSaves = (
 	props?: Omit<
-		UseQueryOptions<
-			[GameData, string, string][],
-			Error,
-			[GameData, string, string][]
-		>,
+		UseQueryOptions<World[], Error, World[]>,
 		"queryKey" | "queryFn"
 	>,
 ) =>
 	useQuery({
-		queryFn: () =>
-			invoke("get_all_saves") as Promise<[GameData, string, string][]>,
+		queryFn: () => invoke("get_all_saves") as Promise<World[]>,
 		queryKey: ["saves"],
 		...props,
 	});

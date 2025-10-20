@@ -1,24 +1,39 @@
+use prost::Message;
+use rusqlite::OpenFlags;
+use serde::{Deserialize, Serialize};
 use serde_json::{from_value, Value};
-use std::{ffi::OsStr, path::Path};
+use std::{
+    ffi::OsStr,
+    fs::{create_dir_all, read_dir, remove_file, rename},
+    path::Path,
+};
 use tauri::{command, AppHandle};
 use tauri_plugin_zustand::ManagerExt;
 
 use super::errors::UiError;
-use super::proto::GameData;
+use super::proto::{GameData, MapMarkers, ProspectingLog};
 use super::utils::{installations_folder, installations_subdir};
-use prost::Message;
-use rusqlite::OpenFlags;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct World {
+    pub data: GameData,
+    pub has_map: bool,
+    pub path: String,
+    pub installation_name: String,
+    pub map_markers: Option<Option<MapMarkers>>,
+    pub prospecting_logs: Vec<(String, ProspectingLog)>,
+}
 
 // The result should be a list of objects that contain the name of the save, and the installation it belongs to
 // e.g. [{ name: "Save 1", installation: "Installation 1" }, { name: "Save 2", installation: "Installation 2" }]
 #[command]
-pub fn get_all_saves(app: AppHandle) -> Result<Vec<(GameData, String, String)>, UiError> {
+pub fn get_all_saves(app: AppHandle) -> Result<Vec<World>, UiError> {
     // Look through all installation folders and collect save names from the .vcdbs files
     let subdir = installations_subdir(app.clone());
     let installation_dir_path = installations_folder(app.clone()).join(&subdir);
-    let mut saves = Vec::new();
+    let mut saves: Vec<World> = Vec::new();
     if installation_dir_path.exists() && installation_dir_path.is_dir() {
-        for entry in std::fs::read_dir(installation_dir_path)
+        for entry in read_dir(&installation_dir_path)
             .map_err(|e| UiError::from(format!("Read dir error: {e}")))?
         {
             let entry = entry.map_err(|e| UiError::from(format!("Dir entry error: {e}")))?;
@@ -27,7 +42,7 @@ pub fn get_all_saves(app: AppHandle) -> Result<Vec<(GameData, String, String)>, 
             if path.is_dir() {
                 let saves_path = path.join("Saves");
                 if saves_path.exists() && saves_path.is_dir() {
-                    for save_entry in std::fs::read_dir(saves_path)
+                    for save_entry in read_dir(saves_path)
                         .map_err(|e| UiError::from(format!("Read dir error: {e}")))?
                     {
                         let save_entry = save_entry
@@ -102,11 +117,43 @@ pub fn get_all_saves(app: AppHandle) -> Result<Vec<(GameData, String, String)>, 
                                             play_style: gamedata.play_style,
                                             ..Default::default()
                                         };
-                                        saves.push((
-                                            compressed_gamedata,
-                                            save_path_string,
-                                            installation_name.clone(),
-                                        ));
+                                        // Check for if the map exists in the Maps folder in the installation folder
+                                        let has_map = path
+                                            .join("Maps")
+                                            .join(format!("{}.db", gamedata.savegame_identifier))
+                                            .exists();
+                                        let map_markers = gamedata
+                                            .mod_data
+                                            .get("playerMapMarkers_v2")
+                                            .map(|data| MapMarkers::decode(data.as_slice()).ok());
+
+                                        // Save all prospecting results found in mod_data entries that start with "oreMapMarkers",
+                                        // After the `oreMapMarkers-` part, the rest is a player uid that also needs to be saved
+                                        // for later use
+                                        let mut prospecting_results = Vec::new();
+                                        for (key, value) in &gamedata.mod_data {
+                                            if key.starts_with("oreMapMarkers-") {
+                                                let player_uid =
+                                                    key.strip_prefix("oreMapMarkers-").unwrap();
+                                                let items = ProspectingLog::decode(&**value)
+                                                    .map_err(|e| {
+                                                        UiError::from(format!(
+                                                            "Protobuf decode error: {e}"
+                                                        ))
+                                                    })?;
+                                                prospecting_results
+                                                    .push((player_uid.to_string(), items));
+                                            }
+                                        }
+
+                                        saves.push(World {
+                                            data: compressed_gamedata,
+                                            has_map,
+                                            path: save_path_string,
+                                            installation_name: installation_name.clone(),
+                                            map_markers,
+                                            prospecting_logs: prospecting_results,
+                                        });
                                     }
                                 }
                             }
@@ -149,8 +196,8 @@ pub fn get_installation_saves(
     // Traverse the saves directory and collect save names from the .vcdbs files
     let mut saves = Vec::new();
     if saves_path.exists() && saves_path.is_dir() {
-        for entry in std::fs::read_dir(saves_path)
-            .map_err(|e| UiError::from(format!("Read dir error: {e}")))?
+        for entry in
+            read_dir(saves_path).map_err(|e| UiError::from(format!("Read dir error: {e}")))?
         {
             let entry = entry.map_err(|e| UiError::from(format!("Dir entry error: {e}")))?;
             let path = entry.path();
@@ -200,8 +247,7 @@ pub fn update_world(
 
     let saves_path = Path::new(installation["path"].as_str().unwrap()).join("Saves");
     if !saves_path.exists() {
-        std::fs::create_dir_all(&saves_path)
-            .map_err(|e| UiError::from(format!("Create dir error: {e}")))?;
+        create_dir_all(&saves_path).map_err(|e| UiError::from(format!("Create dir error: {e}")))?;
     }
     let world_path = Path::new(&world_path);
     if !world_path.exists() || !world_path.is_file() {
@@ -250,16 +296,15 @@ pub fn update_world(
                 // Ensure the Maps directory exists
                 let maps_dir = new_maps_path.parent().unwrap();
                 if !maps_dir.exists() {
-                    std::fs::create_dir_all(maps_dir)
+                    create_dir_all(maps_dir)
                         .map_err(|e| UiError::from(format!("Create dir error: {e}")))?;
                 }
-                std::fs::rename(maps_path, &new_maps_path)
+                rename(maps_path, &new_maps_path)
                     .map_err(|e| UiError::from(format!("Rename error: {e}")))?;
             }
         }
     }
-    std::fs::rename(world_path, &new_world_path)
-        .map_err(|e| UiError::from(format!("Rename error: {e}")))?;
+    rename(world_path, &new_world_path).map_err(|e| UiError::from(format!("Rename error: {e}")))?;
 
     // Update the "WorldName" field in the protobuf data inside the .vcdbs file
     let conn = rusqlite::Connection::open_with_flags(
@@ -348,12 +393,11 @@ pub fn remove_world(world_path: String) -> Result<(), UiError> {
             });
         if let Some(maps_path) = maps_path {
             if maps_path.exists() && maps_path.is_file() {
-                std::fs::remove_file(maps_path)
+                remove_file(maps_path)
                     .map_err(|e| UiError::from(format!("Remove file error: {e}")))?;
             }
         }
     }
-    std::fs::remove_file(world_path)
-        .map_err(|e| UiError::from(format!("Remove file error: {e}")))?;
+    remove_file(world_path).map_err(|e| UiError::from(format!("Remove file error: {e}")))?;
     Ok(())
 }
