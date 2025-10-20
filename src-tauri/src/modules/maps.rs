@@ -154,13 +154,10 @@ pub fn inspect_map_database(world_path: String) -> Result<MapDatabaseInfo, UiErr
     };
 
     // 2. Find the Maps database
-    let maps_path = world_path_obj
-        .parent()
-        .and_then(|p| p.parent())
-        .map(|p| {
-            p.join("Maps")
-                .join(format!("{}.db", gamedata.savegame_identifier))
-        });
+    let maps_path = world_path_obj.parent().and_then(|p| p.parent()).map(|p| {
+        p.join("Maps")
+            .join(format!("{}.db", gamedata.savegame_identifier))
+    });
 
     let maps_path = match maps_path {
         Some(p) if p.exists() => p,
@@ -366,7 +363,7 @@ pub fn get_map_tile(world_path: String, position: i64) -> Result<MapTile, UiErro
         // Assume 512x512 for now (we'll adjust based on actual data)
         let pixel_count = map_piece.pixels.len();
         let size = (pixel_count as f64).sqrt() as u32;
-        
+
         // Convert pixels to PNG
         let png_data = pixels_to_png(&map_piece.pixels, size, size)?;
         (png_data, size, size)
@@ -428,16 +425,16 @@ pub fn get_all_map_tiles(world_path: String) -> Result<Vec<MapTile>, UiError> {
         let (x, y) = decode_position(position);
 
         // Try to decode as protobuf MapPieceDb first
-        let (image_data, width, height) =
-            if let Ok(map_piece) = MapPieceDb::decode(data.as_slice()) {
-                let pixel_count = map_piece.pixels.len();
-                let size = (pixel_count as f64).sqrt() as u32;
-                let png_data = pixels_to_png(&map_piece.pixels, size, size)?;
-                (png_data, size, size)
-            } else {
-                let (width, height) = detect_image_dimensions(&data).unwrap_or((512, 512));
-                (data, width, height)
-            };
+        let (image_data, width, height) = if let Ok(map_piece) = MapPieceDb::decode(data.as_slice())
+        {
+            let pixel_count = map_piece.pixels.len();
+            let size = (pixel_count as f64).sqrt() as u32;
+            let png_data = pixels_to_png(&map_piece.pixels, size, size)?;
+            (png_data, size, size)
+        } else {
+            let (width, height) = detect_image_dimensions(&data).unwrap_or((512, 512));
+            (data, width, height)
+        };
 
         tiles.push(MapTile {
             x,
