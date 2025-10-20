@@ -1,10 +1,14 @@
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{
-    fs::File,
+    fs::{create_dir_all, remove_dir_all, write, File},
     io::{BufRead, BufReader, Read},
     path::{Path, PathBuf},
     process::{Command, Stdio},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
     thread,
     time::{Duration, Instant},
 };
@@ -165,7 +169,7 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
                     );
                 }
             }
-            std::fs::write(
+            write(
                 &settings_path,
                 serde_json::to_string_pretty(&existing_json).unwrap(),
             )
@@ -174,11 +178,11 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
                 message: format!("Failed to write clientsettings.json: {e}"),
             })?;
         } else {
-            std::fs::create_dir_all(settings_path.parent().unwrap()).map_err(|e| UiError {
+            create_dir_all(settings_path.parent().unwrap()).map_err(|e| UiError {
                 name: "create_dir_failed".into(),
                 message: format!("Failed to create directory for clientsettings.json: {e}"),
             })?;
-            std::fs::write(
+            write(
                 &settings_path,
                 serde_json::to_string_pretty(&settings).unwrap(),
             )
@@ -243,10 +247,6 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
 
     // Combine stdout & stderr watching: spawn a thread per stream
     // Use an Arc flag to coordinate (optional simplification)
-    use std::sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    };
     let found_flag = Arc::new(AtomicBool::new(false));
     let found_flag_stdout = found_flag.clone();
     let found_flag_stderr = found_flag.clone();
@@ -349,7 +349,7 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
         // Validate path exists, create directory if needed
         if !path.exists() {
             // If path doesn't exist, it should be a directory - create it
-            std::fs::create_dir_all(path).map_err(|e| UiError {
+            create_dir_all(path).map_err(|e| UiError {
                 name: "create_dir_failed".into(),
                 message: format!("Failed to create directory: {e}"),
             })?;
@@ -378,7 +378,7 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
     } else if cfg!(target_os = "macos") {
         // Validate path exists, create directory if needed
         if !path.exists() {
-            std::fs::create_dir_all(path).map_err(|e| UiError {
+            create_dir_all(path).map_err(|e| UiError {
                 name: "create_dir_failed".into(),
                 message: format!("Failed to create directory: {e}"),
             })?;
@@ -403,7 +403,7 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
     } else if cfg!(target_os = "linux") {
         // Validate path exists, create directory if needed
         if !path.exists() {
-            std::fs::create_dir_all(path).map_err(|e| UiError {
+            create_dir_all(path).map_err(|e| UiError {
                 name: "create_dir_failed".into(),
                 message: format!("Failed to create directory: {e}"),
             })?;
@@ -492,7 +492,7 @@ pub fn remove_installation(app: AppHandle, id: i64) -> Result<String, UiError> {
         // Remove the installation directory
         let pb = PathBuf::from(path);
         if pb.exists() && pb.is_dir() {
-            std::fs::remove_dir_all(&pb).map_err(|e| UiError {
+            remove_dir_all(&pb).map_err(|e| UiError {
                 name: "remove_failed".into(),
                 message: format!("Failed to remove installation directory: {e}"),
             })?;
@@ -513,19 +513,19 @@ pub async fn move_installations_folder(
     subdir: String,
 ) -> Result<String, UiError> {
     move_folder(
-        std::path::PathBuf::from(source).join(&subdir),
-        std::path::PathBuf::from(destination).join(&subdir),
+        PathBuf::from(source).join(&subdir),
+        PathBuf::from(destination).join(&subdir),
     )?;
     Ok("moved".into())
 }
 
 #[command]
 pub async fn remove_all_installations(source: String, subdir: String) -> Result<String, UiError> {
-    let source_path = std::path::PathBuf::from(source).join(&subdir);
+    let source_path = PathBuf::from(source).join(&subdir);
     if !source_path.exists() || !source_path.is_dir() {
         return Ok("not_exists".into());
     }
-    std::fs::remove_dir_all(&source_path).map_err(|e| UiError {
+    remove_dir_all(&source_path).map_err(|e| UiError {
         name: "remove_failed".into(),
         message: format!("Failed to remove installations directory: {e}"),
     })?;
