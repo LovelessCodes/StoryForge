@@ -310,10 +310,16 @@ pub struct MapMarkerPos {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct MapMarker {
+    #[prost(uint32, tag = "1")]
+    pub color: u32,
     #[prost(string, tag = "2")]
     pub icon: ::prost::alloc::string::String,
+    #[prost(uint64, tag = "3")]
+    pub opacity: u64,
     #[prost(string, tag = "4")]
     pub player_uid: ::prost::alloc::string::String,
+    #[prost(uint64, tag = "5", optional)]
+    pub number: ::core::option::Option<u64>,
     #[prost(message, optional, tag = "6")]
     pub position: ::core::option::Option<MapMarkerPos>,
     #[prost(string, tag = "10")]
