@@ -3,13 +3,14 @@ use tauri::{command, AppHandle};
 use crate::modules::utils::move_folder;
 
 use super::errors::UiError;
-use super::utils::versions_folder;
+use super::utils::{versions_folder, versions_subdir};
 
 #[command]
 pub fn get_installed_versions(app: AppHandle) -> Result<Vec<String>, UiError> {
     // Should look up the versions folder and return a list of installed versions
     let base_dir = versions_folder(app.clone());
-    let versions_dir = base_dir.join("versions");
+    let subdir = versions_subdir(app.clone());
+    let versions_dir = base_dir.join(&subdir);
     if !versions_dir.exists() || !versions_dir.is_dir() {
         return Ok(vec![]);
     }
@@ -33,7 +34,8 @@ pub fn get_installed_versions(app: AppHandle) -> Result<Vec<String>, UiError> {
 
 #[command]
 pub fn remove_installed_version(version: String, app: AppHandle) -> Result<String, UiError> {
-    let versions_path = versions_folder(app.clone()).join("versions").join(&version);
+    let subdir = versions_subdir(app.clone());
+    let versions_path = versions_folder(app.clone()).join(&subdir).join(&version);
     if !versions_path.exists() || !versions_path.is_dir() {
         return Err(UiError {
             name: "not_found".into(),
@@ -72,16 +74,21 @@ pub async fn fetch_versions() -> Result<Vec<String>, UiError> {
 }
 
 #[command]
-pub async fn move_versions_folder(source: String, destination: String) -> Result<bool, UiError> {
+pub async fn move_versions_folder(
+    source: String,
+    destination: String,
+    subdir: String,
+) -> Result<String, UiError> {
     move_folder(
-        std::path::PathBuf::from(source).join("versions"),
-        std::path::PathBuf::from(destination).join("versions"),
-    )
+        std::path::PathBuf::from(source).join(&subdir),
+        std::path::PathBuf::from(destination).join(&subdir),
+    )?;
+    Ok("moved".into())
 }
 
 #[command]
-pub async fn remove_all_versions(source: String) -> Result<String, UiError> {
-    let source_path = std::path::PathBuf::from(source).join("versions");
+pub async fn remove_all_versions(source: String, subdir: String) -> Result<String, UiError> {
+    let source_path = std::path::PathBuf::from(source).join(&subdir);
 
     if !source_path.exists() || !source_path.is_dir() {
         return Ok("not_exists".into());

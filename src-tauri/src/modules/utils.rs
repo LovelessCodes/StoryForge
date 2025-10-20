@@ -19,6 +19,12 @@ pub fn versions_folder(app: AppHandle) -> PathBuf {
     data_dir
 }
 
+pub fn versions_subdir(app: AppHandle) -> String {
+    app.zustand()
+        .get::<String>("settings", "versionsSubdir")
+        .unwrap_or_else(|_| "versions".to_string())
+}
+
 pub fn installations_folder(app: AppHandle) -> PathBuf {
     let installations_parent: Option<String> = app
         .zustand()
@@ -31,6 +37,12 @@ pub fn installations_folder(app: AppHandle) -> PathBuf {
         app.path().app_data_dir().unwrap()
     };
     data_dir
+}
+
+pub fn installations_subdir(app: AppHandle) -> String {
+    app.zustand()
+        .get::<String>("settings", "installationsSubdir")
+        .unwrap_or_else(|_| "installations".to_string())
 }
 
 pub fn move_folder(source_path: PathBuf, destination_path: PathBuf) -> Result<bool, UiError> {

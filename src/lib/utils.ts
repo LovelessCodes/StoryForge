@@ -53,3 +53,59 @@ export const modifierLabel = isMac ? "⌘" : "Ctrl+";
 export const isWindows = platform() === "windows";
 
 export const pathDelimiter = isWindows ? "\\" : "/";
+
+/**
+ * Builds the full installations directory path
+ * @param parentPath - The parent directory (from settings or app folder)
+ * @param subdir - The subdirectory name (from settings, default: "installations")
+ * @returns The full path to the installations directory
+ */
+export function buildInstallationsPath(
+	parentPath: string,
+	subdir = "installations",
+): string {
+	return `${parentPath}${pathDelimiter}${subdir}`;
+}
+
+/**
+ * Builds the full versions directory path
+ * @param parentPath - The parent directory (from settings or app folder)
+ * @param subdir - The subdirectory name (from settings, default: "versions")
+ * @returns The full path to the versions directory
+ */
+export function buildVersionsPath(
+	parentPath: string,
+	subdir = "versions",
+): string {
+	return `${parentPath}${pathDelimiter}${subdir}`;
+}
+
+/**
+ * Builds a path to a specific installation
+ * @param parentPath - The parent directory (from settings or app folder)
+ * @param installationName - The name of the installation
+ * @param subdir - The subdirectory name (from settings, default: "installations")
+ * @returns The full path to the specific installation
+ */
+export function buildInstallationPath(
+	parentPath: string,
+	installationName: string,
+	subdir = "installations",
+): string {
+	return `${parentPath}${pathDelimiter}${subdir}${pathDelimiter}${installationName}`;
+}
+
+/**
+ * Builds a path to a specific version
+ * @param parentPath - The parent directory (from settings or app folder)
+ * @param versionName - The version identifier
+ * @param subdir - The subdirectory name (from settings, default: "versions")
+ * @returns The full path to the specific version
+ */
+export function buildVersionPath(
+	parentPath: string,
+	versionName: string,
+	subdir = "versions",
+): string {
+	return `${parentPath}${pathDelimiter}${subdir}${pathDelimiter}${versionName}`;
+}

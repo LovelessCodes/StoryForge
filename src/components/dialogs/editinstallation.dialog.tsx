@@ -29,9 +29,9 @@ import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { gameVersionsQuery } from "@/lib/queries";
 import {
+	buildInstallationPath,
 	compareSemverDesc,
 	makeStringFolderSafe,
-	pathDelimiter,
 } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import {
@@ -56,7 +56,7 @@ export function EditInstallationDialog({
 	const { closeDialog } = useDialogStore();
 	const { data: installedVersions } = useInstalledVersions();
 	const { appFolder } = useAppFolder();
-	const { installationsParent } = useSettingsStore();
+	const { installationsParent, installationsSubdir } = useSettingsStore();
 	const { updateInstallation } = useInstallationsStore();
 	const { mutateAsync: downloadVersion, isPending } = useDownloadVersion();
 	const form = useForm({
@@ -158,7 +158,11 @@ export function EditInstallationDialog({
 												const safeName = makeStringFolderSafe(e.target.value);
 												form.setFieldValue(
 													"path",
-													`${installationsParent ?? appFolder}${pathDelimiter}installations${pathDelimiter}${safeName}`,
+													buildInstallationPath(
+														installationsParent ?? appFolder,
+														safeName,
+														installationsSubdir,
+													),
 												);
 											} else {
 												form.resetField("path");

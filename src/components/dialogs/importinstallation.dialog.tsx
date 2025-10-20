@@ -18,7 +18,7 @@ import { useAppFolder } from "@/hooks/use-app-folder";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import type { ModInfo, ProgressPayload } from "@/lib/types";
-import { makeStringFolderSafe, pathDelimiter } from "@/lib/utils";
+import { buildInstallationPath, makeStringFolderSafe } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
 import { useSettingsStore } from "@/stores/settings";
@@ -41,7 +41,7 @@ export function ImportInstallationDialog({ open }: { open: boolean }) {
 	const { closeDialog } = useDialogStore();
 	const listenRef = useRef<() => void>(null);
 	const queryClient = useQueryClient();
-	const { installationsParent } = useSettingsStore();
+	const { installationsParent, installationsSubdir } = useSettingsStore();
 	const { appFolder } = useAppFolder();
 
 	const { mutate: addModToInstallation, isPending } = useAddModToInstallation({
@@ -153,11 +153,15 @@ export function ImportInstallationDialog({ open }: { open: boolean }) {
 
 	const handleImportInstallation = async () => {
 		const installation = installationSchema.safeParse(
-			JSON.parse(newInstallation.replace(/[“”]/g, '"').replace(/[‘’]/g, "'")),
+			JSON.parse(newInstallation.replace(/[""]/g, '"').replace(/['']/g, "'")),
 		);
-		if (installation.success) {
+		if (installation.success && appFolder) {
 			await initializeGame(
-				`${installationsParent ?? appFolder}${pathDelimiter}installations${pathDelimiter}${makeStringFolderSafe(installation.data.name)}`,
+				buildInstallationPath(
+					installationsParent ?? appFolder,
+					makeStringFolderSafe(installation.data.name),
+					installationsSubdir,
+				),
 			);
 		}
 	};
