@@ -1,3 +1,6 @@
+use prost::Message;
+use rusqlite::OpenFlags;
+use serde::{Deserialize, Serialize};
 use serde_json::{from_value, Value};
 use std::{ffi::OsStr, path::Path};
 use tauri::{command, AppHandle};
@@ -6,29 +9,26 @@ use tauri_plugin_zustand::ManagerExt;
 use super::errors::UiError;
 use super::proto::{GameData, MapMarkers, ProspectingLog};
 use super::utils::installations_folder;
-use prost::Message;
-use rusqlite::OpenFlags;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct World {
+    pub data: GameData,
+    pub has_map: bool,
+    pub path: String,
+    pub installation_name: String,
+    pub map_markers: Option<Option<MapMarkers>>,
+    pub prospecting_logs: Vec<(String, ProspectingLog)>,
+}
 
 // The result should be a list of objects that contain the name of the save, and the installation it belongs to
 // e.g. [{ name: "Save 1", installation: "Installation 1" }, { name: "Save 2", installation: "Installation 2" }]
 #[command]
-pub fn get_all_saves(
-    app: AppHandle,
-) -> Result<
-    Vec<(
-        GameData,
-        String,
-        String,
-        Option<Option<MapMarkers>>,
-        Vec<(String, ProspectingLog)>,
-    )>,
-    UiError,
-> {
+pub fn get_all_saves(app: AppHandle) -> Result<Vec<World>, UiError> {
     // Look through all installation folders and collect save names from the .vcdbs files
     let installation_dir_path = installations_folder(app.clone()).join("installations");
-    let mut saves = Vec::new();
+    let mut saves: Vec<World> = Vec::new();
     if installation_dir_path.exists() && installation_dir_path.is_dir() {
-        for entry in std::fs::read_dir(installation_dir_path)
+        for entry in std::fs::read_dir(&installation_dir_path)
             .map_err(|e| UiError::from(format!("Read dir error: {e}")))?
         {
             let entry = entry.map_err(|e| UiError::from(format!("Dir entry error: {e}")))?;
@@ -112,6 +112,14 @@ pub fn get_all_saves(
                                             play_style: gamedata.play_style,
                                             ..Default::default()
                                         };
+                                        // Check for if the map exists in the Maps folder in the installation folder
+                                        let has_map = installation_dir_path
+                                            .parent()
+                                            .unwrap()
+                                            .join(&installation_name)
+                                            .join("Maps")
+                                            .join(format!("{}.db", gamedata.savegame_identifier))
+                                            .exists();
                                         let map_markers = gamedata
                                             .mod_data
                                             .get("playerMapMarkers_v2")
@@ -136,13 +144,14 @@ pub fn get_all_saves(
                                             }
                                         }
 
-                                        saves.push((
-                                            compressed_gamedata,
-                                            save_path_string,
-                                            installation_name.clone(),
+                                        saves.push(World {
+                                            data: compressed_gamedata,
+                                            has_map,
+                                            path: save_path_string,
+                                            installation_name: installation_name.clone(),
                                             map_markers,
-                                            prospecting_results,
-                                        ));
+                                            prospecting_logs: prospecting_results,
+                                        });
                                     }
                                 }
                             }
