@@ -8,7 +8,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useRef } from "react";
 import { toast } from "sonner";
 import type { ProgressPayload } from "@/lib/types";
-import { pathDelimiter, zipfolderprefix } from "@/lib/utils";
+import { buildVersionPath, zipfolderprefix } from "@/lib/utils";
 import { useSettingsStore } from "@/stores/settings";
 import { useAppFolder } from "./use-app-folder";
 import { installedVersionsQueryKey } from "./use-installed-versions";
@@ -17,7 +17,7 @@ export const useDownloadVersion = (
 	props?: UseMutationOptions<string, Error, string>,
 ) => {
 	const { appFolder } = useAppFolder();
-	const { versionsParent } = useSettingsStore();
+	const { versionsParent, versionsSubdir } = useSettingsStore();
 	const queryClient = useQueryClient();
 	const listenRef = useRef<UnlistenFn>(null);
 	return useMutation({
@@ -32,11 +32,16 @@ export const useDownloadVersion = (
 			if (!appFolder) {
 				throw new Error("App folder not found");
 			}
+			const versionPath = buildVersionPath(
+				versionsParent ?? appFolder,
+				version,
+				versionsSubdir,
+			);
 			return invoke("download_and_maybe_extract", {
-				destpath: `${versionsParent ?? appFolder}${pathDelimiter}versions${pathDelimiter}${version}`,
+				destpath: versionPath,
 				emitevent: `download://version:${version.replace(/\./g, "_")}`,
 				extract: true,
-				extractdir: `${versionsParent ?? appFolder}${pathDelimiter}versions${pathDelimiter}${version}`,
+				extractdir: versionPath,
 				url: downloadUrl,
 				zipsubfolderprefix: zipfolderprefix(),
 			}) as Promise<string>;

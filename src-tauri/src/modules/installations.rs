@@ -12,7 +12,7 @@ use tauri::{command, AppHandle, Emitter};
 use tauri_plugin_zustand::ManagerExt;
 
 use super::errors::UiError;
-use super::utils::{move_folder, versions_folder};
+use super::utils::{move_folder, versions_folder, versions_subdir};
 
 #[command]
 pub async fn initialize_game(path: String) -> Result<String, UiError> {
@@ -66,8 +66,9 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
             name: "not_found".into(),
             message: format!("Installation with id {} not found", options.installation_id),
         })?;
+    let subdir = versions_subdir(app.clone());
     let version_path = versions_folder(app.clone())
-        .join("versions")
+        .join(&subdir)
         .join(installation["version"].as_str().unwrap());
     if !version_path.exists() || !version_path.is_dir() {
         return Err(UiError {
@@ -509,16 +510,18 @@ pub fn remove_installation(app: AppHandle, id: i64) -> Result<String, UiError> {
 pub async fn move_installations_folder(
     source: String,
     destination: String,
-) -> Result<bool, UiError> {
+    subdir: String,
+) -> Result<String, UiError> {
     move_folder(
-        std::path::PathBuf::from(source).join("installations"),
-        std::path::PathBuf::from(destination).join("installations"),
-    )
+        std::path::PathBuf::from(source).join(&subdir),
+        std::path::PathBuf::from(destination).join(&subdir),
+    )?;
+    Ok("moved".into())
 }
 
 #[command]
-pub async fn remove_all_installations(source: String) -> Result<String, UiError> {
-    let source_path = std::path::PathBuf::from(source).join("installations");
+pub async fn remove_all_installations(source: String, subdir: String) -> Result<String, UiError> {
+    let source_path = std::path::PathBuf::from(source).join(&subdir);
     if !source_path.exists() || !source_path.is_dir() {
         return Ok("not_exists".into());
     }

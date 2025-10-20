@@ -8,7 +8,7 @@ use tauri_plugin_zustand::ManagerExt;
 
 use super::errors::UiError;
 use super::proto::{GameData, MapMarkers, ProspectingLog};
-use super::utils::installations_folder;
+use super::utils::{installations_folder, installations_subdir};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct World {
@@ -25,7 +25,8 @@ pub struct World {
 #[command]
 pub fn get_all_saves(app: AppHandle) -> Result<Vec<World>, UiError> {
     // Look through all installation folders and collect save names from the .vcdbs files
-    let installation_dir_path = installations_folder(app.clone()).join("installations");
+    let subdir = installations_subdir(app.clone());
+    let installation_dir_path = installations_folder(app.clone()).join(&subdir);
     let mut saves: Vec<World> = Vec::new();
     if installation_dir_path.exists() && installation_dir_path.is_dir() {
         for entry in std::fs::read_dir(&installation_dir_path)
