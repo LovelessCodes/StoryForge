@@ -35,7 +35,9 @@ export function WorldMapViewer({
 	selectedPlayer,
 	showProspect,
 }: WorldMapViewerProps) {
-	const canvasRef = useRef<HTMLCanvasElement>(null);
+	// Base (tiles) and overlay (markers, cursor) canvases
+	const baseCanvasRef = useRef<HTMLCanvasElement>(null);
+	const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	const {
@@ -46,11 +48,21 @@ export function WorldMapViewer({
 	const { data: bounds, isLoading: boundsLoading } = useMapBounds(worldPath);
 
 	// Viewport state (x, y = top-left corner in world coords, zoom = scale factor)
-	const [viewport, setViewport] = useState({
-		x: 0,
-		y: 0,
-		zoom: 0.5,
-	});
+	const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 0.5 });
+	const viewportRef = useRef(viewport);
+
+	// Cached invariants (min tile coords & tile size)
+	const minXRef = useRef<number | null>(null);
+	const minYRef = useRef<number | null>(null);
+	const tileSizeRef = useRef<number | null>(null);
+
+	// LOD (level-of-detail) cache: Map<level, { groupSize, tiles: Map<"x,y", HTMLCanvasElement> }>
+	const lodCacheRef = useRef<
+		Map<number, { groupSize: number; tiles: Map<string, HTMLCanvasElement> }>
+	>(new Map());
+
+	// rAF throttle flags
+	const rafPendingRef = useRef(false);
 
 	// Pan state
 	const [isPanning, setIsPanning] = useState(false);
@@ -121,38 +133,29 @@ export function WorldMapViewer({
 	// Initialize viewport when bounds are loaded
 	useEffect(() => {
 		if (bounds && containerRef.current && tiles && tiles.length > 0) {
-			// Calculate normalized extent (remember: X and Y are swapped for screen)
-			const normalizedWidth = bounds.max_y - bounds.min_y + 1; // Y = horizontal
-			const normalizedHeight = bounds.max_x - bounds.min_x + 1; // X = vertical
-
-			// Get first tile to determine tile size
+			const normalizedWidth = bounds.max_y - bounds.min_y + 1;
+			const normalizedHeight = bounds.max_x - bounds.min_x + 1;
 			const tileSize = tiles[0]?.width || 512;
-
-			// Calculate actual pixel dimensions
 			const mapPixelWidth = normalizedWidth * tileSize;
 			const mapPixelHeight = normalizedHeight * tileSize;
-
-			// Center the view
 			const containerWidth = containerRef.current.clientWidth;
 			const containerHeight = containerRef.current.clientHeight;
-
-			// Calculate zoom to fit the entire map with padding
 			const zoomX = containerWidth / mapPixelWidth;
 			const zoomY = containerHeight / mapPixelHeight;
-			const fitZoom = Math.min(zoomX, zoomY) * 0.9; // 90% for padding
-
-			setViewport({
+			const fitZoom = Math.min(zoomX, zoomY) * 0.9;
+			const newViewport = {
 				x: normalizedWidth / 2 - containerWidth / (2 * tileSize * fitZoom),
 				y: normalizedHeight / 2 - containerHeight / (2 * tileSize * fitZoom),
 				zoom: fitZoom,
-			});
+			};
+			viewportRef.current = newViewport;
+			setViewport(newViewport);
 		}
 	}, [bounds, tiles]);
 
 	// Load and cache images when tiles change
 	useEffect(() => {
 		if (!tiles) return;
-
 		for (const tile of tiles) {
 			const key = `${tile.x},${tile.y}`;
 			if (!imageCache.has(key)) {
@@ -162,6 +165,92 @@ export function WorldMapViewer({
 					setImageCache((prev) => new Map(prev).set(key, img));
 				};
 			}
+		}
+	}, [tiles, imageCache]);
+
+	// Cache minX/minY/tileSize once when tiles & images ready
+	useEffect(() => {
+		if (!tiles || tiles.length === 0) return;
+		// Ensure most images are loaded (best effort)
+		const tileSize = tiles[0]?.width || 512;
+		const xs = tiles.map((t) => t.x);
+		const ys = tiles.map((t) => t.y);
+		minXRef.current = Math.min(...xs);
+		minYRef.current = Math.min(...ys);
+		tileSizeRef.current = tileSize;
+	}, [tiles]);
+
+	// Build LOD levels (2x2, 4x4, 8x8) after all base images loaded
+	useEffect(() => {
+		if (!tiles || tiles.length === 0) return;
+		if (
+			!tileSizeRef.current ||
+			minXRef.current === null ||
+			minYRef.current === null
+		)
+			return;
+		// Wait until imageCache size matches tiles length (all loaded)
+		if (imageCache.size !== tiles.length) return;
+		const existingLevels = lodCacheRef.current;
+		const levels = [
+			{ groupSize: 2, level: 1 },
+			{ groupSize: 4, level: 2 },
+			{ groupSize: 8, level: 3 },
+		];
+		const baseTileSize = tileSizeRef.current;
+		for (const { level, groupSize } of levels) {
+			if (existingLevels.has(level)) continue;
+			const compositeMap = new Map<string, HTMLCanvasElement>();
+			// Group tiles
+			for (const tile of tiles) {
+				// Determine top-left origin for this group
+				const groupX = Math.floor(tile.x / groupSize) * groupSize;
+				const groupY = Math.floor(tile.y / groupSize) * groupSize;
+				const key = `${groupX},${groupY}`;
+				if (!compositeMap.has(key)) {
+					// Build composite
+					const tempCanvas = document.createElement("canvas");
+					tempCanvas.width = baseTileSize * groupSize;
+					tempCanvas.height = baseTileSize * groupSize;
+					const tCtx = tempCanvas.getContext("2d");
+					if (!tCtx) continue;
+					// Draw all tiles in the group
+					for (let dx = 0; dx < groupSize; dx++) {
+						for (let dy = 0; dy < groupSize; dy++) {
+							const sx = groupX + dx;
+							const sy = groupY + dy;
+							const img = imageCache.get(`${sx},${sy}`);
+							if (!img) continue;
+							// Remember axis swap: vertical = x index (tile.x), horizontal = y index (tile.y)
+							// In composite we keep same orientation: rows by dx, cols by dy
+							tCtx.drawImage(
+								img,
+								dy * baseTileSize,
+								dx * baseTileSize,
+								baseTileSize,
+								baseTileSize,
+							);
+						}
+					}
+					// Downscale to one tileSize canvas (mipmap-like)
+					const finalCanvas = document.createElement("canvas");
+					finalCanvas.width = baseTileSize;
+					finalCanvas.height = baseTileSize;
+					const fCtx = finalCanvas.getContext("2d");
+					if (fCtx) {
+						fCtx.imageSmoothingEnabled = true;
+						fCtx.drawImage(
+							tempCanvas,
+							0,
+							0,
+							finalCanvas.width,
+							finalCanvas.height,
+						);
+						compositeMap.set(key, finalCanvas);
+					}
+				}
+			}
+			existingLevels.set(level, { groupSize, tiles: compositeMap });
 		}
 	}, [tiles, imageCache]);
 
@@ -190,63 +279,121 @@ export function WorldMapViewer({
 		}
 	}, [mapMarkers, iconCache]);
 
-	// Render the map
-	// biome-ignore lint/correctness/useExhaustiveDependencies: Needed for rendering on viewport change
-	useEffect(() => {
-		if (!canvasRef.current || !tiles || !containerRef.current) return;
+	// Choose LOD level based on zoom
+	const chooseLodLevel = useCallback((zoom: number) => {
+		if (zoom >= 0.6) return 0;
+		if (zoom >= 0.3) return 1;
+		if (zoom >= 0.15) return 2;
+		return 3;
+	}, []);
 
-		const canvas = canvasRef.current;
-		const ctx = canvas.getContext("2d");
-		if (!ctx) return;
-
-		// Set canvas size to match container
+	// Draw base tiles (with LOD)
+	const drawBase = useCallback(() => {
+		if (!baseCanvasRef.current || !tiles || tiles.length === 0) return;
+		if (
+			minXRef.current === null ||
+			minYRef.current === null ||
+			!tileSizeRef.current
+		)
+			return;
+		const canvas = baseCanvasRef.current;
+		if (!containerRef.current) return;
 		const rect = containerRef.current.getBoundingClientRect();
 		canvas.width = rect.width;
 		canvas.height = rect.height;
-
-		// Clear canvas
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
 		ctx.fillStyle = "#1a1a1a";
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-		// Find min coordinates to normalize tile positions
-		const minX = Math.min(...tiles.map((t) => t.x));
-		const minY = Math.min(...tiles.map((t) => t.y));
-		const tileSize = tiles[0]?.width || 512;
-
-		// Draw tiles
-		for (const tile of tiles) {
-			const img = imageCache.get(`${tile.x},${tile.y}`);
-			if (!img || !img.complete) continue;
-
-			// Normalize coordinates relative to minimum
-			const normalizedX = tile.x - minX;
-			const normalizedY = tile.y - minY;
-
-			// IMPORTANT: Swap X and Y for screen coordinates!
-			// In Vintage Story's coordinate system:
-			// - tile.x corresponds to vertical position (rows)
-			// - tile.y corresponds to horizontal position (columns)
-			const screenX =
-				(normalizedY * tileSize - viewport.x * tileSize) * viewport.zoom;
-			const screenY =
-				(normalizedX * tileSize - viewport.y * tileSize) * viewport.zoom;
-			const screenSize = tileSize * viewport.zoom;
-
-			// Only draw if visible and large enough to matter
-			if (
-				screenX + screenSize > 0 &&
-				screenX < canvas.width &&
-				screenY + screenSize > 0 &&
-				screenY < canvas.height &&
-				screenSize >= 2 // Skip tiles smaller than 2px
-			) {
-				ctx.drawImage(img, screenX, screenY, screenSize, screenSize);
+		const minX = minXRef.current;
+		const minY = minYRef.current;
+		const tileSize = tileSizeRef.current;
+		const level = chooseLodLevel(viewportRef.current.zoom);
+		if (level === 0) {
+			for (const tile of tiles) {
+				const img = imageCache.get(`${tile.x},${tile.y}`);
+				if (!img || !img.complete) continue;
+				const normalizedX = tile.x - minX;
+				const normalizedY = tile.y - minY;
+				const screenX =
+					(normalizedY * tileSize - viewportRef.current.x * tileSize) *
+					viewportRef.current.zoom;
+				const screenY =
+					(normalizedX * tileSize - viewportRef.current.y * tileSize) *
+					viewportRef.current.zoom;
+				const screenSize = tileSize * viewportRef.current.zoom;
+				if (
+					screenX + screenSize > 0 &&
+					screenX < canvas.width &&
+					screenY + screenSize > 0 &&
+					screenY < canvas.height &&
+					screenSize >= 2
+				) {
+					ctx.drawImage(img, screenX, screenY, screenSize, screenSize);
+				}
+			}
+		} else {
+			const lod = lodCacheRef.current.get(level);
+			if (lod) {
+				for (const [key, compCanvas] of lod.tiles) {
+					const [gxStr, gyStr] = key.split(",");
+					const gx = parseInt(gxStr, 10);
+					const gy = parseInt(gyStr, 10);
+					const normalizedX = gx - minX;
+					const normalizedY = gy - minY;
+					const screenX =
+						(normalizedY * tileSize - viewportRef.current.x * tileSize) *
+						viewportRef.current.zoom;
+					const screenY =
+						(normalizedX * tileSize - viewportRef.current.y * tileSize) *
+						viewportRef.current.zoom;
+					const screenSize =
+						tileSize * viewportRef.current.zoom * lod.groupSize;
+					if (
+						screenX + screenSize > 0 &&
+						screenX < canvas.width &&
+						screenY + screenSize > 0 &&
+						screenY < canvas.height
+					) {
+						ctx.drawImage(compCanvas, screenX, screenY, screenSize, screenSize);
+					}
+				}
 			}
 		}
+		// Debug info
+		if (bounds) {
+			ctx.fillStyle = "rgba(255,255,255,0.8)";
+			ctx.font = "12px monospace";
+			ctx.fillText(
+				`LOD: ${level} | Zoom: ${viewportRef.current.zoom.toFixed(2)} | Tiles: ${tiles.length}`,
+				10,
+				20,
+			);
+		}
+	}, [tiles, imageCache, bounds, chooseLodLevel]);
 
-		// Draw map markers only if zoom is above threshold
-		if (mapMarkers?.markers && viewport.zoom > 0.2) {
-			let debugMarkerInfo = "";
+	// Draw overlay (markers, prospecting, cursor tooltip background not included)
+	const drawOverlay = useCallback(() => {
+		if (!overlayCanvasRef.current || !tiles || tiles.length === 0) return;
+		if (
+			minXRef.current === null ||
+			minYRef.current === null ||
+			!tileSizeRef.current
+		)
+			return;
+		const canvas = overlayCanvasRef.current;
+		if (!containerRef.current) return;
+		const rect = containerRef.current.getBoundingClientRect();
+		canvas.width = rect.width;
+		canvas.height = rect.height;
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		const minX = minXRef.current;
+		const minY = minYRef.current;
+		const tileSize = tileSizeRef.current;
+		// Markers
+		if (mapMarkers?.markers && viewportRef.current.zoom > 0.2) {
 			for (const marker of mapMarkers.markers.filter(
 				(m) => m.player_uid === selectedPlayer,
 			)) {
@@ -262,15 +409,12 @@ export function WorldMapViewer({
 				const normalizedY = markerTileY - minY;
 				const screenX =
 					((normalizedY + offsetWithinTileY) * tileSize -
-						viewport.x * tileSize) *
-					viewport.zoom;
+						viewportRef.current.x * tileSize) *
+					viewportRef.current.zoom;
 				const screenY =
 					((normalizedX + offsetWithinTileX) * tileSize -
-						viewport.y * tileSize) *
-					viewport.zoom;
-				if (!debugMarkerInfo) {
-					debugMarkerInfo = `M1: icon="${marker.icon}" label="${marker.label}"`;
-				}
+						viewportRef.current.y * tileSize) *
+					viewportRef.current.zoom;
 				if (
 					screenX > -20 &&
 					screenX < canvas.width + 20 &&
@@ -278,12 +422,15 @@ export function WorldMapViewer({
 					screenY < canvas.height + 20
 				) {
 					const baseSize = 16;
-					const iconSize = Math.max(12, Math.min(32, baseSize * viewport.zoom));
+					const iconSize = Math.max(
+						12,
+						Math.min(32, baseSize * viewportRef.current.zoom),
+					);
 					const icon = marker.icon ? iconCache.get(marker.icon) : null;
 					let drawnSize = iconSize;
 					if (icon?.complete && icon.naturalWidth > 0) {
 						ctx.save();
-						ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+						ctx.shadowColor = "rgba(0,0,0,0.5)";
 						ctx.shadowBlur = 4;
 						ctx.shadowOffsetX = 1;
 						ctx.shadowOffsetY = 1;
@@ -304,7 +451,10 @@ export function WorldMapViewer({
 						}
 						ctx.restore();
 					} else {
-						const markerSize = Math.max(4, Math.min(10, 5 * viewport.zoom));
+						const markerSize = Math.max(
+							4,
+							Math.min(10, 5 * viewportRef.current.zoom),
+						);
 						drawnSize = markerSize;
 						ctx.fillStyle = "#ff0000";
 						ctx.strokeStyle = "#ffffff";
@@ -314,11 +464,14 @@ export function WorldMapViewer({
 						ctx.fill();
 						ctx.stroke();
 					}
-					if (viewport.zoom > 0.3 && marker.label) {
-						const fontSize = Math.max(10, Math.min(14, 12 * viewport.zoom));
+					if (viewportRef.current.zoom > 0.3 && marker.label) {
+						const fontSize = Math.max(
+							10,
+							Math.min(14, 12 * viewportRef.current.zoom),
+						);
 						ctx.font = `${fontSize}px sans-serif`;
 						const textWidth = ctx.measureText(marker.label).width;
-						ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+						ctx.fillStyle = "rgba(0,0,0,0.7)";
 						ctx.fillRect(
 							screenX + drawnSize / 2 + 4,
 							screenY - fontSize / 2 - 2,
@@ -335,53 +488,41 @@ export function WorldMapViewer({
 				}
 			}
 		}
-
-		// Draw prospecting markers
+		// Prospecting markers
 		if (prospectingLogs && showProspect) {
 			for (const [_playerUid, log] of prospectingLogs.filter(
-				([playerUid, _]) => playerUid === selectedPlayer,
+				([playerUid]) => playerUid === selectedPlayer,
 			)) {
 				for (const marker of log.markers) {
 					if (!marker.position) continue;
-
 					const mapChunkSize = 32;
-
-					// Calculate which tile the marker is in
-					const markerTileX = Math.floor(marker.position.y / mapChunkSize); // Swap: use Y for tileX
-					const markerTileY = Math.floor(marker.position.x / mapChunkSize); // Swap: use X for tileY
-
-					// Calculate position WITHIN the tile (0-1 range)
+					const markerTileX = Math.floor(marker.position.y / mapChunkSize);
+					const markerTileY = Math.floor(marker.position.x / mapChunkSize);
 					const offsetWithinTileX =
 						(marker.position.y % mapChunkSize) / mapChunkSize;
 					const offsetWithinTileY =
 						(marker.position.x % mapChunkSize) / mapChunkSize;
-
 					const normalizedX = markerTileX - minX;
 					const normalizedY = markerTileY - minY;
-
-					// Calculate pixel-perfect position including offset within tile
 					const screenX =
 						((normalizedY + offsetWithinTileY) * tileSize -
-							viewport.x * tileSize) *
-						viewport.zoom;
+							viewportRef.current.x * tileSize) *
+						viewportRef.current.zoom;
 					const screenY =
 						((normalizedX + offsetWithinTileX) * tileSize -
-							viewport.y * tileSize) *
-						viewport.zoom;
-
+							viewportRef.current.y * tileSize) *
+						viewportRef.current.zoom;
 					if (
 						screenX > -20 &&
 						screenX < canvas.width + 20 &&
 						screenY > -20 &&
 						screenY < canvas.height + 20
 					) {
-						// Scale marker size with zoom - smaller base size
 						const baseSize = 4;
 						const markerSize = Math.max(
 							3,
-							Math.min(8, baseSize * viewport.zoom),
+							Math.min(8, baseSize * viewportRef.current.zoom),
 						);
-
 						const oreQualityTotal = [...marker.results].reduce(
 							(sum, r) => sum + (r.readings?.quality ?? 0),
 							0,
@@ -392,11 +533,7 @@ export function WorldMapViewer({
 								: oreQualityTotal >= 7
 									? "#ffff00"
 									: "#ffaa00";
-
-						// Draw prospecting marker (orange square)
 						ctx.fillStyle = fill;
-
-						// Draw square marker for prospecting
 						ctx.beginPath();
 						ctx.arc(screenX, screenY, markerSize, 0, Math.PI * 2);
 						ctx.fill();
@@ -404,28 +541,39 @@ export function WorldMapViewer({
 				}
 			}
 		}
-
-		// Draw debug info
-		if (bounds) {
-			ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
-			ctx.font = "12px monospace";
-			ctx.fillText(
-				`Zoom: ${viewport.zoom.toFixed(2)}x | Tiles: ${tiles.length} | Bounds: (${bounds.min_x},${bounds.min_y}) to (${bounds.max_x},${bounds.max_y})`,
-				10,
-				20,
-			);
-		}
 	}, [
-		tiles,
-		viewport,
-		imageCache,
-		iconCache,
-		bounds,
-		containerSize,
 		mapMarkers,
 		prospectingLogs,
+		iconCache,
 		selectedPlayer,
 		showProspect,
+		tiles,
+	]);
+
+	// Schedule redraw (throttled)
+	const scheduleRedraw = useCallback(() => {
+		if (rafPendingRef.current) return;
+		rafPendingRef.current = true;
+		requestAnimationFrame(() => {
+			rafPendingRef.current = false;
+			drawBase();
+			drawOverlay();
+		});
+	}, [drawBase, drawOverlay]);
+
+	// Redraw when dependencies change
+	// Redraw on essential viewport/data changes (intentionally excluding image/icon caches to reduce churn)
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Needed
+	useEffect(() => {
+		scheduleRedraw();
+	}, [
+		viewport,
+		tiles,
+		mapMarkers,
+		prospectingLogs,
+		showProspect,
+		containerSize,
+		scheduleRedraw,
 	]);
 
 	// Helper function to convert marker position to screen coordinates
@@ -457,34 +605,26 @@ export function WorldMapViewer({
 	const handleWheel = useCallback(
 		(e: React.WheelEvent) => {
 			e.preventDefault();
-
-			const canvas = canvasRef.current;
+			const canvas = overlayCanvasRef.current;
 			if (!canvas || !tiles || tiles.length === 0) return;
-
 			const rect = canvas.getBoundingClientRect();
 			const mouseX = e.clientX - rect.left;
 			const mouseY = e.clientY - rect.top;
-
 			const tileSize = tiles[0]?.width || 512;
-
 			setViewport((prev) => {
 				const delta = e.deltaY > 0 ? 0.9 : 1.1;
 				const newZoom = Math.max(0.1, Math.min(5, prev.zoom * delta));
-
 				const worldMouseX = mouseX / (prev.zoom * tileSize) + prev.x;
 				const worldMouseY = mouseY / (prev.zoom * tileSize) + prev.y;
-
 				const newX = worldMouseX - mouseX / (newZoom * tileSize);
 				const newY = worldMouseY - mouseY / (newZoom * tileSize);
-
-				return {
-					x: newX,
-					y: newY,
-					zoom: newZoom,
-				};
+				const vp = { x: newX, y: newY, zoom: newZoom };
+				viewportRef.current = vp;
+				scheduleRedraw();
+				return vp;
 			});
 		},
-		[tiles],
+		[tiles, scheduleRedraw],
 	);
 
 	// Mouse panning
@@ -497,20 +637,21 @@ export function WorldMapViewer({
 
 	const handleMouseMove = useCallback(
 		(e: React.MouseEvent) => {
-			if (!canvasRef.current || !tiles || tiles.length === 0 || !bounds) return;
-
-			const canvas = canvasRef.current;
+			if (!overlayCanvasRef.current || !tiles || tiles.length === 0 || !bounds)
+				return;
+			const canvas = overlayCanvasRef.current;
 			const rect = canvas.getBoundingClientRect();
 			const mouseX = e.clientX - rect.left;
 			const mouseY = e.clientY - rect.top;
 
 			const tileSize = tiles[0]?.width || 512;
-			const minX = Math.min(...tiles.map((t) => t.x));
-			const minY = Math.min(...tiles.map((t) => t.y));
-
+			const minX = minXRef.current ?? Math.min(...tiles.map((t) => t.x));
+			const minY = minYRef.current ?? Math.min(...tiles.map((t) => t.y));
 			// Convert screen to normalized viewport coords, then to block coordinates
-			const worldX = mouseX / (viewport.zoom * tileSize) + viewport.x;
-			const worldY = mouseY / (viewport.zoom * tileSize) + viewport.y;
+			const worldX =
+				mouseX / (viewportRef.current.zoom * tileSize) + viewportRef.current.x;
+			const worldY =
+				mouseY / (viewportRef.current.zoom * tileSize) + viewportRef.current.y;
 			const absoluteX = Math.round((worldX + minY) * MAP_CHUNK_SIZE);
 			const absoluteY = Math.round((worldY + minX) * MAP_CHUNK_SIZE);
 			const vsX = absoluteX - spawnOffsetX;
@@ -597,11 +738,23 @@ export function WorldMapViewer({
 			if (isPanning) {
 				const dx = e.clientX - lastMousePos.x;
 				const dy = e.clientY - lastMousePos.y;
-				setViewport((prev) => ({
+				const prev = viewportRef.current;
+				const updated = {
 					...prev,
 					x: prev.x - dx / (tileSize * prev.zoom),
 					y: prev.y - dy / (tileSize * prev.zoom),
-				}));
+				};
+				viewportRef.current = updated;
+				// Throttle state update
+				if (!rafPendingRef.current) {
+					rafPendingRef.current = true;
+					requestAnimationFrame(() => {
+						rafPendingRef.current = false;
+						setViewport(viewportRef.current);
+						drawBase();
+						drawOverlay();
+					});
+				}
 				setLastMousePos({ x: e.clientX, y: e.clientY });
 			}
 		},
@@ -609,7 +762,6 @@ export function WorldMapViewer({
 			isPanning,
 			lastMousePos,
 			tiles,
-			viewport,
 			bounds,
 			mapMarkers,
 			prospectingLogs,
@@ -618,6 +770,8 @@ export function WorldMapViewer({
 			spawnOffsetY,
 			selectedPlayer,
 			showProspect,
+			drawBase,
+			drawOverlay,
 		],
 	);
 
@@ -677,23 +831,37 @@ export function WorldMapViewer({
 				style={{ cursor: isPanning ? "grabbing" : "grab" }}
 			>
 				<canvas
-					className="w-full h-full"
+					className="absolute inset-0 w-full h-full pointer-events-none"
+					ref={baseCanvasRef}
+				/>
+				<canvas
+					className="absolute inset-0 w-full h-full"
 					onMouseDown={handleMouseDown}
 					onMouseLeave={handleMouseLeave}
 					onMouseMove={handleMouseMove}
 					onMouseUp={handleMouseUp}
 					onWheel={handleWheel}
-					ref={canvasRef}
+					ref={overlayCanvasRef}
 				/>
-
 				{/* Cursor coordinates display */}
-				{cursorCoords && canvasRef.current && (
+				{cursorCoords && overlayCanvasRef.current && (
 					<div
 						className="absolute pointer-events-none bg-background/95 backdrop-blur-sm border rounded px-2 py-1 text-xs font-mono shadow-lg"
 						style={{
-							left: `${cursorCoords.screenX - canvasRef.current.getBoundingClientRect().left + 10}px`,
-							top: `${cursorCoords.screenY - canvasRef.current.getBoundingClientRect().top + 60}px`,
-							transform: "translate(0, -100%)",
+							left: (() => {
+								const canvasRect =
+									overlayCanvasRef.current?.getBoundingClientRect();
+								if (!canvasRect) return 0;
+								const rawLeft = cursorCoords.screenX - canvasRect.left + 12;
+								return `${Math.min(rawLeft, canvasRect.width - 160)}px`;
+							})(),
+							top: (() => {
+								const canvasRect =
+									overlayCanvasRef.current?.getBoundingClientRect();
+								if (!canvasRect) return 0;
+								const rawTop = cursorCoords.screenY - canvasRect.top - 12;
+								return `${Math.min(Math.max(rawTop, 4), canvasRect.height - 4)}px`;
+							})(),
 						}}
 					>
 						{cursorCoords.z !== undefined
@@ -705,44 +873,41 @@ export function WorldMapViewer({
 								<ul className="list-disc list-inside">
 									{prospectingMarker.results
 										.sort(sortByQuality)
-										.map((result, index) => (
-											<li
-												className="text-xs flex gap-2"
-												// biome-ignore lint/suspicious/noArrayIndexKey: Needed to display correctly
-												key={result.ore_code + index}
-											>
-												<p>
-													{result.ore_code.charAt(0).toUpperCase() +
-														result.ore_code.slice(1)}{" "}
-													-
-												</p>
-												<p className="flex gap-1">
-													<SparkleIcon
-														className={cn(
-															"size-3 text-muted-foreground",
-															(result.readings?.quality ?? 0) > 10
-																? "fill-success"
-																: (result.readings?.quality ?? 0) > 5
-																	? "fill-warning"
-																	: "fill-destructive",
-														)}
-													/>
-													{result.readings?.quality.toFixed(2) ?? 0} -
-												</p>
-												<p className="flex gap-1">
-													<ArrowDownToDotIcon className="size-3 opacity-50" />
-													{result.readings?.depth.toFixed(2) ?? 0}
-												</p>
-											</li>
-										))}
+										.map((result) => {
+											const stableKey = `${result.ore_code}-${result.readings?.depth ?? 0}-${result.readings?.quality ?? 0}`;
+											return (
+												<li className="text-xs flex gap-2" key={stableKey}>
+													<p>
+														{result.ore_code.charAt(0).toUpperCase() +
+															result.ore_code.slice(1)}{" "}
+														-
+													</p>
+													<p className="flex gap-1">
+														<SparkleIcon
+															className={cn(
+																"size-3 text-muted-foreground",
+																(result.readings?.quality ?? 0) > 10
+																	? "fill-success"
+																	: (result.readings?.quality ?? 0) > 5
+																		? "fill-warning"
+																		: "fill-destructive",
+															)}
+														/>
+														{result.readings?.quality.toFixed(2) ?? 0} -
+													</p>
+													<p className="flex gap-1">
+														<ArrowDownToDotIcon className="size-3 opacity-50" />
+														{result.readings?.depth.toFixed(2) ?? 0}
+													</p>
+												</li>
+											);
+										})}
 								</ul>
 							</div>
 						)}
 					</div>
 				)}
 			</div>
-
-			{/* Controls hint */}
 			<div className="absolute bottom-1 right-1 bg-background/90 backdrop-blur-sm border rounded-md px-3 py-2 text-xs text-muted-foreground">
 				<p>🖱️ Drag to pan • 🔍 Scroll to zoom</p>
 			</div>
