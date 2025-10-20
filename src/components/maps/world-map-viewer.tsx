@@ -24,12 +24,16 @@ type WorldMapViewerProps = {
 	worldPath: string;
 	mapMarkers?: MapMarkers | null | undefined;
 	prospectingLogs?: [string, ProspectingLog][];
+	selectedPlayer: string | null;
+	showProspect: boolean;
 };
 
 export function WorldMapViewer({
 	worldPath,
 	mapMarkers,
 	prospectingLogs,
+	selectedPlayer,
+	showProspect,
 }: WorldMapViewerProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -243,7 +247,9 @@ export function WorldMapViewer({
 		// Draw map markers only if zoom is above threshold
 		if (mapMarkers?.markers && viewport.zoom > 0.2) {
 			let debugMarkerInfo = "";
-			for (const marker of mapMarkers.markers) {
+			for (const marker of mapMarkers.markers.filter(
+				(m) => m.player_uid === selectedPlayer,
+			)) {
 				if (!marker.position) continue;
 				const mapChunkSize = 32;
 				const markerTileX = Math.floor(marker.position.y / mapChunkSize);
@@ -331,8 +337,10 @@ export function WorldMapViewer({
 		}
 
 		// Draw prospecting markers
-		if (prospectingLogs) {
-			for (const [_playerUid, log] of prospectingLogs) {
+		if (prospectingLogs && showProspect) {
+			for (const [_playerUid, log] of prospectingLogs.filter(
+				([playerUid, _]) => playerUid === selectedPlayer,
+			)) {
 				for (const marker of log.markers) {
 					if (!marker.position) continue;
 
@@ -416,6 +424,8 @@ export function WorldMapViewer({
 		containerSize,
 		mapMarkers,
 		prospectingLogs,
+		selectedPlayer,
+		showProspect,
 	]);
 
 	// Helper function to convert marker position to screen coordinates
@@ -513,7 +523,9 @@ export function WorldMapViewer({
 
 			// Check waypoint markers
 			if (mapMarkers?.markers) {
-				for (const marker of mapMarkers.markers) {
+				for (const marker of mapMarkers.markers.filter(
+					(m) => m.player_uid === selectedPlayer,
+				)) {
 					if (!marker.position) continue;
 					const { screenX, screenY } = markerToScreen(
 						marker.position,
@@ -532,8 +544,10 @@ export function WorldMapViewer({
 			}
 
 			// Check prospecting markers if no waypoint hovered
-			if (!hoveredMarker && prospectingLogs) {
-				for (const [_playerUid, log] of prospectingLogs) {
+			if (!hoveredMarker && prospectingLogs && showProspect) {
+				for (const [_playerUid, log] of prospectingLogs.filter(
+					([playerUid, _]) => playerUid === selectedPlayer,
+				)) {
 					for (const marker of log.markers) {
 						if (!marker.position) continue;
 						const { screenX, screenY } = markerToScreen(
@@ -602,6 +616,8 @@ export function WorldMapViewer({
 			markerToScreen,
 			spawnOffsetX,
 			spawnOffsetY,
+			selectedPlayer,
+			showProspect,
 		],
 	);
 
