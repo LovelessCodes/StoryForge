@@ -1,22 +1,18 @@
 import { type UseQueryOptions, useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import type {
-	MapBounds,
-	MapDatabaseInfo,
-	MapTile,
-} from "@/lib/types";
+import type { MapBounds, MapDatabaseInfo, MapTile } from "@/lib/types";
 
 // Query key factories
 export const worldMapKeys = {
 	all: ["world-map"] as const,
-	inspection: (worldPath: string) =>
-		[...worldMapKeys.all, "inspection", worldPath] as const,
-	bounds: (worldPath: string) =>
-		[...worldMapKeys.all, "bounds", worldPath] as const,
-	tile: (worldPath: string, position: number) =>
-		[...worldMapKeys.all, "tile", worldPath, position] as const,
 	allTiles: (worldPath: string) =>
 		[...worldMapKeys.all, "tiles", worldPath] as const,
+	bounds: (worldPath: string) =>
+		[...worldMapKeys.all, "bounds", worldPath] as const,
+	inspection: (worldPath: string) =>
+		[...worldMapKeys.all, "inspection", worldPath] as const,
+	tile: (worldPath: string, position: number) =>
+		[...worldMapKeys.all, "tile", worldPath, position] as const,
 };
 
 /**
@@ -31,10 +27,10 @@ export const useMapDatabaseInspection = (
 	>,
 ) =>
 	useQuery({
-		queryKey: worldMapKeys.inspection(worldPath),
+		enabled: !!worldPath,
 		queryFn: () =>
 			invoke<MapDatabaseInfo>("inspect_map_database", { worldPath }),
-		enabled: !!worldPath,
+		queryKey: worldMapKeys.inspection(worldPath),
 		...options,
 	});
 
@@ -44,12 +40,15 @@ export const useMapDatabaseInspection = (
  */
 export const useMapBounds = (
 	worldPath: string,
-	options?: Omit<UseQueryOptions<MapBounds, Error, MapBounds>, "queryKey" | "queryFn">,
+	options?: Omit<
+		UseQueryOptions<MapBounds, Error, MapBounds>,
+		"queryKey" | "queryFn"
+	>,
 ) =>
 	useQuery({
-		queryKey: worldMapKeys.bounds(worldPath),
-		queryFn: () => invoke<MapBounds>("get_map_bounds", { worldPath }),
 		enabled: !!worldPath,
+		queryFn: () => invoke<MapBounds>("get_map_bounds", { worldPath }),
+		queryKey: worldMapKeys.bounds(worldPath),
 		...options,
 	});
 
@@ -60,12 +59,15 @@ export const useMapBounds = (
 export const useMapTile = (
 	worldPath: string,
 	position: number,
-	options?: Omit<UseQueryOptions<MapTile, Error, MapTile>, "queryKey" | "queryFn">,
+	options?: Omit<
+		UseQueryOptions<MapTile, Error, MapTile>,
+		"queryKey" | "queryFn"
+	>,
 ) =>
 	useQuery({
-		queryKey: worldMapKeys.tile(worldPath, position),
-		queryFn: () => invoke<MapTile>("get_map_tile", { worldPath, position }),
 		enabled: !!worldPath && position !== undefined,
+		queryFn: () => invoke<MapTile>("get_map_tile", { position, worldPath }),
+		queryKey: worldMapKeys.tile(worldPath, position),
 		...options,
 	});
 
@@ -75,12 +77,15 @@ export const useMapTile = (
  */
 export const useAllMapTiles = (
 	worldPath: string,
-	options?: Omit<UseQueryOptions<MapTile[], Error, MapTile[]>, "queryKey" | "queryFn">,
+	options?: Omit<
+		UseQueryOptions<MapTile[], Error, MapTile[]>,
+		"queryKey" | "queryFn"
+	>,
 ) =>
 	useQuery({
-		queryKey: worldMapKeys.allTiles(worldPath),
-		queryFn: () => invoke<MapTile[]>("get_all_map_tiles", { worldPath }),
 		enabled: !!worldPath,
+		queryFn: () => invoke<MapTile[]>("get_all_map_tiles", { worldPath }),
+		queryKey: worldMapKeys.allTiles(worldPath),
 		staleTime: 1000 * 60 * 5, // Cache for 5 minutes
 		...options,
 	});
@@ -109,4 +114,3 @@ export function createImageFromTile(tile: MapTile): Promise<HTMLImageElement> {
 		img.src = imageDataToDataUrl(tile.image_data);
 	});
 }
-
