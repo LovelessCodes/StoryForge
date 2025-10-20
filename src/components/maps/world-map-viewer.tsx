@@ -1,4 +1,9 @@
-import { Loader2Icon, MapIcon } from "lucide-react";
+import {
+	ArrowDownToDotIcon,
+	Loader2Icon,
+	MapIcon,
+	SparkleIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import {
@@ -6,7 +11,14 @@ import {
 	useAllMapTiles,
 	useMapBounds,
 } from "@/hooks/use-world-map";
-import type { MapMarkers, ProspectingLog } from "@/lib/types";
+import type {
+	MapMarker,
+	MapMarkers,
+	ProspectingLog,
+	ProspectingMarker,
+	ProspectResult,
+} from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 type WorldMapViewerProps = {
 	worldPath: string;
@@ -48,6 +60,16 @@ export function WorldMapViewer({
 		screenX: number;
 		screenY: number;
 	} | null>(null);
+
+	// Currently hovered prospecting marker
+	const [prospectingMarker, setProspectingMarker] =
+		useState<ProspectingMarker | null>(null);
+
+	const sortByQuality = (a: ProspectResult, b: ProspectResult) => {
+		const qualityA = a.readings?.quality ?? 0;
+		const qualityB = b.readings?.quality ?? 0;
+		return qualityB - qualityA;
+	};
 
 	// Cache loaded images
 	const [imageCache, setImageCache] = useState<Map<string, HTMLImageElement>>(
@@ -206,45 +228,32 @@ export function WorldMapViewer({
 				(normalizedX * tileSize - viewport.y * tileSize) * viewport.zoom;
 			const screenSize = tileSize * viewport.zoom;
 
-			// Only draw if visible
+			// Only draw if visible and large enough to matter
 			if (
 				screenX + screenSize > 0 &&
 				screenX < canvas.width &&
 				screenY + screenSize > 0 &&
-				screenY < canvas.height
+				screenY < canvas.height &&
+				screenSize >= 2 // Skip tiles smaller than 2px
 			) {
 				ctx.drawImage(img, screenX, screenY, screenSize, screenSize);
 			}
 		}
 
-		// Draw map markers
-		if (mapMarkers?.markers) {
+		// Draw map markers only if zoom is above threshold
+		if (mapMarkers?.markers && viewport.zoom > 0.2) {
 			let debugMarkerInfo = "";
-
 			for (const marker of mapMarkers.markers) {
 				if (!marker.position) continue;
-
-				// Vintage Story coordinates: X = east-west, Y = north-south, Z = altitude
-				// Map uses X and Y (horizontal plane), Z is height and not used for 2D map
-				// Map chunks are at 1:32 scale (each map chunk unit = 32 blocks)
-				// NOTE: X and Y are swapped to match map orientation
 				const mapChunkSize = 32;
-
-				// Calculate which tile the marker is in
-				const markerTileX = Math.floor(marker.position.y / mapChunkSize); // Swap: use Y for tileX
-				const markerTileY = Math.floor(marker.position.x / mapChunkSize); // Swap: use X for tileY
-
-				// Calculate position WITHIN the tile (0-1 range)
+				const markerTileX = Math.floor(marker.position.y / mapChunkSize);
+				const markerTileY = Math.floor(marker.position.x / mapChunkSize);
 				const offsetWithinTileX =
 					(marker.position.y % mapChunkSize) / mapChunkSize;
 				const offsetWithinTileY =
 					(marker.position.x % mapChunkSize) / mapChunkSize;
-
 				const normalizedX = markerTileX - minX;
 				const normalizedY = markerTileY - minY;
-
-				// Calculate pixel-perfect position including offset within tile
-				// Swap X and Y for screen coordinates (same as tiles)
 				const screenX =
 					((normalizedY + offsetWithinTileY) * tileSize -
 						viewport.x * tileSize) *
@@ -253,69 +262,45 @@ export function WorldMapViewer({
 					((normalizedX + offsetWithinTileX) * tileSize -
 						viewport.y * tileSize) *
 					viewport.zoom;
-
-				// Store first marker's detailed info for debugging
 				if (!debugMarkerInfo) {
 					debugMarkerInfo = `M1: icon="${marker.icon}" label="${marker.label}"`;
 				}
-
-				// Only draw if visible
 				if (
 					screenX > -20 &&
 					screenX < canvas.width + 20 &&
 					screenY > -20 &&
 					screenY < canvas.height + 20
 				) {
-					// Scale marker size with zoom
-					const baseSize = 16; // Base size for icon in pixels
+					const baseSize = 16;
 					const iconSize = Math.max(12, Math.min(32, baseSize * viewport.zoom));
-
-					// Try to get the icon from cache
 					const icon = marker.icon ? iconCache.get(marker.icon) : null;
-
-					// Track what size was actually drawn for label positioning
 					let drawnSize = iconSize;
-
 					if (icon?.complete && icon.naturalWidth > 0) {
-						// Draw the actual icon in red using an offscreen canvas
 						ctx.save();
-
-						// Add a subtle glow/shadow for visibility
 						ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
 						ctx.shadowBlur = 4;
 						ctx.shadowOffsetX = 1;
 						ctx.shadowOffsetY = 1;
-
-						// Create temporary canvas for color transformation
 						const tempCanvas = document.createElement("canvas");
 						tempCanvas.width = iconSize;
 						tempCanvas.height = iconSize;
 						const tempCtx = tempCanvas.getContext("2d");
-
 						if (tempCtx) {
-							// Draw icon on temp canvas
 							tempCtx.drawImage(icon, 0, 0, iconSize, iconSize);
-
-							// Apply red color only to non-transparent pixels
 							tempCtx.globalCompositeOperation = "source-in";
 							tempCtx.fillStyle = `rgba(${(marker.color >> 16) & 0xff}, ${(marker.color >> 8) & 0xff}, ${marker.color & 0xff}, ${Math.min(Math.max(marker.opacity / 255, 0), 1)})`;
 							tempCtx.fillRect(0, 0, iconSize, iconSize);
-
-							// Draw the colored icon to main canvas
 							ctx.drawImage(
 								tempCanvas,
 								screenX - iconSize / 2,
 								screenY - iconSize / 2,
 							);
 						}
-
 						ctx.restore();
 					} else {
-						// Fallback to colored circle if icon not loaded
 						const markerSize = Math.max(4, Math.min(10, 5 * viewport.zoom));
 						drawnSize = markerSize;
-
-						ctx.fillStyle = "#ff0000"; // Default red
+						ctx.fillStyle = "#ff0000";
 						ctx.strokeStyle = "#ffffff";
 						ctx.lineWidth = 2;
 						ctx.beginPath();
@@ -323,14 +308,10 @@ export function WorldMapViewer({
 						ctx.fill();
 						ctx.stroke();
 					}
-
-					// Draw label if zoomed in enough
 					if (viewport.zoom > 0.3 && marker.label) {
 						const fontSize = Math.max(10, Math.min(14, 12 * viewport.zoom));
 						ctx.font = `${fontSize}px sans-serif`;
 						const textWidth = ctx.measureText(marker.label).width;
-
-						// Background for label
 						ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
 						ctx.fillRect(
 							screenX + drawnSize / 2 + 4,
@@ -338,8 +319,6 @@ export function WorldMapViewer({
 							textWidth + 8,
 							fontSize + 4,
 						);
-
-						// Label text
 						ctx.fillStyle = "#ffffff";
 						ctx.fillText(
 							marker.label,
@@ -395,68 +374,24 @@ export function WorldMapViewer({
 							Math.min(8, baseSize * viewport.zoom),
 						);
 
+						const oreQualityTotal = [...marker.results].reduce(
+							(sum, r) => sum + (r.readings?.quality ?? 0),
+							0,
+						);
+						const fill =
+							oreQualityTotal >= 15
+								? "#00ff00"
+								: oreQualityTotal >= 7
+									? "#ffff00"
+									: "#ffaa00";
+
 						// Draw prospecting marker (orange square)
-						ctx.fillStyle = "#ffaa00";
-						ctx.strokeStyle = "#ffffff";
-						ctx.lineWidth = 2;
+						ctx.fillStyle = fill;
 
 						// Draw square marker for prospecting
 						ctx.beginPath();
-						ctx.rect(
-							screenX - markerSize,
-							screenY - markerSize,
-							markerSize * 2,
-							markerSize * 2,
-						);
+						ctx.arc(screenX, screenY, markerSize, 0, Math.PI * 2);
 						ctx.fill();
-						ctx.stroke();
-
-						// Show ore info if zoomed in
-						if (viewport.zoom > 0.5 && marker.results.length > 0) {
-							// Sort results by quality (highest first)
-							const sortedResults = [...marker.results].sort((a, b) => {
-								const qualityA = a.readings?.quality ?? 0;
-								const qualityB = b.readings?.quality ?? 0;
-								return qualityB - qualityA;
-							});
-
-							// Show all ores when zoomed in to 3x+, otherwise show top 3
-							const showAll = viewport.zoom >= 3.0;
-							const displayCount = showAll ? sortedResults.length : 3;
-
-							// Format ores with quality values
-							const oresWithQuality = sortedResults
-								.slice(0, displayCount)
-								.map((r) => {
-									const oreName = r.ore_code.split("-").pop();
-									const quality = r.readings?.quality ?? 0;
-									return `${oreName}(${quality.toFixed(2)})`;
-								});
-
-							const remainingCount = sortedResults.length - displayCount;
-							const oreText =
-								remainingCount > 0
-									? `${oresWithQuality.join(", ")} +${remainingCount}`
-									: oresWithQuality.join(", ");
-
-							const fontSize = Math.max(10, Math.min(12, 11 * viewport.zoom));
-							ctx.font = `${fontSize}px sans-serif`;
-							const textWidth = ctx.measureText(oreText).width;
-
-							ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-							ctx.fillRect(
-								screenX + markerSize + 4,
-								screenY - fontSize / 2 - 2,
-								textWidth + 8,
-								fontSize + 4,
-							);
-							ctx.fillStyle = "#ffaa00";
-							ctx.fillText(
-								oreText,
-								screenX + markerSize + 8,
-								screenY + fontSize / 2 - 2,
-							);
-						}
 					}
 				}
 			}
@@ -572,7 +507,8 @@ export function WorldMapViewer({
 			const vsY = absoluteY - spawnOffsetY;
 
 			// Check if hovering over any marker
-			let hoveredMarker = null;
+			let hoveredMarker: MapMarker | ProspectingMarker | null = null;
+			let hoveredProspectMarker: ProspectingMarker | null = null;
 			const hoverThreshold = 20;
 
 			// Check waypoint markers
@@ -611,11 +547,18 @@ export function WorldMapViewer({
 						);
 						if (distance < hoverThreshold) {
 							hoveredMarker = marker;
+							hoveredProspectMarker = marker;
 							break;
 						}
 					}
 					if (hoveredMarker) break;
 				}
+			}
+
+			if (hoveredProspectMarker) {
+				setProspectingMarker(hoveredProspectMarker);
+			} else {
+				setProspectingMarker(null);
 			}
 
 			// Update cursor coordinates
@@ -740,6 +683,45 @@ export function WorldMapViewer({
 						{cursorCoords.z !== undefined
 							? `${cursorCoords.x}, ${cursorCoords.y}, ${cursorCoords.z}`
 							: `${cursorCoords.x}, ${cursorCoords.y}`}
+						{prospectingMarker && (
+							<div className="mt-1">
+								<strong>Prospecting Results:</strong>
+								<ul className="list-disc list-inside">
+									{prospectingMarker.results
+										.sort(sortByQuality)
+										.map((result, index) => (
+											// biome-ignore lint/suspicious/noArrayIndexKey: Needed to display correctly
+											<li
+												className="text-xs flex gap-2"
+												key={result.ore_code + index}
+											>
+												<p>
+													{result.ore_code.charAt(0).toUpperCase() +
+														result.ore_code.slice(1)}{" "}
+													-
+												</p>
+												<p className="flex gap-1">
+													<SparkleIcon
+														className={cn(
+															"size-3 text-muted-foreground",
+															(result.readings?.quality ?? 0) > 10
+																? "fill-success"
+																: (result.readings?.quality ?? 0) > 5
+																	? "fill-warning"
+																	: "fill-destructive",
+														)}
+													/>
+													{result.readings?.quality.toFixed(2) ?? 0} -
+												</p>
+												<p className="flex gap-1">
+													<ArrowDownToDotIcon className="size-3 opacity-50" />
+													{result.readings?.depth.toFixed(2) ?? 0}
+												</p>
+											</li>
+										))}
+								</ul>
+							</div>
+						)}
 					</div>
 				)}
 			</div>
