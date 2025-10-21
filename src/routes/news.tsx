@@ -31,6 +31,7 @@ export const Route = createFileRoute("/news")({
 });
 
 function RouteComponent() {
+	// Queries
 	const { data: news, isLoading, error } = useQuery(newsQueryOptions);
 
 	if (isLoading) {
