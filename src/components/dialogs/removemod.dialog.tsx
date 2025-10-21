@@ -73,12 +73,12 @@ export function RemoveModDialog({
 				<AlertDialogHeader>
 					<AlertDialogTitle>
 						Are you sure you want to remove{" "}
-						<span className="text-yellow-200">{name}</span> from{" "}
+						<span className="text-warning-foreground">{name}</span> from{" "}
 						<span className="text-blue-200">{installation.name}</span>?
 					</AlertDialogTitle>
 					<AlertDialogDescription>
 						This action cannot be undone. This will permanently remove{" "}
-						<span className="text-yellow-200">{name}</span> from{" "}
+						<span className="text-warning-foreground">{name}</span> from{" "}
 						<span className="text-blue-200">{installation.name}</span>.
 					</AlertDialogDescription>
 				</AlertDialogHeader>

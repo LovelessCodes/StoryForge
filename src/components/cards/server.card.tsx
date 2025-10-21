@@ -40,7 +40,7 @@ export function ServerCard({
 				<div
 					className={`h-2 w-2 rounded-full ${
 						versions.includes(installation.version)
-							? "bg-green-500"
+							? "bg-success"
 							: "bg-muted-foreground/40"
 					}`}
 				/>
