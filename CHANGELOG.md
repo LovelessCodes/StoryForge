@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cleaned up code handling paths to make the application more robust.
 - Sorting algorithm for installations, to make the sorting consistent across pages.
 
+### Fixed
+
+- Resolve an issue with mod updating, where it wouldn't instantly show you if an update is available.
+
 ### Removed
 
 - Drag and drop functionality for servers and installations.

@@ -44,7 +44,7 @@ export function ModList({
 	installation,
 }: {
 	parentRef: React.RefObject<HTMLDivElement | null>;
-	installation: Installation | null;
+	installation: Installation;
 }) {
 	const {
 		searchText,
@@ -62,13 +62,11 @@ export function ModList({
 			versions: selectedGameVersions.map((version) => version),
 		}),
 	);
-	const { data: instMods } = useInstalledMods(installation?.path ?? "", {
-		enabled: !!installation,
-	});
+	const { data: instMods } = useInstalledMods(installation.path);
 	const installedMods = instMods?.mods ?? [];
 	const { data: modUpdates } = useModUpdates(
 		{
-			installationId: installation?.id ?? -1,
+			installationId: installation.id,
 			params:
 				installedMods?.map((mod) => `${mod.modid}@${mod.version}`).join(",") ??
 				"",
