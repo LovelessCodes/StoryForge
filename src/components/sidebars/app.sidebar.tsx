@@ -134,7 +134,7 @@ export function AppSidebar() {
 									<Tooltip>
 										<TooltipTrigger asChild>
 											<Button
-												className="flex items-center justify-center hover:text-green-900 p-1 rounded-none"
+												className="flex items-center justify-center hover:text-success p-1 rounded-none"
 												onClick={() => {
 													verifyAuth({
 														sessionkey: user.sessionkey || "",
