@@ -56,10 +56,12 @@ export function ModItem({
 	const { data: modInfo } = useQuery({
 		enabled: !!updateMod,
 		queryFn: () =>
-			invoke("fetch_mod_info", {
+			updateMod &&
+			(invoke("fetch_mod_info", {
 				modid: updateMod?.modidstr,
-			}) as Promise<ModInfo>,
+			}) as Promise<ModInfo>),
 		queryKey: ["modInfo", mod.modid],
+		refetchOnMount: false,
 		refetchOnReconnect: false,
 		refetchOnWindowFocus: false,
 	});
