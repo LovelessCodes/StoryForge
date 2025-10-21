@@ -141,7 +141,7 @@ export function ModItem({
 			animate={{ opacity: 1, y: 0 }}
 			className={cn([
 				"flex flex-row p-2 justify-between w-full items-center",
-				installedMod && "bg-gradient-to-r from-green-600/20 to-transparent",
+				installedMod && "bg-gradient-to-r from-success/20 to-transparent",
 			])}
 			exit={{ opacity: 0, y: 12 }}
 			initial={{ opacity: 0, y: 12 }}

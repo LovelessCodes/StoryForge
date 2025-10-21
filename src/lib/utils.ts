@@ -1,6 +1,9 @@
 import { platform } from "@tauri-apps/plugin-os";
 import { type ClassValue, clsx } from "clsx";
+import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
+import { useInstalledMods } from "@/hooks/use-installed-mods";
+import type { Installation } from "@/stores/installations";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -109,3 +112,61 @@ export function buildVersionPath(
 ): string {
 	return `${parentPath}${pathDelimiter}${subdir}${pathDelimiter}${versionName}`;
 }
+
+/**
+ * Sorts installations by favorite status and last played time
+ * Favorites are prioritized, and within each group, installations are sorted
+ * by lastTimePlayed in descending order (most recent first).
+ * @param installations - Array of installations to sort
+ * @returns Sorted array of installations
+ */
+export const sortInstallations = (a: Installation, b: Installation) => {
+	// Sort favorites first
+	if (a.favorite && !b.favorite) return -1;
+	if (!a.favorite && b.favorite) return 1;
+	// Then sort by lastTimePlayed descending
+	const aTime = a.lastTimePlayed ? new Date(a.lastTimePlayed).getTime() : 0;
+	const bTime = b.lastTimePlayed ? new Date(b.lastTimePlayed).getTime() : 0;
+	return bTime - aTime;
+};
+
+/**
+ * Exports the installation data (mods, name, version) to clipboard as JSON
+ * @param installation - The installation to export
+ */
+export const exportInstallation = async ({
+	installation,
+}: {
+	installation: Installation;
+}) => {
+	const { data: installationMods } = useInstalledMods(installation.path);
+	const data = {
+		mods: installationMods?.mods.map((m) => ({
+			id: m.modid,
+			version: m.version,
+		})),
+		name: installation.name,
+		version: installation.version,
+	};
+	// Copy to clipboard
+	await window.navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+	toast.success("Installation copied to clipboard");
+};
+
+/**
+ * Variants for the item animations
+ */
+export const itemVariants = {
+	exit: { opacity: 0, transition: { duration: 0.15 }, y: -4 },
+	hidden: { opacity: 0, y: 8 },
+	show: (i: number) => ({
+		opacity: 1,
+		transition: {
+			damping: 32,
+			delay: i * 0.05, // 50ms incremental stagger based on current index
+			stiffness: 420,
+			type: "spring" as const,
+		},
+		y: 0,
+	}),
+};

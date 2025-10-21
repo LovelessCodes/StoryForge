@@ -55,7 +55,14 @@ export const installationSchema = z.object({
 	version: z.string().min(1),
 });
 
-export function AddInstallationDialog({ open }: { open: boolean }) {
+export type AddInstallationDialogProps = {
+	version?: string;
+};
+
+export function AddInstallationDialog({
+	version,
+	open,
+}: AddInstallationDialogProps & { open: boolean }) {
 	const id = useId();
 	const { data: gameVersions } = useQuery(gameVersionsQuery);
 	const { installationsParent, installationsSubdir } = useSettingsStore();
@@ -100,9 +107,11 @@ export function AddInstallationDialog({ open }: { open: boolean }) {
 				: "",
 			startParams: "",
 			version:
+				version ??
 				gameVersions
 					?.sort(compareSemverDesc)
-					.filter((v) => !v.includes("rc"))[0] ?? "",
+					.filter((v) => !v.includes("rc"))[0] ??
+				"",
 		},
 		onSubmit: async ({ value }) => {
 			if (!installedVersions.includes(value.version)) {
@@ -129,6 +138,7 @@ export function AddInstallationDialog({ open }: { open: boolean }) {
 			onChange: installationSchema,
 		},
 	});
+
 	return (
 		<Dialog
 			onOpenChange={() =>

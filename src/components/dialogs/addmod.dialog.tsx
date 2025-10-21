@@ -121,14 +121,16 @@ export function AddModDialog({
 			<DialogContent>
 				<DialogHeader>
 					<h3 className="text-lg font-medium leading-6">
-						Add <span className="text-yellow-200">{modInfo?.mod.name}</span> to{" "}
-						<span className="text-blue-200">{installation.name}</span>
+						Add{" "}
+						<span className="text-warning-foreground">{modInfo?.mod.name}</span>{" "}
+						to <span className="text-blue-200">{installation.name}</span>
 					</h3>
 				</DialogHeader>
 				<DialogDescription>
 					Select the version of{" "}
-					<span className="text-yellow-200">{modInfo?.mod.name}</span> you want
-					to add to <span className="text-blue-200">{installation.name}</span>.
+					<span className="text-warning-foreground">{modInfo?.mod.name}</span>{" "}
+					you want to add to{" "}
+					<span className="text-blue-200">{installation.name}</span>.
 				</DialogDescription>
 				{/* We need a select, incase the installation version is not compatible */}
 				<div className="mt-2 w-full overflow-hidden">

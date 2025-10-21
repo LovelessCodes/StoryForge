@@ -7,15 +7,18 @@ import {
 	MapPinPlusIcon,
 	ServerIcon,
 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence } from "motion/react";
 import { InstallationCard } from "@/components/cards/installation.card";
 import { ServerCard } from "@/components/cards/server.card";
+import { MotionInstallationContextMenu } from "@/components/context-menus/installation.context-menu";
+import { MotionServerContextMenu } from "@/components/context-menus/server.context-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ErrorComponent } from "@/components/ui/error";
 import { useAppVersion } from "@/hooks/use-app-version";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
+import { sortInstallations } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
@@ -95,20 +98,16 @@ function Dashboard() {
 											<FolderIcon className="inline size-3 ml-2" />
 										</Button>
 									</Link>
-									{[...installations]
-										.sort((a, b) => {
-											if (a.favorite === b.favorite) {
-												return a.index - b.index;
-											}
-											return a.favorite ? -1 : 1;
-										})
+									{installations
+										.sort(sortInstallations)
 										.map((installation, index) => (
-											<motion.div
+											<MotionInstallationContextMenu
 												animate={{ opacity: 1, y: 0 }}
-												className="flex items-center justify-between px-4 py-3 not-last:border-b"
+												className="not-last:border-b flex items-center justify-between px-4 py-3"
 												exit={{ opacity: 0, y: -12 }}
 												initial={{ opacity: 0, y: 12 }}
-												key={installation.id}
+												installation={installation}
+												key={`${installation.id}-context-menu`}
 												layout
 												transition={{
 													damping: 32,
@@ -135,7 +134,7 @@ function Dashboard() {
 													onPlay={(i) => playWithInstallation({ id: i.id })}
 													onUnfavorite={(i) => toggleFavoriteInstallation(i.id)}
 												/>
-											</motion.div>
+											</MotionInstallationContextMenu>
 										))}
 								</AnimatePresence>
 								<Button
@@ -181,7 +180,7 @@ function Dashboard() {
 									</Button>
 								</Link>
 								<AnimatePresence>
-									{[...servers]
+									{servers
 										.sort((a, b) => {
 											if (a.favorite === b.favorite) {
 												return a.index - b.index;
@@ -189,13 +188,14 @@ function Dashboard() {
 											return a.favorite ? -1 : 1;
 										})
 										.map((server, index) => (
-											<motion.div
+											<MotionServerContextMenu
 												animate={{ opacity: 1, y: 0 }}
 												className="not-last:border-b flex items-center justify-between px-4 py-3"
 												exit={{ opacity: 0, y: -12 }}
 												initial={{ opacity: 0, y: 12 }}
-												key={server.id}
+												key={`${server.id}-context-menu`}
 												layout
+												server={server}
 												transition={{
 													damping: 32,
 													delay: index * 0.05, // 50ms incremental stagger based on current index
@@ -219,7 +219,7 @@ function Dashboard() {
 													onUnfavorite={(s) => toggleFavoriteServer(s.id)}
 													server={server}
 												/>
-											</motion.div>
+											</MotionServerContextMenu>
 										))}
 								</AnimatePresence>
 								<Button

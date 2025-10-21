@@ -19,11 +19,16 @@ export const Route = createFileRoute("/worlds")({
 });
 
 function RouteComponent() {
+	// States
 	const [searchText, setSearchText] = useState("");
-	const { installations } = useInstallations();
 	const [selectedInstallationId, setSelectedInstallationId] = useState<
 		number | null
 	>(null);
+
+	// Stores
+	const { installations } = useInstallations();
+
+	// Queries
 	const { data: worlds } = useSaves();
 	const filteredWorlds = worlds?.filter((world) => {
 		const matchesSearchText = world.data.world_name

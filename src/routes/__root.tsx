@@ -1,5 +1,5 @@
 import { AppSidebar } from "@/components/sidebars/app.sidebar";
-import "../App.css";
+import "@/App.css";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import type { QueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
@@ -36,9 +36,13 @@ export const Route = createRootRouteWithContext<{
 });
 
 function RootComponent() {
-	const { data: update } = useUpdater();
+	// Stores
 	const { active } = useDialogStore();
 
+	// Queries
+	const { data: update } = useUpdater();
+
+	// Effects
 	React.useEffect(() => {
 		if (update) {
 			let downloaded: number = 0;
@@ -107,7 +111,12 @@ function RootComponent() {
 				]}
 			/>
 			{active?.key === "AddInstallationDialog" && (
-				<AddInstallationDialog open={active?.key === "AddInstallationDialog"} />
+				<AddInstallationDialog
+					open={active?.key === "AddInstallationDialog"}
+					{...((active?.key === "AddInstallationDialog"
+						? active.props
+						: {}) as DialogMap["AddInstallationDialog"])}
+				/>
 			)}
 			{active?.key === "AddModDialog" && (
 				<AddModDialog
