@@ -41,9 +41,10 @@ const sortOptions: Record<ServersFilters["sortBy"], string> = {
 };
 
 function RouteComponent() {
+	// Refs
 	const parentRef = useRef<HTMLDivElement | null>(null);
-	const { data: gameVersions } = useQuery(gameVersionsQuery);
-	const { data: publicServers } = useQuery(publicServersQuery());
+
+	// Stores
 	const {
 		searchText,
 		setSearchText,
@@ -55,6 +56,10 @@ function RouteComponent() {
 		orderDirection,
 		setOrderDirection,
 	} = useServersFilters();
+
+	// Queries
+	const { data: gameVersions } = useQuery(gameVersionsQuery);
+	const { data: publicServers } = useQuery(publicServersQuery());
 	return (
 		<div
 			className="grid grid-rows-[min-content_1fr] gap-2 w-full"

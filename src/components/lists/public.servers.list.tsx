@@ -1,12 +1,20 @@
 import { measureElement, useVirtualizer } from "@tanstack/react-virtual";
-import { ListCheckIcon, LockIcon, UnplugIcon, Users2Icon } from "lucide-react";
-import { motion } from "motion/react";
+import {
+	DownloadCloudIcon,
+	FolderPlusIcon,
+	ListCheckIcon,
+	LockIcon,
+	PlugIcon,
+	Users2Icon,
+} from "lucide-react";
 import { useCallback } from "react";
+import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import type { PublicServer } from "@/hooks/use-public-servers";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
 import { useServersFilters } from "@/stores/serversFilters";
+import { MotionPublicServerContextMenu } from "../context-menus/public-server.context-menu";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
@@ -21,6 +29,7 @@ export function PublicServerList({
 	const { data: installedVersions } = useInstalledVersions();
 	const { installations } = useInstallations();
 	const { openDialog } = useDialogStore();
+	const { mutate: downloadVersion } = useDownloadVersion();
 	const { searchText, selectedGameVersions, sortBy, orderDirection } =
 		useServersFilters();
 
@@ -101,6 +110,7 @@ export function PublicServerList({
 			{filteredServers &&
 				items.map((item) => {
 					const server = filteredServers[item.index];
+					if (!server) return null;
 					return (
 						<div
 							className="not-last:border-b p-2 flex gap-2 absolute top-0 left-0 w-full"
@@ -112,11 +122,12 @@ export function PublicServerList({
 								willChange: "transform",
 							}}
 						>
-							<motion.div
+							<MotionPublicServerContextMenu
 								animate={{ opacity: 1, y: 0 }}
-								className="flex flex-row justify-between w-full items-center"
+								className="flex flex-row justify-between w-full items-center gap-4"
 								exit={{ opacity: 0, y: 20 }}
 								initial={{ opacity: 0, y: 20 }}
+								server={server}
 							>
 								<div className="flex flex-col">
 									<div className="flex gap-1 items-center font-semibold">
@@ -169,46 +180,79 @@ export function PublicServerList({
 										)}
 									</div>
 								</div>
-							</motion.div>
-							<motion.div
-								animate={{ opacity: 1, y: 0 }}
-								className="flex gap-2 items-center"
-								exit={{ opacity: 0, y: -12 }}
-								initial={{ opacity: 0, y: -12 }}
-							>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<Button
-													aria-label="Delete"
-													className="shadow-none focus-visible:z-10"
-													disabled={
-														installations.filter(
-															(i) => i.version === server.gameVersion,
-														).length === 0
-													}
-													onClick={() =>
-														openDialog("ConnectServerDialog", { server })
-													}
-													size="icon"
-													variant="outline"
-												>
-													<UnplugIcon
-														aria-hidden="true"
-														className="opacity-60"
-														size={16}
-													/>
-												</Button>
-											</TooltipTrigger>
-											<TooltipContent>
-												Connect to {server?.serverIP}
-											</TooltipContent>
-										</Tooltip>
-									</TooltipTrigger>
-									<TooltipContent>Connect to {server?.serverIP}</TooltipContent>
-								</Tooltip>
-							</motion.div>
+								{installedVersions.includes(server.gameVersion) ? (
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<Button
+												aria-label="Connect to server"
+												className="shadow-none focus-visible:z-10"
+												onClick={() =>
+													openDialog("ConnectServerDialog", { server })
+												}
+												size="icon"
+												variant="outline"
+											>
+												<PlugIcon
+													aria-hidden="true"
+													className="opacity-60 text-success"
+													size={16}
+												/>
+											</Button>
+										</TooltipTrigger>
+										<TooltipContent>
+											Connect to {server?.serverName}
+										</TooltipContent>
+									</Tooltip>
+								) : installations.find(
+										(i) => i.version === server.gameVersion,
+									) ? (
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<Button
+												aria-label="Connect to server"
+												className="shadow-none focus-visible:z-10"
+												onClick={() => downloadVersion(server.gameVersion)}
+												size="icon"
+												variant="outline"
+											>
+												<DownloadCloudIcon
+													aria-hidden="true"
+													className="-ms-1 opacity-60 text-warning-foreground"
+													size={16}
+												/>
+											</Button>
+										</TooltipTrigger>
+										<TooltipContent>
+											Download {server?.gameVersion}
+										</TooltipContent>
+									</Tooltip>
+								) : (
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<Button
+												aria-label="Install version"
+												className="shadow-none focus-visible:z-10"
+												onClick={() =>
+													openDialog("AddInstallationDialog", {
+														version: server.gameVersion,
+													})
+												}
+												size="icon"
+												variant="outline"
+											>
+												<FolderPlusIcon
+													aria-hidden="true"
+													className="opacity-60"
+													size={16}
+												/>
+											</Button>
+										</TooltipTrigger>
+										<TooltipContent>
+											Add installation for {server?.gameVersion}
+										</TooltipContent>
+									</Tooltip>
+								)}
+							</MotionPublicServerContextMenu>
 						</div>
 					);
 				})}
