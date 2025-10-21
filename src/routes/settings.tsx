@@ -39,9 +39,14 @@ const settingsSchema = z.object({
 });
 
 function RouteComponent() {
+	const { appFolder } = useAppFolder();
+	const queryClient = useQueryClient();
+
+	// Stores
 	const settingsStore = useSettingsStore();
 	const { updateParent, removeAll } = useInstallationsStore();
-	const { appFolder } = useAppFolder();
+
+	// States
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [pendingField, setPendingField] = useState<
 		"installationsParent" | "versionsParent" | "both" | null
@@ -54,13 +59,12 @@ function RouteComponent() {
 		};
 		versionsParent: { moveCurrentData: boolean; deleteCurrentData: boolean };
 	} | null>(null);
-	const queryClient = useQueryClient();
-
 	const [useAppDirectory, setUseAppDirectory] = useState(
 		settingsStore.installationsParent === null &&
 			settingsStore.versionsParent === null,
 	);
 
+	// Mutations
 	const { mutateAsync: setInstallationsParent } = useMutation({
 		mutationFn: ({
 			path,
@@ -119,7 +123,6 @@ function RouteComponent() {
 			await queryClient.invalidateQueries({ queryKey: ["saves"] });
 		},
 	});
-
 	const { mutateAsync: setVersionsParent } = useMutation({
 		mutationFn: ({
 			path,
@@ -180,6 +183,7 @@ function RouteComponent() {
 		},
 	});
 
+	// Form
 	const form = useForm({
 		defaultValues: {
 			darkMode: settingsStore.darkMode,
@@ -233,6 +237,7 @@ function RouteComponent() {
 		},
 	});
 
+	// Functions
 	const handleBrowse = async (
 		fieldName: "installationsParent" | "versionsParent" | "both",
 	) => {
@@ -247,7 +252,6 @@ function RouteComponent() {
 			setDialogOpen(true);
 		}
 	};
-
 	const handleDialogChoice = async (choice: "keep" | "delete" | "move") => {
 		if (!pendingField) return;
 		const config =
