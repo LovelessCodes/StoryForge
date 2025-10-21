@@ -1,21 +1,16 @@
-import type {
-	DraggableAttributes,
-	DraggableSyntheticListeners,
-} from "@dnd-kit/core";
 import { useRouter } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import {
 	DownloadCloudIcon,
 	FileUpIcon,
-	FolderIcon,
+	FolderOpenIcon,
 	PackageOpenIcon,
-	PackagePlusIcon,
-	PenIcon,
+	PackageSearchIcon,
+	PencilIcon,
 	PlayIcon,
 	StarIcon,
-	XIcon,
+	TrashIcon,
 } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
@@ -23,76 +18,36 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useDownloadVersion } from "@/hooks/use-download-version";
-import { useInstalledMods } from "@/hooks/use-installed-mods";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
-import { cn } from "@/lib/utils";
+import { usePlayInstallation } from "@/hooks/use-play-installation";
+import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
+import { cn, exportInstallation } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
-import type { Installation } from "@/stores/installations";
+import { type Installation, useInstallations } from "@/stores/installations";
 
 export type InstallationRowProps = {
 	installation: Installation;
-	onPlay: ({ id, save }: { id: number; save?: string }) => void;
-	onFavorite: (id: number) => void;
-	onOpenFolder: (path: string) => void;
-	listeners?: DraggableSyntheticListeners;
-	attributes?: DraggableAttributes;
-	isDragging?: boolean;
-	setNodeRef?: (el: HTMLElement | null) => void;
-	style?: React.CSSProperties;
 };
 
-export function InstallationRow({
-	installation,
-	onPlay,
-	onFavorite,
-	onOpenFolder,
-	listeners,
-	attributes,
-	isDragging,
-	setNodeRef,
-	style,
-}: InstallationRowProps) {
+export function InstallationRow({ installation }: InstallationRowProps) {
 	const router = useRouter();
-	const { data: versions } = useInstalledVersions();
-	const { mutate: installVersion, isPending: isInstalling } =
-		useDownloadVersion();
-	const { data: installationMods } = useInstalledMods(installation.path);
-	const version = versions?.find((v) => v === installation.version);
-	const { openDialog } = useDialogStore();
 
-	const exportInstallation = async () => {
-		const data = {
-			mods: installationMods?.mods.map((m) => ({
-				id: m.modid,
-				version: m.version,
-			})),
-			name: installation.name,
-			version: installation.version,
-		};
-		// Copy to clipboard
-		await window.navigator.clipboard.writeText(JSON.stringify(data, null, 2));
-		toast.success("Installation copied to clipboard");
-	};
+	// Stores
+	const { openDialog } = useDialogStore();
+	const { toggleFavorite } = useInstallations();
+
+	// Queries
+	const { data: versions } = useInstalledVersions();
+	const version = versions?.find((v) => v === installation.version);
+
+	// Mutations
+	const { mutate: downloadVersion, isPending: isInstalling } =
+		useDownloadVersion();
+	const { mutate: playWithInstallation } = usePlayInstallation();
+	const { mutate: openFolder } = useRevealInFolder();
+
 	return (
-		<div
-			className={cn([
-				"flex items-center gap-2 py-2 px-2",
-				isDragging ? "opacity-50 bg-muted" : "opacity-100",
-			])}
-			ref={setNodeRef}
-			style={{
-				...style,
-				transition: "background 0.2s",
-			}}
-		>
-			{/* Drag handle */}
-			<span
-				className="cursor-grab select-none px-2 text-lg"
-				{...attributes}
-				{...listeners}
-			>
-				≡
-			</span>
+		<>
 			<div className="flex items-center flex-1 gap-3">
 				<Tooltip>
 					<TooltipTrigger className="flex flex-col justify-start">
@@ -120,7 +75,7 @@ export function InstallationRow({
 							<Button
 								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
 								onClick={() =>
-									onPlay({
+									playWithInstallation({
 										id: installation.id,
 									})
 								}
@@ -128,7 +83,7 @@ export function InstallationRow({
 							>
 								<PlayIcon
 									aria-hidden="true"
-									className="-ms-1 opacity-60 text-green-300"
+									className="-ms-1 opacity-60 text-success"
 									size={16}
 								/>
 							</Button>
@@ -136,26 +91,26 @@ export function InstallationRow({
 							<Button
 								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
 								disabled={isInstalling}
-								onClick={() => installVersion(installation.version)}
+								onClick={() => downloadVersion(installation.version)}
 								variant="outline"
 							>
 								<DownloadCloudIcon
 									aria-hidden="true"
-									className="-ms-1 opacity-60 text-yellow-300"
+									className="-ms-1 opacity-60 text-warning-foreground"
 									size={16}
 								/>
 							</Button>
 						)}
 					</TooltipTrigger>
 					<TooltipContent>
-						{version ? "Play" : `Install ${installation.version}`}
+						{version ? "Launch" : `Download ${installation.version}`}
 					</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
 							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() => onFavorite(installation.id)}
+							onClick={() => toggleFavorite(installation.id)}
 							variant="outline"
 						>
 							<StarIcon
@@ -189,14 +144,14 @@ export function InstallationRow({
 							}
 							variant="outline"
 						>
-							<PackagePlusIcon
+							<PackageSearchIcon
 								aria-hidden="true"
 								className="-ms-1 opacity-60"
 								size={16}
 							/>
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>Add Mods</TooltipContent>
+					<TooltipContent>Manage Mods</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger asChild>
@@ -220,27 +175,31 @@ export function InstallationRow({
 							/>
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>Edit Mod Configurations</TooltipContent>
+					<TooltipContent>Configure Mods</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
 							aria-label="Open folder"
 							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() => onOpenFolder(installation.path)}
+							onClick={() => openFolder(installation.path)}
 							size="icon"
 							variant="outline"
 						>
-							<FolderIcon aria-hidden="true" className="opacity-60" size={16} />
+							<FolderOpenIcon
+								aria-hidden="true"
+								className="opacity-60"
+								size={16}
+							/>
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>Open folder</TooltipContent>
+					<TooltipContent>Open Folder</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
 							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() => exportInstallation()}
+							onClick={() => exportInstallation({ installation })}
 							variant="outline"
 						>
 							<FileUpIcon
@@ -261,7 +220,7 @@ export function InstallationRow({
 							}
 							variant="outline"
 						>
-							<PenIcon
+							<PencilIcon
 								aria-hidden="true"
 								className="-ms-1 opacity-60"
 								size={16}
@@ -281,12 +240,12 @@ export function InstallationRow({
 							size="icon"
 							variant="outline"
 						>
-							<XIcon aria-hidden="true" className="opacity-60" size={16} />
+							<TrashIcon aria-hidden="true" className="opacity-60" size={16} />
 						</Button>
 					</TooltipTrigger>
 					<TooltipContent>Delete</TooltipContent>
 				</Tooltip>
 			</div>
-		</div>
+		</>
 	);
 }

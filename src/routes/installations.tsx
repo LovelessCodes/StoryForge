@@ -1,23 +1,8 @@
-import {
-	closestCenter,
-	DndContext,
-	type DragEndEvent,
-	PointerSensor,
-	useSensor,
-	useSensors,
-} from "@dnd-kit/core";
-import {
-	restrictToParentElement,
-	restrictToVerticalAxis,
-} from "@dnd-kit/modifiers";
-import {
-	SortableContext,
-	verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
 import { createFileRoute } from "@tanstack/react-router";
 import { FileDownIcon, FolderPlusIcon } from "lucide-react";
 import { AnimatePresence } from "motion/react";
-import { SortableInstallationRow } from "@/components/rows/sortable.installation.row";
+import { MotionInstallationContextMenu } from "@/components/context-menus/installation.context-menu";
+import { InstallationRow } from "@/components/rows/installation.row";
 import { Button } from "@/components/ui/button";
 import { ErrorComponent } from "@/components/ui/error";
 import {
@@ -25,8 +10,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { usePlayInstallation } from "@/hooks/use-play-installation";
-import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
+import { itemVariants, sortInstallations } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
 
@@ -36,26 +20,9 @@ export const Route = createFileRoute("/installations")({
 });
 
 function RouteComponent() {
-	const { installations, moveInstallation, toggleFavorite } =
-		useInstallations();
+	// Stores
+	const { installations } = useInstallations();
 	const { openDialog } = useDialogStore();
-
-	// DnD-kit setup
-	const sensors = useSensors(useSensor(PointerSensor));
-	const installationIds = installations.map((s) => s.id);
-	const { mutate: playWithInstallation } = usePlayInstallation();
-	const { mutate: openFolder } = useRevealInFolder();
-
-	function handleDragEnd(event: DragEndEvent) {
-		const { active, over } = event;
-		if (active.id !== over?.id) {
-			const oldIndex = installations.findIndex((s) => s.id === active.id);
-			const newIndex = installations.findIndex((s) => s.id === over?.id);
-			if (oldIndex !== -1 && newIndex !== -1) {
-				moveInstallation(active.id as number, newIndex);
-			}
-		}
-	}
 
 	return (
 		<div className="flex flex-col gap-2 w-full">
@@ -83,42 +50,43 @@ function RouteComponent() {
 					<TooltipContent>Import Installation</TooltipContent>
 				</Tooltip>
 			</div>
-			<DndContext
-				collisionDetection={closestCenter}
-				modifiers={[restrictToParentElement, restrictToVerticalAxis]}
-				onDragEnd={handleDragEnd}
-				sensors={sensors}
-			>
-				<SortableContext
-					items={installationIds}
-					strategy={verticalListSortingStrategy}
-				>
-					<div className="h-full px-4 relative overflow-auto w-full">
-						<div className="flex flex-col w-full bg-card p-2 rounded shadow border relative overflow-y-auto">
-							<AnimatePresence>
-								{[...installations]
-									.sort((a, b) => a.index - b.index)
-									.map((installation, i) => (
-										<SortableInstallationRow
-											index={i}
-											installation={installation}
-											key={installation.id}
-											onFavorite={toggleFavorite}
-											onOpenFolder={openFolder}
-											onPlay={playWithInstallation}
-										/>
-									))}
-								{installations.length === 0 && (
-									<p className="p-4 text-sm text-muted-foreground select-none">
-										No installations yet. Click "Add installation" to get
-										started.
-									</p>
-								)}
-							</AnimatePresence>
-						</div>
-					</div>
-				</SortableContext>
-			</DndContext>
+			<div className="h-full px-4 relative overflow-auto w-full">
+				<div className="flex flex-col w-full bg-card p-2 rounded shadow border relative overflow-hidden">
+					<AnimatePresence>
+						{installations
+							.sort(sortInstallations)
+							.map((installation, index) => (
+								<MotionInstallationContextMenu
+									animate="show"
+									className="not-last:border-b flex items-center gap-2 py-2 px-2"
+									custom={index}
+									exit="exit"
+									initial="hidden"
+									installation={installation}
+									key={`${installation.id}-context-menu`}
+									layout="position"
+									transition={{
+										damping: 32,
+										delay: index * 0.05, // 50ms incremental stagger based on current index
+										stiffness: 420,
+										type: "spring" as const,
+									}}
+									variants={itemVariants}
+								>
+									<InstallationRow
+										installation={installation}
+										key={installation.id}
+									/>
+								</MotionInstallationContextMenu>
+							))}
+						{installations.length === 0 && (
+							<p className="p-4 text-sm text-muted-foreground select-none">
+								No installations yet. Click "Add installation" to get started.
+							</p>
+						)}
+					</AnimatePresence>
+				</div>
+			</div>
 		</div>
 	);
 }
