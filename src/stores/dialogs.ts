@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { AddInstallationDialogProps } from "@/components/dialogs/addinstallation.dialog";
 import type { AddModDialogProps } from "@/components/dialogs/addmod.dialog";
 import type { AddServerDialogProps } from "@/components/dialogs/addserver.dialog";
 import type { ConnectServerDialogProps } from "@/components/dialogs/connectserver.dialog";
@@ -14,7 +15,7 @@ import type { UpdateModDialogProps } from "@/components/dialogs/updatemod.dialog
 import type { ViewMapDialogProps } from "@/components/dialogs/viewmap.dialog";
 
 export type DialogMap = {
-	AddInstallationDialog: undefined;
+	AddInstallationDialog: AddInstallationDialogProps;
 	AddModDialog: AddModDialogProps;
 	AddServerDialog: AddServerDialogProps;
 	AddUserDialog: undefined;
