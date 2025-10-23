@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDownIcon } from "lucide-react";
 import { useRef } from "react";
+import { UpdateAllButton } from "@/components/buttons/update-all.button";
 import { AuthorCombobox } from "@/components/comboboxes/author.combobox";
 import { SearchInput } from "@/components/inputs";
 import { ModList } from "@/components/lists/mod.list";
@@ -22,14 +23,25 @@ import {
 	SelectTrigger,
 } from "@/components/ui/select";
 import { useInstalledMods } from "@/hooks/use-installed-mods";
+import { useModUpdates } from "@/hooks/use-mod-updates";
 import { gameVersionsQuery, modTagsQuery } from "@/lib/queries";
 import { cn, compareSemverDesc } from "@/lib/utils";
-import { useInstallations } from "@/stores/installations";
+import { useInstallationsStore } from "@/stores/installations";
 import { type ModsFilters, useModsFilters } from "@/stores/modsFilters";
 
 export const Route = createFileRoute("/install-mods/$id")({
 	component: RouteComponent,
 	errorComponent: ErrorComponent,
+	loader: async ({ params }) => {
+		// Find the installation by ID in the store
+		const installation = useInstallationsStore
+			.getState()
+			.installations.find((inst) => inst.id === Number(params.id));
+		if (!installation) {
+			throw new Error("Installation not found");
+		}
+		return { installation };
+	},
 });
 
 const sortOptions: Record<ModsFilters["sortBy"], string> = {
@@ -57,14 +69,24 @@ export type OutputMod = {
 };
 
 function RouteComponent() {
-	const { id } = Route.useParams();
-	const { installations } = useInstallations();
-	const installation = installations.find((inst) => inst.id === Number(id));
+	const { installation } = Route.useLoaderData();
 	const { data: gameVersions } = useQuery(gameVersionsQuery);
 	const { data: modTags } = useQuery(modTagsQuery);
-	const { data: installedMods } = useInstalledMods(installation?.path ?? "", {
-		enabled: !!installation,
+	const { data: instMods } = useInstalledMods(installation.path, {
+		staleTime: Infinity,
 	});
+	const { data: modUpdates } = useModUpdates(
+		{
+			installationId: installation.id,
+			params:
+				instMods?.mods?.map((mod) => `${mod.modid}@${mod.version}`).join(",") ??
+				"",
+		},
+		{
+			enabled: !!instMods?.mods?.length,
+			staleTime: Infinity,
+		},
+	);
 
 	const {
 		selectedGameVersions,
@@ -83,13 +105,10 @@ function RouteComponent() {
 		setAuthor,
 		category,
 		setCategory,
+		side,
 	} = useModsFilters();
 
 	const parentRef = useRef<HTMLDivElement>(null);
-
-	if (!installation || !installedMods) {
-		return <div>Installation not found</div>;
-	}
 
 	return (
 		<div
@@ -257,6 +276,13 @@ function RouteComponent() {
 					value={author}
 				/>
 				<SideToggleGroup />
+				{side === "installed" && modUpdates && instMods && (
+					<UpdateAllButton
+						installation={installation}
+						installedMods={instMods.mods}
+						updates={modUpdates}
+					/>
+				)}
 			</div>
 			<div className="h-full px-4 w-full overflow-hidden">
 				<div
