@@ -79,6 +79,9 @@ export const UpdateAllButton = ({
 						instMod.modid.toString() === updateMod.modidstr,
 				);
 				if (!isInstalled) continue;
+				toast.loading(`Updating ${isInstalled.name}...`, {
+					id: `mod-updates-${installation.id}`,
+				});
 				await removeModFromInstallation({
 					modpath: isInstalled.path,
 					path: installation.path,
