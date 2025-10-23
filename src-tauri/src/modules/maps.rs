@@ -466,12 +466,11 @@ fn pixels_to_png(pixels: &[i32], width: u32, height: u32) -> Result<Vec<u8>, UiE
         }
 
         // Decode ARGB from i32
-        let a = ((pixel >> 24) & 0xFF) as u8;
-        let r = ((pixel >> 16) & 0xFF) as u8;
+        let r = (pixel & 0xFF) as u8;
         let g = ((pixel >> 8) & 0xFF) as u8;
-        let b = (pixel & 0xFF) as u8;
+        let b = ((pixel >> 16) & 0xFF) as u8;
 
-        img.put_pixel(x, y, Rgba([r, g, b, a]));
+        img.put_pixel(x, y, Rgba([r, g, b, 255]));
     }
 
     let mut png_bytes = Vec::new();
