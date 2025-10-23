@@ -4,18 +4,20 @@ import { invoke } from "@tauri-apps/api/core";
 export type ModUpdatesResponse = {
 	statuscode: string;
 	updates: {
-		[key: string]: {
-			releaseid: number;
-			mainfile: string;
-			filename: string;
-			fileid: number;
-			downloads: number;
-			tags: string[];
-			modidstr: string;
-			modversion: string;
-			created: string;
-		};
+		[key: string]: ModUpdate;
 	};
+};
+
+export type ModUpdate = {
+	releaseid: number;
+	mainfile: string;
+	filename: string;
+	fileid: number;
+	downloads: number;
+	tags: string[];
+	modidstr: string;
+	modversion: string;
+	created: string;
 };
 
 export const modUpdatesQueryKey = (installationId: number, params?: string) =>

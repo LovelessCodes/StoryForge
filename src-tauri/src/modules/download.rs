@@ -335,8 +335,16 @@ pub async fn download_and_maybe_extract<R: Runtime>(
 
     // Done
     app.emit(
-        &format!("{emitevent}/done"),
-        serde_json::json!({ "path": destpath }),
+        &emitevent,
+        ProgressPayload {
+            phase: "done",
+            downloaded: None,
+            total: None,
+            percent: None,
+            current: None,
+            count: None,
+            message: None,
+        },
     )
     .map_err(|e| format!("emit error: {e}"))?;
 
