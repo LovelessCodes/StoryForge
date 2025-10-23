@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Resolve an issue with mod updating, where it wouldn't instantly show you if an update is available.
+- Resolve a coloring issue with the maps being displayed on the world maps.
 
 ### Removed
 
