@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Introduced "Update All" button on the mods page, under the installed mods.
+
+### Fixed
+
+- Resolve a coloring issue with the maps being displayed on the world maps.
+
 ## [0.5.0] - 2025-10-21
 
 ### Added
@@ -26,7 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Resolve an issue with mod updating, where it wouldn't instantly show you if an update is available.
-- Resolve a coloring issue with the maps being displayed on the world maps.
 
 ### Removed
 
