@@ -11,6 +11,11 @@
 		},
 		"enabled": true
 	},
+	"css": {
+		"parser": {
+			"tailwindDirectives": true
+		}
+	},
 	"files": {
 		"ignoreUnknown": false,
 		"includes": [
