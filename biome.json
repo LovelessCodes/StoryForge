@@ -12,6 +12,12 @@
 		"enabled": true
 	},
 	"css": {
+		"assist": {
+			"enabled": true
+		},
+		"formatter": {
+			"enabled": true
+		},
 		"parser": {
 			"tailwindDirectives": true
 		}
