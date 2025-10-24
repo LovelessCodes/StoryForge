@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Resolve a coloring issue with the maps being displayed on the world maps.
+- Resolve an issue that made map icons not appear correctly.
 
 ## [0.5.0] - 2025-10-21
 

@@ -267,7 +267,7 @@ export function WorldMapViewer({
 				const img = new Image();
 				// Try to load the icon from assets
 				// Using relative path that Vite will resolve
-				img.src = `/src/assets/map-icons/${iconName}.svg`;
+				img.src = `/map-icons/${iconName}.svg`;
 				img.onload = () => {
 					setIconCache((prev) => new Map(prev).set(iconName, img));
 				};
