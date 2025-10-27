@@ -76,8 +76,11 @@ function RouteComponent() {
 			>
 				<div className="h-full overflow-y-auto">
 					<TabsList className="h-fit">
-						<Button asChild className="w-fit mb-2 rounded-none w-full">
-							<Link to="/installations">&larr; Back to Installations</Link>
+						<Button
+							className="w-fit mb-2 rounded-none w-full"
+							render={<Link to="/installations" />}
+						>
+							&larr; Back to Installations
 						</Button>
 						{modConfigs?.map((config) => (
 							<TabsTrigger key={config.filename} value={config.filename}>
