@@ -68,7 +68,7 @@ export const AuthorCombobox = (
 					role="combobox"
 					variant="outline"
 				>
-					<span className="top-0 px-2 start-1 text-xs z-10 block -translate-y-1/2 absolute inline-flex text-muted-foreground pointer-events-none bg-background">
+					<span className="top-0 px-2 start-1 text-xs z-10 rounded-md block -translate-y-1/2 absolute inline-flex text-muted-foreground pointer-events-none bg-background">
 						Author
 					</span>
 					{actualValue ? actualValue : "Select author..."}

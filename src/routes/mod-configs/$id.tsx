@@ -7,6 +7,13 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ErrorComponent } from "@/components/ui/error";
 import { Input } from "@/components/ui/input";
+import {
+	NumberField,
+	NumberFieldDecrement,
+	NumberFieldGroup,
+	NumberFieldIncrement,
+	NumberFieldInput,
+} from "@/components/ui/number-field";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { modConfigsQueryKey, useModConfigs } from "@/hooks/use-mod-configs";
@@ -71,10 +78,11 @@ function RouteComponent() {
 				</Button>
 			</div>
 			<Tabs
-				className="w-full h-full grid overflow-hidden"
+				className="w-full h-full grid grid-cols-[min-content_1fr] overflow-hidden"
 				defaultValue={modConfigs?.[0]?.filename ?? ""}
+				orientation="vertical"
 			>
-				<div className="h-full overflow-y-auto">
+				<div className="w-full">
 					<TabsList className="h-fit">
 						<Button
 							className="w-fit mb-2 rounded-none w-full"
@@ -284,7 +292,7 @@ function LiveBlock({
 											className="mt-1"
 											onClick={() => removeArrayItem(path, idx)}
 											size="sm"
-											variant="destructive"
+											variant="destructive-outline"
 										>
 											Remove
 										</Button>
@@ -352,13 +360,21 @@ function LiveBlock({
 					>
 						{keyLabel}
 					</label>
-					<Input
-						className="h-8 w-fit"
+					<NumberField
+						className="w-44"
 						id={`num-${kKey}`}
-						onChange={(e) => handlePrimitiveChange(path, e.target.value, value)}
-						type="number"
+						onValueChange={(v) =>
+							handlePrimitiveChange(path, v?.toString() ?? "0", value)
+						}
+						size="sm"
 						value={value}
-					/>
+					>
+						<NumberFieldGroup>
+							<NumberFieldDecrement />
+							<NumberFieldInput />
+							<NumberFieldIncrement />
+						</NumberFieldGroup>
+					</NumberField>
 				</div>
 			);
 		}
