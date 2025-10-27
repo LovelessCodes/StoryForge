@@ -26,17 +26,18 @@ export function VersionItem({ version }: VersionItemProps) {
 				</div>
 			</div>
 			<Tooltip>
-				<TooltipTrigger asChild>
-					<Button
-						aria-label="Delete"
-						className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-						onClick={() => openDialog("DeleteVersionDialog", { version })}
-						size="icon"
-						variant="outline"
-					>
-						<XIcon aria-hidden="true" className="opacity-60" size={16} />
-					</Button>
-				</TooltipTrigger>
+				<TooltipTrigger
+					render={
+						<Button
+							aria-label="Delete"
+							onClick={() => openDialog("DeleteVersionDialog", { version })}
+							size="icon"
+							variant="outline"
+						>
+							<XIcon aria-hidden="true" className="opacity-60" size={16} />
+						</Button>
+					}
+				/>
 				<TooltipContent>Delete</TooltipContent>
 			</Tooltip>
 		</div>
