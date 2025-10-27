@@ -24,6 +24,7 @@ import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import { cn, exportInstallation } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { type Installation, useInstallations } from "@/stores/installations";
+import { Group, GroupItem, GroupSeparator } from "../ui/group";
 
 export type InstallationRowProps = {
 	installation: Installation;
@@ -68,184 +69,237 @@ export function InstallationRow({ installation }: InstallationRowProps) {
 					</TooltipContent>
 				</Tooltip>
 			</div>
-			<div className="inline-flex -space-x-px rounded-md shadow-xs rtl:space-x-reverse">
+			<Group>
 				<Tooltip>
-					<TooltipTrigger asChild>
-						{version ? (
-							<Button
-								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-								onClick={() =>
-									playWithInstallation({
-										id: installation.id,
-									})
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										disabled={isInstalling}
+										onClick={() =>
+											version
+												? playWithInstallation({
+														id: installation.id,
+													})
+												: downloadVersion(installation.version)
+										}
+										size="icon"
+										variant="outline"
+									/>
 								}
-								variant="outline"
 							>
-								<PlayIcon
-									aria-hidden="true"
-									className="-ms-1 opacity-60 text-success"
-									size={16}
-								/>
-							</Button>
-						) : (
-							<Button
-								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-								disabled={isInstalling}
-								onClick={() => downloadVersion(installation.version)}
-								variant="outline"
-							>
-								<DownloadCloudIcon
-									aria-hidden="true"
-									className="-ms-1 opacity-60 text-warning-foreground"
-									size={16}
-								/>
-							</Button>
-						)}
-					</TooltipTrigger>
+								{version ? (
+									<PlayIcon
+										aria-hidden="true"
+										className="-ms-1 opacity-60 text-success"
+										size={16}
+									/>
+								) : (
+									<DownloadCloudIcon
+										aria-hidden="true"
+										className="-ms-1 opacity-60 text-warning-foreground"
+										size={16}
+									/>
+								)}
+							</GroupItem>
+						}
+					/>
 					<TooltipContent>
 						{version ? "Launch" : `Download ${installation.version}`}
 					</TooltipContent>
 				</Tooltip>
+				<GroupSeparator />
 				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() => toggleFavorite(installation.id)}
-							variant="outline"
-						>
-							<StarIcon
-								aria-hidden="true"
-								className={cn(
-									"-ms-1",
-									installation.favorite
-										? "fill-warning text-warning opacity-100"
-										: "opacity-60",
-								)}
-								size={16}
-							/>
-						</Button>
-					</TooltipTrigger>
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										onClick={() => toggleFavorite(installation.id)}
+										size="icon"
+										variant="outline"
+									/>
+								}
+							>
+								<StarIcon
+									aria-hidden="true"
+									className={cn(
+										"-ms-1",
+										installation.favorite
+											? "fill-warning text-warning opacity-100"
+											: "opacity-60",
+									)}
+									size={16}
+								/>
+							</GroupItem>
+						}
+					/>
 					<TooltipContent>
 						{installation.favorite ? "Unfavorite" : "Favorite"}
 					</TooltipContent>
 				</Tooltip>
+				<GroupSeparator />
 				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() =>
-								router.navigate({
-									params: { id: installation.id.toString() },
-									to: "/install-mods/$id",
-									viewTransition: {
-										types: ["warp"],
-									},
-								})
-							}
-							variant="outline"
-						>
-							<PackageSearchIcon
-								aria-hidden="true"
-								className="-ms-1 opacity-60"
-								size={16}
-							/>
-						</Button>
-					</TooltipTrigger>
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										onClick={() =>
+											router.navigate({
+												params: { id: installation.id.toString() },
+												to: "/install-mods/$id",
+												viewTransition: {
+													types: ["warp"],
+												},
+											})
+										}
+										size="icon"
+										variant="outline"
+									/>
+								}
+							>
+								<PackageSearchIcon
+									aria-hidden="true"
+									className="-ms-1 opacity-60"
+									size={16}
+								/>
+							</GroupItem>
+						}
+					/>
 					<TooltipContent>Manage Mods</TooltipContent>
 				</Tooltip>
+				<GroupSeparator />
 				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() =>
-								router.navigate({
-									params: { id: installation.id.toString() },
-									to: "/mod-configs/$id",
-									viewTransition: {
-										types: ["warp"],
-									},
-								})
-							}
-							variant="outline"
-						>
-							<PackageOpenIcon
-								aria-hidden="true"
-								className="-ms-1 opacity-60"
-								size={16}
-							/>
-						</Button>
-					</TooltipTrigger>
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										onClick={() =>
+											router.navigate({
+												params: { id: installation.id.toString() },
+												to: "/mod-configs/$id",
+												viewTransition: {
+													types: ["warp"],
+												},
+											})
+										}
+										size="icon"
+										variant="outline"
+									/>
+								}
+							>
+								<PackageOpenIcon
+									aria-hidden="true"
+									className="-ms-1 opacity-60"
+									size={16}
+								/>
+							</GroupItem>
+						}
+					/>
 					<TooltipContent>Configure Mods</TooltipContent>
 				</Tooltip>
+				<GroupSeparator />
 				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							aria-label="Open folder"
-							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() => openFolder(installation.path)}
-							size="icon"
-							variant="outline"
-						>
-							<FolderOpenIcon
-								aria-hidden="true"
-								className="opacity-60"
-								size={16}
-							/>
-						</Button>
-					</TooltipTrigger>
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										aria-label="Open folder"
+										onClick={() => openFolder(installation.path)}
+										size="icon"
+										variant="outline"
+									/>
+								}
+							>
+								<FolderOpenIcon
+									aria-hidden="true"
+									className="opacity-60"
+									size={16}
+								/>
+							</GroupItem>
+						}
+					/>
 					<TooltipContent>Open Folder</TooltipContent>
 				</Tooltip>
+				<GroupSeparator />
 				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() => exportInstallation({ installation })}
-							variant="outline"
-						>
-							<FileUpIcon
-								aria-hidden="true"
-								className="-ms-1 opacity-60"
-								size={16}
-							/>
-						</Button>
-					</TooltipTrigger>
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										onClick={() => exportInstallation({ installation })}
+										size="icon"
+										variant="outline"
+									/>
+								}
+							>
+								<FileUpIcon
+									aria-hidden="true"
+									className="-ms-1 opacity-60"
+									size={16}
+								/>
+							</GroupItem>
+						}
+					/>
 					<TooltipContent>Export</TooltipContent>
 				</Tooltip>
+				<GroupSeparator />
 				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() =>
-								openDialog("EditInstallationDialog", { installation })
-							}
-							variant="outline"
-						>
-							<PencilIcon
-								aria-hidden="true"
-								className="-ms-1 opacity-60"
-								size={16}
-							/>
-						</Button>
-					</TooltipTrigger>
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										onClick={() =>
+											openDialog("EditInstallationDialog", { installation })
+										}
+										size="icon"
+										variant="outline"
+									/>
+								}
+							>
+								<PencilIcon
+									aria-hidden="true"
+									className="-ms-1 opacity-60"
+									size={16}
+								/>
+							</GroupItem>
+						}
+					/>
 					<TooltipContent>Edit</TooltipContent>
 				</Tooltip>
+				<GroupSeparator />
 				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							aria-label="Delete"
-							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() =>
-								openDialog("DeleteInstallationDialog", { installation })
-							}
-							size="icon"
-							variant="outline"
-						>
-							<TrashIcon aria-hidden="true" className="opacity-60" size={16} />
-						</Button>
-					</TooltipTrigger>
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										aria-label="Delete"
+										onClick={() =>
+											openDialog("DeleteInstallationDialog", { installation })
+										}
+										size="icon"
+										variant="outline"
+									/>
+								}
+							>
+								<TrashIcon
+									aria-hidden="true"
+									className="opacity-60"
+									size={16}
+								/>
+							</GroupItem>
+						}
+					/>
 					<TooltipContent>Delete</TooltipContent>
 				</Tooltip>
-			</div>
+			</Group>
 		</>
 	);
 }
