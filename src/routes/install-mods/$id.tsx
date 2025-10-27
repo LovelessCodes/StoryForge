@@ -7,7 +7,7 @@ import { AuthorCombobox } from "@/components/comboboxes/author.combobox";
 import { SearchInput } from "@/components/inputs";
 import { ModList } from "@/components/lists/mod.list";
 import { TextSwitch } from "@/components/switches/text.switch";
-import SideToggleGroup from "@/components/toggle-groups/side.toggle-group";
+import SideToggleGroup from "@/components/tabs/side.tab";
 import {
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
