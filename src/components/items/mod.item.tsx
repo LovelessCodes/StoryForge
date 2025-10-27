@@ -30,6 +30,7 @@ import type { OutputMod } from "@/routes/install-mods/$id";
 import { useDialogStore } from "@/stores/dialogs";
 import type { Installation } from "@/stores/installations";
 import { useModsFilters } from "@/stores/modsFilters";
+import { Group, GroupItem, GroupSeparator } from "../ui/group";
 
 export function ModItem({
 	mod,
@@ -176,19 +177,21 @@ export function ModItem({
 						<p className="text-xs opacity-50">by</p>
 						<TooltipProvider>
 							<Tooltip>
-								<TooltipTrigger asChild>
-									{/** biome-ignore lint/a11y/noStaticElementInteractions: Not really relevant */}
-									<span
-										className="text-xs opacity-50 text-orange-200 cursor-pointer"
-										onClick={() => setAuthor(mod.author)}
-										onKeyUp={(e) => {
-											if (e.key === "Enter") {
-												setAuthor(mod.author);
-											}
-										}}
-									>
-										{mod.author}
-									</span>
+								<TooltipTrigger
+									render={
+										// biome-ignore lint/a11y/noStaticElementInteractions: Not really relevant
+										<span
+											className="text-xs opacity-50 text-orange-200 cursor-pointer"
+											onClick={() => setAuthor(mod.author)}
+											onKeyUp={(e) => {
+												if (e.key === "Enter") {
+													setAuthor(mod.author);
+												}
+											}}
+										/>
+									}
+								>
+									{mod.author}
 								</TooltipTrigger>
 								<TooltipContent>
 									Click to filter by author {mod.author}
@@ -206,30 +209,39 @@ export function ModItem({
 					</div>
 				</div>
 			</div>
-			<div className="flex items-center">
+			<Group>
 				{updateMod &&
 					installation &&
 					updateMod &&
 					installedMod &&
 					compareSemverAsc(updateMod.modversion, installedMod.version) > 0 && (
 						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									aria-label="Delete"
-									className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10 text-muted-foreground hover:text-foreground"
-									disabled={isPending || removePending}
-									onClick={() =>
-										removeModFromInstallation({
-											modpath: installedMod?.path ?? "",
-											path: installation.path,
-										})
-									}
-									size="icon"
-									variant="outline"
-								>
-									<DownloadCloudIcon size={4} />
-								</Button>
-							</TooltipTrigger>
+							<TooltipTrigger
+								render={
+									<GroupItem
+										render={
+											<Button
+												aria-label="Update to Latest Version"
+												disabled={isPending || removePending}
+												onClick={() =>
+													removeModFromInstallation({
+														modpath: installedMod?.path ?? "",
+														path: installation.path,
+													})
+												}
+												size="icon"
+												variant="outline"
+											/>
+										}
+									>
+										<DownloadCloudIcon
+											aria-hidden="true"
+											className="opacity-60"
+											size={16}
+										/>
+									</GroupItem>
+								}
+							/>
 							<TooltipContent>
 								<span className="text-xs text-muted-foreground">
 									{installedMod.version} → {updateMod.modversion ?? "Unknown"}
@@ -237,95 +249,134 @@ export function ModItem({
 								<br />
 								Install latest version
 							</TooltipContent>
+							<GroupSeparator />
 						</Tooltip>
 					)}
 				{!installedMod && installation && (
 					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								aria-label="Delete"
-								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10 text-muted-foreground hover:text-foreground"
-								disabled={isDownloading}
-								onClick={() =>
-									downloadLatestModVersion({
-										path: `${installation.path}${pathDelimiter}Mods`,
-									})
-								}
-								size="icon"
-								variant="outline"
-							>
-								<DownloadCloudIcon size={4} />
-							</Button>
-						</TooltipTrigger>
+						<TooltipTrigger
+							render={
+								<GroupItem
+									render={
+										<Button
+											aria-label="Download Latest Version"
+											disabled={isDownloading}
+											onClick={() =>
+												downloadLatestModVersion({
+													path: `${installation.path}${pathDelimiter}Mods`,
+												})
+											}
+											size="icon"
+											variant="outline"
+										/>
+									}
+								>
+									<DownloadCloudIcon
+										aria-hidden="true"
+										className="opacity-60"
+										size={16}
+									/>
+								</GroupItem>
+							}
+						/>
 						<TooltipContent>Install latest version</TooltipContent>
+						<GroupSeparator />
 					</Tooltip>
 				)}
 				{installation && installedMod && (
 					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								aria-label="Delete"
-								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10 text-muted-foreground hover:text-foreground"
-								onClick={() =>
-									openDialog("UpdateModDialog", {
-										installation,
-										mod: installedMod,
-										versionFrom: installedMod.version,
-									})
-								}
-								size="icon"
-								variant="outline"
-							>
-								<PackageSearchIcon size={4} />
-							</Button>
-						</TooltipTrigger>
+						<TooltipTrigger
+							render={
+								<GroupItem
+									render={
+										<Button
+											aria-label="Update"
+											onClick={() =>
+												openDialog("UpdateModDialog", {
+													installation,
+													mod: installedMod,
+													versionFrom: installedMod.version,
+												})
+											}
+											size="icon"
+											variant="outline"
+										/>
+									}
+								>
+									<PackageSearchIcon
+										aria-hidden="true"
+										className="opacity-60"
+										size={16}
+									/>
+								</GroupItem>
+							}
+						/>
 						<TooltipContent>Look through available versions</TooltipContent>
+						<GroupSeparator />
 					</Tooltip>
 				)}
 				{installation &&
 					(installedMod ? (
 						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									aria-label="Remove"
-									className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10 text-muted-foreground hover:text-foreground"
-									onClick={() =>
-										openDialog("RemoveModDialog", {
-											installation,
-											name: mod.name,
-											path: installedMod.path ?? "",
-										})
-									}
-									size="icon"
-									variant="destructive"
-								>
-									<PackageMinusIcon aria-hidden="true" size={4} />
-								</Button>
-							</TooltipTrigger>
+							<TooltipTrigger
+								render={
+									<GroupItem
+										render={
+											<Button
+												aria-label="Remove"
+												onClick={() =>
+													openDialog("RemoveModDialog", {
+														installation,
+														name: mod.name,
+														path: installedMod.path ?? "",
+													})
+												}
+												size="icon"
+												variant="destructive-outline"
+											/>
+										}
+									>
+										<PackageMinusIcon
+											aria-hidden="true"
+											className="opacity-60 text-destructive"
+											size={16}
+										/>
+									</GroupItem>
+								}
+							/>
 							<TooltipContent>Remove</TooltipContent>
 						</Tooltip>
 					) : (
 						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									aria-label="Add Mod"
-									className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10 text-muted-foreground hover:text-foreground"
-									onClick={() =>
-										openDialog("AddModDialog", {
-											installation,
-											modid: mod.modid,
-										})
-									}
-									size="icon"
-									variant="outline"
-								>
-									<PackagePlusIcon size={4} />
-								</Button>
-							</TooltipTrigger>
+							<TooltipTrigger
+								render={
+									<GroupItem
+										render={
+											<Button
+												aria-label="Add Mod"
+												onClick={() =>
+													openDialog("AddModDialog", {
+														installation,
+														modid: mod.modid,
+													})
+												}
+												size="icon"
+												variant="outline"
+											/>
+										}
+									>
+										<PackagePlusIcon
+											aria-hidden="true"
+											className="opacity-60"
+											size={16}
+										/>
+									</GroupItem>
+								}
+							/>
 							<TooltipContent>Add Mod</TooltipContent>
 						</Tooltip>
 					))}
-			</div>
+			</Group>
 		</motion.div>
 	);
 }
