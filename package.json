@@ -19,7 +19,6 @@
 		"@radix-ui/react-tabs": "^1.1.13",
 		"@radix-ui/react-toggle": "^1.1.10",
 		"@radix-ui/react-toggle-group": "^1.1.11",
-		"@radix-ui/react-tooltip": "^1.2.8",
 		"@tailwindcss/vite": "^4.1.16",
 		"@tanstack/react-devtools": "^0.7.8",
 		"@tanstack/react-form": "^1.23.8",
