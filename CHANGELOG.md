@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Resolve an issue where users no longer can add servers or installations due to index errors.
+
+## [0.5.1] - 2025-10-26
+
 ### Added
 
 - Introduced "Update All" button on the mods page, under the installed mods.
@@ -227,6 +233,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stabilized login dialog and authentication flow.
 
 <!-- Version links for diff and release pages -->
+[0.5.1]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.5.1
 [0.5.0]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.5.0
 [0.4.2]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.4.2
 [0.4.1]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.4.1
