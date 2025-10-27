@@ -62,13 +62,13 @@ export function AddServerDialog({
 	const id = useId();
 	const { closeDialog } = useDialogStore();
 	const { installations } = useInstallations();
-	const { addServer, servers } = useServerStore();
+	const { addServer } = useServerStore();
 	const { mutateAsync, isPending } = useAddServerToInstallation();
 	const form = useForm({
 		defaultValues: {
 			favorite: false,
 			id: Date.now(),
-			index: servers.length,
+			index: Date.now(),
 			installationId: installation?.id.toString() ?? "0",
 			ip: "",
 			name: "",
@@ -92,7 +92,7 @@ export function AddServerDialog({
 							{
 								favorite: value.favorite,
 								id: Date.now(),
-								index: servers.length,
+								index: Date.now(),
 								installationId: parseInt(value.installationId, 10),
 								ip: value.ip,
 								name: value.name,
