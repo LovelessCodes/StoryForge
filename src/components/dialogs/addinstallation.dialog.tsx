@@ -68,7 +68,7 @@ export function AddInstallationDialog({
 	const { installationsParent, installationsSubdir } = useSettingsStore();
 	const { appFolder } = useAppFolder();
 	const { closeDialog } = useDialogStore();
-	const { addInstallation, installations } = useInstallationsStore();
+	const { addInstallation } = useInstallationsStore();
 	const { data: installedVersions } = useInstalledVersions();
 	const { mutateAsync: downloadVersion, isPending } = useDownloadVersion();
 	const { mutateAsync: initializeGame, isPending: initializePending } =
@@ -96,7 +96,7 @@ export function AddInstallationDialog({
 			favorite: false,
 			icon: "",
 			id: Date.now(),
-			index: installations.length,
+			index: Date.now(),
 			name: "",
 			path: appFolder
 				? buildInstallationPath(
@@ -123,7 +123,7 @@ export function AddInstallationDialog({
 					favorite: value.favorite,
 					icon: value.icon,
 					id: Date.now(),
-					index: installations.length,
+					index: Date.now(),
 					lastTimePlayed: 0,
 					name: value.name,
 					path: value.path,
