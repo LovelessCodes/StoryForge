@@ -22,6 +22,7 @@ import type { World } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
+import { Group, GroupItem, GroupSeparator } from "../ui/group";
 
 export const WorldItem = ({ world }: { world: World }) => {
 	const { installations } = useInstallations();
@@ -115,117 +116,131 @@ export const WorldItem = ({ world }: { world: World }) => {
 						: "Never"}
 				</p>
 			</div>
-			<div className="inline-flex justify-end -space-x-px rounded-md shadow-xs rtl:space-x-reverse">
+			<Group className="justify-end w-full">
 				<Tooltip>
-					<TooltipTrigger asChild>
-						{version ? (
-							<Button
-								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-								onClick={() => {
-									invoke("play_game", {
-										options: {
-											installation_id: installation.id,
-											save: world.path.split("/").pop()?.replace(".vcdbs", ""),
-										},
-									});
-									toast.success(
-										`Launching ${installation.name} on ${worldData.world_name}...`,
-									);
-								}}
-								variant="outline"
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										disabled={isInstalling}
+										onClick={() => {
+											if (version) {
+												invoke("play_game", {
+													options: {
+														installation_id: installation.id,
+														save: world.path
+															.split("/")
+															.pop()
+															?.replace(".vcdbs", ""),
+													},
+												});
+												toast.success(
+													`Launching ${installation.name} on ${worldData.world_name}...`,
+												);
+											} else {
+												installVersion(installation.version);
+											}
+										}}
+										variant="outline"
+									/>
+								}
 							>
-								<PlayIcon
-									aria-hidden="true"
-									className="-ms-1 opacity-60 text-success"
-									size={16}
-								/>
-							</Button>
-						) : (
-							<Button
-								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-								disabled={isInstalling}
-								onClick={() => installVersion(installation.version)}
-								variant="outline"
-							>
-								<DownloadCloudIcon
-									aria-hidden="true"
-									className="-ms-1 opacity-60 text-warning-foreground"
-									size={16}
-								/>
-							</Button>
-						)}
-					</TooltipTrigger>
+								{version ? (
+									<PlayIcon
+										aria-hidden="true"
+										className="-ms-1 opacity-60 text-success"
+										size={16}
+									/>
+								) : (
+									<DownloadCloudIcon
+										aria-hidden="true"
+										className="-ms-1 opacity-60 text-warning-foreground"
+										size={16}
+									/>
+								)}
+							</GroupItem>
+						}
+					/>
 					<TooltipContent>
 						{version ? "Play" : `Install ${installation.version}`}
 					</TooltipContent>
 				</Tooltip>
-				{world.has_map ? (
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-								onClick={() => openDialog("ViewMapDialog", { world })}
-								variant="outline"
-							>
-								<MapIcon
-									aria-hidden="true"
-									className="-ms-1 opacity-60 text-blue-300"
-									size={16}
-								/>
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>View Map</TooltipContent>
-					</Tooltip>
-				) : (
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10 cursor-not-allowed"
-								variant="outline"
-							>
-								<MapIcon
-									aria-hidden="true"
-									className="-ms-1 opacity-30 text-destructive"
-									size={16}
-								/>
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>
-							No map available for {worldData.world_name}
-						</TooltipContent>
-					</Tooltip>
-				)}
 				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() => openDialog("EditWorldDialog", { world })}
-							variant="outline"
-						>
-							<PenIcon
-								aria-hidden="true"
-								className="-ms-1 opacity-60"
-								size={16}
-							/>
-						</Button>
-					</TooltipTrigger>
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										disabled={!world.has_map}
+										onClick={() => openDialog("ViewMapDialog", { world })}
+										variant="outline"
+									/>
+								}
+							>
+								<MapIcon
+									aria-hidden="true"
+									className={cn(
+										"-ms-1 opacity-60",
+										!world.has_map ? "text-destructive" : "text-blue-300",
+									)}
+									size={16}
+								/>
+							</GroupItem>
+						}
+					/>
+					<TooltipContent>
+						{world.has_map
+							? "View Map"
+							: `No Map Available for ${worldData.world_name}`}
+					</TooltipContent>
+				</Tooltip>
+				<Tooltip>
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										onClick={() => openDialog("EditWorldDialog", { world })}
+										variant="outline"
+									/>
+								}
+							>
+								<PenIcon
+									aria-hidden="true"
+									className="-ms-1 opacity-60"
+									size={16}
+								/>
+							</GroupItem>
+						}
+					/>
 					<TooltipContent>Edit</TooltipContent>
 				</Tooltip>
+				<GroupSeparator />
 				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							aria-label="Delete"
-							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() => openDialog("DeleteWorldDialog", { world })}
-							size="icon"
-							variant="outline"
-						>
-							<TrashIcon aria-hidden="true" className="opacity-60" size={16} />
-						</Button>
-					</TooltipTrigger>
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										aria-label="Delete"
+										onClick={() => openDialog("DeleteWorldDialog", { world })}
+										size="icon"
+										variant="outline"
+									/>
+								}
+							>
+								<TrashIcon
+									aria-hidden="true"
+									className="opacity-60"
+									size={16}
+								/>
+							</GroupItem>
+						}
+					/>
 					<TooltipContent>Delete</TooltipContent>
 				</Tooltip>
-			</div>
+			</Group>
 		</div>
 	);
 };
