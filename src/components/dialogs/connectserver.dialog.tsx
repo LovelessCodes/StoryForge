@@ -1,8 +1,6 @@
 import { useState } from "react";
 import {
 	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
 	AlertDialogContent,
 	AlertDialogDescription,
 	AlertDialogFooter,
@@ -14,6 +12,7 @@ import type { PublicServer } from "@/hooks/use-public-servers";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
 import { PasswordInput } from "../inputs";
+import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
 
 export type ConnectServerDialogProps = {
@@ -77,8 +76,10 @@ export function ConnectServerDialog({
 					)}
 				</div>
 				<AlertDialogFooter>
-					<AlertDialogCancel>Cancel</AlertDialogCancel>
-					<AlertDialogAction
+					<Button onClick={() => closeDialog()} variant="outline">
+						Cancel
+					</Button>
+					<Button
 						disabled={selectedInstallation === null}
 						onClick={() => {
 							if (selectedInstallation === null) return;
@@ -93,7 +94,7 @@ export function ConnectServerDialog({
 						}}
 					>
 						Connect
-					</AlertDialogAction>
+					</Button>
 				</AlertDialogFooter>
 			</AlertDialogContent>
 		</AlertDialog>

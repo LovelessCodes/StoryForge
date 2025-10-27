@@ -6,8 +6,6 @@ import { useId, useState } from "react";
 import { toast } from "sonner";
 import {
 	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
 	AlertDialogContent,
 	AlertDialogDescription,
 	AlertDialogFooter,
@@ -16,6 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { World } from "@/lib/types";
 import { useDialogStore } from "@/stores/dialogs";
+import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 
 export type DeleteWorldDialogProps = {
@@ -152,13 +151,15 @@ export function DeleteWorldDialog({
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel>Cancel</AlertDialogCancel>
-					<AlertDialogAction
+					<Button onClick={() => closeDialog()} variant="outline">
+						Cancel
+					</Button>
+					<Button
 						disabled={isPending || !sure}
 						onClick={() => removeWorld(world)}
 					>
 						{isPending ? "Deleting..." : "Delete"}
-					</AlertDialogAction>
+					</Button>
 				</AlertDialogFooter>
 			</AlertDialogContent>
 		</AlertDialog>

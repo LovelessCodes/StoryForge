@@ -1,8 +1,6 @@
 import { toast } from "sonner";
 import {
 	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
 	AlertDialogContent,
 	AlertDialogDescription,
 	AlertDialogFooter,
@@ -12,6 +10,7 @@ import {
 import { useRemoveServerFromInstallation } from "@/hooks/use-remove-server-from-installation";
 import { useDialogStore } from "@/stores/dialogs";
 import { type Server, useServerStore } from "@/stores/servers";
+import { Button } from "../ui/button";
 
 export type DeleteServerDialogProps = {
 	server: Server;
@@ -50,8 +49,10 @@ export function DeleteServerDialog({
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel>Cancel</AlertDialogCancel>
-					<AlertDialogAction
+					<Button onClick={() => closeDialog()} variant="outline">
+						Cancel
+					</Button>
+					<Button
 						onClick={() =>
 							mutate({
 								installationId: server.installationId,
@@ -60,7 +61,7 @@ export function DeleteServerDialog({
 						}
 					>
 						Delete
-					</AlertDialogAction>
+					</Button>
 				</AlertDialogFooter>
 			</AlertDialogContent>
 		</AlertDialog>
