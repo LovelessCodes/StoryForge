@@ -1,5 +1,6 @@
 import { FolderOpenIcon, TrashIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Group, GroupItem, GroupSeparator } from "@/components/ui/group";
 import {
 	Tooltip,
 	TooltipContent,
@@ -10,7 +11,6 @@ import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import { pathDelimiter } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { useSettingsStore } from "@/stores/settings";
-import { Group, GroupItem, GroupSeparator } from "../ui/group";
 
 export function VersionRow({ version }: { version: string }) {
 	const { appFolder } = useAppFolder();
