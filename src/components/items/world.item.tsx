@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Group, GroupItem, GroupSeparator } from "@/components/ui/group";
 import {
 	Tooltip,
 	TooltipContent,
@@ -22,7 +23,6 @@ import type { World } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
-import { Group, GroupItem, GroupSeparator } from "../ui/group";
 
 export const WorldItem = ({ world }: { world: World }) => {
 	const { installations } = useInstallations();
