@@ -2,8 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDownIcon } from "lucide-react";
 import { useRef } from "react";
+import { AuthorAutocomplete } from "@/components/auto-completes/author.auto-complete";
 import { UpdateAllButton } from "@/components/buttons/update-all.button";
-import { AuthorCombobox } from "@/components/comboboxes/author.combobox";
 import { SearchInput } from "@/components/inputs";
 import { ModList } from "@/components/lists/mod.list";
 import { TextSwitch } from "@/components/switches/text.switch";
@@ -119,6 +119,7 @@ function RouteComponent() {
 		>
 			<div className="flex gap-2 flex-wrap items-center h-fit sticky top-0 bg-background/10 backdrop-blur-md z-10 px-4 py-2">
 				<SearchInput
+					className="h-9"
 					onChange={(e) => setSearchText(e.target.value)}
 					placeholder="Search mods..."
 					value={searchText}
@@ -271,7 +272,7 @@ function RouteComponent() {
 					textChecked="Asc"
 					textUnchecked="Desc"
 				/>
-				<AuthorCombobox
+				<AuthorAutocomplete
 					onChange={(e) => setAuthor(e.target.value)}
 					value={author}
 				/>
