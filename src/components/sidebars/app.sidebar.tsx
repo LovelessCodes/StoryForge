@@ -21,6 +21,7 @@ import {
 	DropdownMenuContent,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Group, GroupItem, GroupSeparator } from "@/components/ui/group";
 import {
 	Sidebar,
 	SidebarContent,
@@ -112,17 +113,21 @@ export function AppSidebar() {
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="start" side="right">
 							{users.map((user) => (
-								<div
-									className="flex items-center justify-between group"
+								<Group
+									className="rounded-none first:rounded-t-md last:rounded-b-md"
 									key={user.uid}
 								>
-									<Button
-										className="flex items-center gap-2 rounded-none group-first:rounded-tl-md"
-										onClick={() => setSelectedUser(user.uid)}
-										onKeyUp={(e) => {
-											if (e.key === "Enter") setSelectedUser(user.uid);
-										}}
-										variant="outline"
+									<GroupItem
+										render={
+											<Button
+												className="flex h-8 items-center gap-2"
+												onClick={() => setSelectedUser(user.uid)}
+												onKeyUp={(e) => {
+													if (e.key === "Enter") setSelectedUser(user.uid);
+												}}
+												variant="outline"
+											/>
+										}
 									>
 										<Avatar className="w-6 h-6">
 											<AvatarImage src="./placeholder.png" />
@@ -134,63 +139,73 @@ export function AppSidebar() {
 										{user.uid === selectedUser.uid && (
 											<CheckIcon className="size-4 text-muted-foreground opacity-50" />
 										)}
-									</Button>
+									</GroupItem>
+									<GroupSeparator />
 									<Tooltip>
 										<TooltipTrigger
 											render={
-												<Button
-													className="flex items-center justify-center hover:text-success p-1 rounded-none"
-													onClick={() => {
-														verifyAuth({
-															sessionkey: user.sessionkey || "",
-															uid: user.uid || "",
-														});
-													}}
-													onKeyUp={(e) => {
-														if (e.key === "Enter") {
-															verifyAuth({
-																sessionkey: user.sessionkey || "",
-																uid: user.uid || "",
-															});
-														}
-													}}
-													size="icon"
-													variant="outline"
-												/>
+												<GroupItem
+													render={
+														<Button
+															className="flex items-center justify-center hover:text-success p-1"
+															onClick={() => {
+																verifyAuth({
+																	sessionkey: user.sessionkey || "",
+																	uid: user.uid || "",
+																});
+															}}
+															onKeyUp={(e) => {
+																if (e.key === "Enter") {
+																	verifyAuth({
+																		sessionkey: user.sessionkey || "",
+																		uid: user.uid || "",
+																	});
+																}
+															}}
+															size="icon"
+															variant="outline"
+														/>
+													}
+												>
+													<RefreshCcwIcon />
+												</GroupItem>
 											}
-										>
-											<RefreshCcwIcon />
-										</TooltipTrigger>
+										/>
 										<TooltipContent>
 											Verify {user.playername}&#39;s auth
 										</TooltipContent>
 									</Tooltip>
+									<GroupSeparator />
 									<Tooltip>
 										<TooltipTrigger
 											render={
-												<Button
-													className="flex items-center justify-center hover:text-red-900 p-1 rounded-none group-first:rounded-tr-md"
-													onClick={() => {
-														removeUser(user.uid);
-													}}
-													onKeyUp={(e) => {
-														if (e.key === "Enter") {
-															removeUser(user.uid);
-														}
-													}}
-													size="icon"
-													variant="outline"
-												/>
+												<GroupItem
+													render={
+														<Button
+															className="flex items-center justify-center hover:text-red-900 p-1"
+															onClick={() => {
+																removeUser(user.uid);
+															}}
+															onKeyUp={(e) => {
+																if (e.key === "Enter") {
+																	removeUser(user.uid);
+																}
+															}}
+															size="icon"
+															variant="destructive-outline"
+														/>
+													}
+												>
+													<UserMinus2 />
+												</GroupItem>
 											}
-										>
-											<UserMinus2 />
-										</TooltipTrigger>
+										/>
 										<TooltipContent>Remove {user.playername}</TooltipContent>
 									</Tooltip>
-								</div>
+								</Group>
 							))}
 							<Button
-								className="w-full justify-between rounded-t-none"
+								className="w-full justify-between mt-2"
 								onClick={() => openDialog("AddUserDialog")}
 								variant="outline"
 							>
