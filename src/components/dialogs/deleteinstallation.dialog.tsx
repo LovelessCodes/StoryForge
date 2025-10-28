@@ -5,17 +5,18 @@ import { MapIcon, MapPinXIcon } from "lucide-react";
 import { toast } from "sonner";
 import {
 	AlertDialog,
+	AlertDialogClose,
 	AlertDialogContent,
 	AlertDialogDescription,
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { useSavesFromInstallation } from "@/hooks/use-saves";
 import { useDialogStore } from "@/stores/dialogs";
 import { type Installation, useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
-import { Button } from "../ui/button";
 
 export type DeleteInstallationDialogProps = {
 	installation: Installation;
@@ -145,9 +146,12 @@ export function DeleteInstallationDialog({
 					)}
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<Button onClick={() => closeDialog()} variant="outline">
+					<AlertDialogClose
+						disabled={isPending}
+						render={<Button variant="outline" />}
+					>
 						Cancel
-					</Button>
+					</AlertDialogClose>
 					<Button
 						disabled={!canDelete || isPending}
 						onClick={() => deleteInstallation(installation.id)}
