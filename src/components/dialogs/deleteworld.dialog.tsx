@@ -6,16 +6,17 @@ import { useId, useState } from "react";
 import { toast } from "sonner";
 import {
 	AlertDialog,
+	AlertDialogClose,
 	AlertDialogContent,
 	AlertDialogDescription,
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { World } from "@/lib/types";
 import { useDialogStore } from "@/stores/dialogs";
-import { Button } from "../ui/button";
-import { Checkbox } from "../ui/checkbox";
 
 export type DeleteWorldDialogProps = {
 	world: World;
@@ -151,9 +152,12 @@ export function DeleteWorldDialog({
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<Button onClick={() => closeDialog()} variant="outline">
+					<AlertDialogClose
+						disabled={isPending}
+						render={<Button variant="outline" />}
+					>
 						Cancel
-					</Button>
+					</AlertDialogClose>
 					<Button
 						disabled={isPending || !sure}
 						onClick={() => removeWorld(world)}
