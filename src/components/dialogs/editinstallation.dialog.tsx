@@ -120,19 +120,21 @@ export function EditInstallationDialog({
 							{(field) => (
 								<div className="grid gap-2">
 									<Tooltip>
-										<TooltipTrigger asChild>
-											<Label
-												className={clsx([
-													field.state.meta.errors.length
-														? "text-destructive"
-														: "",
-													"w-fit",
-												])}
-												htmlFor="name"
-											>
-												Name
-												<span className="text-destructive">*</span>
-											</Label>
+										<TooltipTrigger
+											render={
+												<Label
+													className={clsx([
+														field.state.meta.errors.length
+															? "text-destructive"
+															: "",
+														"w-fit",
+													])}
+													htmlFor="name"
+												/>
+											}
+										>
+											Name
+											<span className="text-destructive">*</span>
 										</TooltipTrigger>
 										<TooltipContent align="start" side="bottom">
 											<p className="text-xs">Enter server name</p>
@@ -184,21 +186,23 @@ export function EditInstallationDialog({
 								<div className="grid gap-2">
 									<div className="flex items-center">
 										<Tooltip>
-											<TooltipTrigger asChild>
-												<Label
-													className={clsx([
-														field.state.meta.errors.length
-															? "text-destructive"
-															: "",
-														"w-fit",
-													])}
-													htmlFor="startParams"
-												>
-													Start parameters
-													<span className="text-muted-foreground text-xs">
-														(optional)
-													</span>
-												</Label>
+											<TooltipTrigger
+												render={
+													<Label
+														className={clsx([
+															field.state.meta.errors.length
+																? "text-destructive"
+																: "",
+															"w-fit",
+														])}
+														htmlFor="startParams"
+													/>
+												}
+											>
+												Start parameters
+												<span className="text-muted-foreground text-xs">
+													(optional)
+												</span>
 											</TooltipTrigger>
 											<TooltipContent align="start" side="bottom">
 												<p className="text-xs">Enter start parameters</p>
@@ -233,19 +237,21 @@ export function EditInstallationDialog({
 							{(field) => (
 								<div className="grid gap-2">
 									<Tooltip>
-										<TooltipTrigger asChild>
-											<Label
-												className={clsx([
-													field.state.meta.errors.length
-														? "text-destructive"
-														: "",
-													"w-fit",
-												])}
-												htmlFor="path"
-											>
-												Path
-												<span className="text-destructive">*</span>
-											</Label>
+										<TooltipTrigger
+											render={
+												<Label
+													className={clsx([
+														field.state.meta.errors.length
+															? "text-destructive"
+															: "",
+														"w-fit",
+													])}
+													htmlFor="path"
+												/>
+											}
+										>
+											Path
+											<span className="text-destructive">*</span>
 										</TooltipTrigger>
 										<TooltipContent align="start" side="bottom">
 											<p className="text-xs">Enter installation path</p>
@@ -275,21 +281,23 @@ export function EditInstallationDialog({
 							{(field) => (
 								<div className="grid gap-2">
 									<Tooltip>
-										<TooltipTrigger asChild>
-											<Label
-												className={clsx([
-													field.state.meta.errors.length
-														? "text-destructive"
-														: "",
-													"w-fit",
-												])}
-												htmlFor="icon"
-											>
-												Icon
-												<span className="text-muted-foreground text-xs">
-													(optional)
-												</span>
-											</Label>
+										<TooltipTrigger
+											render={
+												<Label
+													className={clsx([
+														field.state.meta.errors.length
+															? "text-destructive"
+															: "",
+														"w-fit",
+													])}
+													htmlFor="icon"
+												/>
+											}
+										>
+											Icon
+											<span className="text-muted-foreground text-xs">
+												(optional)
+											</span>
 										</TooltipTrigger>
 										<TooltipContent align="start" side="bottom">
 											<p className="text-xs">Enter installation icon</p>
@@ -325,19 +333,21 @@ export function EditInstallationDialog({
 							{(field) => (
 								<div className="grid gap-2">
 									<Tooltip>
-										<TooltipTrigger asChild>
-											<Label
-												className={clsx([
-													field.state.meta.errors.length
-														? "text-destructive"
-														: "",
-													"w-fit",
-												])}
-												htmlFor="version"
-											>
-												Version
-												<span className="text-destructive">*</span>
-											</Label>
+										<TooltipTrigger
+											render={
+												<Label
+													className={clsx([
+														field.state.meta.errors.length
+															? "text-destructive"
+															: "",
+														"w-fit",
+													])}
+													htmlFor="version"
+												/>
+											}
+										>
+											Version
+											<span className="text-destructive">*</span>
 										</TooltipTrigger>
 										<TooltipContent align="start" side="bottom">
 											<p className="text-xs">Pick game version</p>
