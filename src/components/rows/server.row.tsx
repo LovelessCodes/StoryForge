@@ -6,6 +6,7 @@ import {
 	TrashIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Group, GroupItem, GroupSeparator } from "@/components/ui/group";
 import {
 	Tooltip,
 	TooltipContent,
@@ -19,7 +20,6 @@ import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
 import { type Server, useServerStore } from "@/stores/servers";
 import { useSettingsStore } from "@/stores/settings";
-import { Group, GroupItem, GroupSeparator } from "../ui/group";
 
 type ServerRowProps = {
 	server: Server;
