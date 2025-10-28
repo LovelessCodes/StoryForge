@@ -137,19 +137,21 @@ export function AddServerDialog({
 							{(field) => (
 								<div className="grid gap-2">
 									<Tooltip>
-										<TooltipTrigger asChild>
-											<Label
-												className={clsx([
-													field.state.meta.errors.length
-														? "text-destructive"
-														: "",
-													"w-fit",
-												])}
-												htmlFor="name"
-											>
-												Name
-												<span className="text-destructive">*</span>
-											</Label>
+										<TooltipTrigger
+											render={
+												<Label
+													className={clsx([
+														field.state.meta.errors.length
+															? "text-destructive"
+															: "",
+														"w-fit",
+													])}
+													htmlFor="name"
+												/>
+											}
+										>
+											Name
+											<span className="text-destructive">*</span>
 										</TooltipTrigger>
 										<TooltipContent align="start" side="bottom">
 											<p className="text-xs">Enter server name</p>
@@ -186,21 +188,23 @@ export function AddServerDialog({
 								<div className="grid gap-2">
 									<div className="flex items-center">
 										<Tooltip>
-											<TooltipTrigger asChild>
-												<Label
-													className={clsx([
-														field.state.meta.errors.length
-															? "text-destructive"
-															: "",
-														"w-fit",
-													])}
-													htmlFor="password"
-												>
-													Password
-													<span className="text-muted-foreground text-xs">
-														(optional)
-													</span>
-												</Label>
+											<TooltipTrigger
+												render={
+													<Label
+														className={clsx([
+															field.state.meta.errors.length
+																? "text-destructive"
+																: "",
+															"w-fit",
+														])}
+														htmlFor="password"
+													/>
+												}
+											>
+												Password
+												<span className="text-muted-foreground text-xs">
+													(optional)
+												</span>
 											</TooltipTrigger>
 											<TooltipContent align="start" side="bottom">
 												<p className="text-xs">Enter password</p>
@@ -236,19 +240,21 @@ export function AddServerDialog({
 								{(field) => (
 									<div className="grid gap-2">
 										<Tooltip>
-											<TooltipTrigger asChild>
-												<Label
-													className={clsx([
-														field.state.meta.errors.length
-															? "text-destructive"
-															: "",
-														"w-fit",
-													])}
-													htmlFor="ip"
-												>
-													IP Address
-													<span className="text-destructive">*</span>
-												</Label>
+											<TooltipTrigger
+												render={
+													<Label
+														className={clsx([
+															field.state.meta.errors.length
+																? "text-destructive"
+																: "",
+															"w-fit",
+														])}
+														htmlFor="ip"
+													/>
+												}
+											>
+												IP Address
+												<span className="text-destructive">*</span>
 											</TooltipTrigger>
 											<TooltipContent align="start" side="bottom">
 												<p className="text-xs">Enter server IP address</p>
@@ -284,19 +290,21 @@ export function AddServerDialog({
 								{(field) => (
 									<div className="grid gap-2">
 										<Tooltip>
-											<TooltipTrigger asChild>
-												<Label
-													className={clsx([
-														field.state.meta.errors.length
-															? "text-destructive"
-															: "",
-														"w-fit",
-													])}
-													htmlFor="port"
-												>
-													Port
-													<span className="text-destructive">*</span>
-												</Label>
+											<TooltipTrigger
+												render={
+													<Label
+														className={clsx([
+															field.state.meta.errors.length
+																? "text-destructive"
+																: "",
+															"w-fit",
+														])}
+														htmlFor="port"
+													/>
+												}
+											>
+												Port
+												<span className="text-destructive">*</span>
 											</TooltipTrigger>
 											<TooltipContent align="start" side="bottom">
 												<p className="text-xs">Enter server port</p>
@@ -344,19 +352,21 @@ export function AddServerDialog({
 							{(field) => (
 								<div className="grid gap-2">
 									<Tooltip>
-										<TooltipTrigger asChild>
-											<Label
-												className={clsx([
-													field.state.meta.errors.length
-														? "text-destructive"
-														: "",
-													"w-fit",
-												])}
-												htmlFor="installationId"
-											>
-												Installation
-												<span className="text-destructive">*</span>
-											</Label>
+										<TooltipTrigger
+											render={
+												<Label
+													className={clsx([
+														field.state.meta.errors.length
+															? "text-destructive"
+															: "",
+														"w-fit",
+													])}
+													htmlFor="installationId"
+												/>
+											}
+										>
+											Installation
+											<span className="text-destructive">*</span>
 										</TooltipTrigger>
 										<TooltipContent align="start" side="bottom">
 											<p className="text-xs">Pick game installation</p>
