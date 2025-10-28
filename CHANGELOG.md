@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Introduced a "Cancel" button for version downloads.
+
 ### Fixed
 
 - Resolve an issue where dark mode was not being enabled/disabled instantly, when switching.

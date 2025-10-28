@@ -8,8 +8,12 @@ use std::{
     io::{self, Seek, Write},
     path::{Path, PathBuf},
     process::Command,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
 };
-use tauri::{command, Emitter, Runtime};
+use tauri::{command, Emitter, Listener, Runtime};
 
 use super::errors::UiError;
 
@@ -39,6 +43,13 @@ pub async fn download_and_maybe_extract<R: Runtime>(
     zipsubfolderprefix: Option<String>,
 ) -> Result<String, UiError> {
     let destpath = PathBuf::from(&destpath);
+
+    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancel_clone = cancelled.clone();
+    let cancel_event_name = format!("{}:cancel", emitevent);
+    let listener_id = app.listen(&cancel_event_name, move |_evt| {
+        cancel_clone.store(true, Ordering::SeqCst);
+    });
 
     // Check if already installed (has vintagestory executable)
     if extract && destpath.exists() {
@@ -114,6 +125,25 @@ pub async fn download_and_maybe_extract<R: Runtime>(
     let mut downloaded: u64 = 0;
 
     while let Some(chunk) = stream.next().await {
+        if cancelled.load(std::sync::atomic::Ordering::SeqCst) {
+            let _ = fs::remove_file(filepath);
+            let _ = fs::remove_dir_all(&destpath);
+            app.emit(
+                &emitevent,
+                ProgressPayload {
+                    phase: "cancelled",
+                    downloaded: Some(downloaded),
+                    total,
+                    percent: None,
+                    current: None,
+                    count: None,
+                    message: Some("Download cancelled".into()),
+                },
+            )
+            .ok();
+            app.unlisten(listener_id);
+            return Ok("cancelled".into());
+        }
         let chunk = chunk.map_err(|e| format!("stream error: {e}"))?;
         file.write_all(&chunk)
             .map_err(|e| format!("file write error: {e}"))?;
@@ -185,6 +215,26 @@ pub async fn download_and_maybe_extract<R: Runtime>(
                 .map_err(|e| UiError::from(format!("zip open error: {e}")))?;
 
             for i in 0..archive.len() {
+                if cancelled.load(Ordering::SeqCst) {
+                    // Optional: cleanup extraction dir
+                    let _ = fs::remove_dir_all(&destpath);
+                    let _ = fs::remove_file(filepath);
+                    app.emit(
+                        &emitevent,
+                        ProgressPayload {
+                            phase: "cancelled",
+                            downloaded: None,
+                            total: None,
+                            percent: None,
+                            current: None,
+                            count: None,
+                            message: Some("Extraction cancelled".into()),
+                        },
+                    )
+                    .ok();
+                    app.unlisten(listener_id);
+                    return Ok("cancelled".into());
+                }
                 let mut entry = archive
                     .by_index(i)
                     .map_err(|e| UiError::from(format!("zip index error: {e}")))?;
@@ -304,6 +354,25 @@ pub async fn download_and_maybe_extract<R: Runtime>(
             .map_err(|e| UiError::from(format!("tar error: {e}")))?;
             if !status.success() {
                 return Err(UiError::from(format!("tar failed: {}", status)));
+            }
+            if cancelled.load(Ordering::SeqCst) {
+                let _ = fs::remove_dir_all(&destpath);
+                let _ = fs::remove_file(filepath);
+                app.emit(
+                    &emitevent,
+                    ProgressPayload {
+                        phase: "cancelled",
+                        downloaded: None,
+                        total: None,
+                        percent: None,
+                        current: None,
+                        count: None,
+                        message: Some("Extraction cancelled".into()),
+                    },
+                )
+                .ok();
+                app.unlisten(listener_id);
+                return Ok("cancelled".into());
             }
             // Remove the downloaded archive after extraction
             fs::remove_file(filepath)
