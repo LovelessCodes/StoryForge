@@ -17,6 +17,11 @@ import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
 	Sidebar,
 	SidebarContent,
 	SidebarFooter,
@@ -30,18 +35,17 @@ import {
 	SidebarMenuSubButton,
 	SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { useVerifyAuth } from "@/hooks/use-verify-auth";
 import { useAccountStore } from "@/stores/accounts";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 export function AppSidebar() {
 	const { selectedUser, users, removeUser, setSelectedUser } =
@@ -132,50 +136,54 @@ export function AppSidebar() {
 										)}
 									</Button>
 									<Tooltip>
-										<TooltipTrigger asChild>
-											<Button
-												className="flex items-center justify-center hover:text-success p-1 rounded-none"
-												onClick={() => {
-													verifyAuth({
-														sessionkey: user.sessionkey || "",
-														uid: user.uid || "",
-													});
-												}}
-												onKeyUp={(e) => {
-													if (e.key === "Enter") {
+										<TooltipTrigger
+											render={
+												<Button
+													className="flex items-center justify-center hover:text-success p-1 rounded-none"
+													onClick={() => {
 														verifyAuth({
 															sessionkey: user.sessionkey || "",
 															uid: user.uid || "",
 														});
-													}
-												}}
-												size="icon"
-												variant="outline"
-											>
-												<RefreshCcwIcon />
-											</Button>
+													}}
+													onKeyUp={(e) => {
+														if (e.key === "Enter") {
+															verifyAuth({
+																sessionkey: user.sessionkey || "",
+																uid: user.uid || "",
+															});
+														}
+													}}
+													size="icon"
+													variant="outline"
+												/>
+											}
+										>
+											<RefreshCcwIcon />
 										</TooltipTrigger>
 										<TooltipContent>
 											Verify {user.playername}&#39;s auth
 										</TooltipContent>
 									</Tooltip>
 									<Tooltip>
-										<TooltipTrigger asChild>
-											<Button
-												className="flex items-center justify-center hover:text-red-900 p-1 rounded-none group-first:rounded-tr-md"
-												onClick={() => {
-													removeUser(user.uid);
-												}}
-												onKeyUp={(e) => {
-													if (e.key === "Enter") {
+										<TooltipTrigger
+											render={
+												<Button
+													className="flex items-center justify-center hover:text-red-900 p-1 rounded-none group-first:rounded-tr-md"
+													onClick={() => {
 														removeUser(user.uid);
-													}
-												}}
-												size="icon"
-												variant="outline"
-											>
-												<UserMinus2 />
-											</Button>
+													}}
+													onKeyUp={(e) => {
+														if (e.key === "Enter") {
+															removeUser(user.uid);
+														}
+													}}
+													size="icon"
+													variant="outline"
+												/>
+											}
+										>
+											<UserMinus2 />
 										</TooltipTrigger>
 										<TooltipContent>Remove {user.playername}</TooltipContent>
 									</Tooltip>
