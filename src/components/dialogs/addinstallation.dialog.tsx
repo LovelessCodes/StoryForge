@@ -429,7 +429,7 @@ export function AddInstallationDialog({
 												)}
 											</p>
 										</SelectTrigger>
-										<SelectContent align="start">
+										<SelectContent align="start" alignItemWithTrigger={false}>
 											{gameVersions?.sort(compareSemverDesc).map((version) => (
 												<SelectItem
 													className={
