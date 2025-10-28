@@ -36,16 +36,18 @@ function RouteComponent() {
 					<FolderPlusIcon className="size-4" />
 				</Button>
 				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							aria-label="Import installation"
-							className="shadow-none focus-visible:z-10"
-							onClick={() => openDialog("ImportInstallationDialog")}
-							size="icon"
-							variant="outline"
-						>
-							<FileDownIcon aria-hidden="true" size={16} />
-						</Button>
+					<TooltipTrigger
+						render={
+							<Button
+								aria-label="Import installation"
+								className="shadow-none focus-visible:z-10"
+								onClick={() => openDialog("ImportInstallationDialog")}
+								size="icon"
+								variant="outline"
+							/>
+						}
+					>
+						<FileDownIcon aria-hidden="true" size={16} />
 					</TooltipTrigger>
 					<TooltipContent>Import Installation</TooltipContent>
 				</Tooltip>
