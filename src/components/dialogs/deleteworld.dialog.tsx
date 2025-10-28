@@ -75,82 +75,80 @@ export function DeleteWorldDialog({
 						This action cannot be undone. This will permanently delete world{" "}
 						<span className="text-destructive">{world.data.world_name}</span>{" "}
 						from Story Forge.
-						<motion.div
-							animate={{ opacity: 1, y: 0 }}
-							className="my-4 rounded-md border border-warning bg-warning/10 p-3 flex flex-col text-warning-foreground"
-							exit={{ opacity: 0, y: -10 }}
-							initial={{ opacity: 0, y: -10 }}
-							transition={{ duration: 0.3 }}
-						>
-							<p className="mb-4">
-								<b>Warning:</b> This will delete the world from your computer.
-								If you want to keep a backup, make sure to export it before
-								proceeding.
-							</p>
-							<p>
-								<b>World info:</b>
-							</p>
-							<ul className="list-disc pl-5">
-								<li>
-									World name: <b>{world.data.world_name}</b>
-								</li>
-								<li>
-									Map identifier: <b>{world.data.savegame_identifier}</b>
-								</li>
-								<li>
-									World type: <b>{world.data.world_type}</b>
-								</li>
-								<li>
-									Play style: <b>{world.data.play_style}</b>
-								</li>
-								<li>
-									Created by: <b>{world.data.created_by_player_name}</b>
-								</li>
-								<li>
-									Last played:{" "}
-									<b>
-										{world.data.last_played
-											? formatDistanceToNow(new Date(world.data.last_played), {
-													addSuffix: true,
-												})
-											: "Never"}
-									</b>
-								</li>
-								<li>
-									Last session:{" "}
-									<b>
-										{formatDistance(
-											new Date(),
-											addSeconds(new Date(), world.data.total_seconds_played),
-										)}
-									</b>
-								</li>
-								<li>
-									Seed: <b>{world.data.seed}</b>
-								</li>
-								<li>
-									Created in version: <b>{world.data.created_game_version}</b>
-								</li>
-								<li>
-									Last saved in version:{" "}
-									<b>{world.data.last_saved_game_version}</b>
-								</li>
-							</ul>
-						</motion.div>
-						{/* Add a checkbox asking if they're absolutely sure */}
-						<div className="flex items-center">
-							<Checkbox
-								checked={sure}
-								className="mr-2"
-								id={`confirm-delete-${id}`}
-								onCheckedChange={(v) => setSure(!!v)}
-							/>
-							<label className="text-sm" htmlFor={`confirm-delete-${id}`}>
-								I understand that this action cannot be undone.
-							</label>
-						</div>
 					</AlertDialogDescription>
 				</AlertDialogHeader>
+				<motion.div
+					animate={{ opacity: 1, y: 0 }}
+					className="my-4 rounded-md border border-warning bg-warning/10 p-3 flex flex-col text-warning-foreground"
+					exit={{ opacity: 0, y: -10 }}
+					initial={{ opacity: 0, y: -10 }}
+					transition={{ duration: 0.3 }}
+				>
+					<p className="mb-4">
+						<b>Warning:</b> This will delete the world from your computer. If
+						you want to keep a backup, make sure to export it before proceeding.
+					</p>
+					<p>
+						<b>World info:</b>
+					</p>
+					<ul className="list-disc pl-5">
+						<li>
+							World name: <b>{world.data.world_name}</b>
+						</li>
+						<li>
+							Map identifier: <b>{world.data.savegame_identifier}</b>
+						</li>
+						<li>
+							World type: <b>{world.data.world_type}</b>
+						</li>
+						<li>
+							Play style: <b>{world.data.play_style}</b>
+						</li>
+						<li>
+							Created by: <b>{world.data.created_by_player_name}</b>
+						</li>
+						<li>
+							Last played:{" "}
+							<b>
+								{world.data.last_played
+									? formatDistanceToNow(new Date(world.data.last_played), {
+											addSuffix: true,
+										})
+									: "Never"}
+							</b>
+						</li>
+						<li>
+							Last session:{" "}
+							<b>
+								{formatDistance(
+									new Date(),
+									addSeconds(new Date(), world.data.total_seconds_played),
+								)}
+							</b>
+						</li>
+						<li>
+							Seed: <b>{world.data.seed}</b>
+						</li>
+						<li>
+							Created in version: <b>{world.data.created_game_version}</b>
+						</li>
+						<li>
+							Last saved in version: <b>{world.data.last_saved_game_version}</b>
+						</li>
+					</ul>
+				</motion.div>
+				{/* Add a checkbox asking if they're absolutely sure */}
+				<div className="flex items-center">
+					<Checkbox
+						checked={sure}
+						className="mr-2"
+						id={`confirm-delete-${id}`}
+						onCheckedChange={(v) => setSure(!!v)}
+					/>
+					<label className="text-sm" htmlFor={`confirm-delete-${id}`}>
+						I understand that this action cannot be undone.
+					</label>
+				</div>
 				<AlertDialogFooter>
 					<AlertDialogClose
 						disabled={isPending}
