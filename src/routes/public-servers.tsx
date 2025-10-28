@@ -93,7 +93,7 @@ function RouteComponent() {
 					}
 					value={sortBy}
 				>
-					<SelectTrigger>
+					<SelectTrigger className="flex gap-1 w-36 truncate">
 						{sortBy
 							? `${sortOptions[sortBy as keyof typeof sortOptions]}`
 							: "Sort by"}
