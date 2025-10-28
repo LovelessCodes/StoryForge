@@ -393,7 +393,7 @@ export function AddServerDialog({
 												? `${installations.find((inst) => inst.id.toString() === field.state.value)?.name} (${installations.find((inst) => inst.id.toString() === field.state.value)?.version})`
 												: "Game installation"}
 										</SelectTrigger>
-										<SelectContent align="start">
+										<SelectContent align="start" alignItemWithTrigger={false}>
 											{installations
 												?.sort((a, b) => a.index - b.index)
 												.map((installation) => (
