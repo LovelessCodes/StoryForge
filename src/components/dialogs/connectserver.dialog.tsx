@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PasswordInput } from "@/components/inputs";
 import {
 	AlertDialog,
 	AlertDialogContent,
@@ -7,13 +8,17 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+} from "@/components/ui/select";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
 import type { PublicServer } from "@/hooks/use-public-servers";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
-import { PasswordInput } from "../inputs";
-import { Button } from "../ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
 
 export type ConnectServerDialogProps = {
 	server: PublicServer;
