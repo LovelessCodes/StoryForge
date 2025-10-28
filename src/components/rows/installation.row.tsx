@@ -12,6 +12,7 @@ import {
 	TrashIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Group, GroupItem, GroupSeparator } from "@/components/ui/group";
 import {
 	Tooltip,
 	TooltipContent,
@@ -24,7 +25,6 @@ import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import { cn, exportInstallation } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { type Installation, useInstallations } from "@/stores/installations";
-import { Group, GroupItem, GroupSeparator } from "../ui/group";
 
 export type InstallationRowProps = {
 	installation: Installation;
