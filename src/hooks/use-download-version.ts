@@ -4,7 +4,7 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useRef } from "react";
 import { toast } from "sonner";
 import type { ProgressPayload } from "@/lib/types";
@@ -49,12 +49,18 @@ export const useDownloadVersion = (
 		mutationKey: ["download-version"],
 		onError: (error, v) => {
 			toast.error(`Error downloading game version: ${error.message}`, {
+				action: undefined,
 				id: `download-game-version-${v}`,
 			});
 			listenRef.current?.();
 		},
 		onMutate: async (v) => {
 			toast.loading(`Starting to download game version ${v}...`, {
+				action: {
+					label: "Cancel",
+					onClick: () =>
+						emit(`download://version:${v.replace(/\./g, "_")}:cancel`),
+				},
 				id: `download-game-version-${v}`,
 			});
 			listenRef.current = await listen<ProgressPayload>(
@@ -65,11 +71,21 @@ export const useDownloadVersion = (
 						toast.loading(
 							`Downloading game version ${v}: ${percent?.toFixed(0)}%`,
 							{
+								action: {
+									label: "Cancel",
+									onClick: () =>
+										emit(`download://version:${v.replace(/\./g, "_")}:cancel`),
+								},
 								id: `download-game-version-${v}`,
 							},
 						);
 					} else if (phase === "extract") {
 						toast.loading(`Extracting game version ${v}...`, {
+							action: {
+								label: "Cancel",
+								onClick: () =>
+									emit(`download://version:${v.replace(/\./g, "_")}:cancel`),
+							},
 							id: `download-game-version-${v}`,
 						});
 					}
@@ -82,12 +98,22 @@ export const useDownloadVersion = (
 				toast.dismiss(`download-game-version-${v}`);
 				return;
 			}
+			if (d === "cancelled") {
+				toast.info(`Download of game version ${v} cancelled`, {
+					action: undefined,
+					id: `download-game-version-${v}-cancelled`,
+				});
+				return;
+			}
 			await queryClient.invalidateQueries({
 				queryKey: installedVersionsQueryKey(),
 			});
-			toast.success(`Game version ${v} downloaded`, {
-				id: `download-game-version-${v}`,
-			});
+			if (d === "success") {
+				toast.success(`Game version ${v} downloaded`, {
+					action: undefined,
+					id: `download-game-version-${v}`,
+				});
+			}
 		},
 		scope: {
 			id: "download-version",
