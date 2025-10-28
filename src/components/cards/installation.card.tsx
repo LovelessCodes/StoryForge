@@ -7,12 +7,16 @@ import {
 	Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Group, GroupItem } from "@/components/ui/group";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { cn } from "@/lib/utils";
 import type { Installation } from "@/stores/installations";
-import { Group, GroupItem } from "../ui/group";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 interface InstallationCardProps {
 	installation: Installation;
