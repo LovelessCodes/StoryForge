@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { ChevronDownIcon } from "lucide-react";
 import { useRef } from "react";
 import { AuthorAutocomplete } from "@/components/auto-completes/author.auto-complete";
 import { UpdateAllButton } from "@/components/buttons/update-all.button";
@@ -8,12 +7,6 @@ import { SearchInput } from "@/components/inputs";
 import { ModList } from "@/components/lists/mod.list";
 import { TextSwitch } from "@/components/switches/text.switch";
 import SideToggleGroup from "@/components/tabs/side.tab";
-import {
-	DropdownMenu,
-	DropdownMenuCheckboxItem,
-	DropdownMenuContent,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { ErrorComponent } from "@/components/ui/error";
 import { Label } from "@/components/ui/label";
 import {
@@ -21,6 +14,7 @@ import {
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
+	SelectValue,
 } from "@/components/ui/select";
 import { useInstalledMods } from "@/hooks/use-installed-mods";
 import { useModUpdates } from "@/hooks/use-mod-updates";
@@ -124,15 +118,8 @@ function RouteComponent() {
 					placeholder="Search mods..."
 					value={searchText}
 				/>
-				<DropdownMenu>
-					<DropdownMenuTrigger
-						className={cn(
-							"flex gap-1 w-46 relative",
-							selectedGameVersions.length > 0
-								? "text-foreground"
-								: "text-transparent",
-						)}
-					>
+				<Select multiple value={selectedGameVersions}>
+					<SelectTrigger className="w-40 h-9">
 						<span
 							className={cn(
 								"pointer-events-none absolute start-1 z-10 block -translate-y-1/2 inline-flex text-muted-foreground px-2 transition-all",
@@ -143,41 +130,32 @@ function RouteComponent() {
 						>
 							Game Version(s)
 						</span>
-						{selectedGameVersions.length > 0
-							? selectedGameVersions.length > 1
-								? `${selectedGameVersions.length} versions`
-								: selectedGameVersions[0]
-							: "-"}
-						<ChevronDownIcon className="size-4 opacity-50" />
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align="start">
+						<SelectValue>
+							{selectedGameVersions.length > 0
+								? selectedGameVersions.length > 1
+									? `${selectedGameVersions.length} versions`
+									: selectedGameVersions[0]
+								: null}
+						</SelectValue>
+					</SelectTrigger>
+					<SelectContent align="start" alignItemWithTrigger={false}>
 						{gameVersions?.sort(compareSemverDesc).map((version) => (
-							<DropdownMenuCheckboxItem
-								checked={!!selectedGameVersions?.find((v) => v === version)}
+							<SelectItem
 								key={version}
-								onCheckedChange={(checked) => {
-									if (checked) {
-										addGameVersion(version);
-									} else {
-										removeGameVersion(version);
-									}
-								}}
-								onSelect={(e) => e.preventDefault()}
+								onClick={() =>
+									selectedGameVersions.includes(version)
+										? removeGameVersion(version)
+										: addGameVersion(version)
+								}
+								value={version}
 							>
 								{version}
-							</DropdownMenuCheckboxItem>
+							</SelectItem>
 						))}
-					</DropdownMenuContent>
-				</DropdownMenu>
-				<DropdownMenu>
-					<DropdownMenuTrigger
-						className={cn(
-							"w-46 flex gap-1 relative",
-							selectedModTags.length > 0
-								? "text-foreground"
-								: "text-transparent",
-						)}
-					>
+					</SelectContent>
+				</Select>
+				<Select multiple value={selectedModTags}>
+					<SelectTrigger className="w-40 h-9">
 						<span
 							className={cn(
 								"pointer-events-none absolute start-1 z-10 block -translate-y-1/2 inline-flex text-muted-foreground px-2 transition-all",
@@ -188,36 +166,32 @@ function RouteComponent() {
 						>
 							Mod Tag(s)
 						</span>
-						{selectedModTags.length > 0
-							? selectedModTags.length > 1
-								? `${selectedModTags.length} tags`
-								: selectedModTags[0].name
-							: "-"}
-						<ChevronDownIcon className="size-4 opacity-50" />
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align="start">
+						<SelectValue>
+							{selectedModTags.length > 0
+								? selectedModTags.length > 1
+									? `${selectedModTags.length} tags`
+									: selectedModTags[0].name
+								: null}
+						</SelectValue>
+					</SelectTrigger>
+					<SelectContent align="start" alignItemWithTrigger={false}>
 						{modTags
 							?.sort((a, b) => a.name.localeCompare(b.name))
 							.map((tag) => (
-								<DropdownMenuCheckboxItem
-									checked={
-										!!selectedModTags?.find((t) => t.tagid === tag.tagid)
-									}
+								<SelectItem
 									key={tag.tagid}
-									onCheckedChange={(checked) => {
-										if (checked) {
-											addModTag(tag);
-										} else {
-											removeModTag(tag);
-										}
-									}}
-									onSelect={(e) => e.preventDefault()}
+									onClick={() =>
+										selectedModTags.includes(tag)
+											? removeModTag(tag)
+											: addModTag(tag)
+									}
+									value={tag}
 								>
 									{tag.name}
-								</DropdownMenuCheckboxItem>
+								</SelectItem>
 							))}
-					</DropdownMenuContent>
-				</DropdownMenu>
+					</SelectContent>
+				</Select>
 				<div className="group relative">
 					<Label className="bg-background text-muted-foreground pointer-events-none absolute start-1 top-0 z-10 block -translate-y-1/2 px-2 text-xs font-medium group-has-disabled:opacity-50">
 						Sort by
@@ -231,7 +205,7 @@ function RouteComponent() {
 								? `${sortOptions[sortBy as keyof typeof sortOptions]}`
 								: "Sort by"}
 						</SelectTrigger>
-						<SelectContent align="start">
+						<SelectContent align="start" alignItemWithTrigger={false}>
 							{Object.entries(sortOptions).map(([key, value]) => (
 								<SelectItem key={key} value={key}>
 									{value}
@@ -255,7 +229,7 @@ function RouteComponent() {
 								? `${categoryOptions[category as keyof typeof categoryOptions]}`
 								: "Category"}
 						</SelectTrigger>
-						<SelectContent align="start">
+						<SelectContent align="start" alignItemWithTrigger={false}>
 							{Object.entries(categoryOptions).map(([key, value]) => (
 								<SelectItem key={key} value={key}>
 									{value}
