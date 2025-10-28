@@ -320,20 +320,22 @@ function RouteComponent() {
 					{(field) => (
 						<div className="grid gap-2">
 							<Tooltip>
-								<TooltipTrigger asChild>
-									<Label
-										className={cn([
-											field.state.meta.errors.length
-												? "text-destructive"
-												: useAppDirectory
-													? "text-muted-foreground"
-													: "",
-											"w-fit",
-										])}
-										htmlFor="installationsParent"
-									>
-										Installations Parent Directory
-									</Label>
+								<TooltipTrigger
+									render={
+										<Label
+											className={cn([
+												field.state.meta.errors.length
+													? "text-destructive"
+													: useAppDirectory
+														? "text-muted-foreground"
+														: "",
+												"w-fit",
+											])}
+											htmlFor="installationsParent"
+										/>
+									}
+								>
+									Installations Parent Directory
 								</TooltipTrigger>
 								<TooltipContent align="start" side="bottom">
 									<p className="text-xs">Defaults to the app data directory</p>
@@ -375,20 +377,22 @@ function RouteComponent() {
 					{(field) => (
 						<div className="grid gap-2">
 							<Tooltip>
-								<TooltipTrigger asChild>
-									<Label
-										className={cn([
-											field.state.meta.errors.length
-												? "text-destructive"
-												: useAppDirectory
-													? "text-muted-foreground"
-													: "",
-											"w-fit",
-										])}
-										htmlFor="versionsParent"
-									>
-										Versions Parent Directory
-									</Label>
+								<TooltipTrigger
+									render={
+										<Label
+											className={cn([
+												field.state.meta.errors.length
+													? "text-destructive"
+													: useAppDirectory
+														? "text-muted-foreground"
+														: "",
+												"w-fit",
+											])}
+											htmlFor="versionsParent"
+										/>
+									}
+								>
+									Versions Parent Directory
 								</TooltipTrigger>
 								<TooltipContent align="start" side="bottom">
 									<p className="text-xs">Defaults to the app data directory</p>
