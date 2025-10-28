@@ -3,16 +3,17 @@ import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import {
 	AlertDialog,
+	AlertDialogClose,
 	AlertDialogContent,
 	AlertDialogDescription,
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { useDialogStore } from "@/stores/dialogs";
 import type { Installation } from "@/stores/installations";
-import { Button } from "../ui/button";
 
 export type RemoveModDialogProps = {
 	name: string;
@@ -82,9 +83,12 @@ export function RemoveModDialog({
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<Button onClick={() => closeDialog()} variant="outline">
+					<AlertDialogClose
+						disabled={isPending}
+						render={<Button variant="outline" />}
+					>
 						Cancel
-					</Button>
+					</AlertDialogClose>
 					<Button
 						disabled={isPending}
 						onClick={() =>
