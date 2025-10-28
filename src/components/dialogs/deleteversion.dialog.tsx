@@ -4,15 +4,16 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
 	AlertDialog,
+	AlertDialogClose,
 	AlertDialogContent,
 	AlertDialogDescription,
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { installedVersionsQueryKey } from "@/hooks/use-installed-versions";
 import { useDialogStore } from "@/stores/dialogs";
-import { Button } from "../ui/button";
 
 export type DeleteVersionDialogProps = {
 	version: string;
@@ -83,9 +84,12 @@ export function DeleteVersionDialog({
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<Button onClick={() => closeDialog()} variant="outline">
+					<AlertDialogClose
+						disabled={isPending}
+						render={<Button variant="outline" />}
+					>
 						Cancel
-					</Button>
+					</AlertDialogClose>
 					<Button disabled={isPending} onClick={() => removeVersion(version)}>
 						{isPending ? "Deleting..." : "Delete"}
 					</Button>
