@@ -12,6 +12,7 @@ import { useRef } from "react";
 import { toast } from "sonner";
 import type { Mod } from "@/components/lists/mod.list";
 import { Button } from "@/components/ui/button";
+import { Group, GroupItem, GroupSeparator } from "@/components/ui/group";
 import {
 	Tooltip,
 	TooltipContent,
@@ -30,7 +31,6 @@ import type { OutputMod } from "@/routes/install-mods/$id";
 import { useDialogStore } from "@/stores/dialogs";
 import type { Installation } from "@/stores/installations";
 import { useModsFilters } from "@/stores/modsFilters";
-import { Group, GroupItem, GroupSeparator } from "../ui/group";
 
 export function ModItem({
 	mod,
