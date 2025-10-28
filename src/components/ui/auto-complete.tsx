@@ -71,7 +71,7 @@ function AutocompletePopup({
 				data-slot="autocomplete-positioner"
 				sideOffset={sideOffset}
 			>
-				<span className="relative flex max-h-full origin-(--transform-origin) rounded-lg border bg-popover bg-clip-padding transition-[scale,opacity] before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] before:shadow-lg has-data-starting-style:scale-98 has-data-starting-style:opacity-0 dark:not-in-data-[slot=group]:bg-clip-border">
+				<span className="relative flex max-h-full origin-(--transform-origin) rounded-lg border bg-popover/50 backdrop-blur-sm bg-clip-padding transition-[scale,opacity] before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] before:shadow-lg has-data-starting-style:scale-98 has-data-starting-style:opacity-0 dark:not-in-data-[slot=group]:bg-clip-border">
 					<AutocompletePrimitive.Popup
 						className={cn(
 							"flex max-h-[min(var(--available-height),23rem)] w-(--anchor-width) max-w-(--available-width) flex-col",
