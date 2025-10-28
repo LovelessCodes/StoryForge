@@ -1,13 +1,17 @@
 import { DownloadCloudIcon, Lock, Pencil, Play, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Group, GroupItem } from "@/components/ui/group";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { cn } from "@/lib/utils";
 import { useInstallations } from "@/stores/installations";
 import type { Server } from "@/stores/servers";
 import { useSettingsStore } from "@/stores/settings";
-import { Group, GroupItem } from "../ui/group";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 interface ServerCardProps {
 	server: Server;
