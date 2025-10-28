@@ -66,7 +66,15 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
 		set(() => ({ versionsParent: path }));
 	},
 	streamMode: false,
-	toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
+	toggleDarkMode: () =>
+		set((state) => {
+			if (state.darkMode) {
+				document.body.classList.remove("dark");
+			} else {
+				document.body.classList.add("dark");
+			}
+			return { darkMode: !state.darkMode };
+		}),
 	toggleStreamMode: () => set((state) => ({ streamMode: !state.streamMode })),
 	versionsParent: null,
 	versionsSubdir: "versions",
