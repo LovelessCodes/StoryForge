@@ -4,7 +4,9 @@ import { motion } from "motion/react";
 import {
 	ContextMenu,
 	ContextMenuContent,
+	ContextMenuGroup,
 	ContextMenuItem,
+	ContextMenuLabel,
 	ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { useDownloadVersion } from "@/hooks/use-download-version";
@@ -33,36 +35,41 @@ export const PublicServerContextMenu = ({
 		<ContextMenu>
 			<ContextMenuTrigger {...props} />
 			<ContextMenuContent>
-				{installedVersions?.includes(server.gameVersion) ? (
-					<ContextMenuItem
-						className="flex items-center justify-between gap-4"
-						onClick={() => openDialog("ConnectServerDialog", { server })}
-					>
-						Connect
-						<PlugIcon className="inline-block h-4 w-4" />
-					</ContextMenuItem>
-				) : installations.find((i) => i.version === server.gameVersion) ? (
-					<ContextMenuItem
-						className="flex items-center justify-between gap-4"
-						onClick={() => downloadVersion(server.gameVersion)}
-					>
-						Download {server.gameVersion}
-						<DownloadCloudIcon className="inline-block h-4 w-4" />
-					</ContextMenuItem>
-				) : (
-					<ContextMenuItem
-						className="flex items-center justify-between gap-4"
-						onClick={() =>
-							server &&
-							openDialog("AddInstallationDialog", {
-								version: server.gameVersion,
-							})
-						}
-					>
-						Add Installation
-						<FolderPlusIcon className="inline-block h-4 w-4" />
-					</ContextMenuItem>
-				)}
+				<ContextMenuGroup>
+					<ContextMenuLabel className="text-xs border-b text-muted-foreground/50 font-semibold">
+						{server.serverName}
+					</ContextMenuLabel>
+					{installedVersions?.includes(server.gameVersion) ? (
+						<ContextMenuItem
+							className="flex items-center justify-between gap-4"
+							onClick={() => openDialog("ConnectServerDialog", { server })}
+						>
+							Connect
+							<PlugIcon className="inline-block h-4 w-4" />
+						</ContextMenuItem>
+					) : installations.find((i) => i.version === server.gameVersion) ? (
+						<ContextMenuItem
+							className="flex items-center justify-between gap-4"
+							onClick={() => downloadVersion(server.gameVersion)}
+						>
+							Download {server.gameVersion}
+							<DownloadCloudIcon className="inline-block h-4 w-4" />
+						</ContextMenuItem>
+					) : (
+						<ContextMenuItem
+							className="flex items-center justify-between gap-4"
+							onClick={() =>
+								server &&
+								openDialog("AddInstallationDialog", {
+									version: server.gameVersion,
+								})
+							}
+						>
+							Add Installation
+							<FolderPlusIcon className="inline-block h-4 w-4" />
+						</ContextMenuItem>
+					)}
+				</ContextMenuGroup>
 			</ContextMenuContent>
 		</ContextMenu>
 	);

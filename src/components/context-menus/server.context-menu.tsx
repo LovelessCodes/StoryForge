@@ -14,7 +14,9 @@ import { motion } from "motion/react";
 import {
 	ContextMenu,
 	ContextMenuContent,
+	ContextMenuGroup,
 	ContextMenuItem,
+	ContextMenuLabel,
 	ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
@@ -54,87 +56,92 @@ export const ServerContextMenu = ({
 		<ContextMenu>
 			<ContextMenuTrigger {...props} />
 			<ContextMenuContent>
-				{installation && installedVersions?.includes(installation.version) ? (
+				<ContextMenuGroup>
+					<ContextMenuLabel className="text-xs border-b text-muted-foreground/50 font-semibold">
+						{server.name}
+					</ContextMenuLabel>
+					{installation && installedVersions?.includes(installation.version) ? (
+						<ContextMenuItem
+							className="flex items-center justify-between gap-4"
+							onClick={() => connectToServer(server)}
+						>
+							Connect
+							<PlugIcon className="inline-block h-4 w-4" />
+						</ContextMenuItem>
+					) : (
+						<ContextMenuItem
+							className="flex items-center justify-between gap-4"
+							onClick={() =>
+								installation && downloadVersion(installation.version)
+							}
+						>
+							Download {installation?.version}
+							<DownloadCloudIcon className="inline-block h-4 w-4" />
+						</ContextMenuItem>
+					)}
 					<ContextMenuItem
 						className="flex items-center justify-between gap-4"
-						onClick={() => connectToServer(server)}
+						onClick={() => toggleFavorite(server.id)}
 					>
-						Connect
-						<PlugIcon className="inline-block h-4 w-4" />
+						{server.favorite ? "Unfavorite" : "Favorite"}
+						<StarIcon
+							className={cn(
+								"inline-block h-4 w-4",
+								server.favorite && "text-warning fill-warning",
+							)}
+						/>
 					</ContextMenuItem>
-				) : (
 					<ContextMenuItem
 						className="flex items-center justify-between gap-4"
 						onClick={() =>
-							installation && downloadVersion(installation.version)
+							installation &&
+							navigate({
+								params: { id: installation?.id.toString() },
+								to: "/install-mods/$id",
+							})
 						}
 					>
-						Download {installation?.version}
-						<DownloadCloudIcon className="inline-block h-4 w-4" />
+						Manage Mods
+						<PackageSearchIcon className="inline-block h-4 w-4" />
 					</ContextMenuItem>
-				)}
-				<ContextMenuItem
-					className="flex items-center justify-between gap-4"
-					onClick={() => toggleFavorite(server.id)}
-				>
-					{server.favorite ? "Unfavorite" : "Favorite"}
-					<StarIcon
-						className={cn(
-							"inline-block h-4 w-4",
-							server.favorite && "text-warning fill-warning",
-						)}
-					/>
-				</ContextMenuItem>
-				<ContextMenuItem
-					className="flex items-center justify-between gap-4"
-					onClick={() =>
-						installation &&
-						navigate({
-							params: { id: installation?.id.toString() },
-							to: "/install-mods/$id",
-						})
-					}
-				>
-					Manage Mods
-					<PackageSearchIcon className="inline-block h-4 w-4" />
-				</ContextMenuItem>
-				<ContextMenuItem
-					className="flex items-center justify-between gap-4"
-					onClick={() =>
-						installation &&
-						navigate({
-							params: { id: installation.id.toString() },
-							to: "/mod-configs/$id",
-						})
-					}
-				>
-					Configure Mods
-					<PackageOpenIcon className="inline-block h-4 w-4" />
-				</ContextMenuItem>
-				<ContextMenuItem
-					className="flex items-center justify-between gap-4"
-					onClick={() =>
-						installation && revealInstallationInFolder(installation.path)
-					}
-				>
-					Open Installation Folder
-					<FolderOpenIcon className="inline-block h-4 w-4" />
-				</ContextMenuItem>
-				<ContextMenuItem
-					className="flex items-center justify-between gap-4"
-					onClick={() => openDialog("EditServerDialog", { server })}
-				>
-					Edit
-					<PenIcon className="inline-block h-4 w-4" />
-				</ContextMenuItem>
-				<ContextMenuItem
-					className="flex items-center justify-between gap-4"
-					onClick={() => openDialog("DeleteServerDialog", { server })}
-					variant="destructive"
-				>
-					Delete
-					<TrashIcon className="inline-block h-4 w-4" />
-				</ContextMenuItem>
+					<ContextMenuItem
+						className="flex items-center justify-between gap-4"
+						onClick={() =>
+							installation &&
+							navigate({
+								params: { id: installation.id.toString() },
+								to: "/mod-configs/$id",
+							})
+						}
+					>
+						Configure Mods
+						<PackageOpenIcon className="inline-block h-4 w-4" />
+					</ContextMenuItem>
+					<ContextMenuItem
+						className="flex items-center justify-between gap-4"
+						onClick={() =>
+							installation && revealInstallationInFolder(installation.path)
+						}
+					>
+						Open Installation Folder
+						<FolderOpenIcon className="inline-block h-4 w-4" />
+					</ContextMenuItem>
+					<ContextMenuItem
+						className="flex items-center justify-between gap-4"
+						onClick={() => openDialog("EditServerDialog", { server })}
+					>
+						Edit
+						<PenIcon className="inline-block h-4 w-4" />
+					</ContextMenuItem>
+					<ContextMenuItem
+						className="flex items-center justify-between gap-4"
+						onClick={() => openDialog("DeleteServerDialog", { server })}
+						variant="destructive"
+					>
+						Delete
+						<TrashIcon className="inline-block h-4 w-4" />
+					</ContextMenuItem>
+				</ContextMenuGroup>
 			</ContextMenuContent>
 		</ContextMenu>
 	);
