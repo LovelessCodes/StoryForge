@@ -47,7 +47,6 @@
 
 Set up the following tooling before running Story Forge locally:
 
-- [Node.js](https://nodejs.org/) (v20+)
 - [Bun](https://bun.sh/) (v1.0+)
 - [Rust](https://www.rust-lang.org/tools/install) (v1.70+)
 - [Tauri Prerequisites](https://tauri.app/start/prerequisites/)
