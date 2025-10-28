@@ -1,5 +1,5 @@
+import { Tabs, TabsList, TabsTab } from "@/components/ui/tabs";
 import { useModsFilters } from "@/stores/modsFilters";
-import { Tabs, TabsList, TabsTab } from "../ui/tabs";
 
 export default function SideToggleGroup() {
 	const { side, setSide } = useModsFilters();
