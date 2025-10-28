@@ -1,6 +1,5 @@
-import type * as ContextMenuPrimitive from "@radix-ui/react-context-menu";
+import type { ContextMenu as ContextMenuPrimitive } from "@base-ui-components/react/context-menu";
 import { useNavigate } from "@tanstack/react-router";
-import { motion } from "framer-motion";
 import {
 	DownloadCloudIcon,
 	FolderOpenIcon,
@@ -11,6 +10,7 @@ import {
 	StarIcon,
 	TrashIcon,
 } from "lucide-react";
+import { motion } from "motion/react";
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -29,7 +29,7 @@ import { type Server, useServerStore } from "@/stores/servers";
 export const ServerContextMenu = ({
 	server,
 	...props
-}: React.ComponentProps<typeof ContextMenuPrimitive.Trigger> & {
+}: ContextMenuPrimitive.Trigger.Props & {
 	server: Server;
 }) => {
 	const navigate = useNavigate();

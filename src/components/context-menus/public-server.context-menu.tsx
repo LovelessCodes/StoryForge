@@ -1,6 +1,6 @@
-import type * as ContextMenuPrimitive from "@radix-ui/react-context-menu";
-import { motion } from "framer-motion";
+import type { ContextMenu as ContextMenuPrimitive } from "@base-ui-components/react/context-menu";
 import { DownloadCloudIcon, FolderPlusIcon, PlugIcon } from "lucide-react";
+import { motion } from "motion/react";
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -16,7 +16,7 @@ import { useInstallations } from "@/stores/installations";
 export const PublicServerContextMenu = ({
 	server,
 	...props
-}: React.ComponentProps<typeof ContextMenuPrimitive.Trigger> & {
+}: ContextMenuPrimitive.Trigger.Props & {
 	server: PublicServer;
 }) => {
 	// Stores

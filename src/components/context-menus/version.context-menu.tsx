@@ -1,4 +1,4 @@
-import type * as ContextMenuPrimitive from "@radix-ui/react-context-menu";
+import type { ContextMenu as ContextMenuPrimitive } from "@base-ui-components/react/context-menu";
 import { FolderOpenIcon, TrashIcon } from "lucide-react";
 import { motion } from "motion/react";
 import {
@@ -16,7 +16,7 @@ import { useSettingsStore } from "@/stores/settings";
 export const VersionContextMenu = ({
 	version,
 	...props
-}: React.ComponentProps<typeof ContextMenuPrimitive.Trigger> & {
+}: ContextMenuPrimitive.Trigger.Props & {
 	version: string;
 }) => {
 	const { appFolder } = useAppFolder();

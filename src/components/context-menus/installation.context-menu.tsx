@@ -1,4 +1,4 @@
-import type * as ContextMenuPrimitive from "@radix-ui/react-context-menu";
+import type { ContextMenu as ContextMenuPrimitive } from "@base-ui-components/react/context-menu";
 import { useNavigate } from "@tanstack/react-router";
 import {
 	DownloadCloudIcon,
@@ -29,7 +29,7 @@ import { type Installation, useInstallations } from "@/stores/installations";
 export const InstallationContextMenu = ({
 	installation,
 	...props
-}: React.ComponentProps<typeof ContextMenuPrimitive.Trigger> & {
+}: ContextMenuPrimitive.Trigger.Props & {
 	installation: Installation;
 }) => {
 	const navigate = useNavigate();
