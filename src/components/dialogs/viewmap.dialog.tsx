@@ -83,7 +83,7 @@ export function ViewMapDialog({
 								? `Viewing markers for: ${selectedPlayer}`
 								: "Select Player"}
 						</SelectTrigger>
-						<SelectContent>
+						<SelectContent alignItemWithTrigger={false}>
 							{players.map((playerUid) => (
 								<SelectItem key={playerUid} value={playerUid}>
 									{playerUid}
