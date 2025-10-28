@@ -67,22 +67,22 @@ export function DeleteVersionDialog({
 					<AlertDialogDescription>
 						This action cannot be undone. This will permanently delete version{" "}
 						{version} from Story Forge.
-						<motion.div
-							animate={{ opacity: 1, y: 0 }}
-							className="my-4 rounded-md border border-warning bg-warning/10 p-3 text-warning-foreground"
-							exit={{ opacity: 0, y: -10 }}
-							initial={{ opacity: 0, y: -10 }}
-							transition={{ duration: 0.3 }}
-						>
-							<strong>Note:</strong>
-							<br />
-							Deleting versions that are currently in use by installations will
-							not harm these installations or their servers. However, you will
-							not be able to create new installations with this version until
-							you reinstall it.
-						</motion.div>
 					</AlertDialogDescription>
 				</AlertDialogHeader>
+				<motion.div
+					animate={{ opacity: 1, y: 0 }}
+					className="my-4 rounded-md border border-warning bg-warning/10 p-3 text-warning-foreground"
+					exit={{ opacity: 0, y: -10 }}
+					initial={{ opacity: 0, y: -10 }}
+					transition={{ duration: 0.3 }}
+				>
+					<strong>Note:</strong>
+					<br />
+					Deleting versions that are currently in use by installations will not
+					harm these installations or their servers. However, you will not be
+					able to create new installations with this version until you reinstall
+					it.
+				</motion.div>
 				<AlertDialogFooter>
 					<AlertDialogClose
 						disabled={isPending}
