@@ -16,11 +16,6 @@ import {
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Group, GroupItem, GroupSeparator } from "@/components/ui/group";
 import {
 	Sidebar,
@@ -47,6 +42,7 @@ import { useAccountStore } from "@/stores/accounts";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
+import { Menu, MenuPopup, MenuTrigger } from "../ui/menu";
 
 export function AppSidebar() {
 	const { selectedUser, users, removeUser, setSelectedUser } =
@@ -88,8 +84,16 @@ export function AppSidebar() {
 		<Sidebar>
 			<SidebarHeader>
 				{selectedUser ? (
-					<DropdownMenu>
-						<DropdownMenuTrigger className="w-full">
+					<Menu>
+						<MenuTrigger
+							className="w-full"
+							render={
+								<Button
+									onClick={() => !selectedUser && openDialog("AddUserDialog")}
+									variant="outline"
+								/>
+							}
+						>
 							{selectedUser ? (
 								<div className="flex items-center gap-2">
 									<Avatar className="w-6 h-6">
@@ -101,17 +105,13 @@ export function AppSidebar() {
 									<span className="font-medium">{selectedUser.playername}</span>
 								</div>
 							) : (
-								<Button
-									className="w-full justify-between"
-									onClick={() => openDialog("AddUserDialog")}
-									variant="outline"
-								>
+								<>
 									<span className="flex text-xs">Sign in</span>
 									<UserPlus2 className="size-4" />
-								</Button>
+								</>
 							)}
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="start" side="right">
+						</MenuTrigger>
+						<MenuPopup align="start" side="right">
 							{users.map((user) => (
 								<Group
 									className="rounded-none first:rounded-t-md last:rounded-b-md"
@@ -212,8 +212,8 @@ export function AppSidebar() {
 								<span className="flex text-xs">Add user</span>
 								<UserPlus2 className="size-4" />
 							</Button>
-						</DropdownMenuContent>
-					</DropdownMenu>
+						</MenuPopup>
+					</Menu>
 				) : (
 					<Button
 						className="w-full justify-between"
