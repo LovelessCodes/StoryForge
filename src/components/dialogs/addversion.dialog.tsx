@@ -104,19 +104,21 @@ export function AddVersionDialog({ open }: { open: boolean }) {
 							{(field) => (
 								<div className="grid gap-2">
 									<Tooltip>
-										<TooltipTrigger asChild>
-											<Label
-												className={clsx([
-													field.state.meta.errors.length
-														? "text-destructive"
-														: "",
-													"w-fit",
-												])}
-												htmlFor="version"
-											>
-												Version
-												<span className="text-destructive">*</span>
-											</Label>
+										<TooltipTrigger
+											render={
+												<Label
+													className={clsx([
+														field.state.meta.errors.length
+															? "text-destructive"
+															: "",
+														"w-fit",
+													])}
+													htmlFor="version"
+												/>
+											}
+										>
+											Version
+											<span className="text-destructive">*</span>
 										</TooltipTrigger>
 										<TooltipContent align="start" side="bottom">
 											<p className="text-xs">Pick game version</p>
