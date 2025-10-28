@@ -83,7 +83,7 @@ function Dashboard() {
 						{installations.length > 0 ? (
 							<div className="flex flex-col w-full bg-card rounded-lg shadow border">
 								<AnimatePresence>
-									<Link className="sticky top-0" to="/installations">
+									<Link className="sticky top-0 z-10" to="/installations">
 										<Button
 											className="text-center text-sm rounded-b-none relative text-muted-foreground w-full hover:text-foreground group"
 											variant="secondary"
@@ -164,7 +164,7 @@ function Dashboard() {
 					<div className="flex flex-col w-full">
 						{servers.length > 0 ? (
 							<div className="flex flex-col h-fit overflow-y-auto relative bg-card rounded-lg shadow border">
-								<Link className="sticky top-0" to="/servers">
+								<Link className="sticky top-0 z-10" to="/servers">
 									<Button
 										className="text-center text-sm rounded-b-none relative text-muted-foreground w-full hover:text-foreground group"
 										variant="secondary"
