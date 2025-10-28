@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 const EmailInput = forwardRef<
 	HTMLInputElement,
 	React.InputHTMLAttributes<HTMLInputElement>
->(({ className, ...rest }, ref) => {
+>(({ className, ...rest }) => {
 	const id = useId();
 	return (
 		<div className="relative">
@@ -14,7 +14,6 @@ const EmailInput = forwardRef<
 				className={clsx(["peer pe-9", className])}
 				id={id}
 				placeholder="me@example.com"
-				ref={ref}
 				type="email"
 				{...rest}
 			/>
