@@ -58,7 +58,7 @@ export function ConnectServerDialog({
 							{installations.find((i) => i.id === selectedInstallation)?.name ||
 								"Select an installation"}
 						</SelectTrigger>
-						<SelectContent>
+						<SelectContent alignItemWithTrigger={false}>
 							{installations
 								.filter((i) => i.version === server.gameVersion)
 								.map((installation) => (
