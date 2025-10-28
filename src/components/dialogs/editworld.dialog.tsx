@@ -104,19 +104,21 @@ export function EditWorldDialog({
 							{(field) => (
 								<div className="grid gap-2">
 									<Tooltip>
-										<TooltipTrigger asChild>
-											<Label
-												className={clsx([
-													field.state.meta.errors.length
-														? "text-destructive"
-														: "",
-													"w-fit",
-												])}
-												htmlFor="name"
-											>
-												Name
-												<span className="text-destructive">*</span>
-											</Label>
+										<TooltipTrigger
+											render={
+												<Label
+													className={clsx([
+														field.state.meta.errors.length
+															? "text-destructive"
+															: "",
+														"w-fit",
+													])}
+													htmlFor="name"
+												/>
+											}
+										>
+											Name
+											<span className="text-destructive">*</span>
 										</TooltipTrigger>
 										<TooltipContent align="start" side="bottom">
 											<p className="text-xs">Enter world name</p>
@@ -152,19 +154,21 @@ export function EditWorldDialog({
 							{(field) => (
 								<div className="grid gap-2">
 									<Tooltip>
-										<TooltipTrigger asChild>
-											<Label
-												className={clsx([
-													field.state.meta.errors.length
-														? "text-destructive"
-														: "",
-													"w-fit",
-												])}
-												htmlFor="installationId"
-											>
-												Installation
-												<span className="text-destructive">*</span>
-											</Label>
+										<TooltipTrigger
+											render={
+												<Label
+													className={clsx([
+														field.state.meta.errors.length
+															? "text-destructive"
+															: "",
+														"w-fit",
+													])}
+													htmlFor="installationId"
+												/>
+											}
+										>
+											Installation
+											<span className="text-destructive">*</span>
 										</TooltipTrigger>
 										<TooltipContent align="start" side="bottom">
 											<p className="text-xs">Pick game installation</p>
