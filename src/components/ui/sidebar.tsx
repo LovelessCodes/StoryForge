@@ -128,7 +128,7 @@ function SidebarProvider({
 
 	return (
 		<SidebarContext.Provider value={contextValue}>
-			<TooltipProvider delayDuration={0}>
+			<TooltipProvider delay={0}>
 				<div
 					className={cn(
 						"group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar/50 flex min-h-svh w-full",
@@ -534,7 +534,7 @@ function SidebarMenuButton({
 
 	return (
 		<Tooltip>
-			<TooltipTrigger asChild>{button}</TooltipTrigger>
+			<TooltipTrigger render={button} />
 			<TooltipContent
 				align="center"
 				hidden={state !== "collapsed" || isMobile}
