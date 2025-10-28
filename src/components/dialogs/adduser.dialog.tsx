@@ -168,19 +168,21 @@ export function AddUserDialog({ open }: { open: boolean }) {
 									{(field) => (
 										<div className="grid gap-2">
 											<Tooltip>
-												<TooltipTrigger asChild>
-													<Label
-														className={clsx([
-															field.state.meta.errors.length
-																? "text-destructive"
-																: "",
-															"w-fit",
-														])}
-														htmlFor="email"
-													>
-														Email
-														<span className="text-destructive">*</span>
-													</Label>
+												<TooltipTrigger
+													render={
+														<Label
+															className={clsx([
+																field.state.meta.errors.length
+																	? "text-destructive"
+																	: "",
+																"w-fit",
+															])}
+															htmlFor="email"
+														/>
+													}
+												>
+													Email
+													<span className="text-destructive">*</span>
 												</TooltipTrigger>
 												<TooltipContent side="bottom">
 													<p className="text-xs">Enter email address</p>
@@ -228,19 +230,21 @@ export function AddUserDialog({ open }: { open: boolean }) {
 										<div className="grid gap-2">
 											<div className="flex items-center">
 												<Tooltip>
-													<TooltipTrigger asChild>
-														<Label
-															className={clsx([
-																field.state.meta.errors.length
-																	? "text-destructive"
-																	: "",
-																"w-fit",
-															])}
-															htmlFor="password"
-														>
-															Password
-															<span className="text-destructive">*</span>
-														</Label>
+													<TooltipTrigger
+														render={
+															<Label
+																className={clsx([
+																	field.state.meta.errors.length
+																		? "text-destructive"
+																		: "",
+																	"w-fit",
+																])}
+																htmlFor="password"
+															/>
+														}
+													>
+														Password
+														<span className="text-destructive">*</span>
 													</TooltipTrigger>
 													<TooltipContent side="bottom">
 														<p className="text-xs">Enter password</p>
