@@ -141,7 +141,7 @@ export function AddVersionDialog({ open }: { open: boolean }) {
 										<SelectTrigger className="flex gap-1 w-full truncate">
 											{field.state.value ?? "Game version"}
 										</SelectTrigger>
-										<SelectContent align="start">
+										<SelectContent align="start" alignItemWithTrigger={false}>
 											{availableVersions
 												?.sort(compareSemverDesc)
 												.map((version) => (
