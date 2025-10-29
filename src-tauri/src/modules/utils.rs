@@ -1,6 +1,6 @@
 use fs_extra::dir::{copy, CopyOptions};
 use std::{
-    fs::{create_dir_all, remove_dir_all, rename},
+    fs::{remove_dir_all, rename},
     path::PathBuf,
 };
 use tauri::{AppHandle, Manager};
@@ -48,28 +48,22 @@ pub fn installations_subdir(app: AppHandle) -> String {
         .unwrap_or_else(|_| "installations".to_string())
 }
 
-pub fn move_folder(source_path: PathBuf, destination_path: PathBuf) -> Result<bool, UiError> {
-    if !destination_path.exists() {
-        create_dir_all(&destination_path).map_err(|e| UiError {
-            name: "create_failed".into(),
-            message: format!("Failed to create destination directory: {e}"),
-        })?;
-    }
-
+pub fn move_folder(source_path: PathBuf, destination_path: PathBuf) -> Result<String, UiError> {
     if !source_path.exists() || !source_path.is_dir() {
-        return Ok(false);
+        return Ok("source_not_exist".into());
     }
 
     match rename(&source_path, &destination_path) {
-        Ok(_) => return Ok(true),
+        Ok(_) => return Ok("renamed".into()),
         Err(_) => {
             let mut options = CopyOptions::new();
             options.overwrite = true;
             options.copy_inside = false;
-            let dst_parent = destination_path.parent().unwrap();
-            copy(&source_path, dst_parent, &options).map_err(|e| UiError {
-                name: "move_failed".into(),
-                message: format!("Failed to move directory: {e}"),
+            copy(&source_path, destination_path.parent().unwrap(), &options).map_err(|e| {
+                UiError {
+                    name: "move_failed".into(),
+                    message: format!("Failed to move directory: {e}"),
+                }
             })?;
             remove_dir_all(&source_path).map_err(|e| UiError {
                 name: "remove_failed".into(),
@@ -78,5 +72,5 @@ pub fn move_folder(source_path: PathBuf, destination_path: PathBuf) -> Result<bo
         }
     }
 
-    Ok(true)
+    Ok("moved".into())
 }

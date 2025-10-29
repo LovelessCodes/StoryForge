@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Resolve an issue where dark mode was not being enabled/disabled instantly, when switching.
+- Resolve an issue where it would just create an empty folder, when renaming an installation.
 
 ## [0.5.2] - 2025-10-28
 
