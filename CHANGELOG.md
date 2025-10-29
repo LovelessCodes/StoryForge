@@ -13,6 +13,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Introduced a "Cancel" button for version downloads.
+
+### Fixed
+
+- Resolve an issue where dark mode was not being enabled/disabled instantly, when switching.
+- Resolve an issue where it would just create an empty folder, when renaming an installation.
+
+## [0.5.2] - 2025-10-28
+
+### Fixed
+
+- Resolve an issue where users no longer can add servers or installations due to index errors.
+
+## [0.5.1] - 2025-10-26
+
+### Added
+
 - Introduced "Update All" button on the mods page, under the installed mods.
 
 ### Fixed
@@ -227,6 +244,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stabilized login dialog and authentication flow.
 
 <!-- Version links for diff and release pages -->
+[0.5.2]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.5.2
+[0.5.1]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.5.1
 [0.5.0]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.5.0
 [0.4.2]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.4.2
 [0.4.1]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.4.1
