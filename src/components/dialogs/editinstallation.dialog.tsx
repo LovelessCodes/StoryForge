@@ -1,5 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
+import { invoke } from "@tauri-apps/api/core";
 import clsx from "clsx";
 import { useId } from "react";
 import { Button } from "@/components/ui/button";
@@ -87,7 +88,21 @@ export function EditInstallationDialog({
 					totalTimePlayed: installation.totalTimePlayed,
 					version: value.version,
 				},
-				(status) => status && closeDialog(),
+				async (status) => {
+					if (status) {
+						const safeName = makeStringFolderSafe(value.name);
+						const oldSafeName = makeStringFolderSafe(installation.name);
+						if (safeName === oldSafeName) {
+							return;
+						}
+						await invoke("rename_installations_folder", {
+							newName: safeName,
+							source: installationsParent ?? appFolder ?? "",
+							subdir: oldSafeName,
+						});
+						closeDialog();
+					}
+				},
 			);
 		},
 		validators: {

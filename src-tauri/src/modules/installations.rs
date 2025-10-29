@@ -17,7 +17,7 @@ use tauri_plugin_zustand::ManagerExt;
 use walkdir::WalkDir;
 
 use super::errors::UiError;
-use super::utils::{move_folder, versions_folder, versions_subdir};
+use super::utils::{installations_subdir, move_folder, versions_folder, versions_subdir};
 
 #[command]
 pub async fn initialize_game(path: String) -> Result<String, UiError> {
@@ -498,6 +498,26 @@ pub fn remove_installation(app: AppHandle, id: i64) -> Result<String, UiError> {
             message: format!("Installation with id {} not found", id),
         })
     }
+}
+
+#[command]
+pub async fn rename_installations_folder(
+    app: AppHandle,
+    source: String,
+    new_name: String,
+    subdir: String,
+) -> Result<String, UiError> {
+    let source_path = PathBuf::from(source)
+        .join(installations_subdir(app))
+        .join(&subdir);
+    let destination_path = source_path
+        .parent()
+        .ok_or_else(|| UiError {
+            name: "invalid_path".into(),
+            message: "Source path has no parent directory".into(),
+        })?
+        .join(new_name);
+    move_folder(source_path, destination_path)
 }
 
 #[command]
