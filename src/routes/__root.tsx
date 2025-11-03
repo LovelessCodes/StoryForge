@@ -235,7 +235,7 @@ function RootComponent() {
 						: {}) as DialogMap["ViewMapDialog"])}
 				/>
 			)}
-			<Toaster theme={darkMode ? "dark" : "light"} />
+			<Toaster richColors theme={darkMode ? "dark" : "light"} />
 		</React.Fragment>
 	);
 }
