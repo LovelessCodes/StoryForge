@@ -7,7 +7,7 @@ import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { relaunch } from "@tauri-apps/plugin-process";
 import * as React from "react";
-import { toast } from "sonner";
+import { Toaster, toast } from "sonner";
 import { AddInstallationDialog } from "@/components/dialogs/addinstallation.dialog";
 import { AddModDialog } from "@/components/dialogs/addmod.dialog";
 import { AddServerDialog } from "@/components/dialogs/addserver.dialog";
@@ -28,6 +28,7 @@ import { ViewMapDialog } from "@/components/dialogs/viewmap.dialog";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useUpdater } from "@/hooks/use-updater";
 import { type DialogMap, useDialogStore } from "@/stores/dialogs";
+import { useSettingsStore } from "@/stores/settings";
 
 export const Route = createRootRouteWithContext<{
 	queryClient: QueryClient;
@@ -38,6 +39,7 @@ export const Route = createRootRouteWithContext<{
 function RootComponent() {
 	// Stores
 	const { active } = useDialogStore();
+	const { darkMode } = useSettingsStore();
 
 	// Queries
 	const { data: update } = useUpdater();
@@ -233,6 +235,7 @@ function RootComponent() {
 						: {}) as DialogMap["ViewMapDialog"])}
 				/>
 			)}
+			<Toaster theme={darkMode ? "dark" : "light"} />
 		</React.Fragment>
 	);
 }
