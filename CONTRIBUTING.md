@@ -41,15 +41,11 @@ When contributing to Story Forge:
    bun install
    ```
 5. Install [Rust](https://rust-lang.org/tools/install/)
-6. Install backend dependencies:
-   ```bash
-   cd src-tauri && cargo install && cd ..
-   ```
-7. Run development application:
+6. Run development application:
    ```bash
    bun tauri dev
    ```
-8. Build the project:
+7. Build the project:
    ```bash
    bun tauri build
    ```
