@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Moved away from using Radix UI to Base UI for all components in the UI stack.
+- Revamp on the whole UI after introducing Base UI.
 
 ## [0.5.4] - 2025-10-31
 
