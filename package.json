@@ -6,7 +6,6 @@
 		"@dnd-kit/sortable": "^10.0.0",
 		"@dnd-kit/utilities": "^3.2.2",
 		"@monaco-editor/react": "^4.7.0",
-		"@radix-ui/react-slot": "^1.2.3",
 		"@tailwindcss/vite": "^4.1.16",
 		"@tanstack/react-devtools": "^0.7.9",
 		"@tanstack/react-form": "^1.23.8",
