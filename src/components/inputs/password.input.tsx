@@ -8,7 +8,7 @@ type PasswordInputProps = {
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "className">;
 
 const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
-	({ className, ...rest }, ref) => {
+	({ className, ...rest }) => {
 		const id = useId();
 		const [visible, setVisible] = useState<boolean>(false);
 
@@ -25,7 +25,6 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
 					className={clsx(["pe-9", computedClassName])}
 					id={id}
 					placeholder={visible ? "p4zzw0rd" : "········"}
-					ref={ref}
 					type={visible ? "text" : "password"}
 					{...rest}
 				/>

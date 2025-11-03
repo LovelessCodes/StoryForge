@@ -229,7 +229,7 @@ export function UpdateModDialog({
 								)}
 							</span>
 						</SelectTrigger>
-						<SelectContent>
+						<SelectContent alignItemWithTrigger={false}>
 							{modInfo?.mod.releases.map((release) => (
 								<SelectItem key={release.fileid} value={release.modversion}>
 									<div className="flex flex-col">

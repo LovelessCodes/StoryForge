@@ -1,16 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ChevronDownIcon } from "lucide-react";
 import { useState } from "react";
 import { SearchInput } from "@/components/inputs";
 import { WorldList } from "@/components/lists/world.list";
-import {
-	DropdownMenu,
-	DropdownMenuCheckboxItem,
-	DropdownMenuContent,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { ErrorComponent } from "@/components/ui/error";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+} from "@/components/ui/select";
 import { useSaves } from "@/hooks/use-saves";
+import { cn } from "@/lib/utils";
 import { useInstallations } from "@/stores/installations";
 
 export const Route = createFileRoute("/worlds")({
@@ -54,29 +54,33 @@ function RouteComponent() {
 					placeholder="Search worlds..."
 					value={searchText}
 				/>
-				<DropdownMenu>
-					<DropdownMenuTrigger>
+				<Select value={selectedInstallationId?.toString() || ""}>
+					<SelectTrigger
+						className={cn(
+							"w-46",
+							selectedInstallationId ? "" : "text-muted-foreground",
+						)}
+					>
 						{selectedInstallationId
 							? `${installations.find((installation) => installation.id === selectedInstallationId)?.name}`
 							: "Select installation"}
-						<ChevronDownIcon className="size-4 opacity-50" />
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align="start">
+					</SelectTrigger>
+					<SelectContent alignItemWithTrigger={false}>
 						{installations.map((installation) => (
-							<DropdownMenuCheckboxItem
-								checked={selectedInstallationId === installation.id}
+							<SelectItem
 								key={installation.id}
-								onCheckedChange={() =>
+								onClick={() =>
 									setSelectedInstallationId((prev) =>
 										prev === installation.id ? null : installation.id,
 									)
 								}
+								value={installation.id.toString()}
 							>
 								{installation.name}
-							</DropdownMenuCheckboxItem>
+							</SelectItem>
 						))}
-					</DropdownMenuContent>
-				</DropdownMenu>
+					</SelectContent>
+				</Select>
 			</div>
 			{filteredWorlds && (
 				<div className="h-full px-4 relative overflow-auto w-full">

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { useAddModUpdateToInstallation } from "@/hooks/use-add-mod-update-to-installation";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import {
@@ -11,7 +12,6 @@ import {
 } from "@/hooks/use-mod-updates";
 import type { OutputMod } from "@/routes/install-mods/$id";
 import type { Installation } from "@/stores/installations";
-import { Button } from "../ui/button";
 
 export const UpdateAllButton = ({
 	installation,

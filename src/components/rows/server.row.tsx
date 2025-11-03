@@ -6,6 +6,7 @@ import {
 	TrashIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Group, GroupItem, GroupSeparator } from "@/components/ui/group";
 import {
 	Tooltip,
 	TooltipContent,
@@ -59,103 +60,126 @@ export function ServerRow({ server }: ServerRowProps) {
 					</span>
 				</p>
 			</div>
-			<div className="inline-flex -space-x-px rounded-md shadow-xs rtl:space-x-reverse">
+			<Group>
 				<Tooltip>
-					<TooltipTrigger asChild>
-						{versions?.includes(installation?.version ?? "") ? (
-							<Button
-								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-								onClick={() =>
-									connectToServer({
-										installationId: server.installationId,
-										ip: `${server.ip}${server.port ? `:${server.port}` : ""}`,
-										name: server.name,
-										password: server.password,
-									})
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										disabled={isInstalling}
+										onClick={() =>
+											versions?.includes(installation?.version ?? "")
+												? connectToServer({
+														installationId: server.installationId,
+														ip: `${server.ip}${server.port ? `:${server.port}` : ""}`,
+														name: server.name,
+														password: server.password,
+													})
+												: installVersion(installation?.version ?? "")
+										}
+										variant="outline"
+									/>
 								}
-								variant="outline"
 							>
-								<PlugIcon
-									aria-hidden="true"
-									className="-ms-1 opacity-60 text-success"
-									size={16}
-								/>
-							</Button>
-						) : (
-							<Button
-								className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-								disabled={isInstalling}
-								onClick={() => installVersion(installation?.version ?? "")}
-								variant="outline"
-							>
-								<DownloadCloudIcon
-									aria-hidden="true"
-									className="-ms-1 opacity-60 text-warning-foreground"
-									size={16}
-								/>
-							</Button>
-						)}
-					</TooltipTrigger>
+								{versions?.includes(installation?.version ?? "") ? (
+									<PlugIcon
+										aria-hidden="true"
+										className="-ms-1 opacity-60 text-success"
+										size={16}
+									/>
+								) : (
+									<DownloadCloudIcon
+										aria-hidden="true"
+										className="-ms-1 opacity-60 text-warning-foreground"
+										size={16}
+									/>
+								)}
+							</GroupItem>
+						}
+					/>
 					<TooltipContent>
 						{versions?.includes(installation?.version ?? "")
 							? "Connect"
 							: `Install ${installation?.version ?? ""}`}
 					</TooltipContent>
 				</Tooltip>
+				<GroupSeparator />
 				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() => toggleFavorite(server.id)}
-							variant="outline"
-						>
-							<StarIcon
-								aria-hidden="true"
-								className={cn(
-									"-ms-1",
-									server.favorite
-										? "fill-warning text-warning opacity-100"
-										: "opacity-60",
-								)}
-								size={16}
-							/>
-						</Button>
-					</TooltipTrigger>
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										onClick={() => toggleFavorite(server.id)}
+										variant="outline"
+									/>
+								}
+							>
+								<StarIcon
+									aria-hidden="true"
+									className={cn(
+										"-ms-1",
+										server.favorite
+											? "fill-warning text-warning opacity-100"
+											: "opacity-60",
+									)}
+									size={16}
+								/>
+							</GroupItem>
+						}
+					/>
 					<TooltipContent>
 						{server.favorite ? "Unfavorite" : "Favorite"}
 					</TooltipContent>
 				</Tooltip>
+				<GroupSeparator />
 				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() => openDialog("EditServerDialog", { server })}
-							variant="outline"
-						>
-							<PencilIcon
-								aria-hidden="true"
-								className="-ms-1 opacity-60"
-								size={16}
-							/>
-						</Button>
-					</TooltipTrigger>
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										onClick={() => openDialog("EditServerDialog", { server })}
+										variant="outline"
+									/>
+								}
+							>
+								<PencilIcon
+									aria-hidden="true"
+									className="-ms-1 opacity-60"
+									size={16}
+								/>
+							</GroupItem>
+						}
+					/>
 					<TooltipContent>Edit</TooltipContent>
 				</Tooltip>
+				<GroupSeparator />
 				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							aria-label="Delete"
-							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() => openDialog("DeleteServerDialog", { server })}
-							size="icon"
-							variant="outline"
-						>
-							<TrashIcon aria-hidden="true" className="opacity-60" size={16} />
-						</Button>
-					</TooltipTrigger>
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										aria-label="Delete"
+										onClick={() => openDialog("DeleteServerDialog", { server })}
+										size="icon"
+										variant="outline"
+									/>
+								}
+							>
+								<TrashIcon
+									aria-hidden="true"
+									className="opacity-60"
+									size={16}
+								/>
+							</GroupItem>
+						}
+					/>
 					<TooltipContent>Delete</TooltipContent>
 				</Tooltip>
-			</div>
+			</Group>
 		</div>
 	);
 }

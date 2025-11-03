@@ -86,7 +86,7 @@ export function ModList({
 		})
 		?.filter((mod) => {
 			if (author) {
-				return mod.author === author;
+				return mod.author.toLowerCase().includes(author.toLowerCase());
 			}
 			return true;
 		})

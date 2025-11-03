@@ -1,8 +1,12 @@
 import { Download, XIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useDialogStore } from "@/stores/dialogs";
-import { Button } from "../ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 interface VersionItemProps {
 	version: string;
@@ -26,17 +30,18 @@ export function VersionItem({ version }: VersionItemProps) {
 				</div>
 			</div>
 			<Tooltip>
-				<TooltipTrigger asChild>
-					<Button
-						aria-label="Delete"
-						className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-						onClick={() => openDialog("DeleteVersionDialog", { version })}
-						size="icon"
-						variant="outline"
-					>
-						<XIcon aria-hidden="true" className="opacity-60" size={16} />
-					</Button>
-				</TooltipTrigger>
+				<TooltipTrigger
+					render={
+						<Button
+							aria-label="Delete"
+							onClick={() => openDialog("DeleteVersionDialog", { version })}
+							size="icon"
+							variant="outline"
+						>
+							<XIcon aria-hidden="true" className="opacity-60" size={16} />
+						</Button>
+					}
+				/>
 				<TooltipContent>Delete</TooltipContent>
 			</Tooltip>
 		</div>

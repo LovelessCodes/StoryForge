@@ -1,4 +1,4 @@
-import type { SwitchProps } from "@radix-ui/react-switch";
+import type { Switch as SwitchPrimitive } from "@base-ui-components/react/switch";
 import { clsx } from "clsx";
 import { forwardRef, useId, useState } from "react";
 import { Switch } from "@/components/ui/switch";
@@ -7,9 +7,9 @@ type TextSwitchProps = {
 	textChecked?: string;
 	textUnchecked?: string;
 	className?: string | ((active: boolean) => string);
-} & Omit<SwitchProps, "className">;
+} & Omit<SwitchPrimitive.Root.Props, "className">;
 
-export const TextSwitch = forwardRef<HTMLButtonElement, TextSwitchProps>(
+export const TextSwitch = forwardRef<HTMLInputElement, TextSwitchProps>(
 	(
 		{
 			className,
@@ -24,9 +24,12 @@ export const TextSwitch = forwardRef<HTMLButtonElement, TextSwitchProps>(
 		const id = useId();
 		const [internalChecked, setInternalChecked] = useState<boolean>(false);
 
-		const handleCheckedChange = (checked: boolean) => {
+		const handleCheckedChange = (
+			checked: boolean,
+			event: SwitchPrimitive.Root.ChangeEventDetails,
+		) => {
 			setInternalChecked(checked);
-			onCheckedChange?.(checked);
+			onCheckedChange?.(checked, event);
 		};
 
 		const active = checked ?? internalChecked;
@@ -39,20 +42,20 @@ export const TextSwitch = forwardRef<HTMLButtonElement, TextSwitchProps>(
 				<Switch
 					checked={active}
 					className={clsx([
-						"peer data-[state=unchecked]:bg-input/50 absolute inset-0 h-[inherit] w-auto rounded-md [&_span]:z-10 [&_span]:h-full [&_span]:w-1/2 [&_span]:rounded-sm [&_span]:transition-transform [&_span]:duration-300 [&_span]:ease-[cubic-bezier(0.16,1,0.3,1)] [&_span]:data-[state=checked]:translate-x-full [&_span]:data-[state=checked]:rtl:-translate-x-full",
+						"peer data-unchecked:bg-input/50 absolute inset-0 h-[inherit] border w-auto rounded-md [&_span]:z-10 [&_span]:h-full [&_span]:w-1/2 [&_span]:rounded-sm [&_span]:transition-transform [&_span]:duration-300 [&_span]:ease-[cubic-bezier(0.16,1,0.3,1)] [&_span]:data-checked:translate-x-full [&_span]:data-checked:rtl:-translate-x-full",
 						computedClassName,
 					])}
 					id={id}
+					inputRef={ref}
 					onCheckedChange={handleCheckedChange}
-					ref={ref}
 					{...rest}
 				/>
-				<span className="pointer-events-none relative ms-0.5 flex items-center justify-center px-2 text-center transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] peer-data-[state=checked]:invisible peer-data-[state=unchecked]:translate-x-full peer-data-[state=unchecked]:rtl:-translate-x-full">
+				<span className="pointer-events-none relative ms-0.5 flex items-center justify-center px-2 text-center transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] peer-data-checked:invisible peer-data-unchecked:translate-x-full peer-data-unchecked:rtl:-translate-x-full">
 					<span className="text-[10px] font-medium uppercase">
 						{textUnchecked ?? "Off"}
 					</span>
 				</span>
-				<span className="peer-data-[state=checked]:text-foreground pointer-events-none relative me-0.5 flex items-center justify-center px-2 text-center transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] peer-data-[state=checked]:-translate-x-full peer-data-[state=unchecked]:invisible peer-data-[state=checked]:rtl:translate-x-full">
+				<span className="peer-data-checked:text-background pointer-events-none relative me-0.5 flex items-center justify-center px-2 text-center transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] peer-data-checked:-translate-x-full peer-data-unchecked:invisible peer-data-checked:rtl:translate-x-full">
 					<span className="text-[10px] font-medium uppercase">
 						{textChecked ?? "On"}
 					</span>

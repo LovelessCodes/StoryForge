@@ -7,11 +7,16 @@ import {
 	Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Group, GroupItem } from "@/components/ui/group";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { cn } from "@/lib/utils";
 import type { Installation } from "@/stores/installations";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 interface InstallationCardProps {
 	installation: Installation;
@@ -63,39 +68,51 @@ export function InstallationCard({
 					</TooltipContent>
 				</Tooltip>
 			</div>
-			<div className="flex items-center gap-1">
+			<Group>
 				<Tooltip>
 					{versions.includes(installation.version) ? (
 						<>
-							<TooltipTrigger asChild>
-								<Button
-									className="h-8 w-8 text-muted-foreground hover:text-foreground"
-									onClick={() => onPlay(installation)}
-									size="icon"
-									variant="ghost"
-								>
-									<Play className="h-4 w-4" />
-									<span className="sr-only">Play {installation.name}</span>
-								</Button>
-							</TooltipTrigger>
+							<TooltipTrigger
+								render={
+									<GroupItem
+										render={
+											<Button
+												className="h-8 w-8 text-muted-foreground hover:text-foreground"
+												onClick={() => onPlay(installation)}
+												size="icon"
+												variant="ghost"
+											/>
+										}
+									>
+										<Play className="h-4 w-4" />
+										<span className="sr-only">Play {installation.name}</span>
+									</GroupItem>
+								}
+							/>
 							<TooltipContent>Play {installation.name}</TooltipContent>
 						</>
 					) : (
 						<>
-							<TooltipTrigger asChild>
-								<Button
-									className="h-8 w-8 text-muted-foreground hover:text-foreground"
-									disabled={isInstalling}
-									onClick={() => installVersion(installation.version)}
-									size="icon"
-									variant="ghost"
-								>
-									<DownloadCloudIcon className="h-4 w-4" />
-									<span className="sr-only">
-										Download version {installation.version}
-									</span>
-								</Button>
-							</TooltipTrigger>
+							<TooltipTrigger
+								render={
+									<GroupItem
+										render={
+											<Button
+												className="h-8 w-8 text-muted-foreground hover:text-foreground"
+												disabled={isInstalling}
+												onClick={() => installVersion(installation.version)}
+												size="icon"
+												variant="ghost"
+											/>
+										}
+									>
+										<DownloadCloudIcon className="h-4 w-4" />
+										<span className="sr-only">
+											Download version {installation.version}
+										</span>
+									</GroupItem>
+								}
+							/>
 							<TooltipContent>
 								Download version {installation.version}
 							</TooltipContent>
@@ -103,63 +120,81 @@ export function InstallationCard({
 					)}
 				</Tooltip>
 				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							className="h-8 w-8 text-muted-foreground hover:text-foreground"
-							onClick={() => onAddMods(installation)}
-							size="icon"
-							variant="ghost"
-						>
-							<PackagePlusIcon className="h-4 w-4" />
-							<span className="sr-only">Add mods to {installation.name}</span>
-						</Button>
-					</TooltipTrigger>
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										className="h-8 w-8 text-muted-foreground hover:text-foreground"
+										onClick={() => onAddMods(installation)}
+										size="icon"
+										variant="ghost"
+									/>
+								}
+							>
+								<PackagePlusIcon className="h-4 w-4" />
+								<span className="sr-only">Add mods to {installation.name}</span>
+							</GroupItem>
+						}
+					/>
 					<TooltipContent>Add mods</TooltipContent>
 				</Tooltip>
 				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							className="h-8 w-8 text-muted-foreground hover:text-foreground"
-							onClick={() => onEdit(installation)}
-							size="icon"
-							variant="ghost"
-						>
-							<Pencil className="h-4 w-4" />
-							<span className="sr-only">Edit {installation.name}</span>
-						</Button>
-					</TooltipTrigger>
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										className="h-8 w-8 text-muted-foreground hover:text-foreground"
+										onClick={() => onEdit(installation)}
+										size="icon"
+										variant="ghost"
+									/>
+								}
+							>
+								<Pencil className="h-4 w-4" />
+								<span className="sr-only">Edit {installation.name}</span>
+							</GroupItem>
+						}
+					/>
 					<TooltipContent>Edit {installation.name}</TooltipContent>
 				</Tooltip>
 				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							className={cn(
-								"h-8 w-8",
-								installation.favorite
-									? "text-warning"
-									: "hover:text-foreground text-muted-foreground",
-							)}
-							onClick={() => onUnfavorite(installation)}
-							size="icon"
-							variant="ghost"
-						>
-							<Star
-								className={cn(
-									"h-4 w-4",
-									installation.favorite && "fill-warning",
-								)}
-							/>
-							<span className="sr-only">
-								{installation.favorite ? "Unfavorite" : "Favorite"}{" "}
-								{installation.name}
-							</span>
-						</Button>
-					</TooltipTrigger>
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										className={cn(
+											"h-8 w-8",
+											installation.favorite
+												? "text-warning"
+												: "hover:text-foreground text-muted-foreground",
+										)}
+										onClick={() => onUnfavorite(installation)}
+										size="icon"
+										variant="ghost"
+									/>
+								}
+							>
+								<Star
+									className={cn(
+										"h-4 w-4",
+										installation.favorite && "fill-warning",
+									)}
+								/>
+								<span className="sr-only">
+									{installation.favorite ? "Unfavorite" : "Favorite"}{" "}
+									{installation.name}
+								</span>
+							</GroupItem>
+						}
+					/>
 					<TooltipContent>
 						{installation.favorite ? "Unfavorite" : "Favorite"}
 					</TooltipContent>
 				</Tooltip>
-			</div>
+			</Group>
 		</>
 	);
 }

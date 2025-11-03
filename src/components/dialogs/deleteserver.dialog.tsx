@@ -1,14 +1,14 @@
 import { toast } from "sonner";
 import {
 	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
+	AlertDialogClose,
 	AlertDialogContent,
 	AlertDialogDescription,
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { useRemoveServerFromInstallation } from "@/hooks/use-remove-server-from-installation";
 import { useDialogStore } from "@/stores/dialogs";
 import { type Server, useServerStore } from "@/stores/servers";
@@ -23,7 +23,7 @@ export function DeleteServerDialog({
 }: {
 	open: boolean;
 } & DeleteServerDialogProps) {
-	const { mutate } = useRemoveServerFromInstallation({
+	const { mutate, isPending } = useRemoveServerFromInstallation({
 		onError: (error) => {
 			toast.error(`Error removing server: ${error}`, {
 				id: `server-remove-${server.id}`,
@@ -50,8 +50,14 @@ export function DeleteServerDialog({
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel>Cancel</AlertDialogCancel>
-					<AlertDialogAction
+					<AlertDialogClose
+						disabled={isPending}
+						render={<Button variant="outline" />}
+					>
+						Cancel
+					</AlertDialogClose>
+					<Button
+						disabled={isPending}
 						onClick={() =>
 							mutate({
 								installationId: server.installationId,
@@ -59,8 +65,8 @@ export function DeleteServerDialog({
 							})
 						}
 					>
-						Delete
-					</AlertDialogAction>
+						{isPending ? "Deleting..." : "Delete"}
+					</Button>
 				</AlertDialogFooter>
 			</AlertDialogContent>
 		</AlertDialog>

@@ -4,6 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { Button } from "@/components/ui/button";
 import {
 	Dialog,
 	DialogClose,
@@ -22,7 +23,6 @@ import { buildInstallationPath, makeStringFolderSafe } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
 import { useSettingsStore } from "@/stores/settings";
-import { Button } from "../ui/button";
 
 const installationSchema = z.object({
 	mods: z.array(

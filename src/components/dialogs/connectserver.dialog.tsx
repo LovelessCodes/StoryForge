@@ -1,20 +1,24 @@
 import { useState } from "react";
+import { PasswordInput } from "@/components/inputs";
 import {
 	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
 	AlertDialogContent,
 	AlertDialogDescription,
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+} from "@/components/ui/select";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
 import type { PublicServer } from "@/hooks/use-public-servers";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
-import { PasswordInput } from "../inputs";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
 
 export type ConnectServerDialogProps = {
 	server: PublicServer;
@@ -54,7 +58,7 @@ export function ConnectServerDialog({
 							{installations.find((i) => i.id === selectedInstallation)?.name ||
 								"Select an installation"}
 						</SelectTrigger>
-						<SelectContent>
+						<SelectContent alignItemWithTrigger={false}>
 							{installations
 								.filter((i) => i.version === server.gameVersion)
 								.map((installation) => (
@@ -77,8 +81,10 @@ export function ConnectServerDialog({
 					)}
 				</div>
 				<AlertDialogFooter>
-					<AlertDialogCancel>Cancel</AlertDialogCancel>
-					<AlertDialogAction
+					<Button onClick={() => closeDialog()} variant="outline">
+						Cancel
+					</Button>
+					<Button
 						disabled={selectedInstallation === null}
 						onClick={() => {
 							if (selectedInstallation === null) return;
@@ -93,7 +99,7 @@ export function ConnectServerDialog({
 						}}
 					>
 						Connect
-					</AlertDialogAction>
+					</Button>
 				</AlertDialogFooter>
 			</AlertDialogContent>
 		</AlertDialog>

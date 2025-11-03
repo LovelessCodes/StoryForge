@@ -8,7 +8,7 @@ type SearchInputProps = {
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "className">;
 
 export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
-	({ className, ...rest }, ref) => {
+	({ className, ...rest }) => {
 		const id = useId();
 		const searchRef = useRef<HTMLInputElement>(null);
 		useEffect(() => {
@@ -31,14 +31,6 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
 					className={clsx(["pe-11", className])}
 					id={id}
 					placeholder="Search..."
-					ref={(el) => {
-						searchRef.current = el;
-						if (typeof ref === "function") {
-							ref(el);
-						} else if (ref) {
-							ref.current = el;
-						}
-					}}
 					type="search"
 					{...rest}
 				/>

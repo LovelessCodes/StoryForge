@@ -76,48 +76,48 @@ function RouteComponent() {
 		onError: (error, v) => {
 			if (v.config?.moveCurrentData) {
 				toast.error(`Failed to move installations folder: ${error.message}`, {
-					id: "move-installations-folder",
+					id: "settings-save",
 				});
 			} else if (v.config?.deleteCurrentData) {
 				toast.error(`Failed to delete installations data: ${error.message}`, {
-					id: "move-installations-folder",
+					id: "settings-save",
 				});
 			} else {
 				toast.error(`Failed to set installations folder: ${error.message}`, {
-					id: "move-installations-folder",
+					id: "settings-save",
 				});
 			}
 		},
 		onMutate: (v) => {
 			if (v.config?.moveCurrentData) {
 				toast.loading("Moving installations folder...", {
-					id: "move-installations-folder",
+					id: "settings-save",
 				});
 			} else if (v.config?.deleteCurrentData) {
 				toast.loading("Deleting installations data...", {
-					id: "move-installations-folder",
+					id: "settings-save",
 				});
 			} else {
 				toast.loading("Setting installations folder...", {
-					id: "move-installations-folder",
+					id: "settings-save",
 				});
 			}
 		},
 		onSuccess: async (_, v) => {
 			if (v.config?.moveCurrentData) {
 				toast.success("Installations folder moved", {
-					id: "move-installations-folder",
+					id: "settings-save",
 				});
 				// Update all installations paths
 				updateParent(v.path ?? appFolder ?? "");
 			} else if (v.config?.deleteCurrentData) {
 				toast.success("Installations data deleted", {
-					id: "move-installations-folder",
+					id: "settings-save",
 				});
 				removeAll();
 			} else {
 				toast.success("Installations folder set", {
-					id: "move-installations-folder",
+					id: "settings-save",
 				});
 			}
 			await queryClient.invalidateQueries({ queryKey: ["saves"] });
@@ -134,15 +134,15 @@ function RouteComponent() {
 		onError: (error, v) => {
 			if (v.config?.moveCurrentData) {
 				toast.error(`Failed to move versions folder: ${error.message}`, {
-					id: "move-versions-folder",
+					id: "settings-save",
 				});
 			} else if (v.config?.deleteCurrentData) {
 				toast.error(`Failed to delete versions data: ${error.message}`, {
-					id: "move-versions-folder",
+					id: "settings-save",
 				});
 			} else {
 				toast.error(`Failed to set versions folder: ${error.message}`, {
-					id: "move-versions-folder",
+					id: "settings-save",
 				});
 			}
 		},
@@ -150,15 +150,15 @@ function RouteComponent() {
 			if (settingsStore.versionsParent !== v.path) {
 				if (v.config?.moveCurrentData) {
 					toast.loading("Moving versions folder...", {
-						id: "move-versions-folder",
+						id: "settings-save",
 					});
 				} else if (v.config?.deleteCurrentData) {
 					toast.loading("Deleting versions data...", {
-						id: "move-versions-folder",
+						id: "settings-save",
 					});
 				} else {
 					toast.loading("Setting versions folder...", {
-						id: "move-versions-folder",
+						id: "settings-save",
 					});
 				}
 			}
@@ -166,15 +166,15 @@ function RouteComponent() {
 		onSuccess: async (_, v) => {
 			if (v.config?.moveCurrentData) {
 				toast.success("Versions folder moved", {
-					id: "move-versions-folder",
+					id: "settings-save",
 				});
 			} else if (v.config?.deleteCurrentData) {
 				toast.success("Versions data deleted", {
-					id: "move-versions-folder",
+					id: "settings-save",
 				});
 			} else {
 				toast.success("Versions folder set", {
-					id: "move-versions-folder",
+					id: "settings-save",
 				});
 			}
 			await queryClient.invalidateQueries({
@@ -230,7 +230,9 @@ function RouteComponent() {
 			if (value.darkMode !== settingsStore.darkMode) {
 				settingsStore.toggleDarkMode();
 			}
-			toast.success("Settings saved");
+			toast.success("Settings saved", {
+				id: "settings-save",
+			});
 		},
 		validators: {
 			onChange: settingsSchema,
@@ -320,20 +322,22 @@ function RouteComponent() {
 					{(field) => (
 						<div className="grid gap-2">
 							<Tooltip>
-								<TooltipTrigger asChild>
-									<Label
-										className={cn([
-											field.state.meta.errors.length
-												? "text-destructive"
-												: useAppDirectory
-													? "text-muted-foreground"
-													: "",
-											"w-fit",
-										])}
-										htmlFor="installationsParent"
-									>
-										Installations Parent Directory
-									</Label>
+								<TooltipTrigger
+									render={
+										<Label
+											className={cn([
+												field.state.meta.errors.length
+													? "text-destructive"
+													: useAppDirectory
+														? "text-muted-foreground"
+														: "",
+												"w-fit",
+											])}
+											htmlFor="installationsParent"
+										/>
+									}
+								>
+									Installations Parent Directory
 								</TooltipTrigger>
 								<TooltipContent align="start" side="bottom">
 									<p className="text-xs">Defaults to the app data directory</p>
@@ -375,20 +379,22 @@ function RouteComponent() {
 					{(field) => (
 						<div className="grid gap-2">
 							<Tooltip>
-								<TooltipTrigger asChild>
-									<Label
-										className={cn([
-											field.state.meta.errors.length
-												? "text-destructive"
-												: useAppDirectory
-													? "text-muted-foreground"
-													: "",
-											"w-fit",
-										])}
-										htmlFor="versionsParent"
-									>
-										Versions Parent Directory
-									</Label>
+								<TooltipTrigger
+									render={
+										<Label
+											className={cn([
+												field.state.meta.errors.length
+													? "text-destructive"
+													: useAppDirectory
+														? "text-muted-foreground"
+														: "",
+												"w-fit",
+											])}
+											htmlFor="versionsParent"
+										/>
+									}
+								>
+									Versions Parent Directory
 								</TooltipTrigger>
 								<TooltipContent align="start" side="bottom">
 									<p className="text-xs">Defaults to the app data directory</p>

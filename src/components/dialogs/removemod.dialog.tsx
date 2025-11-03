@@ -3,14 +3,14 @@ import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import {
 	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
+	AlertDialogClose,
 	AlertDialogContent,
 	AlertDialogDescription,
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { useDialogStore } from "@/stores/dialogs";
 import type { Installation } from "@/stores/installations";
@@ -83,8 +83,13 @@ export function RemoveModDialog({
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel>Cancel</AlertDialogCancel>
-					<AlertDialogAction
+					<AlertDialogClose
+						disabled={isPending}
+						render={<Button variant="outline" />}
+					>
+						Cancel
+					</AlertDialogClose>
+					<Button
 						disabled={isPending}
 						onClick={() =>
 							removeModFromInstallation({
@@ -94,7 +99,7 @@ export function RemoveModDialog({
 						}
 					>
 						Remove
-					</AlertDialogAction>
+					</Button>
 				</AlertDialogFooter>
 			</AlertDialogContent>
 		</AlertDialog>

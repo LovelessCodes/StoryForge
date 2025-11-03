@@ -1,16 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { ChevronDownIcon } from "lucide-react";
 import { useRef } from "react";
 import { SearchInput } from "@/components/inputs";
 import { PublicServerList } from "@/components/lists/public.servers.list";
 import { TextSwitch } from "@/components/switches/text.switch";
-import {
-	DropdownMenu,
-	DropdownMenuCheckboxItem,
-	DropdownMenuContent,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { ErrorComponent } from "@/components/ui/error";
 import {
 	Select,
@@ -71,46 +64,41 @@ function RouteComponent() {
 					placeholder="Search servers..."
 					value={searchText}
 				/>
-				<DropdownMenu>
-					<DropdownMenuTrigger className="flex gap-1 w-46 truncate">
+				<Select multiple value={selectedGameVersions}>
+					<SelectTrigger className="flex gap-1 w-46 truncate">
 						{selectedGameVersions.length > 0
 							? selectedGameVersions.length > 1
 								? `${selectedGameVersions.length} versions`
 								: selectedGameVersions[0]
 							: "Game version(s)"}
-						<ChevronDownIcon className="size-4 opacity-50" />
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align="start">
+					</SelectTrigger>
+					<SelectContent align="start" alignItemWithTrigger={false}>
 						{gameVersions?.sort(compareSemverDesc).map((version) => (
-							<DropdownMenuCheckboxItem
-								checked={!!selectedGameVersions?.find((v) => v === version)}
+							<SelectItem
 								key={version}
-								onCheckedChange={(checked) => {
-									if (checked) {
-										addGameVersion(version);
-									} else {
-										removeGameVersion(version);
-									}
-								}}
-								onSelect={(e) => e.preventDefault()}
+								onClick={() =>
+									selectedGameVersions.includes(version)
+										? removeGameVersion(version)
+										: addGameVersion(version)
+								}
 							>
 								{version}
-							</DropdownMenuCheckboxItem>
+							</SelectItem>
 						))}
-					</DropdownMenuContent>
-				</DropdownMenu>
+					</SelectContent>
+				</Select>
 				<Select
 					onValueChange={(value) =>
 						setSortBy(value as ServersFilters["sortBy"])
 					}
 					value={sortBy}
 				>
-					<SelectTrigger>
+					<SelectTrigger className="flex gap-1 w-36 truncate">
 						{sortBy
 							? `${sortOptions[sortBy as keyof typeof sortOptions]}`
 							: "Sort by"}
 					</SelectTrigger>
-					<SelectContent align="start">
+					<SelectContent align="start" alignItemWithTrigger={false}>
 						{Object.entries(sortOptions).map(([key, value]) => (
 							<SelectItem key={key} value={key}>
 								{value}

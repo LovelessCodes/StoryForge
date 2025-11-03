@@ -1,5 +1,6 @@
 import { FolderOpenIcon, TrashIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Group, GroupItem, GroupSeparator } from "@/components/ui/group";
 import {
 	Tooltip,
 	TooltipContent,
@@ -31,44 +32,61 @@ export function VersionRow({ version }: { version: string }) {
 					</span>
 				)}
 			</span>
-			<div className="inline-flex -space-x-px rounded-md shadow-xs rtl:space-x-reverse">
+			<Group>
 				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							aria-label="Open Folder"
-							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() =>
-								openFolder(
-									`${versionsParent ?? appFolder}${pathDelimiter}${versionsSubdir}${pathDelimiter}${version}`,
-								)
-							}
-							size="icon"
-							variant="outline"
-						>
-							<FolderOpenIcon
-								aria-hidden="true"
-								className="opacity-60"
-								size={16}
-							/>
-						</Button>
-					</TooltipTrigger>
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										aria-label="Open Folder"
+										onClick={() =>
+											openFolder(
+												`${versionsParent ?? appFolder}${pathDelimiter}${versionsSubdir}${pathDelimiter}${version}`,
+											)
+										}
+										size="icon"
+										variant="outline"
+									/>
+								}
+							>
+								<FolderOpenIcon
+									aria-hidden="true"
+									className="opacity-60"
+									size={16}
+								/>
+							</GroupItem>
+						}
+					/>
 					<TooltipContent>Open Folder</TooltipContent>
 				</Tooltip>
+				<GroupSeparator />
 				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							aria-label="Delete"
-							className="rounded-none shadow-none first:rounded-s-md last:rounded-e-md focus-visible:z-10"
-							onClick={() => openDialog("DeleteVersionDialog", { version })}
-							size="icon"
-							variant="outline"
-						>
-							<TrashIcon aria-hidden="true" className="opacity-60" size={16} />
-						</Button>
-					</TooltipTrigger>
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										aria-label="Delete"
+										onClick={() =>
+											openDialog("DeleteVersionDialog", { version })
+										}
+										size="icon"
+										variant="outline"
+									/>
+								}
+							>
+								<TrashIcon
+									aria-hidden="true"
+									className="opacity-60"
+									size={16}
+								/>
+							</GroupItem>
+						}
+					/>
 					<TooltipContent>Delete</TooltipContent>
 				</Tooltip>
-			</div>
+			</Group>
 		</>
 	);
 }

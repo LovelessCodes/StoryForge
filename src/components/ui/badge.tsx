@@ -1,46 +1,57 @@
-import { Slot } from "@radix-ui/react-slot";
+import { mergeProps } from "@base-ui-components/react/merge-props";
+import { useRender } from "@base-ui-components/react/use-render";
 import { cva, type VariantProps } from "class-variance-authority";
-import type * as React from "react";
 
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-	"inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden",
+	"relative inline-flex shrink-0 items-center justify-center gap-1 rounded-sm border border-transparent font-medium whitespace-nowrap transition-shadow outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-64 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3 [button,a&]:cursor-pointer [button,a&]:pointer-coarse:after:absolute [button,a&]:pointer-coarse:after:size-full [button,a&]:pointer-coarse:after:min-h-11 [button,a&]:pointer-coarse:after:min-w-11",
 	{
 		defaultVariants: {
+			size: "default",
 			variant: "default",
 		},
 		variants: {
+			size: {
+				default: "px-[calc(--spacing(1)-1px)] text-xs",
+				lg: "px-[calc(--spacing(1.5)-1px)] text-sm",
+				sm: "rounded-[calc(var(--radius-sm)-2px)] px-[calc(--spacing(1)-1px)] text-[.625rem]",
+			},
 			variant: {
 				default:
-					"border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
+					"bg-primary text-primary-foreground [button,a&]:hover:bg-primary/90",
 				destructive:
-					"border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+					"bg-destructive text-white [button,a&]:hover:bg-destructive/90",
+				error:
+					"bg-destructive/8 text-destructive-foreground dark:bg-destructive/16",
+				info: "bg-info/8 text-info-foreground dark:bg-info/16",
 				outline:
-					"text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+					"border-border bg-transparent dark:bg-input/32 [button,a&]:hover:bg-accent/50 dark:[button,a&]:hover:bg-input/48",
 				secondary:
-					"border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90",
+					"bg-secondary text-secondary-foreground [button,a&]:hover:bg-secondary/90",
+				success: "bg-success/8 text-success-foreground dark:bg-success/16",
+				warning: "bg-warning/8 text-warning-foreground dark:bg-warning/16",
 			},
 		},
 	},
 );
 
-function Badge({
-	className,
-	variant,
-	asChild = false,
-	...props
-}: React.ComponentProps<"span"> &
-	VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
-	const Comp = asChild ? Slot : "span";
+interface BadgeProps extends useRender.ComponentProps<"span"> {
+	variant?: VariantProps<typeof badgeVariants>["variant"];
+	size?: VariantProps<typeof badgeVariants>["size"];
+}
 
-	return (
-		<Comp
-			className={cn(badgeVariants({ variant }), className)}
-			data-slot="badge"
-			{...props}
-		/>
-	);
+function Badge({ className, variant, size, render, ...props }: BadgeProps) {
+	const defaultProps = {
+		className: cn(badgeVariants({ className, size, variant })),
+		"data-slot": "badge",
+	};
+
+	return useRender({
+		defaultTagName: "span",
+		props: mergeProps<"span">(defaultProps, props),
+		render,
+	});
 }
 
 export { Badge, badgeVariants };

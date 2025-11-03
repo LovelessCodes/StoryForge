@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { WorldMapViewer } from "@/components/maps/world-map-viewer";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Dialog,
 	DialogClose,
@@ -8,10 +9,14 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+} from "@/components/ui/select";
 import type { World } from "@/lib/types";
 import { useDialogStore } from "@/stores/dialogs";
-import { Checkbox } from "../ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
 
 export type ViewMapDialogProps = {
 	world: World;
@@ -78,7 +83,7 @@ export function ViewMapDialog({
 								? `Viewing markers for: ${selectedPlayer}`
 								: "Select Player"}
 						</SelectTrigger>
-						<SelectContent>
+						<SelectContent alignItemWithTrigger={false}>
 							{players.map((playerUid) => (
 								<SelectItem key={playerUid} value={playerUid}>
 									{playerUid}
