@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Moved away from using Radix UI to Base UI for all components in the UI stack.
+
+## [0.5.4] - 2025-10-31
+
 ### Fixed
 
 - Resolve an issue with our build steps that would introduce blank screen on some linux distros using AppImage.
@@ -250,6 +256,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stabilized login dialog and authentication flow.
 
 <!-- Version links for diff and release pages -->
+[0.5.4]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.5.4
 [0.5.3]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.5.3
 [0.5.2]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.5.2
 [0.5.1]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.5.1
