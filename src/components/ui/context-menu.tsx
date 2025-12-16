@@ -1,8 +1,9 @@
-import { ContextMenu as ContextMenuPrimitive } from "@base-ui-components/react/context-menu";
+import { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu";
 import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react";
 import type * as React from "react";
 import { createContext, useContext, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { ArrowSvg } from "./arrow";
 
 const ContextMenuContext = createContext<{
 	triggerRef: React.RefObject<HTMLDivElement | null> | null;
@@ -129,10 +130,15 @@ function ContextMenuArrow({
 }: ContextMenuPrimitive.Arrow.Props) {
 	return (
 		<ContextMenuPrimitive.Arrow
-			className={cn("fill-popover", className)}
+			className={cn(
+				"data-[side=bottom]:top-[-8px] data-[side=left]:right-[-13px] data-[side=left]:rotate-90 data-[side=right]:left-[-13px] data-[side=right]:-rotate-90 data-[side=top]:bottom-[-8px] data-[side=top]:rotate-180",
+				className,
+			)}
 			data-slot="context-menu-arrow"
 			{...props}
-		/>
+		>
+			<ArrowSvg />
+		</ContextMenuPrimitive.Arrow>
 	);
 }
 

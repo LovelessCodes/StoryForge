@@ -1,5 +1,5 @@
-import { mergeProps, useRender } from "@base-ui-components/react";
-import type { Tooltip as TooltipPrimitive } from "@base-ui-components/react/tooltip";
+import { mergeProps, useRender } from "@base-ui/react";
+import type { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
 import { cva, type VariantProps } from "class-variance-authority";
 import { PanelLeftIcon } from "lucide-react";
 import * as React from "react";
