@@ -1,4 +1,4 @@
-import type { Switch as SwitchPrimitive } from "@base-ui-components/react/switch";
+import type { Switch as SwitchPrimitive } from "@base-ui/react/switch";
 import { clsx } from "clsx";
 import { forwardRef, useId, useState } from "react";
 import { Switch } from "@/components/ui/switch";

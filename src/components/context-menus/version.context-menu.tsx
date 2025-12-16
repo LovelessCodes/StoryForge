@@ -1,8 +1,9 @@
-import type { ContextMenu as ContextMenuPrimitive } from "@base-ui-components/react/context-menu";
+import type { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu";
 import { FolderOpenIcon, TrashIcon } from "lucide-react";
 import { motion } from "motion/react";
 import {
 	ContextMenu,
+	ContextMenuArrow,
 	ContextMenuContent,
 	ContextMenuGroup,
 	ContextMenuItem,
@@ -34,6 +35,7 @@ export const VersionContextMenu = ({
 		<ContextMenu>
 			<ContextMenuTrigger {...props} />
 			<ContextMenuContent>
+				<ContextMenuArrow />
 				<ContextMenuGroup>
 					<ContextMenuLabel className="text-xs border-b text-muted-foreground/50 font-semibold">
 						{version}

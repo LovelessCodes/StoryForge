@@ -1,4 +1,4 @@
-import type { ContextMenu as ContextMenuPrimitive } from "@base-ui-components/react/context-menu";
+import type { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu";
 import { useNavigate } from "@tanstack/react-router";
 import {
 	DownloadCloudIcon,
@@ -13,6 +13,7 @@ import {
 import { motion } from "motion/react";
 import {
 	ContextMenu,
+	ContextMenuArrow,
 	ContextMenuContent,
 	ContextMenuGroup,
 	ContextMenuItem,
@@ -56,6 +57,7 @@ export const ServerContextMenu = ({
 		<ContextMenu>
 			<ContextMenuTrigger {...props} />
 			<ContextMenuContent>
+				<ContextMenuArrow />
 				<ContextMenuGroup>
 					<ContextMenuLabel className="text-xs border-b text-muted-foreground/50 font-semibold">
 						{server.name}

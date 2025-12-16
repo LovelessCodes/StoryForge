@@ -1,8 +1,9 @@
-import type { ContextMenu as ContextMenuPrimitive } from "@base-ui-components/react/context-menu";
+import type { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu";
 import { DownloadCloudIcon, FolderPlusIcon, PlugIcon } from "lucide-react";
 import { motion } from "motion/react";
 import {
 	ContextMenu,
+	ContextMenuArrow,
 	ContextMenuContent,
 	ContextMenuGroup,
 	ContextMenuItem,
@@ -35,6 +36,7 @@ export const PublicServerContextMenu = ({
 		<ContextMenu>
 			<ContextMenuTrigger {...props} />
 			<ContextMenuContent>
+				<ContextMenuArrow />
 				<ContextMenuGroup>
 					<ContextMenuLabel className="text-xs border-b text-muted-foreground/50 font-semibold">
 						{server.serverName}

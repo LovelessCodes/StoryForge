@@ -309,8 +309,8 @@ export function AddUserDialog({ open }: { open: boolean }) {
 									s.errors.length > 0 ||
 									!s.isTouched ||
 									!s.isFormValid ||
-									s.fieldMeta.email.errors.length > 0 ||
-									s.fieldMeta.password.errors.length > 0
+									(s.fieldMeta.email?.errors.length || 0) > 0 ||
+									(s.fieldMeta.password?.errors.length || 0) > 0
 								}
 							>
 								{(hasErrors) => (
