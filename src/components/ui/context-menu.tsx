@@ -1,37 +1,20 @@
 import { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu";
 import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react";
 import type * as React from "react";
-import { createContext, useContext, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { ArrowSvg } from "./arrow";
 
-const ContextMenuContext = createContext<{
-	triggerRef: React.RefObject<HTMLDivElement | null> | null;
-}>({
-	triggerRef: null,
-});
-
-function ContextMenu({
-	...props
-}: React.ComponentProps<typeof ContextMenuPrimitive.Root>) {
-	const triggerRef = useRef<HTMLDivElement>(null);
-	return (
-		<ContextMenuContext.Provider value={{ triggerRef }}>
-			<ContextMenuPrimitive.Root data-slot="context-menu" {...props} />
-		</ContextMenuContext.Provider>
-	);
+function ContextMenu(
+	props: React.ComponentProps<typeof ContextMenuPrimitive.Root>,
+) {
+	return <ContextMenuPrimitive.Root {...props} />;
 }
 
 function ContextMenuTrigger({
 	...props
 }: React.ComponentProps<typeof ContextMenuPrimitive.Trigger>) {
-	const { triggerRef } = useContext(ContextMenuContext);
 	return (
-		<ContextMenuPrimitive.Trigger
-			data-slot="context-menu-trigger"
-			ref={triggerRef}
-			{...props}
-		/>
+		<ContextMenuPrimitive.Trigger data-slot="context-menu-trigger" {...props} />
 	);
 }
 
@@ -101,19 +84,16 @@ function ContextMenuContent({
 }: ContextMenuPrimitive.Popup.Props & {
 	sideOffset?: number;
 }) {
-	const { triggerRef } = useContext(ContextMenuContext);
-
 	return (
 		<ContextMenuPrimitive.Portal>
 			<ContextMenuPrimitive.Positioner
-				anchor={triggerRef}
 				className="z-50 select-none"
 				data-slot="context-menu-positioner"
 				sideOffset={sideOffset}
 			>
 				<ContextMenuPrimitive.Popup
 					className={cn(
-						"bg-popover/50 backdrop-blur-sm text-popover-foreground data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 max-h-(--available-height) min-w-[8rem] origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-md border p-1 shadow-md",
+						"bg-popover/50 backdrop-blur-sm text-popover-foreground data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 max-h-(--available-height) min-w-[8rem] origin-(--transform-origin) rounded-md border p-1 shadow-md",
 						className,
 					)}
 					data-slot="context-menu-content"
