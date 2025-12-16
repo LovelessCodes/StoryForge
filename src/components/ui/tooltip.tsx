@@ -2,7 +2,7 @@ import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
 
 import { cn } from "@/lib/utils";
 
-const TooltipCreateHandle = TooltipPrimitive.createHandle;
+const TooltipCreateHandle = TooltipPrimitive.createHandle<React.ComponentType>;
 
 const TooltipProvider = TooltipPrimitive.Provider;
 

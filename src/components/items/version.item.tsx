@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
 	TooltipContent,
+	TooltipCreateHandle,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useDialogStore } from "@/stores/dialogs";
@@ -11,6 +12,8 @@ import { useDialogStore } from "@/stores/dialogs";
 interface VersionItemProps {
 	version: string;
 }
+
+const tooltipHandle = TooltipCreateHandle();
 
 export function VersionItem({ version }: VersionItemProps) {
 	const { openDialog } = useDialogStore();
@@ -29,20 +32,28 @@ export function VersionItem({ version }: VersionItemProps) {
 					</Badge>
 				</div>
 			</div>
-			<Tooltip>
-				<TooltipTrigger
-					render={
-						<Button
-							aria-label="Delete"
-							onClick={() => openDialog("DeleteVersionDialog", { version })}
-							size="icon"
-							variant="outline"
-						>
-							<XIcon aria-hidden="true" className="opacity-60" size={16} />
-						</Button>
-					}
-				/>
-				<TooltipContent>Delete</TooltipContent>
+			<TooltipTrigger
+				handle={tooltipHandle}
+				payload={() => "Delete Version"}
+				render={
+					<Button
+						aria-label="Delete"
+						onClick={() => openDialog("DeleteVersionDialog", { version })}
+						size="icon"
+						variant="outline"
+					>
+						<XIcon aria-hidden="true" className="opacity-60" size={16} />
+					</Button>
+				}
+			/>
+			<Tooltip handle={tooltipHandle}>
+				{({ payload: Payload }) =>
+					Payload && (
+						<TooltipContent>
+							<Payload />
+						</TooltipContent>
+					)
+				}
 			</Tooltip>
 		</div>
 	);

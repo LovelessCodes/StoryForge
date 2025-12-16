@@ -4,6 +4,7 @@ import { Group, GroupItem } from "@/components/ui/group";
 import {
 	Tooltip,
 	TooltipContent,
+	TooltipCreateHandle,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useDownloadVersion } from "@/hooks/use-download-version";
@@ -19,6 +20,8 @@ interface ServerCardProps {
 	onUnfavorite: (server: Server) => void;
 	onEdit: (server: Server) => void;
 }
+
+const tooltipHandle = TooltipCreateHandle();
 
 export function ServerCard({
 	server,
@@ -64,96 +67,102 @@ export function ServerCard({
 				</div>
 			</div>
 			<Group>
-				<Tooltip>
-					<TooltipTrigger
-						render={
-							<GroupItem
-								render={
-									<Button
-										className="h-8 w-8 text-muted-foreground hover:text-foreground"
-										disabled={isInstalling}
-										onClick={() =>
-											versions.includes(installation.version)
-												? onConnect(server)
-												: installVersion(installation.version)
-										}
-										size="icon"
-										variant="ghost"
-									/>
-								}
-							>
-								{versions.includes(installation.version) ? (
-									<>
-										<Play className="h-4 w-4" />
-										<span className="sr-only">Play {server.name}</span>
-									</>
-								) : (
-									<>
-										<DownloadCloudIcon className="h-4 w-4" />
-										<span className="sr-only">
-											Download version {installation.version}
-										</span>
-									</>
-								)}
-							</GroupItem>
-						}
-					/>
-					<TooltipContent>
-						{versions.includes(installation.version)
+				<TooltipTrigger
+					handle={tooltipHandle}
+					payload={() =>
+						versions.includes(installation.version)
 							? `Connect to ${server.name}`
-							: `Download version ${installation.version}`}
-					</TooltipContent>
-				</Tooltip>
-				<Tooltip>
-					<TooltipTrigger
-						render={
-							<GroupItem
-								render={
-									<Button
-										className="h-8 w-8 text-muted-foreground hover:text-foreground"
-										onClick={() => onEdit(server)}
-										size="icon"
-										variant="ghost"
-									/>
-								}
-							>
-								<Pencil className="h-4 w-4" />
-								<span className="sr-only">Edit {server.name}</span>
-							</GroupItem>
-						}
-					/>
-					<TooltipContent>Edit {server.name}</TooltipContent>
-				</Tooltip>
-				<Tooltip>
-					<TooltipTrigger
-						render={
-							<GroupItem
-								render={
-									<Button
-										className={cn(
-											"h-8 w-8",
-											server.favorite
-												? "text-warning"
-												: "hover:text-foreground text-muted-foreground",
-										)}
-										onClick={() => onUnfavorite(server)}
-										size="icon"
-										variant="ghost"
-									/>
-								}
-							>
-								<Star
-									className={cn("h-4 w-4", server.favorite && "fill-warning")}
+							: `Download version ${installation.version}`
+					}
+					render={
+						<GroupItem
+							render={
+								<Button
+									className="h-8 w-8 text-muted-foreground hover:text-foreground"
+									disabled={isInstalling}
+									onClick={() =>
+										versions.includes(installation.version)
+											? onConnect(server)
+											: installVersion(installation.version)
+									}
+									size="icon"
+									variant="ghost"
 								/>
-								<span className="sr-only">
-									{server.favorite ? "Unfavorite" : "Favorite"} {server.name}
-								</span>
-							</GroupItem>
-						}
-					/>
-					<TooltipContent>
-						{server.favorite ? "Unfavorite" : "Favorite"} {server.name}
-					</TooltipContent>
+							}
+						>
+							{versions.includes(installation.version) ? (
+								<>
+									<Play className="h-4 w-4" />
+									<span className="sr-only">Play {server.name}</span>
+								</>
+							) : (
+								<>
+									<DownloadCloudIcon className="h-4 w-4" />
+									<span className="sr-only">
+										Download version {installation.version}
+									</span>
+								</>
+							)}
+						</GroupItem>
+					}
+				/>
+				<TooltipTrigger
+					handle={tooltipHandle}
+					payload={() => `Edit ${server.name}`}
+					render={
+						<GroupItem
+							render={
+								<Button
+									className="h-8 w-8 text-muted-foreground hover:text-foreground"
+									onClick={() => onEdit(server)}
+									size="icon"
+									variant="ghost"
+								/>
+							}
+						>
+							<Pencil className="h-4 w-4" />
+							<span className="sr-only">Edit {server.name}</span>
+						</GroupItem>
+					}
+				/>
+				<TooltipTrigger
+					handle={tooltipHandle}
+					payload={() =>
+						`${server.favorite ? "Unfavorite" : "Favorite"} ${server.name}`
+					}
+					render={
+						<GroupItem
+							render={
+								<Button
+									className={cn(
+										"h-8 w-8",
+										server.favorite
+											? "text-warning"
+											: "hover:text-foreground text-muted-foreground",
+									)}
+									onClick={() => onUnfavorite(server)}
+									size="icon"
+									variant="ghost"
+								/>
+							}
+						>
+							<Star
+								className={cn("h-4 w-4", server.favorite && "fill-warning")}
+							/>
+							<span className="sr-only">
+								{server.favorite ? "Unfavorite" : "Favorite"} {server.name}
+							</span>
+						</GroupItem>
+					}
+				/>
+				<Tooltip handle={tooltipHandle}>
+					{({ payload: Payload }) =>
+						Payload ? (
+							<TooltipContent>
+								<Payload />
+							</TooltipContent>
+						) : null
+					}
 				</Tooltip>
 			</Group>
 		</>

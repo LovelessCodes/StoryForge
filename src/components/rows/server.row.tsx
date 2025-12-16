@@ -10,6 +10,7 @@ import { Group, GroupItem, GroupSeparator } from "@/components/ui/group";
 import {
 	Tooltip,
 	TooltipContent,
+	TooltipCreateHandle,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
@@ -24,6 +25,8 @@ import { useSettingsStore } from "@/stores/settings";
 type ServerRowProps = {
 	server: Server;
 };
+
+const tooltipHandle = TooltipCreateHandle();
 
 export function ServerRow({ server }: ServerRowProps) {
 	// Stores
@@ -61,123 +64,122 @@ export function ServerRow({ server }: ServerRowProps) {
 				</p>
 			</div>
 			<Group>
-				<Tooltip>
-					<TooltipTrigger
-						render={
-							<GroupItem
-								render={
-									<Button
-										disabled={isInstalling}
-										onClick={() =>
-											versions?.includes(installation?.version ?? "")
-												? connectToServer({
-														installationId: server.installationId,
-														ip: `${server.ip}${server.port ? `:${server.port}` : ""}`,
-														name: server.name,
-														password: server.password,
-													})
-												: installVersion(installation?.version ?? "")
-										}
-										variant="outline"
-									/>
-								}
-							>
-								{versions?.includes(installation?.version ?? "") ? (
-									<PlugIcon
-										aria-hidden="true"
-										className="-ms-1 opacity-60 text-success"
-										size={16}
-									/>
-								) : (
-									<DownloadCloudIcon
-										aria-hidden="true"
-										className="-ms-1 opacity-60 text-warning-foreground"
-										size={16}
-									/>
-								)}
-							</GroupItem>
-						}
-					/>
-					<TooltipContent>
-						{versions?.includes(installation?.version ?? "")
+				<TooltipTrigger
+					handle={tooltipHandle}
+					payload={() =>
+						versions?.includes(installation?.version ?? "")
 							? "Connect"
-							: `Install ${installation?.version ?? ""}`}
-					</TooltipContent>
-				</Tooltip>
-				<GroupSeparator />
-				<Tooltip>
-					<TooltipTrigger
-						render={
-							<GroupItem
-								render={
-									<Button
-										onClick={() => toggleFavorite(server.id)}
-										variant="outline"
-									/>
-								}
-							>
-								<StarIcon
+							: `Install ${installation?.version ?? ""}`
+					}
+					render={
+						<GroupItem
+							render={
+								<Button
+									disabled={isInstalling}
+									onClick={() =>
+										versions?.includes(installation?.version ?? "")
+											? connectToServer({
+													installationId: server.installationId,
+													ip: `${server.ip}${server.port ? `:${server.port}` : ""}`,
+													name: server.name,
+													password: server.password,
+												})
+											: installVersion(installation?.version ?? "")
+									}
+									variant="outline"
+								/>
+							}
+						>
+							{versions?.includes(installation?.version ?? "") ? (
+								<PlugIcon
 									aria-hidden="true"
-									className={cn(
-										"-ms-1",
-										server.favorite
-											? "fill-warning text-warning opacity-100"
-											: "opacity-60",
-									)}
+									className="-ms-1 opacity-60 text-success"
 									size={16}
 								/>
-							</GroupItem>
-						}
-					/>
-					<TooltipContent>
-						{server.favorite ? "Unfavorite" : "Favorite"}
-					</TooltipContent>
-				</Tooltip>
-				<GroupSeparator />
-				<Tooltip>
-					<TooltipTrigger
-						render={
-							<GroupItem
-								render={
-									<Button
-										onClick={() => openDialog("EditServerDialog", { server })}
-										variant="outline"
-									/>
-								}
-							>
-								<PencilIcon
+							) : (
+								<DownloadCloudIcon
 									aria-hidden="true"
-									className="-ms-1 opacity-60"
+									className="-ms-1 opacity-60 text-warning-foreground"
 									size={16}
 								/>
-							</GroupItem>
-						}
-					/>
-					<TooltipContent>Edit</TooltipContent>
-				</Tooltip>
+							)}
+						</GroupItem>
+					}
+				/>
 				<GroupSeparator />
-				<Tooltip>
-					<TooltipTrigger
-						render={
-							<GroupItem
-								render={
-									<Button
-										aria-label="Delete"
-										onClick={() => openDialog("DeleteServerDialog", { server })}
-										size="icon"
-										variant="outline"
-									/>
-								}
-							>
-								<TrashIcon
-									aria-hidden="true"
-									className="opacity-60"
-									size={16}
+				<TooltipTrigger
+					handle={tooltipHandle}
+					payload={() => `${server.favorite ? "Unfavorite" : "Favorite"}`}
+					render={
+						<GroupItem
+							render={
+								<Button
+									onClick={() => toggleFavorite(server.id)}
+									variant="outline"
 								/>
-							</GroupItem>
-						}
-					/>
-					<TooltipContent>Delete</TooltipContent>
+							}
+						>
+							<StarIcon
+								aria-hidden="true"
+								className={cn(
+									"-ms-1",
+									server.favorite
+										? "fill-warning text-warning opacity-100"
+										: "opacity-60",
+								)}
+								size={16}
+							/>
+						</GroupItem>
+					}
+				/>
+				<GroupSeparator />
+				<TooltipTrigger
+					handle={tooltipHandle}
+					payload={() => `Edit ${server.name}`}
+					render={
+						<GroupItem
+							render={
+								<Button
+									onClick={() => openDialog("EditServerDialog", { server })}
+									variant="outline"
+								/>
+							}
+						>
+							<PencilIcon
+								aria-hidden="true"
+								className="-ms-1 opacity-60"
+								size={16}
+							/>
+						</GroupItem>
+					}
+				/>
+				<GroupSeparator />
+				<TooltipTrigger
+					handle={tooltipHandle}
+					payload={() => "Delete Server"}
+					render={
+						<GroupItem
+							render={
+								<Button
+									aria-label="Delete"
+									onClick={() => openDialog("DeleteServerDialog", { server })}
+									size="icon"
+									variant="outline"
+								/>
+							}
+						>
+							<TrashIcon aria-hidden="true" className="opacity-60" size={16} />
+						</GroupItem>
+					}
+				/>
+				<Tooltip handle={tooltipHandle}>
+					{({ payload: Payload }) =>
+						Payload ? (
+							<TooltipContent>
+								<Payload />
+							</TooltipContent>
+						) : null
+					}
 				</Tooltip>
 			</Group>
 		</div>

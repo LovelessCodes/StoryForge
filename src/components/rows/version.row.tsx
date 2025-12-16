@@ -4,6 +4,7 @@ import { Group, GroupItem, GroupSeparator } from "@/components/ui/group";
 import {
 	Tooltip,
 	TooltipContent,
+	TooltipCreateHandle,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAppFolder } from "@/hooks/use-app-folder";
@@ -11,6 +12,8 @@ import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import { pathDelimiter } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { useSettingsStore } from "@/stores/settings";
+
+const tooltipHandle = TooltipCreateHandle();
 
 export function VersionRow({ version }: { version: string }) {
 	const { appFolder } = useAppFolder();
@@ -33,58 +36,59 @@ export function VersionRow({ version }: { version: string }) {
 				)}
 			</span>
 			<Group>
-				<Tooltip>
-					<TooltipTrigger
-						render={
-							<GroupItem
-								render={
-									<Button
-										aria-label="Open Folder"
-										onClick={() =>
-											openFolder(
-												`${versionsParent ?? appFolder}${pathDelimiter}${versionsSubdir}${pathDelimiter}${version}`,
-											)
-										}
-										size="icon"
-										variant="outline"
-									/>
-								}
-							>
-								<FolderOpenIcon
-									aria-hidden="true"
-									className="opacity-60"
-									size={16}
+				<TooltipTrigger
+					handle={tooltipHandle}
+					payload={() => "Open Folder"}
+					render={
+						<GroupItem
+							render={
+								<Button
+									aria-label="Open Folder"
+									onClick={() =>
+										openFolder(
+											`${versionsParent ?? appFolder}${pathDelimiter}${versionsSubdir}${pathDelimiter}${version}`,
+										)
+									}
+									size="icon"
+									variant="outline"
 								/>
-							</GroupItem>
-						}
-					/>
-					<TooltipContent>Open Folder</TooltipContent>
-				</Tooltip>
+							}
+						>
+							<FolderOpenIcon
+								aria-hidden="true"
+								className="opacity-60"
+								size={16}
+							/>
+						</GroupItem>
+					}
+				/>
 				<GroupSeparator />
-				<Tooltip>
-					<TooltipTrigger
-						render={
-							<GroupItem
-								render={
-									<Button
-										aria-label="Delete"
-										onClick={() =>
-											openDialog("DeleteVersionDialog", { version })
-										}
-										size="icon"
-										variant="outline"
-									/>
-								}
-							>
-								<TrashIcon
-									aria-hidden="true"
-									className="opacity-60"
-									size={16}
+				<TooltipTrigger
+					handle={tooltipHandle}
+					payload={() => "Delete Version"}
+					render={
+						<GroupItem
+							render={
+								<Button
+									aria-label="Delete"
+									onClick={() => openDialog("DeleteVersionDialog", { version })}
+									size="icon"
+									variant="outline"
 								/>
-							</GroupItem>
-						}
-					/>
-					<TooltipContent>Delete</TooltipContent>
+							}
+						>
+							<TrashIcon aria-hidden="true" className="opacity-60" size={16} />
+						</GroupItem>
+					}
+				/>
+				<Tooltip handle={tooltipHandle}>
+					{({ payload: Payload }) =>
+						Payload ? (
+							<TooltipContent>
+								<Payload />
+							</TooltipContent>
+						) : null
+					}
 				</Tooltip>
 			</Group>
 		</>

@@ -14,6 +14,7 @@ import { Group, GroupItem, GroupSeparator } from "@/components/ui/group";
 import {
 	Tooltip,
 	TooltipContent,
+	TooltipCreateHandle,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
@@ -23,6 +24,8 @@ import type { World } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
+
+const tooltipHandle = TooltipCreateHandle();
 
 export const WorldItem = ({ world }: { world: World }) => {
 	const { installations } = useInstallations();
@@ -44,27 +47,28 @@ export const WorldItem = ({ world }: { world: World }) => {
 			<div className="flex flex-col">
 				<p className="text-sm">
 					{worldData.world_name}
-					<Tooltip>
-						<TooltipTrigger
-							className={cn([
-								"ml-2 text-xs opacity-50 cursor-pointer",
-								worldData.seed.toString() === copiedText && "text-success",
-							])}
-							onClick={() => copyToClipboard(worldData.seed.toString())}
-						>
-							<SproutIcon className="inline h-4 w-4" />
-						</TooltipTrigger>
-						<TooltipContent className="flex flex-col gap-1 text-center">
-							Seed: {worldData.seed}
-							{worldData.seed.toString() === copiedText ? (
-								<span className="text-success">Copied!</span>
-							) : (
-								<span className="text-muted-foreground text-xs">
-									Click to copy
-								</span>
-							)}
-						</TooltipContent>
-					</Tooltip>
+					<TooltipTrigger
+						className={cn([
+							"ml-2 text-xs opacity-50 cursor-pointer",
+							worldData.seed.toString() === copiedText && "text-success",
+						])}
+						handle={tooltipHandle}
+						onClick={() => copyToClipboard(worldData.seed.toString())}
+						payload={() => (
+							<>
+								Seed: {worldData.seed}
+								{worldData.seed.toString() === copiedText ? (
+									<span className="text-success">Copied!</span>
+								) : (
+									<span className="text-muted-foreground text-xs">
+										Click to copy
+									</span>
+								)}
+							</>
+						)}
+					>
+						<SproutIcon className="inline h-4 w-4" />
+					</TooltipTrigger>
 				</p>
 				<p className="text-xs text-muted-foreground">
 					by{" "}
@@ -82,20 +86,22 @@ export const WorldItem = ({ world }: { world: World }) => {
 					{installation.name}{" "}
 					{worldData.last_saved_game_version &&
 					worldData.last_saved_game_version !== installation.version ? (
-						<Tooltip>
-							<TooltipTrigger>
-								<span className="text-xs text-warning-foreground opacity-50">
-									(Different Version {worldData.last_saved_game_version} →{" "}
-									{installation.version})
-								</span>
-							</TooltipTrigger>
-							<TooltipContent>
-								The installation version ({installation.version}) is different
-								from the world's created version (
-								{worldData.created_game_version}) or the last saved version (
-								{worldData.last_saved_game_version}).
-							</TooltipContent>
-						</Tooltip>
+						<TooltipTrigger
+							handle={tooltipHandle}
+							payload={() => (
+								<>
+									The installation version ({installation.version}) is different
+									from the world's created version (
+									{worldData.created_game_version}) or the last saved version (
+									{worldData.last_saved_game_version}).
+								</>
+							)}
+						>
+							<span className="text-xs text-warning-foreground opacity-50">
+								(Different Version {worldData.last_saved_game_version} →{" "}
+								{installation.version})
+							</span>
+						</TooltipTrigger>
 					) : (
 						<span className="text-xs opacity-50">
 							({worldData.created_game_version}
@@ -117,128 +123,127 @@ export const WorldItem = ({ world }: { world: World }) => {
 				</p>
 			</div>
 			<Group className="justify-end w-full">
-				<Tooltip>
-					<TooltipTrigger
-						render={
-							<GroupItem
-								render={
-									<Button
-										disabled={isInstalling}
-										onClick={() => {
-											if (version) {
-												invoke("play_game", {
-													options: {
-														installation_id: installation.id,
-														save: world.path
-															.split("/")
-															.pop()
-															?.replace(".vcdbs", ""),
-													},
-												});
-												toast.success(
-													`Launching ${installation.name} on ${worldData.world_name}...`,
-												);
-											} else {
-												installVersion(installation.version);
-											}
-										}}
-										variant="outline"
-									/>
-								}
-							>
-								{version ? (
-									<PlayIcon
-										aria-hidden="true"
-										className="-ms-1 opacity-60 text-success"
-										size={16}
-									/>
-								) : (
-									<DownloadCloudIcon
-										aria-hidden="true"
-										className="-ms-1 opacity-60 text-warning-foreground"
-										size={16}
-									/>
-								)}
-							</GroupItem>
-						}
-					/>
-					<TooltipContent>
-						{version ? "Play" : `Install ${installation.version}`}
-					</TooltipContent>
-				</Tooltip>
-				<Tooltip>
-					<TooltipTrigger
-						render={
-							<GroupItem
-								render={
-									<Button
-										disabled={!world.has_map}
-										onClick={() => openDialog("ViewMapDialog", { world })}
-										variant="outline"
-									/>
-								}
-							>
-								<MapIcon
+				<TooltipTrigger
+					handle={tooltipHandle}
+					payload={() => (version ? "Play" : `Install ${installation.version}`)}
+					render={
+						<GroupItem
+							render={
+								<Button
+									disabled={isInstalling}
+									onClick={() => {
+										if (version) {
+											invoke("play_game", {
+												options: {
+													installation_id: installation.id,
+													save: world.path
+														.split("/")
+														.pop()
+														?.replace(".vcdbs", ""),
+												},
+											});
+											toast.success(
+												`Launching ${installation.name} on ${worldData.world_name}...`,
+											);
+										} else {
+											installVersion(installation.version);
+										}
+									}}
+									variant="outline"
+								/>
+							}
+						>
+							{version ? (
+								<PlayIcon
 									aria-hidden="true"
-									className={cn(
-										"-ms-1 opacity-60",
-										!world.has_map ? "text-destructive" : "text-blue-300",
-									)}
+									className="-ms-1 opacity-60 text-success"
 									size={16}
 								/>
-							</GroupItem>
-						}
-					/>
-					<TooltipContent>
-						{world.has_map
+							) : (
+								<DownloadCloudIcon
+									aria-hidden="true"
+									className="-ms-1 opacity-60 text-warning-foreground"
+									size={16}
+								/>
+							)}
+						</GroupItem>
+					}
+				/>
+				<TooltipTrigger
+					handle={tooltipHandle}
+					payload={() =>
+						world.has_map
 							? "View Map"
-							: `No Map Available for ${worldData.world_name}`}
-					</TooltipContent>
-				</Tooltip>
-				<Tooltip>
-					<TooltipTrigger
-						render={
-							<GroupItem
-								render={
-									<Button
-										onClick={() => openDialog("EditWorldDialog", { world })}
-										variant="outline"
-									/>
-								}
-							>
-								<PenIcon
-									aria-hidden="true"
-									className="-ms-1 opacity-60"
-									size={16}
+							: `No Map Available for ${worldData.world_name}`
+					}
+					render={
+						<GroupItem
+							render={
+								<Button
+									disabled={!world.has_map}
+									onClick={() => openDialog("ViewMapDialog", { world })}
+									variant="outline"
 								/>
-							</GroupItem>
-						}
-					/>
-					<TooltipContent>Edit</TooltipContent>
-				</Tooltip>
+							}
+						>
+							<MapIcon
+								aria-hidden="true"
+								className={cn(
+									"-ms-1 opacity-60",
+									!world.has_map ? "text-destructive" : "text-blue-300",
+								)}
+								size={16}
+							/>
+						</GroupItem>
+					}
+				/>
+				<TooltipTrigger
+					handle={tooltipHandle}
+					payload={() => "Edit World"}
+					render={
+						<GroupItem
+							render={
+								<Button
+									onClick={() => openDialog("EditWorldDialog", { world })}
+									variant="outline"
+								/>
+							}
+						>
+							<PenIcon
+								aria-hidden="true"
+								className="-ms-1 opacity-60"
+								size={16}
+							/>
+						</GroupItem>
+					}
+				/>
 				<GroupSeparator />
-				<Tooltip>
-					<TooltipTrigger
-						render={
-							<GroupItem
-								render={
-									<Button
-										aria-label="Delete"
-										onClick={() => openDialog("DeleteWorldDialog", { world })}
-										size="icon"
-										variant="outline"
-									/>
-								}
-							>
-								<TrashIcon
-									aria-hidden="true"
-									className="opacity-60"
-									size={16}
+				<TooltipTrigger
+					handle={tooltipHandle}
+					payload={() => "Delete World"}
+					render={
+						<GroupItem
+							render={
+								<Button
+									aria-label="Delete"
+									onClick={() => openDialog("DeleteWorldDialog", { world })}
+									size="icon"
+									variant="outline"
 								/>
-							</GroupItem>
-						}
-					/>
-					<TooltipContent>Delete</TooltipContent>
+							}
+						>
+							<TrashIcon aria-hidden="true" className="opacity-60" size={16} />
+						</GroupItem>
+					}
+				/>
+				<Tooltip handle={tooltipHandle}>
+					{({ payload: Payload }) =>
+						Payload ? (
+							<TooltipContent>
+								<Payload />
+							</TooltipContent>
+						) : null
+					}
 				</Tooltip>
 			</Group>
 		</div>
