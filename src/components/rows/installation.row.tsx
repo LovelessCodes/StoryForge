@@ -19,10 +19,11 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useDownloadVersion } from "@/hooks/use-download-version";
+import { useExportInstallation } from "@/hooks/use-export-installation";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
-import { cn, exportInstallation } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { type Installation, useInstallations } from "@/stores/installations";
 
@@ -40,6 +41,7 @@ export function InstallationRow({ installation }: InstallationRowProps) {
 	// Queries
 	const { data: versions } = useInstalledVersions();
 	const version = versions?.find((v) => v === installation.version);
+	const { exportToClipboard } = useExportInstallation(installation);
 
 	// Mutations
 	const { mutate: downloadVersion, isPending: isInstalling } =
@@ -232,7 +234,7 @@ export function InstallationRow({ installation }: InstallationRowProps) {
 							<GroupItem
 								render={
 									<Button
-										onClick={() => exportInstallation({ installation })}
+										onClick={() => exportToClipboard()}
 										size="icon"
 										variant="outline"
 									/>

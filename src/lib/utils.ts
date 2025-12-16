@@ -1,8 +1,6 @@
 import { platform } from "@tauri-apps/plugin-os";
 import { type ClassValue, clsx } from "clsx";
-import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
-import { useInstalledMods } from "@/hooks/use-installed-mods";
 import type { Installation } from "@/stores/installations";
 
 export function cn(...inputs: ClassValue[]) {
@@ -128,29 +126,6 @@ export const sortInstallations = (a: Installation, b: Installation) => {
 	const aTime = a.lastTimePlayed ? new Date(a.lastTimePlayed).getTime() : 0;
 	const bTime = b.lastTimePlayed ? new Date(b.lastTimePlayed).getTime() : 0;
 	return bTime - aTime;
-};
-
-/**
- * Exports the installation data (mods, name, version) to clipboard as JSON
- * @param installation - The installation to export
- */
-export const exportInstallation = async ({
-	installation,
-}: {
-	installation: Installation;
-}) => {
-	const { data: installationMods } = useInstalledMods(installation.path);
-	const data = {
-		mods: installationMods?.mods.map((m) => ({
-			id: m.modid,
-			version: m.version,
-		})),
-		name: installation.name,
-		version: installation.version,
-	};
-	// Copy to clipboard
-	await window.navigator.clipboard.writeText(JSON.stringify(data, null, 2));
-	toast.success("Installation copied to clipboard");
 };
 
 /**

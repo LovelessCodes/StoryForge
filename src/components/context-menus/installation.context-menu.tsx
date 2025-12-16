@@ -22,10 +22,11 @@ import {
 	ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { useDownloadVersion } from "@/hooks/use-download-version";
+import { useExportInstallation } from "@/hooks/use-export-installation";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
-import { cn, exportInstallation } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { type Installation, useInstallations } from "@/stores/installations";
 
@@ -45,6 +46,7 @@ export const InstallationContextMenu = ({
 	const { mutate: revealInstallationInFolder } = useRevealInFolder();
 	const { mutate: launchInstallation } = usePlayInstallation();
 	const { mutate: downloadVersion } = useDownloadVersion();
+	const { exportToClipboard } = useExportInstallation(installation);
 
 	// Queries
 	const { data: installedVersions } = useInstalledVersions();
@@ -120,7 +122,7 @@ export const InstallationContextMenu = ({
 					</ContextMenuItem>
 					<ContextMenuItem
 						className="flex items-center justify-between gap-4"
-						onClick={() => exportInstallation({ installation })}
+						onClick={() => exportToClipboard()}
 					>
 						Export
 						<FileUpIcon className="inline-block h-4 w-4" />
