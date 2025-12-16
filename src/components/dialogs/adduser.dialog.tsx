@@ -2,7 +2,6 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import clsx from "clsx";
-import { OTPInput, type SlotProps } from "input-otp";
 import { useId } from "react";
 import { toast } from "sonner";
 import z from "zod";
@@ -21,9 +20,9 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
 import { useAccountStore } from "@/stores/accounts";
 import { useDialogStore } from "@/stores/dialogs";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "../ui/input-otp";
 
 type SignInResponse = {
 	valid: number;
@@ -358,37 +357,24 @@ function TOTPComponent({
 			</div>
 			<div className="space-y-4">
 				<div className="flex justify-center">
-					<OTPInput
+					<InputOTP
 						containerClassName="flex items-center gap-3 has-disabled:opacity-50"
 						id={`confirmation-code-${id}`}
 						maxLength={6}
 						onChange={setValue}
 						onComplete={() => submit()}
 						render={({ slots }) => (
-							<div className="flex gap-2">
+							<InputOTPGroup>
 								{slots.map((slot, idx) => (
-									// biome-ignore lint/suspicious/noArrayIndexKey: Not needed currently
-									<Slot key={idx} {...slot} />
+									// biome-ignore lint/suspicious/noArrayIndexKey: Needed
+									<InputOTPSlot index={idx} key={idx} {...slot} />
 								))}
-							</div>
+							</InputOTPGroup>
 						)}
 						value={value}
 					/>
 				</div>
 			</div>
 		</>
-	);
-}
-
-function Slot(props: SlotProps) {
-	return (
-		<div
-			className={cn(
-				"border-input bg-background text-foreground flex size-9 items-center justify-center rounded-md border font-medium shadow-xs transition-[color,box-shadow]",
-				{ "border-ring ring-ring/50 z-10 ring-[3px]": props.isActive },
-			)}
-		>
-			{props.char !== null && <div>{props.char}</div>}
-		</div>
 	);
 }
