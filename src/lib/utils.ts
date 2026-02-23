@@ -1,8 +1,9 @@
+import { invoke } from "@tauri-apps/api/core";
 import { platform } from "@tauri-apps/plugin-os";
 import { type ClassValue, clsx } from "clsx";
 import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
-import { useInstalledMods } from "@/hooks/use-installed-mods";
+import type { OutputMod } from "@/routes/install-mods/$id";
 import type { Installation } from "@/stores/installations";
 
 export function cn(...inputs: ClassValue[]) {
@@ -139,9 +140,11 @@ export const exportInstallation = async ({
 }: {
 	installation: Installation;
 }) => {
-	const { data: installationMods } = useInstalledMods(installation.path);
+	const installationMods = await invoke<{ mods: OutputMod[] }>("get_mods", {
+		path: installation.path,
+	});
 	const data = {
-		mods: installationMods?.mods.map((m) => ({
+		mods: installationMods.mods.map((m) => ({
 			id: m.modid,
 			version: m.version,
 		})),
