@@ -412,7 +412,7 @@ export function AddInstallationDialog({
 										</TooltipContent>
 									</Tooltip>
 									<Select
-										onValueChange={field.handleChange}
+										onValueChange={(v) => v && field.handleChange(v)}
 										value={field.state.value}
 									>
 										<SelectTrigger className="flex gap-1 w-full truncate">
