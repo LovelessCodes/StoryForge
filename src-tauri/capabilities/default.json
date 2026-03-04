@@ -9,7 +9,9 @@
 		"process:default",
 		"updater:default",
 		"opener:default",
-		"dialog:default"
+		"dialog:default",
+		"clipboard-manager:default",
+		"clipboard-manager:allow-write-text"
 	],
 	"windows": ["main"]
 }
