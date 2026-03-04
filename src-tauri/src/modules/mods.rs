@@ -1,9 +1,5 @@
 use json5::from_str as json5_from_str;
-use reqwest::{
-    get,
-    header::{HeaderMap, HeaderValue, HOST},
-    Client,
-};
+use reqwest::{get, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, from_value, json, Value};
 use std::{
@@ -104,9 +100,9 @@ pub struct ModsResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ModTags {
-    tagid: i64,
-    name: String,
-    color: String,
+    pub tagid: Value,
+    pub name: String,
+    pub color: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -162,8 +158,6 @@ pub async fn fetch_mod_tags() -> Result<Vec<ModTags>, UiError> {
 pub async fn fetch_mods(options: FetchModsParams) -> Result<Vec<Mod>, UiError> {
     // Use the parameters for a GET request with search parameters
     let client = Client::new();
-    let mut headers = HeaderMap::new();
-    headers.insert(HOST, HeaderValue::from_static("mods.vintagestory.at"));
 
     let mut params = Vec::new();
     if !options.versions.is_empty() {
@@ -177,7 +171,6 @@ pub async fn fetch_mods(options: FetchModsParams) -> Result<Vec<Mod>, UiError> {
 
     let res = client
         .get("https://mods.vintagestory.at/api/mods")
-        .headers(headers)
         .query(&params)
         .send()
         .await
