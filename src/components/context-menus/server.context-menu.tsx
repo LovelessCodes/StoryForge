@@ -1,4 +1,4 @@
-import type { ContextMenu as ContextMenuPrimitive } from "@base-ui-components/react/context-menu";
+import type { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu";
 import { useNavigate } from "@tanstack/react-router";
 import {
 	DownloadCloudIcon,
