@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { platform } from "@tauri-apps/plugin-os";
 import { type ClassValue, clsx } from "clsx";
 import { toast } from "sonner";
@@ -152,7 +153,7 @@ export const exportInstallation = async ({
 		version: installation.version,
 	};
 	// Copy to clipboard
-	await window.navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+	await writeText(JSON.stringify(data, null, 2));
 	toast.success("Installation copied to clipboard");
 };
 

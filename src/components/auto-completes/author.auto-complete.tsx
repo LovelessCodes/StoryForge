@@ -1,4 +1,4 @@
-import { Autocomplete as AutocompletePrimitive } from "@base-ui-components/react/autocomplete";
+import { Autocomplete as AutocompletePrimitive } from "@base-ui/react/autocomplete";
 import { useQueryClient } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useCallback, useMemo, useRef, useState } from "react";

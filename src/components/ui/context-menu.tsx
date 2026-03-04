@@ -1,36 +1,19 @@
-import { ContextMenu as ContextMenuPrimitive } from "@base-ui-components/react/context-menu";
+import { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu";
 import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react";
 import type * as React from "react";
-import { createContext, useContext, useRef } from "react";
 import { cn } from "@/lib/utils";
-
-const ContextMenuContext = createContext<{
-	triggerRef: React.RefObject<HTMLDivElement | null> | null;
-}>({
-	triggerRef: null,
-});
 
 function ContextMenu({
 	...props
 }: React.ComponentProps<typeof ContextMenuPrimitive.Root>) {
-	const triggerRef = useRef<HTMLDivElement>(null);
-	return (
-		<ContextMenuContext.Provider value={{ triggerRef }}>
-			<ContextMenuPrimitive.Root data-slot="context-menu" {...props} />
-		</ContextMenuContext.Provider>
-	);
+	return <ContextMenuPrimitive.Root data-slot="context-menu" {...props} />;
 }
 
 function ContextMenuTrigger({
 	...props
 }: React.ComponentProps<typeof ContextMenuPrimitive.Trigger>) {
-	const { triggerRef } = useContext(ContextMenuContext);
 	return (
-		<ContextMenuPrimitive.Trigger
-			data-slot="context-menu-trigger"
-			ref={triggerRef}
-			{...props}
-		/>
+		<ContextMenuPrimitive.Trigger data-slot="context-menu-trigger" {...props} />
 	);
 }
 
@@ -100,12 +83,9 @@ function ContextMenuContent({
 }: ContextMenuPrimitive.Popup.Props & {
 	sideOffset?: number;
 }) {
-	const { triggerRef } = useContext(ContextMenuContext);
-
 	return (
 		<ContextMenuPrimitive.Portal>
 			<ContextMenuPrimitive.Positioner
-				anchor={triggerRef}
 				className="z-50 select-none"
 				data-slot="context-menu-positioner"
 				sideOffset={sideOffset}

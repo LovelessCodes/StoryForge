@@ -7,7 +7,9 @@
 		"process:default",
 		"updater:default",
 		"opener:default",
-		"dialog:default"
+		"dialog:default",
+		"clipboard-manager:default",
+		"clipboard-manager:allow-write-text"
 	],
 	"platforms": ["macOS", "windows", "linux"],
 	"windows": ["main"]
