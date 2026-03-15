@@ -1,5 +1,5 @@
 mod modules;
-use modules::{auth, download, installations, maps, mods, news, saves, servers, versions};
+use modules::{auth, download, installations, maps, mods, news, saves, servers, utils, versions};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -81,6 +81,8 @@ pub fn run() {
             maps::get_map_bounds,
             maps::get_map_tile,
             maps::get_all_map_tiles,
+            // Utils
+            utils::save_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
