@@ -10,6 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Export modpack to file via native save dialog, alongside the existing clipboard export.
+### Changed
+- Moved away from using Radix UI to Base UI for all components in the UI stack.
+- Revamp on the whole UI after introducing Base UI.
 
 ### Changed
 
