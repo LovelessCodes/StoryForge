@@ -2,11 +2,11 @@ import type { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context
 import { useNavigate } from "@tanstack/react-router";
 import {
 	DownloadCloudIcon,
+	DownloadIcon,
 	FileUpIcon,
 	FolderOpenIcon,
 	FolderPenIcon,
 	FolderXIcon,
-	DownloadIcon,
 	PackageOpenIcon,
 	PackageSearchIcon,
 	PlayIcon,

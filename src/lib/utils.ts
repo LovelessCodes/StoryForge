@@ -180,10 +180,13 @@ export const exportInstallationToFile = async ({
 	};
 	const filePath = await save({
 		defaultPath: `${installation.name.replace(/\s+/g, "_")}.json`,
-		filters: [{ name: "Modpack", extensions: ["json"] }],
+		filters: [{ extensions: ["json"], name: "Modpack" }],
 	});
 	if (filePath) {
-		await invoke("save_file", { path: filePath, contents: JSON.stringify(data, null, 2) });
+		await invoke("save_file", {
+			contents: JSON.stringify(data, null, 2),
+			path: filePath,
+		});
 		toast.success("Installation exported to file");
 	}
 };

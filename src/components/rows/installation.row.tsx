@@ -2,9 +2,9 @@ import { useRouter } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import {
 	DownloadCloudIcon,
+	DownloadIcon,
 	FileUpIcon,
 	FolderOpenIcon,
-	DownloadIcon,
 	PackageOpenIcon,
 	PackageSearchIcon,
 	PencilIcon,
