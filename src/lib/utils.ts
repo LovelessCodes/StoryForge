@@ -171,10 +171,13 @@ export const exportInstallationToFile = async ({
 		path: installation.path,
 	});
 	const data = {
-		mods: installationMods.mods.map((m) => ({
-			id: m.modid,
-			version: m.version,
-		})),
+		mods: installationMods.mods
+			.map((m) => ({
+				id: m.modid,
+				name: m.name,
+				version: m.version,
+			}))
+			.sort((a, b) => a.id.localeCompare(b.id)),
 		name: installation.name,
 		version: installation.version,
 	};
