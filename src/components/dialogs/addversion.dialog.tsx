@@ -28,7 +28,6 @@ import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { gameVersionsQuery } from "@/lib/queries";
 import { compareSemverDesc } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
-import { useSettingsStore } from "@/stores/settings";
 
 export const versionSchema = z.object({
 	version: z.string().min(1),
@@ -38,12 +37,10 @@ export function AddVersionDialog({ open }: { open: boolean }) {
 	const { data: gameVersions } = useQuery(gameVersionsQuery);
 	const { closeDialog } = useDialogStore();
 	const { data: installedVersions } = useInstalledVersions();
-	const { showPreRelease } = useSettingsStore();
 	const currentPlatform = platform();
 
 	const availableVersions = gameVersions?.filter(
-		(v) =>
-			!installedVersions.includes(v) && (showPreRelease || !v.includes("rc")),
+		(v) => !installedVersions.includes(v),
 	);
 
 	const sortedVersions = gameVersions?.sort(compareSemverDesc);
@@ -51,7 +48,10 @@ export function AddVersionDialog({ open }: { open: boolean }) {
 	const { mutateAsync: downloadVersion, isPending } = useDownloadVersion();
 	const form = useForm({
 		defaultValues: {
-			version: availableVersions?.sort(compareSemverDesc)[0] ?? "",
+			version:
+				availableVersions
+					?.sort(compareSemverDesc)
+					.filter((v) => !v.includes("rc"))[0] ?? "",
 		},
 		onSubmit: async ({ value }) => {
 			await downloadVersion(value.version);

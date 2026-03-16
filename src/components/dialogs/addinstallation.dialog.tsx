@@ -65,8 +65,7 @@ export function AddInstallationDialog({
 }: AddInstallationDialogProps & { open: boolean }) {
 	const id = useId();
 	const { data: gameVersions } = useQuery(gameVersionsQuery);
-	const { installationsParent, installationsSubdir, showPreRelease } =
-		useSettingsStore();
+	const { installationsParent, installationsSubdir } = useSettingsStore();
 	const { appFolder } = useAppFolder();
 	const { closeDialog } = useDialogStore();
 	const { addInstallation } = useInstallationsStore();
@@ -111,7 +110,7 @@ export function AddInstallationDialog({
 				version ??
 				gameVersions
 					?.sort(compareSemverDesc)
-					.filter((v) => showPreRelease || !v.includes("rc"))[0] ??
+					.filter((v) => !v.includes("rc"))[0] ??
 				"",
 		},
 		onSubmit: async ({ value }) => {
@@ -431,27 +430,24 @@ export function AddInstallationDialog({
 											</p>
 										</SelectTrigger>
 										<SelectContent align="start" alignItemWithTrigger={false}>
-											{gameVersions
-												?.sort(compareSemverDesc)
-												.filter((v) => showPreRelease || !v.includes("rc"))
-												.map((version) => (
-													<SelectItem
-														className={
-															installedVersions.includes(version)
-																? "bg-success/5"
-																: ""
-														}
-														key={version}
-														value={version}
-													>
-														{version}
-														{installedVersions.includes(version) && (
-															<span className="text-xs text-muted-foreground opacity-50 ml-2">
-																(installed)
-															</span>
-														)}
-													</SelectItem>
-												))}
+											{gameVersions?.sort(compareSemverDesc).map((version) => (
+												<SelectItem
+													className={
+														installedVersions.includes(version)
+															? "bg-success/5"
+															: ""
+													}
+													key={version}
+													value={version}
+												>
+													{version}
+													{installedVersions.includes(version) && (
+														<span className="text-xs text-muted-foreground opacity-50 ml-2">
+															(installed)
+														</span>
+													)}
+												</SelectItem>
+											))}
 										</SelectContent>
 									</Select>
 								</div>

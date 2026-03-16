@@ -25,8 +25,6 @@ type SettingsStore = {
 	) => Promise<void>;
 	streamMode: boolean;
 	toggleStreamMode: () => void;
-	showPreRelease: boolean;
-	toggleShowPreRelease: () => void;
 };
 
 export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
@@ -67,7 +65,6 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
 		}
 		set(() => ({ versionsParent: path }));
 	},
-	showPreRelease: false,
 	streamMode: false,
 	toggleDarkMode: () =>
 		set((state) => {
@@ -78,8 +75,6 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
 			}
 			return { darkMode: !state.darkMode };
 		}),
-	toggleShowPreRelease: () =>
-		set((state) => ({ showPreRelease: !state.showPreRelease })),
 	toggleStreamMode: () => set((state) => ({ streamMode: !state.streamMode })),
 	versionsParent: null,
 	versionsSubdir: "versions",

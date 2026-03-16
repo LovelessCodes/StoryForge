@@ -34,7 +34,6 @@ export const Route = createFileRoute("/settings")({
 const settingsSchema = z.object({
 	darkMode: z.boolean(),
 	installationsParent: z.string().nullable(),
-	showPreRelease: z.boolean(),
 	streamMode: z.boolean(),
 	versionsParent: z.string().nullable(),
 });
@@ -189,7 +188,6 @@ function RouteComponent() {
 		defaultValues: {
 			darkMode: settingsStore.darkMode,
 			installationsParent: settingsStore.installationsParent,
-			showPreRelease: settingsStore.showPreRelease,
 			streamMode: settingsStore.streamMode,
 			versionsParent: settingsStore.versionsParent,
 		},
@@ -225,9 +223,6 @@ function RouteComponent() {
 					config: configs?.versionsParent,
 					path: value.versionsParent.trim(),
 				});
-			}
-			if (value.showPreRelease !== settingsStore.showPreRelease) {
-				settingsStore.toggleShowPreRelease();
 			}
 			if (value.streamMode !== settingsStore.streamMode) {
 				settingsStore.toggleStreamMode();
@@ -434,20 +429,6 @@ function RouteComponent() {
 									Browse
 								</Button>
 							</div>
-						</div>
-					)}
-				</form.Field>
-				<form.Field name="showPreRelease">
-					{(field) => (
-						<div className="flex items-center gap-3">
-							<Checkbox
-								checked={field.state.value}
-								id="showPreRelease"
-								onCheckedChange={(checked) => {
-									field.handleChange(checked === true);
-								}}
-							/>
-							<Label htmlFor="showPreRelease">Show Pre-release Versions</Label>
 						</div>
 					)}
 				</form.Field>
