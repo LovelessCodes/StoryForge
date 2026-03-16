@@ -48,6 +48,11 @@ pub fn installations_subdir(app: AppHandle) -> String {
         .unwrap_or_else(|_| "installations".to_string())
 }
 
+#[tauri::command]
+pub async fn save_file(path: String, contents: String) -> Result<(), String> {
+    std::fs::write(&path, contents).map_err(|e| e.to_string())
+}
+
 pub fn move_folder(source_path: PathBuf, destination_path: PathBuf) -> Result<String, UiError> {
     if !source_path.exists() || !source_path.is_dir() {
         return Ok("source_not_exist".into());

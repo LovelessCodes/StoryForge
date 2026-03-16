@@ -2,6 +2,7 @@ import type { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context
 import { useNavigate } from "@tanstack/react-router";
 import {
 	DownloadCloudIcon,
+	DownloadIcon,
 	FileUpIcon,
 	FolderOpenIcon,
 	FolderPenIcon,
@@ -24,7 +25,7 @@ import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
-import { cn, exportInstallation } from "@/lib/utils";
+import { cn, exportInstallation, exportInstallationToFile } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { type Installation, useInstallations } from "@/stores/installations";
 
@@ -122,6 +123,13 @@ export const InstallationContextMenu = ({
 					>
 						Export
 						<FileUpIcon className="inline-block h-4 w-4" />
+					</ContextMenuItem>
+					<ContextMenuItem
+						className="flex items-center justify-between gap-4"
+						onClick={() => exportInstallationToFile({ installation })}
+					>
+						Export to file
+						<DownloadIcon className="inline-block h-4 w-4" />
 					</ContextMenuItem>
 					<ContextMenuItem
 						className="flex items-center justify-between gap-4"

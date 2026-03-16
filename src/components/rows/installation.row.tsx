@@ -2,6 +2,7 @@ import { useRouter } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import {
 	DownloadCloudIcon,
+	DownloadIcon,
 	FileUpIcon,
 	FolderOpenIcon,
 	PackageOpenIcon,
@@ -22,7 +23,7 @@ import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
-import { cn, exportInstallation } from "@/lib/utils";
+import { cn, exportInstallation, exportInstallationToFile } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { type Installation, useInstallations } from "@/stores/installations";
 
@@ -247,6 +248,29 @@ export function InstallationRow({ installation }: InstallationRowProps) {
 						}
 					/>
 					<TooltipContent>Export</TooltipContent>
+				</Tooltip>
+				<GroupSeparator />
+				<Tooltip>
+					<TooltipTrigger
+						render={
+							<GroupItem
+								render={
+									<Button
+										onClick={() => exportInstallationToFile({ installation })}
+										size="icon"
+										variant="outline"
+									/>
+								}
+							>
+								<DownloadIcon
+									aria-hidden="true"
+									className="-ms-1 opacity-60"
+									size={16}
+								/>
+							</GroupItem>
+						}
+					/>
+					<TooltipContent>Export to file</TooltipContent>
 				</Tooltip>
 				<GroupSeparator />
 				<Tooltip>

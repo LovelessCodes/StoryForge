@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
+import { save } from "@tauri-apps/plugin-dialog";
 import { platform } from "@tauri-apps/plugin-os";
 import { type ClassValue, clsx } from "clsx";
 import { toast } from "sonner";
@@ -155,6 +156,42 @@ export const exportInstallation = async ({
 	// Copy to clipboard
 	await writeText(JSON.stringify(data, null, 2));
 	toast.success("Installation copied to clipboard");
+};
+
+/**
+ * Exports the installation data (mods, name, version) to a JSON file via save dialog
+ * @param installation - The installation to export
+ */
+export const exportInstallationToFile = async ({
+	installation,
+}: {
+	installation: Installation;
+}) => {
+	const installationMods = await invoke<{ mods: OutputMod[] }>("get_mods", {
+		path: installation.path,
+	});
+	const data = {
+		mods: installationMods.mods
+			.map((m) => ({
+				id: m.modid,
+				name: m.name,
+				version: m.version,
+			}))
+			.sort((a, b) => a.id.localeCompare(b.id)),
+		name: installation.name,
+		version: installation.version,
+	};
+	const filePath = await save({
+		defaultPath: `${installation.name.replace(/\s+/g, "_")}.json`,
+		filters: [{ extensions: ["json"], name: "Modpack" }],
+	});
+	if (filePath) {
+		await invoke("save_file", {
+			contents: JSON.stringify(data, null, 2),
+			path: filePath,
+		});
+		toast.success("Installation exported to file");
+	}
 };
 
 /**
