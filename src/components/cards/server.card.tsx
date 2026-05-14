@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Group, GroupItem } from "@/components/ui/group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDownloadVersion } from "@/hooks/use-download-version";
-import { useInstalledVersions } from "@/hooks/use-installed-versions";
+import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { cn } from "@/lib/utils";
 import { findInstallationForServer, useInstallations } from "@/stores/installations";
 import type { Server } from "@/stores/servers";
@@ -27,7 +27,7 @@ export function ServerCard({ server, onConnect, onUnfavorite, onEdit }: ServerCa
     server.installationId,
     server.installationName,
   );
-  const { data: versions } = useInstalledVersions();
+  const versions = useInstalledVersionNames();
 
   const { mutate: installVersion, isPending: isInstalling } = useDownloadVersion();
 

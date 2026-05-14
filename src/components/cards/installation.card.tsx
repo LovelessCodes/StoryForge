@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Group, GroupItem } from "@/components/ui/group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDownloadVersion } from "@/hooks/use-download-version";
-import { useInstalledVersions } from "@/hooks/use-installed-versions";
+import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { cn } from "@/lib/utils";
 import type { Installation } from "@/stores/installations";
 
@@ -26,7 +26,7 @@ export function InstallationCard({
 }: InstallationCardProps) {
   const { mutate: installVersion, isPending: isInstalling } = useDownloadVersion();
 
-  const { data: versions } = useInstalledVersions();
+  const versions = useInstalledVersionNames();
   return (
     <>
       <div className="flex items-center gap-3">

@@ -8,7 +8,7 @@ import { Group, GroupItem, GroupSeparator } from "@/components/ui/group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { useDownloadVersion } from "@/hooks/use-download-version";
-import { useInstalledVersions } from "@/hooks/use-installed-versions";
+import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import type { World } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
@@ -16,7 +16,7 @@ import { useInstallations } from "@/stores/installations";
 
 export const WorldItem = ({ world }: { world: World }) => {
   const { installations } = useInstallations();
-  const { data: versions } = useInstalledVersions();
+  const versions = useInstalledVersionNames();
   const { openDialog } = useDialogStore();
   const [copiedText, copyToClipboard] = useCopyToClipboard();
   const worldData = world.data;

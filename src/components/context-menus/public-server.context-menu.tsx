@@ -11,7 +11,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { useDownloadVersion } from "@/hooks/use-download-version";
-import { useInstalledVersions } from "@/hooks/use-installed-versions";
+import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import type { PublicServer } from "@/hooks/use-public-servers";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
@@ -27,7 +27,7 @@ export const PublicServerContextMenu = ({
   const { installations } = useInstallations();
 
   // Queries
-  const { data: installedVersions } = useInstalledVersions();
+  const installedVersions = useInstalledVersionNames();
 
   // Mutations
   const { mutate: downloadVersion } = useDownloadVersion();

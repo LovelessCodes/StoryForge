@@ -21,7 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { useDownloadVersion } from "@/hooks/use-download-version";
-import { useInstalledVersions } from "@/hooks/use-installed-versions";
+import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { gameVersionsQuery } from "@/lib/queries";
 import { buildInstallationPath, compareSemverDesc, makeStringFolderSafe } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
@@ -71,7 +71,7 @@ export function AddInstallationDialog({
   const { appFolder } = useAppFolder();
   const { closeDialog } = useDialogStore();
   const { addInstallation, loadInstallations } = useInstallationsStore();
-  const { data: installedVersions } = useInstalledVersions();
+  const installedVersions = useInstalledVersionNames();
   const { mutateAsync: downloadVersion, isPending } = useDownloadVersion();
   const { mutateAsync: initializeGame, isPending: initializePending } = useMutation({
     mutationFn: (path: string) => invoke("initialize_game", { path }) as Promise<string>,

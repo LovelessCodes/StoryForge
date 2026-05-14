@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDownloadVersion } from "@/hooks/use-download-version";
-import { useInstalledVersions } from "@/hooks/use-installed-versions";
+import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import type { PublicServer } from "@/hooks/use-public-servers";
 import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
@@ -28,7 +28,7 @@ export function PublicServerList({
   parentRef: React.RefObject<HTMLDivElement | null>;
   publicServers: PublicServer[];
 }) {
-  const { data: installedVersions } = useInstalledVersions();
+  const installedVersions = useInstalledVersionNames();
   const { installations } = useInstallations();
   const { openDialog } = useDialogStore();
   const { mutate: downloadVersion } = useDownloadVersion();

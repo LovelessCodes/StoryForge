@@ -1,6 +1,7 @@
+use serde::Serialize;
 use std::{
     fs::{read_dir, remove_dir_all},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 use tauri::{command, AppHandle};
 
@@ -9,8 +10,45 @@ use crate::modules::utils::move_folder;
 use super::errors::UiError;
 use super::utils::{versions_folder, versions_subdir};
 
+fn format_size(bytes: u64) -> String {
+    const KB: u64 = 1024;
+    const MB: u64 = KB * 1024;
+    const GB: u64 = MB * 1024;
+    if bytes >= GB {
+        format!("{:.2} GB", bytes as f64 / GB as f64)
+    } else if bytes >= MB {
+        format!("{:.2} MB", bytes as f64 / MB as f64)
+    } else if bytes >= KB {
+        format!("{:.2} KB", bytes as f64 / KB as f64)
+    } else {
+        format!("{} B", bytes)
+    }
+}
+
+fn dir_size(path: &Path) -> u64 {
+    let mut total: u64 = 0;
+    if let Ok(entries) = read_dir(path) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                total += dir_size(&path);
+            } else if let Ok(meta) = path.metadata() {
+                total += meta.len();
+            }
+        }
+    }
+    total
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct VersionInfo {
+    pub name: String,
+    pub size_bytes: u64,
+    pub size_display: String,
+}
+
 #[command]
-pub fn get_installed_versions(app: AppHandle) -> Result<Vec<String>, UiError> {
+pub fn get_installed_versions(app: AppHandle) -> Result<Vec<VersionInfo>, UiError> {
     // Should look up the versions folder and return a list of installed versions
     let base_dir = versions_folder(app.clone());
     let subdir = versions_subdir(app.clone());
@@ -29,7 +67,13 @@ pub fn get_installed_versions(app: AppHandle) -> Result<Vec<String>, UiError> {
         })?;
         if entry.path().is_dir() {
             if let Some(name) = entry.file_name().to_str() {
-                versions.push(name.to_string());
+                let path = entry.path();
+                let size_bytes = dir_size(&path);
+                versions.push(VersionInfo {
+                    name: name.to_string(),
+                    size_bytes,
+                    size_display: format_size(size_bytes),
+                });
             }
         }
     }

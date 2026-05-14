@@ -5,7 +5,7 @@ import { Group, GroupItem, GroupSeparator } from "@/components/ui/group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
 import { useDownloadVersion } from "@/hooks/use-download-version";
-import { useInstalledVersions } from "@/hooks/use-installed-versions";
+import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { cn } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
 import { findInstallationForServer, useInstallations } from "@/stores/installations";
@@ -21,7 +21,7 @@ export function ServerRow({ server }: ServerRowProps) {
   const { openDialog } = useDialogStore();
   const { toggleFavorite } = useServerStore();
   const { streamMode } = useSettingsStore();
-  const { data: versions } = useInstalledVersions();
+  const versions = useInstalledVersionNames();
   const { installations } = useInstallations();
   const installation = findInstallationForServer(
     installations,

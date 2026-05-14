@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { useDownloadVersion } from "@/hooks/use-download-version";
-import { useInstalledVersions } from "@/hooks/use-installed-versions";
+import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { gameVersionsQuery } from "@/lib/queries";
 import { buildInstallationPath, compareSemverDesc, makeStringFolderSafe } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
@@ -55,7 +55,7 @@ export function EditInstallationDialog({
   const id = useId();
   const { data: gameVersions } = useQuery(gameVersionsQuery);
   const { closeDialog } = useDialogStore();
-  const { data: installedVersions } = useInstalledVersions();
+  const installedVersions = useInstalledVersionNames();
   const { appFolder } = useAppFolder();
   const { installationsParent, installationsSubdir } = useSettingsStore();
   const { updateInstallation, loadInstallations } = useInstallationsStore();

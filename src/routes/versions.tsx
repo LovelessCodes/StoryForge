@@ -16,11 +16,10 @@ export const Route = createFileRoute("/versions")({
 });
 
 function RouteComponent() {
-  // Stores
   const { openDialog } = useDialogStore();
-
-  // Queries
   const { data: versions } = useInstalledVersions();
+
+  const sorted = [...(versions ?? [])].sort((a, b) => compareSemverDesc(a.name, b.name));
 
   return (
     <div className="flex w-full flex-col gap-2">
@@ -37,22 +36,22 @@ function RouteComponent() {
       <div className="relative h-full w-full overflow-auto px-4">
         <div className="bg-card relative flex w-full flex-col overflow-y-auto rounded border p-2 shadow">
           <AnimatePresence>
-            {versions.sort(compareSemverDesc).map((version, index) => (
+            {sorted.map((version, index) => (
               <MotionVersionContextMenu
                 animate="show"
                 className="flex items-center gap-2 px-2 py-2 not-last:border-b"
                 custom={index}
                 exit="exit"
                 initial="hidden"
-                key={`${version}-context-menu`}
+                key={`${version.name}-context-menu`}
                 layout="position"
                 variants={itemVariants}
-                version={version}
+                version={version.name}
               >
                 <VersionRow version={version} />
               </MotionVersionContextMenu>
             ))}
-            {versions.length === 0 && (
+            {sorted.length === 0 && (
               <p className="text-muted-foreground p-4 text-sm select-none">
                 No versions yet. Click "Add version" to get started.
               </p>

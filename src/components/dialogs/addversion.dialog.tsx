@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDownloadVersion } from "@/hooks/use-download-version";
-import { useInstalledVersions } from "@/hooks/use-installed-versions";
+import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { gameVersionsQuery } from "@/lib/queries";
 import { compareSemverDesc } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
@@ -28,7 +28,7 @@ export const versionSchema = z.object({
 export function AddVersionDialog({ open }: { open: boolean }) {
   const { data: gameVersions } = useQuery(gameVersionsQuery);
   const { closeDialog } = useDialogStore();
-  const { data: installedVersions } = useInstalledVersions();
+  const installedVersions = useInstalledVersionNames();
   const currentPlatform = platform();
 
   const availableVersions = gameVersions?.filter((v) => !installedVersions.includes(v));

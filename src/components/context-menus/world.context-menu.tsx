@@ -21,7 +21,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { useDownloadVersion } from "@/hooks/use-download-version";
-import { useInstalledVersions } from "@/hooks/use-installed-versions";
+import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import type { World } from "@/lib/types";
@@ -49,7 +49,7 @@ export const WorldContextMenu = ({
   const { mutate: downloadVersion } = useDownloadVersion();
 
   // Queries
-  const { data: installedVersions } = useInstalledVersions();
+  const installedVersions = useInstalledVersionNames();
 
   return (
     <ContextMenu>

@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Group, GroupItem, GroupSeparator } from "@/components/ui/group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDownloadVersion } from "@/hooks/use-download-version";
-import { useInstalledVersions } from "@/hooks/use-installed-versions";
+import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import { cn, exportInstallation } from "@/lib/utils";
@@ -35,7 +35,7 @@ export function InstallationRow({ installation }: InstallationRowProps) {
   const { toggleFavorite } = useInstallations();
 
   // Queries
-  const { data: versions } = useInstalledVersions();
+  const versions = useInstalledVersionNames();
   const version = versions?.find((v) => v === installation.version);
 
   // Mutations
