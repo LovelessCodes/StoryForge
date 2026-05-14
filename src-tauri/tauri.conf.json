@@ -6,6 +6,7 @@
 		},
 		"windows": [
 			{
+				"decorations": false,
 				"height": 600,
 				"title": "Story Forge",
 				"width": 800
@@ -44,6 +45,21 @@
 			}
 		},
 		"macOS": {
+			"dmg": {
+				"applicationFolderPosition": {
+					"x": 480,
+					"y": 170
+				},
+				"appPosition": {
+					"x": 180,
+					"y": 170
+				},
+				"background": "backgrounds/dmg_background.png",
+				"windowSize": {
+					"height": 400,
+					"width": 660
+				}
+			},
 			"signingIdentity": "-"
 		},
 		"targets": "all",
@@ -53,7 +69,11 @@
 			"nsis": {
 				"installerIcon": "icons/icon.ico"
 			},
-			"timestampUrl": ""
+			"timestampUrl": "",
+			"webviewInstallMode": {
+				"silent": true,
+				"type": "embedBootstrapper"
+			}
 		}
 	},
 	"identifier": "StoryForge",
