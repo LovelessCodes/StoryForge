@@ -1,4 +1,5 @@
 use reqwest::get;
+use serde::Serialize;
 use serde_json::{from_str, json, to_string_pretty, Map, Value};
 use std::{
     fs::{read_dir, read_to_string, write},
@@ -10,17 +11,76 @@ use super::errors::UiError;
 use super::installations::find_installation_by_id;
 use super::utils::{installations_folder, installations_subdir};
 
-fn extract_servers_from_directory(path: PathBuf) -> Value {
-    let mut servers = Value::Array(vec![]);
-    let clientsettings_path = path.join("clientsettings.json");
+#[derive(Debug, Clone, Serialize)]
+pub struct SavedServer {
+    pub id: u64,
+    pub name: String,
+    pub ip: String,
+    pub port: Option<u16>,
+    pub password: String,
+    pub installation_id: u64,
+    pub installation_name: String,
+}
+
+fn parse_server_string(raw: &str) -> Option<(String, String, Option<u16>, String)> {
+    // Format: "Name,ip:port,password" or "Name,ip,password" or "Name,ip:port"
+    let parts: Vec<&str> = raw.splitn(4, ',').collect();
+    if parts.len() < 2 {
+        return None;
+    }
+    let name = parts[0].to_string();
+    let addr = parts[1];
+    let password = parts.get(2).map(|s| s.to_string()).unwrap_or_default();
+
+    // Parse ip:port
+    if let Some((ip, port_str)) = addr.rsplit_once(':') {
+        if let Ok(port) = port_str.parse::<u16>() {
+            return Some((name, ip.to_string(), Some(port), password));
+        }
+    }
+    Some((name, addr.to_string(), None, password))
+}
+
+fn server_id(name: &str, ip: &str, port: Option<u16>) -> u64 {
+    // Same FNV-1a 32-bit as installations::generate_id, but for multiple fields
+    let combined = format!("{}|{}|{}", name, ip, port.unwrap_or(0));
+    let mut hash: u32 = 0x811c9dc5;
+    for byte in combined.bytes() {
+        hash ^= byte as u32;
+        hash = hash.wrapping_mul(0x01000193);
+    }
+    hash as u64
+}
+
+fn extract_servers_from_directory(
+    dir: &PathBuf,
+    installation_id: u64,
+    installation_name: &str,
+) -> Vec<SavedServer> {
+    let mut servers = Vec::new();
+    let clientsettings_path = dir.join("clientsettings.json");
     if let Ok(content) = read_to_string(clientsettings_path) {
         if let Ok(json) = from_str::<Value>(&content) {
             if let Some(multiplayer_servers) = json
                 .get("stringListSettings")
                 .and_then(|sl| sl.get("multiplayerservers"))
+                .and_then(|ms| ms.as_array())
             {
-                if let Some(array) = servers.as_array_mut() {
-                    array.push(multiplayer_servers.clone());
+                for entry in multiplayer_servers {
+                    if let Some(raw) = entry.as_str() {
+                        if let Some((name, ip, port, password)) = parse_server_string(raw) {
+                            let id = server_id(&name, &ip, port);
+                            servers.push(SavedServer {
+                                id,
+                                name,
+                                ip,
+                                port,
+                                password,
+                                installation_id,
+                                installation_name: installation_name.to_string(),
+                            });
+                        }
+                    }
                 }
             }
         }
@@ -29,26 +89,35 @@ fn extract_servers_from_directory(path: PathBuf) -> Value {
 }
 
 #[command]
-pub async fn fetch_all_servers(app: AppHandle) -> Result<Value, UiError> {
+pub fn fetch_all_servers(app: AppHandle) -> Result<Vec<SavedServer>, UiError> {
     let subdir = installations_subdir(app.clone());
-    let installation_paths = installations_folder(app.clone()).join(&subdir);
-    let mut all_servers = Vec::new();
-    for entry in read_dir(installation_paths).unwrap() {
-        let entry = entry.unwrap();
-        if entry.path().is_dir() {
-            let servers = extract_servers_from_directory(entry.path());
-            let installation_name = entry
-                .path()
-                .file_name()
-                .unwrap()
-                .to_string_lossy()
-                .to_string();
-            let mut installation_servers = Map::new();
-            installation_servers.insert(installation_name, servers);
-            all_servers.push(Value::Object(installation_servers));
-        }
+    let installations_dir = installations_folder(app.clone()).join(&subdir);
+    let mut all_servers: Vec<SavedServer> = Vec::new();
+
+    if !installations_dir.is_dir() {
+        return Ok(all_servers);
     }
-    Ok(Value::Array(all_servers))
+
+    for entry in read_dir(&installations_dir).map_err(|e| UiError {
+        name: "io_error".into(),
+        message: format!("Failed to read installations dir: {e}"),
+    })? {
+        let entry = entry.map_err(|e| UiError {
+            name: "io_error".into(),
+            message: format!("Dir entry error: {e}"),
+        })?;
+        let dir = entry.path();
+        if !dir.is_dir() {
+            continue;
+        }
+        let dir_name = entry.file_name().to_string_lossy().to_string();
+        // Get installation id from installation.json (same hash-based id)
+        let inst_id = super::installations::generate_id(&dir_name);
+        let servers = extract_servers_from_directory(&dir, inst_id, &dir_name);
+        all_servers.extend(servers);
+    }
+
+    Ok(all_servers)
 }
 
 #[command]

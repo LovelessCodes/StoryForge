@@ -81,7 +81,7 @@ fn dir_name(path: &Path) -> String {
         .unwrap_or_default()
 }
 
-fn generate_id(name: &str) -> u64 {
+pub fn generate_id(name: &str) -> u64 {
     // FNV-1a 32-bit — deterministic, fits JS safe integer (< 2^53)
     let mut hash: u32 = 0x811c9dc5;
     for byte in name.bytes() {

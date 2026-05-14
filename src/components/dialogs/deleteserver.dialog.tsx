@@ -31,11 +31,11 @@ export function DeleteServerDialog({
       });
     },
     onSuccess: () => {
-      removeServer(server.id);
+      loadServers();
       closeDialog();
     },
   });
-  const { removeServer } = useServerStore();
+  const { loadServers } = useServerStore();
   const { closeDialog } = useDialogStore();
 
   return (

@@ -1,4 +1,5 @@
 import { useForm } from "@tanstack/react-form";
+import { invoke } from "@tauri-apps/api/core";
 import clsx from "clsx";
 import { useId } from "react";
 
@@ -34,7 +35,7 @@ export function EditServerDialog({
   const id = useId();
   const { closeDialog } = useDialogStore();
   const { installations } = useInstallations();
-  const { updateServer } = useServerStore();
+  const { updateServer, loadServers } = useServerStore();
   const form = useForm({
     defaultValues: {
       favorite: server.favorite,
@@ -46,19 +47,35 @@ export function EditServerDialog({
       password: server.password,
       port: server.port?.toString() ?? null,
     },
-    onSubmit: ({ value }) => {
+    onSubmit: async ({ value }) => {
+      // Remove old entry from clientsettings.json, add new one
+      await invoke("remove_server_from_installation", {
+        installationId: server.installationId,
+        server: `${server.name},${server.ip}${server.port ? `:${server.port}` : ""},${server.password ? `${server.password}` : ""}`,
+      });
+      await invoke("add_server_to_installation", {
+        installationId: Number.parseInt(value.installationId, 10),
+        server: `${value.name},${value.ip}${value.port ? `:${value.port}` : ""},${value.password ? `${value.password}` : ""}`,
+      });
       updateServer(
         {
           favorite: value.favorite,
           id: value.id,
           index: value.index,
           installationId: Number.parseInt(value.installationId, 10),
+          installationName:
+            installations.find((inst) => inst.id.toString() === value.installationId)?.name ?? "",
           ip: value.ip,
           name: value.name,
           password: value.password,
           port: value.port?.length ? parseInt(value.port, 10) : null,
         },
-        (status) => status && closeDialog(),
+        (status) => {
+          if (status) {
+            loadServers();
+            closeDialog();
+          }
+        },
       );
     },
     validators: {

@@ -6,7 +6,7 @@ import { SidebarProvider } from "./components/ui/sidebar";
 import { routeTree } from "./routeTree.gen";
 import { tauriAccountsHandler } from "./stores/accounts";
 import { useInstallationsStore } from "./stores/installations";
-import { tauriServersHandler } from "./stores/servers";
+import { useServerStore } from "./stores/servers";
 import { tauriSettingsHandler } from "./stores/settings";
 
 await tauriSettingsHandler.start();
@@ -17,7 +17,7 @@ if (dark) {
   document.body.classList.remove("dark");
 }
 
-await tauriServersHandler.start();
+useServerStore.getState().loadServers();
 await tauriAccountsHandler.start();
 useInstallationsStore.getState().loadInstallations();
 

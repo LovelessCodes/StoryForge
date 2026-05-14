@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { cn } from "@/lib/utils";
-import { useInstallations } from "@/stores/installations";
+import { findInstallationForServer, useInstallations } from "@/stores/installations";
 import type { Server } from "@/stores/servers";
 import { useSettingsStore } from "@/stores/settings";
 
@@ -22,18 +22,23 @@ export function ServerCard({ server, onConnect, onUnfavorite, onEdit }: ServerCa
   const hasPassword = server.password && server.password.length > 0;
   const { installations } = useInstallations();
   const { streamMode } = useSettingsStore();
-  const installation = installations.find((inst) => inst.id === server.installationId);
+  const installation = findInstallationForServer(
+    installations,
+    server.installationId,
+    server.installationName,
+  );
   const { data: versions } = useInstalledVersions();
 
   const { mutate: installVersion, isPending: isInstalling } = useDownloadVersion();
-  if (!installation) return null;
 
   return (
     <>
       <div className="flex items-center gap-3">
         <div
           className={`h-2 w-2 rounded-full ${
-            versions.includes(installation.version) ? "bg-success" : "bg-muted-foreground/40"
+            installation && versions.includes(installation.version)
+              ? "bg-success"
+              : "bg-muted-foreground/40"
           }`}
         />
         <div className="text-left">
@@ -41,10 +46,13 @@ export function ServerCard({ server, onConnect, onUnfavorite, onEdit }: ServerCa
             {server.name}
             {hasPassword ? <Lock className="text-muted-foreground ml-2 inline h-4 w-4" /> : null}
           </p>
-          {installation.version && (
+          {installation?.version && (
             <p className="text-muted-foreground font-mono text-xs">
               v{installation.version} - {streamMode ? "hidden" : serverAddress}
             </p>
+          )}
+          {!installation && (
+            <p className="text-muted-foreground font-mono text-xs">Unknown installation</p>
           )}
         </div>
       </div>
@@ -58,16 +66,19 @@ export function ServerCard({ server, onConnect, onUnfavorite, onEdit }: ServerCa
                     className="text-muted-foreground hover:text-foreground h-8 w-8"
                     disabled={isInstalling}
                     onClick={() =>
-                      versions.includes(installation.version)
-                        ? onConnect(server)
-                        : installVersion(installation.version)
+                      installation && versions.includes(installation.version)
+                        ? onConnect({
+                            ...server,
+                            installationId: installation?.id ?? server.installationId,
+                          })
+                        : installVersion(installation?.version ?? "")
                     }
                     size="icon"
                     variant="ghost"
                   />
                 }
               >
-                {versions.includes(installation.version) ? (
+                {installation && versions.includes(installation.version) ? (
                   <>
                     <Play className="h-4 w-4" />
                     <span className="sr-only">Play {server.name}</span>
@@ -75,16 +86,18 @@ export function ServerCard({ server, onConnect, onUnfavorite, onEdit }: ServerCa
                 ) : (
                   <>
                     <DownloadCloudIcon className="h-4 w-4" />
-                    <span className="sr-only">Download version {installation.version}</span>
+                    <span className="sr-only">
+                      Download version {installation?.version ?? "unknown"}
+                    </span>
                   </>
                 )}
               </GroupItem>
             }
           />
           <TooltipContent>
-            {versions.includes(installation.version)
+            {installation && versions.includes(installation.version)
               ? `Connect to ${server.name}`
-              : `Download version ${installation.version}`}
+              : `Download version ${installation?.version ?? "unknown"}`}
           </TooltipContent>
         </Tooltip>
         <Tooltip>

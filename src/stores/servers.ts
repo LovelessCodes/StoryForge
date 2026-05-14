@@ -1,12 +1,12 @@
-import { createTauriStore } from "@tauri-store/zustand";
+import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import { create } from "zustand";
 
 type ServerStore = {
   servers: Server[];
+  loadServers: () => Promise<void>;
   addServer: (server: Server, cb?: (status: boolean) => void) => void;
   removeAllServers: () => void;
-  removeAllServersExcept: (id: number) => void;
   removeServer: (id: number) => void;
   moveServer: (id: number, newIndex: number) => void;
   toggleFavorite: (id: number) => void;
@@ -22,18 +22,24 @@ export type Server = {
   password: string;
   favorite: boolean;
   installationId: number;
+  installationName: string;
+};
+
+type SavedServer = {
+  id: number;
+  name: string;
+  ip: string;
+  port: number | null;
+  password: string;
+  installation_id: number;
+  installation_name: string;
 };
 
 export const useServerStore = create<ServerStore>()((set) => ({
   addServer: (server, cb) =>
     set((state) => {
-      if (state.servers.find((s) => s.name === server.name)) {
-        toast.error(`Server with name "${server.name}" already exists`);
-        cb?.(false);
-        return state;
-      }
-      if (state.servers.find((s) => s.ip === server.ip && s.port === server.port)) {
-        toast.error(`Server with IP "${server.ip}" and port "${server.port}" already exists`);
+      if (state.servers.find((s) => s.name === server.name && s.ip === server.ip)) {
+        toast.error(`Server "${server.name}" already exists`);
         cb?.(false);
         return state;
       }
@@ -41,6 +47,32 @@ export const useServerStore = create<ServerStore>()((set) => ({
       cb?.(true);
       return { ...state, servers: [...state.servers, server] };
     }),
+  loadServers: async () => {
+    try {
+      const raw = await invoke<SavedServer[]>("fetch_all_servers");
+      set((state) => {
+        // Merge with existing servers to preserve favorites and indexes
+        const existingById = new Map(state.servers.map((s) => [s.id, s]));
+        const servers: Server[] = raw.map((r, idx) => {
+          const existing = existingById.get(r.id);
+          return {
+            id: r.id,
+            index: existing?.index ?? idx,
+            name: r.name,
+            ip: r.ip,
+            port: r.port,
+            password: r.password,
+            favorite: existing?.favorite ?? false,
+            installationId: r.installation_id,
+            installationName: r.installation_name,
+          };
+        });
+        return { servers };
+      });
+    } catch (e) {
+      console.error("Failed to load servers:", e);
+    }
+  },
   moveServer: (id, newIndex) =>
     set((state) => {
       const servers = [...state.servers];
@@ -50,7 +82,6 @@ export const useServerStore = create<ServerStore>()((set) => ({
       const [moved] = servers.splice(oldIndex, 1);
       servers.splice(newIndex, 0, moved);
 
-      // Re-index all servers
       const reindexed = servers.map((server, idx) => ({
         ...server,
         index: idx,
@@ -58,14 +89,9 @@ export const useServerStore = create<ServerStore>()((set) => ({
       return { ...state, servers: reindexed };
     }),
   removeAllServers: () => set((state) => ({ ...state, servers: [] })),
-  removeAllServersExcept: (id) =>
-    set((state) => ({
-      ...state,
-      servers: state.servers.filter((server) => server.id === id),
-    })),
   removeServer: (id) =>
     set((state) => {
-      toast.success(`Server removed successfully`);
+      toast.success("Server removed successfully");
       return {
         ...state,
         servers: state.servers.filter((server) => server.id !== id),
@@ -82,21 +108,11 @@ export const useServerStore = create<ServerStore>()((set) => ({
   updateServer: (updatedServer, cb) =>
     set((state) => {
       if (!state.servers.find((s) => s.id === updatedServer.id)) {
-        toast.error(`Server not found`);
+        toast.error("Server not found");
         cb?.(false);
         return state;
       }
-      if (state.servers.find((s) => s.name === updatedServer.name && s.id !== updatedServer.id)) {
-        toast.error(`Server with name "${updatedServer.name}" already exists`);
-        cb?.(false);
-        return state;
-      }
-      if (state.servers.find((s) => s.ip === updatedServer.ip && s.id !== updatedServer.id)) {
-        toast.error(`Server with IP "${updatedServer.ip}" already exists`);
-        cb?.(false);
-        return state;
-      }
-      toast.success(`Server updated successfully`);
+      toast.success("Server updated successfully");
       cb?.(true);
       return {
         ...state,
@@ -107,6 +123,11 @@ export const useServerStore = create<ServerStore>()((set) => ({
     }),
 }));
 
-export const tauriServersHandler = createTauriStore("servers", useServerStore, {
-  saveOnChange: true,
-});
+export const useServers = () => {
+  const { servers, loadServers, ...rest } = useServerStore();
+  return {
+    servers: [...servers].sort((a, b) => a.index - b.index),
+    loadServers,
+    ...rest,
+  };
+};

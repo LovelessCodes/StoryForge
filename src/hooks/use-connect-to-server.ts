@@ -4,7 +4,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useRef } from "react";
 import { toast } from "sonner";
 
-import { useInstallations } from "@/stores/installations";
+import { findInstallationForServer, useInstallations } from "@/stores/installations";
 
 import { useAddServerToInstallation } from "./use-add-server-to-installation";
 import { useCheckServerInInstallation } from "./use-check-server-in-installation";
@@ -42,21 +42,27 @@ export const useConnectToServer = (
   return useMutation({
     ...props,
     mutationFn: async ({ name, ip, password, installationId, pub }) => {
+      const resolvedInstallation = findInstallationForServer(installations, installationId);
+      const resolvedId = resolvedInstallation?.id ?? installationId;
       if (!pub) {
         await mutateAsync({
-          installationId,
+          installationId: resolvedId,
           server: `${name},${ip},${password ? password : ""}`,
         });
       }
       await invoke("play_game", {
-        options: { installation_id: installationId, password, server: ip },
+        options: {
+          installation_id: resolvedId,
+          password,
+          server: ip,
+        },
       });
     },
     onError: (error) => {
       toast.error(`Error connecting to server: ${error.message}`);
     },
     onMutate: async (variable) => {
-      const installation = installations.find((inst) => inst.id === variable.installationId);
+      const installation = findInstallationForServer(installations, variable.installationId);
 
       // Listen for dotnet download progress
       const unlistenDotnet = await listen<{ phase: string; percent: number }>(

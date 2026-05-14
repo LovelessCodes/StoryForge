@@ -51,7 +51,7 @@ export function AddServerDialog({ open, installation }: { open: boolean } & AddS
   const id = useId();
   const { closeDialog } = useDialogStore();
   const { installations } = useInstallations();
-  const { addServer } = useServerStore();
+  const { addServer, loadServers } = useServerStore();
   const { mutateAsync, isPending } = useAddServerToInstallation();
   const form = useForm({
     defaultValues: {
@@ -83,6 +83,9 @@ export function AddServerDialog({ open, installation }: { open: boolean } & AddS
                 id: Date.now(),
                 index: Date.now(),
                 installationId: parseInt(value.installationId, 10),
+                installationName:
+                  installations.find((inst) => inst.id.toString() === value.installationId)?.name ??
+                  "",
                 ip: value.ip,
                 name: value.name,
                 password: value.password,
@@ -90,6 +93,7 @@ export function AddServerDialog({ open, installation }: { open: boolean } & AddS
               },
               (status) => {
                 if (status) {
+                  loadServers();
                   closeDialog();
                 }
               },

@@ -4,6 +4,21 @@ import { create } from "zustand/react";
 
 import { makeStringFolderSafe, pathDelimiter } from "@/lib/utils";
 
+/**
+ * Find an installation by id first, then fall back to name match.
+ * Needed because installation ids changed during migration (Date.now() → hash).
+ */
+export function findInstallationForServer(
+  installations: Installation[],
+  installationId: number,
+  installationName?: string,
+): Installation | undefined {
+  return (
+    installations.find((inst) => inst.id === installationId) ??
+    (installationName ? installations.find((inst) => inst.name === installationName) : undefined)
+  );
+}
+
 export type Installation = {
   id: number;
   name: string;

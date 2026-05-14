@@ -8,7 +8,7 @@ import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { cn } from "@/lib/utils";
 import { useDialogStore } from "@/stores/dialogs";
-import { useInstallations } from "@/stores/installations";
+import { findInstallationForServer, useInstallations } from "@/stores/installations";
 import { type Server, useServerStore } from "@/stores/servers";
 import { useSettingsStore } from "@/stores/settings";
 
@@ -23,7 +23,11 @@ export function ServerRow({ server }: ServerRowProps) {
   const { streamMode } = useSettingsStore();
   const { data: versions } = useInstalledVersions();
   const { installations } = useInstallations();
-  const installation = installations.find((inst) => inst.id === server.installationId);
+  const installation = findInstallationForServer(
+    installations,
+    server.installationId,
+    server.installationName,
+  );
 
   // Mutations
   const { mutate: connectToServer } = useConnectToServer();
@@ -59,7 +63,7 @@ export function ServerRow({ server }: ServerRowProps) {
                     onClick={() =>
                       versions?.includes(installation?.version ?? "")
                         ? connectToServer({
-                            installationId: server.installationId,
+                            installationId: installation?.id ?? server.installationId,
                             ip: `${server.ip}${server.port ? `:${server.port}` : ""}`,
                             name: server.name,
                             password: server.password,
