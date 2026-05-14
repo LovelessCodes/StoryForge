@@ -1,4 +1,4 @@
-name: 'Bump Version'
+name: "Bump Version"
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
 
     steps:
       - name: checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -21,12 +21,13 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
 
-      - name: Setup Biome
-        uses: biomejs/setup-biome@v2
-        with:
-          version: latest
+      - name: setup bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: install dependencies
+        run: bun install
 
       - name: bump version in package.json, Cargo.toml, and tauri.conf.json
         id: bump_version
@@ -65,8 +66,8 @@ jobs:
 
           # Use biome to format the changed files
           cd ..
-          biome check . --write
-          echo "Formatted files with Biome"
+          bun run fmt
+          echo "Formatted files with Oxfmt"
 
           # Commit and push changes back to the repository
           git config user.name "github-actions[bot]"

@@ -6,41 +6,47 @@ on:
     branches:
       - release
     paths:
-      - '**.ts'
-      - '**.tsx'
-      - '**.js'
-      - '**.jsx'
-      - '**.json'
-      - '**.css'
-      - '**.scss'
+      - "**.ts"
+      - "**.tsx"
+      - "**.js"
+      - "**.jsx"
+      - "**.json"
+      - "**.css"
+      - "**.scss"
   pull_request:
     branches:
       - release
     paths:
-      - '**.ts'
-      - '**.tsx'
-      - '**.js'
-      - '**.jsx'
-      - '**.json'
-      - '**.css'
-      - '**.scss'
+      - "**.ts"
+      - "**.tsx"
+      - "**.js"
+      - "**.jsx"
+      - "**.json"
+      - "**.css"
+      - "**.scss"
     types:
       - opened
       - synchronize
 
 jobs:
-  quality:
-    runs-on: ubuntu-latest
+  lint:
+    runs-on: ubuntu-slim
     permissions:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
-      - name: Setup Biome
-        uses: biomejs/setup-biome@v2
-        with:
-          version: latest
-      - name: Run Biome
-        run: biome ci .
+
+      - name: setup bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: install dependencies
+        run: bun install
+
+      - name: Run Lint
+        run: bun run lint
+
+      - name: Run Format Check
+        run: bun run fmt:check
