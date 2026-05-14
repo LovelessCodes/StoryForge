@@ -25,6 +25,20 @@ import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
 import { useSettingsStore } from "@/stores/settings";
 
+async function saveInstallationToDisk(installation: {
+  name: string;
+  path: string;
+  version: string;
+  startParams: string;
+}) {
+  await invoke("save_installation", {
+    name: installation.name,
+    path: installation.path,
+    startParams: installation.startParams,
+    version: installation.version,
+  });
+}
+
 const installationSchema = z.object({
   mods: z.array(
     z.object({
@@ -124,6 +138,12 @@ export function ImportInstallationDialog({ open }: { open: boolean }) {
           version: installation.data.version,
         };
         addInstallation(newInstallation);
+        saveInstallationToDisk({
+          name: installation.data.name,
+          path,
+          startParams: "",
+          version: installation.data.version,
+        });
 
         for (const mod of installation.data.mods) {
           const modInfo = (await invoke("fetch_mod_info", {

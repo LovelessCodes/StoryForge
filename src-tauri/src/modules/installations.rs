@@ -1,7 +1,10 @@
-use serde::Deserialize;
-use serde_json::{from_str, from_value, json, to_string_pretty, Value};
+use json5;
+use serde::{Deserialize, Serialize};
+use serde_json::{from_str, json, to_string_pretty, Value};
 use std::{
-    fs::{create_dir_all, remove_dir_all, write, File},
+    collections::hash_map::DefaultHasher,
+    fs::{create_dir_all, read_dir, remove_dir_all, write, File},
+    hash::{Hash, Hasher},
     io::{BufRead, BufReader, Read},
     path::{Path, PathBuf},
     process::{Command, Stdio},
@@ -17,7 +20,237 @@ use tauri_plugin_zustand::ManagerExt;
 use walkdir::WalkDir;
 
 use super::errors::UiError;
-use super::utils::{installations_subdir, move_folder, versions_folder, versions_subdir};
+use super::utils::{
+    installations_folder, installations_subdir, move_folder, versions_folder, versions_subdir,
+};
+
+// --- Installation JSON5 persistence ---
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InstallationInfo {
+    pub name: String,
+    pub version: String,
+    #[serde(rename = "startParams")]
+    pub start_params: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct InstallationResult {
+    pub id: u64,
+    pub name: String,
+    pub version: String,
+    #[serde(rename = "startParams")]
+    pub start_params: String,
+    pub path: String,
+}
+
+fn dir_name(path: &Path) -> String {
+    path.file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default()
+}
+
+fn generate_id(name: &str) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    name.hash(&mut hasher);
+    hasher.finish()
+}
+
+pub fn read_installation_json(dir: &Path) -> Result<InstallationInfo, UiError> {
+    let file_path = dir.join("installation.json");
+    if !file_path.exists() {
+        return Err(UiError {
+            name: "not_found".into(),
+            message: format!("installation.json not found in {}", dir.to_string_lossy()),
+        });
+    }
+    let content = std::fs::read_to_string(&file_path).map_err(|e| UiError {
+        name: "read_failed".into(),
+        message: format!("Failed to read {}: {e}", file_path.to_string_lossy()),
+    })?;
+    let info: InstallationInfo = json5::from_str(&content).map_err(|e| UiError {
+        name: "parse_failed".into(),
+        message: format!("Failed to parse {}: {e}", file_path.to_string_lossy()),
+    })?;
+    Ok(info)
+}
+
+pub fn write_installation_json(dir: &Path, info: &InstallationInfo) -> Result<(), UiError> {
+    if !dir.exists() {
+        create_dir_all(dir).map_err(|e| UiError {
+            name: "create_dir_failed".into(),
+            message: format!("Failed to create directory: {e}"),
+        })?;
+    }
+    let file_path = dir.join("installation.json");
+    let content = json5::to_string(info).map_err(|e| UiError {
+        name: "serialize_failed".into(),
+        message: format!("Failed to serialize installation.json: {e}"),
+    })?;
+    write(&file_path, content).map_err(|e| UiError {
+        name: "write_failed".into(),
+        message: format!("Failed to write {}: {e}", file_path.to_string_lossy()),
+    })?;
+    Ok(())
+}
+
+pub fn find_installation_by_id(
+    app: &AppHandle,
+    id: u64,
+) -> Result<(PathBuf, InstallationInfo), UiError> {
+    let subdir = installations_subdir(app.clone());
+    let installations_dir = installations_folder(app.clone()).join(&subdir);
+    if !installations_dir.exists() || !installations_dir.is_dir() {
+        return Err(UiError {
+            name: "not_found".into(),
+            message: format!("Installation with id {} not found", id),
+        });
+    }
+    for entry in read_dir(&installations_dir).map_err(|e| UiError {
+        name: "io_error".into(),
+        message: format!("Failed to read installations directory: {e}"),
+    })? {
+        let entry = entry.map_err(|e| UiError {
+            name: "io_error".into(),
+            message: format!("Failed to read directory entry: {e}"),
+        })?;
+        let dir = entry.path();
+        if !dir.is_dir() {
+            continue;
+        }
+        let name = dir_name(&dir);
+        if generate_id(&name) != id {
+            continue;
+        }
+        let inst_json = dir.join("installation.json");
+        if inst_json.exists() {
+            let info = read_installation_json(&dir)?;
+            return Ok((dir, info));
+        }
+        // No installation.json but dir exists — treat as valid
+        return Ok((
+            dir,
+            InstallationInfo {
+                name,
+                version: String::new(),
+                start_params: String::new(),
+            },
+        ));
+    }
+    Err(UiError {
+        name: "not_found".into(),
+        message: format!("Installation with id {} not found", id),
+    })
+}
+
+#[command]
+pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, UiError> {
+    let subdir = installations_subdir(app.clone());
+    let installations_dir = installations_folder(app.clone()).join(&subdir);
+
+    // Ensure dir exists
+    if !installations_dir.exists() {
+        create_dir_all(&installations_dir).map_err(|e| UiError {
+            name: "create_dir_failed".into(),
+            message: format!("Failed to create installations directory: {e}"),
+        })?;
+    }
+
+    // --- Migration: read old zustand store, write installation.json for each existing dir ---
+    if let Ok(old_raw) = app.zustand().get::<Value>("installations", "installations") {
+        if let Some(old_arr) = old_raw.as_array() {
+            for old_inst in old_arr {
+                let old_path_str = old_inst["path"].as_str().unwrap_or("");
+                let old_pb = PathBuf::from(old_path_str);
+                if old_pb.exists() && old_pb.is_dir() {
+                    let inst_json = old_pb.join("installation.json");
+                    if !inst_json.exists() {
+                        let info = InstallationInfo {
+                            name: old_inst["name"].as_str().unwrap_or("").to_string(),
+                            version: old_inst["version"].as_str().unwrap_or("").to_string(),
+                            start_params: old_inst["startParams"]
+                                .as_str()
+                                .unwrap_or("")
+                                .to_string(),
+                        };
+                        let _ = write_installation_json(&old_pb, &info);
+                    }
+                }
+            }
+        }
+    }
+
+    // --- Scan directories ---
+    let mut results: Vec<InstallationResult> = Vec::new();
+    if installations_dir.is_dir() {
+        for entry in read_dir(&installations_dir).map_err(|e| UiError {
+            name: "io_error".into(),
+            message: format!("Failed to read installations directory: {e}"),
+        })? {
+            let entry = entry.map_err(|e| UiError {
+                name: "io_error".into(),
+                message: format!("Failed to read directory entry: {e}"),
+            })?;
+            let dir = entry.path();
+            if !dir.is_dir() {
+                continue;
+            }
+            let dir_name = entry.file_name().to_string_lossy().to_string();
+            let id = generate_id(&dir_name);
+
+            // Check if it looks like an installation (has Mods dir or installation.json)
+            let has_mods = dir.join("Mods").is_dir();
+            let has_saves = dir.join("Saves").is_dir();
+            let has_json = dir.join("installation.json").exists();
+
+            if !has_mods && !has_saves && !has_json {
+                continue;
+            }
+
+            let info = if has_json {
+                read_installation_json(&dir).unwrap_or_else(|_| InstallationInfo {
+                    name: dir_name.clone(),
+                    version: String::new(),
+                    start_params: String::new(),
+                })
+            } else {
+                let info = InstallationInfo {
+                    name: dir_name.clone(),
+                    version: String::new(),
+                    start_params: String::new(),
+                };
+                let _ = write_installation_json(&dir, &info);
+                info
+            };
+
+            results.push(InstallationResult {
+                id,
+                name: info.name,
+                version: info.version,
+                start_params: info.start_params,
+                path: dir.to_string_lossy().to_string(),
+            });
+        }
+    }
+
+    Ok(results)
+}
+
+#[command]
+pub fn save_installation(
+    path: String,
+    name: String,
+    version: String,
+    start_params: String,
+) -> Result<(), UiError> {
+    let dir = PathBuf::from(&path);
+    let info = InstallationInfo {
+        name,
+        version,
+        start_params,
+    };
+    write_installation_json(&dir, &info)
+}
 
 #[command]
 pub async fn initialize_game(path: String) -> Result<String, UiError> {
@@ -58,23 +291,11 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
         name: "invalid_params".into(),
         message: "Invalid play game parameters.".into(),
     })?;
-    let installation_zustand = app.zustand().get("installations", "installations").unwrap();
-    let installation_json: Value = from_value(installation_zustand).unwrap();
-    // Find installation with matching id
-    let installation = installation_json
-        .as_array()
-        .and_then(|arr| {
-            arr.iter()
-                .find(|inst| inst["id"].as_u64() == Some(options.installation_id))
-        })
-        .ok_or_else(|| UiError {
-            name: "not_found".into(),
-            message: format!("Installation with id {} not found", options.installation_id),
-        })?;
+    let (pb, installation) = find_installation_by_id(&app, options.installation_id)?;
     let subdir = versions_subdir(app.clone());
     let version_path = versions_folder(app.clone())
         .join(&subdir)
-        .join(installation["version"].as_str().unwrap());
+        .join(&installation.version);
     if !version_path.exists() || !version_path.is_dir() {
         return Err(UiError {
             name: "not_found".into(),
@@ -84,8 +305,7 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
             ),
         });
     }
-    let pb = PathBuf::from(installation["path"].as_str().unwrap());
-    let start_params = installation["startParams"].as_str().unwrap_or("");
+    let start_params = installation.start_params.as_str();
     let mut found_exe = false;
     let mut combined_path = PathBuf::from("/");
     for entry in WalkDir::new(&version_path) {
@@ -470,34 +690,15 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
 }
 
 #[command]
-pub fn remove_installation(app: AppHandle, id: i64) -> Result<String, UiError> {
-    let installations_zustand = app.zustand().get("installations", "installations").unwrap();
-    let mut installations_json: Value = from_value(installations_zustand).unwrap();
-    let installations_array = installations_json.as_array_mut().ok_or_else(|| UiError {
-        name: "invalid_data".into(),
-        message: "Installations data is not an array".into(),
-    })?;
-    let index = installations_array
-        .iter()
-        .position(|inst| inst["id"].as_i64() == Some(id));
-    if let Some(idx) = index {
-        let installation = &installations_array[idx];
-        let path = installation["path"].as_str().unwrap_or("");
-        // Remove the installation directory
-        let pb = PathBuf::from(path);
-        if pb.exists() && pb.is_dir() {
-            remove_dir_all(&pb).map_err(|e| UiError {
-                name: "remove_failed".into(),
-                message: format!("Failed to remove installation directory: {e}"),
-            })?;
-        }
-        Ok("removed".into())
-    } else {
-        Err(UiError {
-            name: "not_found".into(),
-            message: format!("Installation with id {} not found", id),
-        })
+pub fn remove_installation(app: AppHandle, id: u64) -> Result<String, UiError> {
+    let (pb, _info) = find_installation_by_id(&app, id)?;
+    if pb.exists() && pb.is_dir() {
+        remove_dir_all(&pb).map_err(|e| UiError {
+            name: "remove_failed".into(),
+            message: format!("Failed to remove installation directory: {e}"),
+        })?;
     }
+    Ok("removed".into())
 }
 
 #[command]

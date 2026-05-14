@@ -1,4 +1,4 @@
-import { createTauriStore } from "@tauri-store/zustand";
+import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import { create } from "zustand/react";
 
@@ -17,10 +17,19 @@ export type Installation = {
   favorite: boolean;
 };
 
+type InstallationResult = {
+  id: number;
+  name: string;
+  version: string;
+  startParams: string;
+  path: string;
+};
+
 type InstallationsStore = {
   selectedInstallation: Installation | null;
   setSelectedInstallation: (installation: InstallationsStore["selectedInstallation"]) => void;
   installations: Installation[];
+  loadInstallations: () => Promise<void>;
   addInstallation: (installation: Installation, cb?: (status: boolean) => void) => void;
   removeInstallation: (id: number) => void;
   updateLastPlayed: (id: number) => void;
@@ -55,6 +64,33 @@ export const useInstallationsStore = create<InstallationsStore>((set) => ({
       return { installations };
     }),
   installations: [],
+  loadInstallations: async () => {
+    try {
+      const results = await invoke<InstallationResult[]>("get_all_installations");
+      set((state) => {
+        // Merge with existing installations to preserve UI-only fields, matching by path
+        const existingByPath = new Map(state.installations.map((i) => [i.path, i]));
+        const installations: Installation[] = results.map((r, idx) => {
+          const existing = existingByPath.get(r.path);
+          return {
+            id: r.id,
+            name: r.name,
+            index: existing?.index ?? idx,
+            path: r.path,
+            lastTimePlayed: existing?.lastTimePlayed ?? 0,
+            totalTimePlayed: existing?.totalTimePlayed ?? 0,
+            version: r.version,
+            startParams: r.startParams ?? "",
+            icon: existing?.icon ?? null,
+            favorite: existing?.favorite ?? false,
+          };
+        });
+        return { installations };
+      });
+    } catch (e) {
+      console.error("Failed to load installations:", e);
+    }
+  },
   moveInstallation: (id, newIndex) =>
     set((state) => {
       const installations = [...state.installations];
@@ -126,6 +162,7 @@ export const useInstallationsStore = create<InstallationsStore>((set) => ({
 
 export const useInstallations = () => {
   const {
+    loadInstallations,
     updateInstallation,
     addInstallation,
     removeInstallation,
@@ -146,6 +183,7 @@ export const useInstallations = () => {
   return {
     addInstallation,
     installations: outInstallations,
+    loadInstallations,
     moveInstallation,
     removeAll,
     removeInstallation,
@@ -157,7 +195,3 @@ export const useInstallations = () => {
     updateParent,
   };
 };
-
-export const tauriInstallationsHandler = createTauriStore("installations", useInstallationsStore, {
-  saveOnChange: true,
-});

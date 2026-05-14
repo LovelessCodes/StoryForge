@@ -28,6 +28,20 @@ import { useDialogStore } from "@/stores/dialogs";
 import { useInstallationsStore } from "@/stores/installations";
 import { useSettingsStore } from "@/stores/settings";
 
+async function saveInstallationToDisk(installation: {
+  name: string;
+  path: string;
+  version: string;
+  startParams: string;
+}) {
+  await invoke("save_installation", {
+    name: installation.name,
+    path: installation.path,
+    startParams: installation.startParams,
+    version: installation.version,
+  });
+}
+
 export const installationSchema = z.object({
   favorite: z.boolean(),
   icon: z.string(),
@@ -96,11 +110,12 @@ export function AddInstallationDialog({
         await downloadVersion(value.version);
       }
       await initializeGame(value.path);
+      const newId = Date.now();
       addInstallation(
         {
           favorite: value.favorite,
           icon: value.icon,
-          id: Date.now(),
+          id: newId,
           index: Date.now(),
           lastTimePlayed: 0,
           name: value.name,
@@ -109,7 +124,17 @@ export function AddInstallationDialog({
           totalTimePlayed: 0,
           version: value.version,
         },
-        (status) => status && closeDialog(),
+        (status) => {
+          if (status) {
+            saveInstallationToDisk({
+              name: value.name,
+              path: value.path,
+              startParams: value.startParams,
+              version: value.version,
+            });
+            closeDialog();
+          }
+        },
       );
     },
     validators: {

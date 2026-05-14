@@ -1,16 +1,15 @@
 use prost::Message;
 use rusqlite::OpenFlags;
 use serde::{Deserialize, Serialize};
-use serde_json::{from_value, Value};
 use std::{
     ffi::OsStr,
     fs::{create_dir_all, read_dir, remove_file, rename},
     path::Path,
 };
 use tauri::{command, AppHandle};
-use tauri_plugin_zustand::ManagerExt;
 
 use super::errors::UiError;
+use super::installations::find_installation_by_id;
 use super::proto::{GameData, MapMarkers, ProspectingLog};
 use super::utils::{installations_folder, installations_subdir};
 
@@ -172,26 +171,8 @@ pub fn get_installation_saves(
     app: AppHandle,
     installation_id: u64,
 ) -> Result<Vec<String>, UiError> {
-    let installation_zustand = app.zustand().get("installations", "installations").unwrap();
-    let installation_json: Value = from_value(installation_zustand).unwrap();
-    // Find installation with matching id
-    let installation = installation_json.as_array().and_then(|arr| {
-        arr.iter()
-            .find(|inst| inst["id"].as_u64() == Some(installation_id))
-    });
-
-    let installation = match installation {
-        Some(inst) => inst,
-        None => {
-            // Optionally, log the error or handle it as needed
-            return Err(UiError {
-                name: "installation_not_found".into(),
-                message: format!("Installation with id {} not found", installation_id),
-            });
-        }
-    };
-
-    let saves_path = Path::new(installation["path"].as_str().unwrap()).join("Saves");
+    let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
+    let saves_path = pb.join("Saves");
 
     // Traverse the saves directory and collect save names from the .vcdbs files
     let mut saves = Vec::new();
@@ -226,26 +207,8 @@ pub fn update_world(
     name: String,
     identifier: Option<String>,
 ) -> Result<(), UiError> {
-    let installation_zustand = app.zustand().get("installations", "installations").unwrap();
-    let installation_json: Value = from_value(installation_zustand).unwrap();
-    // Find installation with matching id
-    let installation = installation_json.as_array().and_then(|arr| {
-        arr.iter()
-            .find(|inst| inst["id"].as_u64() == Some(installation_id))
-    });
-
-    let installation = match installation {
-        Some(inst) => inst,
-        None => {
-            // Optionally, log the error or handle it as needed
-            return Err(UiError {
-                name: "installation_not_found".into(),
-                message: format!("Installation with id {} not found", installation_id),
-            });
-        }
-    };
-
-    let saves_path = Path::new(installation["path"].as_str().unwrap()).join("Saves");
+    let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
+    let saves_path = pb.join("Saves");
     if !saves_path.exists() {
         create_dir_all(&saves_path).map_err(|e| UiError::from(format!("Create dir error: {e}")))?;
     }
@@ -290,9 +253,7 @@ pub fn update_world(
             .map(|p| p.join("Maps").join(format!("{}.db", id)));
         if let Some(maps_path) = maps_path {
             if maps_path.exists() && maps_path.is_file() {
-                let new_maps_path = Path::new(installation["path"].as_str().unwrap())
-                    .join("Maps")
-                    .join(format!("{}.db", id));
+                let new_maps_path = pb.join("Maps").join(format!("{}.db", id));
                 // Ensure the Maps directory exists
                 let maps_dir = new_maps_path.parent().unwrap();
                 if !maps_dir.exists() {

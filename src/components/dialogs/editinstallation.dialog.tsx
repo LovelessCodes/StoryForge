@@ -28,6 +28,20 @@ import { useSettingsStore } from "@/stores/settings";
 
 import { installationSchema } from "./addinstallation.dialog";
 
+async function saveInstallationToDisk(installation: {
+  name: string;
+  path: string;
+  version: string;
+  startParams: string;
+}) {
+  await invoke("save_installation", {
+    name: installation.name,
+    path: installation.path,
+    startParams: installation.startParams,
+    version: installation.version,
+  });
+}
+
 export type EditInstallationDialogProps = {
   installation: Installation;
 };
@@ -78,13 +92,18 @@ export function EditInstallationDialog({
           if (status) {
             const safeName = makeStringFolderSafe(value.name);
             const oldSafeName = makeStringFolderSafe(installation.name);
-            if (safeName === oldSafeName) {
-              return;
+            if (safeName !== oldSafeName) {
+              await invoke("rename_installations_folder", {
+                newName: safeName,
+                source: installationsParent ?? appFolder ?? "",
+                subdir: oldSafeName,
+              });
             }
-            await invoke("rename_installations_folder", {
-              newName: safeName,
-              source: installationsParent ?? appFolder ?? "",
-              subdir: oldSafeName,
+            await saveInstallationToDisk({
+              name: value.name,
+              path: value.path,
+              startParams: value.startParams,
+              version: value.version,
             });
             closeDialog();
           }

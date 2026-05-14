@@ -1,13 +1,13 @@
 use reqwest::get;
-use serde_json::{from_str, from_value, json, to_string_pretty, Map, Value};
+use serde_json::{from_str, json, to_string_pretty, Map, Value};
 use std::{
     fs::{read_dir, read_to_string, write},
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 use tauri::{command, AppHandle};
-use tauri_plugin_zustand::ManagerExt;
 
 use super::errors::UiError;
+use super::installations::find_installation_by_id;
 use super::utils::{installations_folder, installations_subdir};
 
 fn extract_servers_from_directory(path: PathBuf) -> Value {
@@ -57,24 +57,8 @@ pub fn remove_server_from_installation(
     installation_id: u64,
     server: String,
 ) -> Result<(), UiError> {
-    let installation_zustand = app.zustand().get("installations", "installations").unwrap();
-    let installation_json: Value = from_value(installation_zustand).unwrap();
-    // Find installation with matching id
-    let installation = installation_json
-        .as_array()
-        .and_then(|arr| {
-            arr.iter()
-                .find(|inst| inst["id"].as_u64() == Some(installation_id))
-        })
-        .ok_or_else(|| UiError {
-            name: "not_found".into(),
-            message: format!("Installation with id {} not found", installation_id),
-        })?;
-    let installation_path = installation["path"].as_str().ok_or_else(|| UiError {
-        name: "invalid_data".into(),
-        message: "Installation path is not a string".into(),
-    })?;
-    let clientsettings_path = Path::new(installation_path).join("clientsettings.json");
+    let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
+    let clientsettings_path = pb.join("clientsettings.json");
     let mut clientsettings: Value = if clientsettings_path.exists() {
         let content = read_to_string(&clientsettings_path).map_err(|e| UiError {
             name: "io_error".into(),
@@ -134,24 +118,8 @@ pub fn check_server_in_installation(
     installation_id: u64,
     server: String,
 ) -> Result<bool, UiError> {
-    let installation_zustand = app.zustand().get("installations", "installations").unwrap();
-    let installation_json: Value = from_value(installation_zustand).unwrap();
-    // Find installation with matching id
-    let installation = installation_json
-        .as_array()
-        .and_then(|arr| {
-            arr.iter()
-                .find(|inst| inst["id"].as_u64() == Some(installation_id))
-        })
-        .ok_or_else(|| UiError {
-            name: "not_found".into(),
-            message: format!("Installation with id {} not found", installation_id),
-        })?;
-    let installation_path = installation["path"].as_str().ok_or_else(|| UiError {
-        name: "invalid_data".into(),
-        message: "Installation path is not a string".into(),
-    })?;
-    let clientsettings_path = Path::new(installation_path).join("clientsettings.json");
+    let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
+    let clientsettings_path = pb.join("clientsettings.json");
     if !clientsettings_path.exists() {
         return Ok(false);
     }
@@ -183,24 +151,8 @@ pub fn add_server_to_installation(
     installation_id: u64,
     server: String,
 ) -> Result<(), UiError> {
-    let installation_zustand = app.zustand().get("installations", "installations").unwrap();
-    let installation_json: Value = from_value(installation_zustand).unwrap();
-    // Find installation with matching id
-    let installation = installation_json
-        .as_array()
-        .and_then(|arr| {
-            arr.iter()
-                .find(|inst| inst["id"].as_u64() == Some(installation_id))
-        })
-        .ok_or_else(|| UiError {
-            name: "not_found".into(),
-            message: format!("Installation with id {} not found", installation_id),
-        })?;
-    let installation_path = installation["path"].as_str().ok_or_else(|| UiError {
-        name: "invalid_data".into(),
-        message: "Installation path is not a string".into(),
-    })?;
-    let clientsettings_path = Path::new(installation_path).join("clientsettings.json");
+    let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
+    let clientsettings_path = pb.join("clientsettings.json");
     let mut clientsettings: Value = if clientsettings_path.exists() {
         let content = read_to_string(&clientsettings_path).map_err(|e| UiError {
             name: "io_error".into(),
