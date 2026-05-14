@@ -15,6 +15,8 @@ export type Installation = {
   startParams: string;
   icon: string | null;
   favorite: boolean;
+  sizeBytes: number;
+  sizeDisplay: string;
 };
 
 type InstallationResult = {
@@ -23,6 +25,8 @@ type InstallationResult = {
   version: string;
   startParams: string;
   path: string;
+  size_bytes: number;
+  size_display: string;
 };
 
 type InstallationsStore = {
@@ -83,6 +87,8 @@ export const useInstallationsStore = create<InstallationsStore>((set) => ({
             startParams: r.startParams ?? "",
             icon: existing?.icon ?? null,
             favorite: existing?.favorite ?? false,
+            sizeBytes: r.size_bytes,
+            sizeDisplay: r.size_display,
           };
         });
         return { installations };
