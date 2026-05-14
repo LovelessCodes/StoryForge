@@ -10,7 +10,7 @@ import { useInstallations } from "@/stores/installations";
 export const usePlayInstallation = (
   props?: UseMutationOptions<void, Error, { id: number; save?: string }>,
 ) => {
-  const listenRef = useRef<UnlistenFn>(null);
+  const unlistens = useRef<UnlistenFn[]>([]);
   const { installations, updateLastPlayed } = useInstallations();
   return useMutation({
     ...props,
@@ -20,7 +20,29 @@ export const usePlayInstallation = (
     },
     onMutate: async (variable) => {
       const installation = installations.find((inst) => inst.id === variable.id);
-      listenRef.current = await listen<{
+
+      // Listen for dotnet download progress
+      const unlistenDotnet = await listen<{ phase: string; percent: number }>(
+        `dotnet-download-${variable.id}`,
+        (event) => {
+          const { phase, percent } = event.payload;
+          if (phase === "downloading") {
+            toast.loading(`Downloading .NET runtime... ${percent.toFixed(0)}%`, {
+              id: `dotnet-download-${variable.id}`,
+            });
+          } else if (phase === "extracting") {
+            toast.loading("Extracting .NET runtime...", {
+              id: `dotnet-download-${variable.id}`,
+            });
+          } else if (phase === "done") {
+            toast.dismiss(`dotnet-download-${variable.id}`);
+          }
+        },
+      );
+
+      unlistens.current.push(unlistenDotnet);
+
+      const unlistenLaunch = await listen<{
         status: string;
         reason?: string;
         version?: string;
@@ -48,6 +70,7 @@ export const usePlayInstallation = (
           });
         }
       });
+      unlistens.current.push(unlistenLaunch);
     },
   });
 };

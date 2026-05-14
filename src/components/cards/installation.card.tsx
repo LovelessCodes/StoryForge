@@ -41,6 +41,9 @@ export function InstallationCard({
             {installation.version && (
               <p className="text-muted-foreground font-mono text-xs">v{installation.version}</p>
             )}
+            <p className="text-muted-foreground font-mono text-xs opacity-60">
+              {installation.sizeDisplay ?? "..."}
+            </p>
           </TooltipTrigger>
           <TooltipContent>
             Last played:{" "}

@@ -52,6 +52,9 @@ export function InstallationRow({ installation }: InstallationRowProps) {
             {installation.version && (
               <p className="text-muted-foreground text-left text-xs">v{installation.version}</p>
             )}
+            <p className="text-muted-foreground text-left text-xs opacity-60">
+              {installation.sizeDisplay ?? "..."}
+            </p>
           </TooltipTrigger>
           <TooltipContent>
             Last played:{" "}

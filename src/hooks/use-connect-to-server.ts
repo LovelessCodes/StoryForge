@@ -38,7 +38,7 @@ export const useConnectToServer = (
       }
     },
   });
-  const listenRef = useRef<UnlistenFn>(null);
+  const unlistens = useRef<UnlistenFn[]>([]);
   return useMutation({
     ...props,
     mutationFn: async ({ name, ip, password, installationId, pub }) => {
@@ -57,7 +57,28 @@ export const useConnectToServer = (
     },
     onMutate: async (variable) => {
       const installation = installations.find((inst) => inst.id === variable.installationId);
-      listenRef.current = await listen<{
+
+      // Listen for dotnet download progress
+      const unlistenDotnet = await listen<{ phase: string; percent: number }>(
+        `dotnet-download-${variable.installationId}`,
+        (event) => {
+          const { phase, percent } = event.payload;
+          if (phase === "downloading") {
+            toast.loading(`Downloading .NET runtime... ${percent.toFixed(0)}%`, {
+              id: `dotnet-download-${variable.installationId}`,
+            });
+          } else if (phase === "extracting") {
+            toast.loading("Extracting .NET runtime...", {
+              id: `dotnet-download-${variable.installationId}`,
+            });
+          } else if (phase === "done") {
+            toast.dismiss(`dotnet-download-${variable.installationId}`);
+          }
+        },
+      );
+      unlistens.current.push(unlistenDotnet);
+
+      const unlistenLaunch = await listen<{
         status: string;
         reason?: string;
         version?: string;
@@ -82,6 +103,7 @@ export const useConnectToServer = (
           });
         }
       });
+      unlistens.current.push(unlistenLaunch);
     },
   });
 };

@@ -52,7 +52,7 @@ const installationSchema = z.object({
 
 export function ImportInstallationDialog({ open }: { open: boolean }) {
   const [newInstallation, setNewInstallation] = useState<string>("");
-  const { addInstallation, installations } = useInstallations();
+  const { addInstallation, installations, loadInstallations } = useInstallations();
   const { closeDialog } = useDialogStore();
   const listenRef = useRef<() => void>(null);
   const queryClient = useQueryClient();
@@ -133,17 +133,20 @@ export function ImportInstallationDialog({ open }: { open: boolean }) {
           lastTimePlayed: 0,
           name: installation.data.name,
           path,
+          sizeBytes: 0,
+          sizeDisplay: "...",
           startParams: "",
           totalTimePlayed: 0,
           version: installation.data.version,
         };
         addInstallation(newInstallation);
-        saveInstallationToDisk({
+        await saveInstallationToDisk({
           name: installation.data.name,
           path,
           startParams: "",
           version: installation.data.version,
         });
+        await loadInstallations();
 
         for (const mod of installation.data.mods) {
           const modInfo = (await invoke("fetch_mod_info", {

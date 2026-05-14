@@ -70,7 +70,7 @@ export function AddInstallationDialog({
   const { installationsParent, installationsSubdir } = useSettingsStore();
   const { appFolder } = useAppFolder();
   const { closeDialog } = useDialogStore();
-  const { addInstallation } = useInstallationsStore();
+  const { addInstallation, loadInstallations } = useInstallationsStore();
   const { data: installedVersions } = useInstalledVersions();
   const { mutateAsync: downloadVersion, isPending } = useDownloadVersion();
   const { mutateAsync: initializeGame, isPending: initializePending } = useMutation({
@@ -120,18 +120,21 @@ export function AddInstallationDialog({
           lastTimePlayed: 0,
           name: value.name,
           path: value.path,
+          sizeBytes: 0,
+          sizeDisplay: "...",
           startParams: value.startParams,
           totalTimePlayed: 0,
           version: value.version,
         },
-        (status) => {
+        async (status) => {
           if (status) {
-            saveInstallationToDisk({
+            await saveInstallationToDisk({
               name: value.name,
               path: value.path,
               startParams: value.startParams,
               version: value.version,
             });
+            await loadInstallations();
             closeDialog();
           }
         },

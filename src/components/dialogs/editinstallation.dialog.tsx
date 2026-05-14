@@ -58,7 +58,7 @@ export function EditInstallationDialog({
   const { data: installedVersions } = useInstalledVersions();
   const { appFolder } = useAppFolder();
   const { installationsParent, installationsSubdir } = useSettingsStore();
-  const { updateInstallation } = useInstallationsStore();
+  const { updateInstallation, loadInstallations } = useInstallationsStore();
   const { mutateAsync: downloadVersion, isPending } = useDownloadVersion();
   const form = useForm({
     defaultValues: {
@@ -84,6 +84,8 @@ export function EditInstallationDialog({
           lastTimePlayed: installation.lastTimePlayed,
           name: value.name,
           path: value.path,
+          sizeBytes: installation.sizeBytes,
+          sizeDisplay: installation.sizeDisplay,
           startParams: value.startParams,
           totalTimePlayed: installation.totalTimePlayed,
           version: value.version,
@@ -105,6 +107,7 @@ export function EditInstallationDialog({
               startParams: value.startParams,
               version: value.version,
             });
+            await loadInstallations();
             closeDialog();
           }
         },
