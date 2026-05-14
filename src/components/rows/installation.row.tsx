@@ -50,7 +50,7 @@ export function InstallationRow({ installation }: InstallationRowProps) {
           <TooltipTrigger className="flex flex-col justify-start">
             <p className="text-foreground text-sm">{installation.name}</p>
             {installation.version && (
-              <p className="text-muted-foreground text-xs">v{installation.version}</p>
+              <p className="text-muted-foreground text-left text-xs">v{installation.version}</p>
             )}
           </TooltipTrigger>
           <TooltipContent>
