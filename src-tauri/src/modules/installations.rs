@@ -2,9 +2,7 @@ use json5;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, json, to_string_pretty, Value};
 use std::{
-    collections::hash_map::DefaultHasher,
     fs::{create_dir_all, read_dir, remove_dir_all, write, File},
-    hash::{Hash, Hasher},
     io::{BufRead, BufReader, Read},
     path::{Path, PathBuf},
     process::{Command, Stdio},
@@ -15,10 +13,11 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-use tauri::{command, AppHandle, Emitter};
+use tauri::{command, AppHandle, Emitter, Manager};
 use tauri_plugin_zustand::ManagerExt;
 use walkdir::WalkDir;
 
+use super::dotnet;
 use super::errors::UiError;
 use super::utils::{
     installations_folder, installations_subdir, move_folder, versions_folder, versions_subdir,
@@ -42,6 +41,38 @@ pub struct InstallationResult {
     #[serde(rename = "startParams")]
     pub start_params: String,
     pub path: String,
+    pub size_bytes: u64,
+    pub size_display: String,
+}
+
+fn format_size(bytes: u64) -> String {
+    const KB: u64 = 1024;
+    const MB: u64 = KB * 1024;
+    const GB: u64 = MB * 1024;
+    if bytes >= GB {
+        format!("{:.2} GB", bytes as f64 / GB as f64)
+    } else if bytes >= MB {
+        format!("{:.2} MB", bytes as f64 / MB as f64)
+    } else if bytes >= KB {
+        format!("{:.2} KB", bytes as f64 / KB as f64)
+    } else {
+        format!("{} B", bytes)
+    }
+}
+
+fn dir_size(path: &Path) -> u64 {
+    let mut total: u64 = 0;
+    if let Ok(entries) = read_dir(path) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                total += dir_size(&path);
+            } else if let Ok(meta) = path.metadata() {
+                total += meta.len();
+            }
+        }
+    }
+    total
 }
 
 fn dir_name(path: &Path) -> String {
@@ -51,9 +82,13 @@ fn dir_name(path: &Path) -> String {
 }
 
 fn generate_id(name: &str) -> u64 {
-    let mut hasher = DefaultHasher::new();
-    name.hash(&mut hasher);
-    hasher.finish()
+    // FNV-1a 32-bit — deterministic, fits JS safe integer (< 2^53)
+    let mut hash: u32 = 0x811c9dc5;
+    for byte in name.bytes() {
+        hash ^= byte as u32;
+        hash = hash.wrapping_mul(0x01000193);
+    }
+    hash as u64
 }
 
 pub fn read_installation_json(dir: &Path) -> Result<InstallationInfo, UiError> {
@@ -223,12 +258,15 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
                 info
             };
 
+            let size_bytes = dir_size(&dir);
             results.push(InstallationResult {
                 id,
                 name: info.name,
                 version: info.version,
                 start_params: info.start_params,
                 path: dir.to_string_lossy().to_string(),
+                size_bytes,
+                size_display: format_size(size_bytes),
             });
         }
     }
@@ -286,16 +324,59 @@ pub struct PlayGameParams {
 }
 
 #[command]
-pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<String, UiError> {
+pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<String, UiError> {
     let options = options.ok_or_else(|| UiError {
         name: "invalid_params".into(),
         message: "Invalid play game parameters.".into(),
     })?;
     let (pb, installation) = find_installation_by_id(&app, options.installation_id)?;
+    eprintln!("[play_game] installation dir: {:?}", pb);
+    eprintln!(
+        "[play_game] installation info: name={}, version={}, startParams={}",
+        installation.name, installation.version, installation.start_params
+    );
+
+    // Ensure .NET runtime
+    let app_data = app.path().app_data_dir().map_err(|e| UiError {
+        name: "app_data_failed".into(),
+        message: format!("Failed to get app data dir: {e}"),
+    })?;
+    let dotnet_root = dotnet::ensure_dotnet(
+        &app,
+        &app_data,
+        &installation.version,
+        options.installation_id,
+    )
+    .await?;
+    eprintln!("[play_game] DOTNET_ROOT={:?}", dotnet_root);
+    // Debug: show what's at DOTNET_ROOT
+    if let Ok(entries) = std::fs::read_dir(&dotnet_root) {
+        for e in entries.flatten() {
+            eprintln!("[play_game]   {}", e.file_name().to_string_lossy());
+        }
+    }
+    let hostfxr_dir = dotnet_root.join("host").join("fxr");
+    eprintln!(
+        "[play_game] hostfxr dir exists: {}, path: {:?}",
+        hostfxr_dir.is_dir(),
+        hostfxr_dir
+    );
+    if hostfxr_dir.is_dir() {
+        if let Ok(entries) = std::fs::read_dir(&hostfxr_dir) {
+            for e in entries.flatten() {
+                eprintln!(
+                    "[play_game]   fxr version: {}",
+                    e.file_name().to_string_lossy()
+                );
+            }
+        }
+    }
+
     let subdir = versions_subdir(app.clone());
     let version_path = versions_folder(app.clone())
         .join(&subdir)
         .join(&installation.version);
+    eprintln!("[play_game] version_path: {:?}", version_path);
     if !version_path.exists() || !version_path.is_dir() {
         return Err(UiError {
             name: "not_found".into(),
@@ -322,10 +403,12 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
         }
     }
     if !found_exe {
+        eprintln!("[play_game] ERROR: exe not found in version_path");
         return Err(UiError::from(
             "Could not find Vintage Story executable in installation path",
         ));
     }
+    eprintln!("[play_game] using exe: {:?}", combined_path);
     if !combined_path.exists() || !combined_path.is_file() {
         return Err(UiError {
             name: "not_found".into(),
@@ -413,7 +496,14 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
     );
 
     // Build command with piped stdout/stderr so we can inspect output
+    eprintln!(
+        "[play_game] spawning: {:?} --dataPath {:?} DOTNET_ROOT={:?}",
+        combined_path, pb, dotnet_root
+    );
     let mut child = Command::new(&combined_path)
+        .env("DOTNET_ROOT", &dotnet_root)
+        .env("DOTNET_ROLL_FORWARD", "LatestMinor")
+        .env("DOTNET_ROLL_FORWARD_TO_PRERELEASE", "0")
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .args(["--dataPath", &pb.as_path().to_string_lossy()])
@@ -497,6 +587,7 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
                     break;
                 }
                 if let Ok(line) = line_res {
+                    eprintln!("[play_game] stdout: {}", line);
                     if emit_success(&app_clone, &line) {
                         found_flag_stdout.store(true, Ordering::SeqCst);
                         break;
@@ -520,6 +611,7 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
                     break;
                 }
                 if let Ok(line) = line_res {
+                    eprintln!("[play_game] stderr: {}", line);
                     if emit_success(&app_clone, &line) {
                         found_flag_stderr.store(true, Ordering::SeqCst);
                         break;
@@ -541,6 +633,7 @@ pub fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<Stri
             thread::sleep(Duration::from_millis(150));
         }
         if !found_flag.load(Ordering::SeqCst) {
+            eprintln!("[play_game] TIMEOUT after {}ms", timeout.as_millis());
             let _ = app_for_timeout.emit(
                 &format!("launch-{}", installation_id),
                 json!({
