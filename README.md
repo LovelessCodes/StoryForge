@@ -1,4 +1,3 @@
-
 <p align="center">
    <a href="https://getstoryforge.app/">
       <img src="public/StoryForge.png" alt="Story Forge" />

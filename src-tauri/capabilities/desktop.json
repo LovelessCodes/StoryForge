@@ -1,16 +1,16 @@
 {
-	"identifier": "desktop-capability",
-	"permissions": [
-		"zustand:default",
-		"core:default",
-		"os:default",
-		"process:default",
-		"updater:default",
-		"opener:default",
-		"dialog:default",
-		"clipboard-manager:default",
-		"clipboard-manager:allow-write-text"
-	],
-	"platforms": ["macOS", "windows", "linux"],
-	"windows": ["main"]
+  "identifier": "desktop-capability",
+  "permissions": [
+    "zustand:default",
+    "core:default",
+    "os:default",
+    "process:default",
+    "updater:default",
+    "opener:default",
+    "dialog:default",
+    "clipboard-manager:default",
+    "clipboard-manager:allow-write-text"
+  ],
+  "platforms": ["macOS", "windows", "linux"],
+  "windows": ["main"]
 }

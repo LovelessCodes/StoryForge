@@ -1,15 +1,15 @@
 {
-	"identifier": "zustand",
-	"permissions": [
-		"zustand:default",
-		"core:event:default",
-		"os:default",
-		"process:default",
-		"updater:default",
-		"opener:default",
-		"dialog:default",
-		"clipboard-manager:default",
-		"clipboard-manager:allow-write-text"
-	],
-	"windows": ["*"]
+  "identifier": "zustand",
+  "permissions": [
+    "zustand:default",
+    "core:event:default",
+    "os:default",
+    "process:default",
+    "updater:default",
+    "opener:default",
+    "dialog:default",
+    "clipboard-manager:default",
+    "clipboard-manager:allow-write-text"
+  ],
+  "windows": ["*"]
 }
