@@ -7,6 +7,7 @@ name = "StoryForge"
 version = "0.6.3"
 dependencies = [
  "dunce",
+ "flate2",
  "fs_extra",
  "futures-util",
  "image",
@@ -18,6 +19,7 @@ dependencies = [
  "rusqlite",
  "serde",
  "serde_json",
+ "tar",
  "tauri",
  "tauri-build",
  "tauri-plugin-clipboard-manager",
