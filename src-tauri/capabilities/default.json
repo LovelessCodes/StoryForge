@@ -1,17 +1,17 @@
 {
-	"$schema": "../gen/schemas/desktop-schema.json",
-	"description": "Capability for the main window",
-	"identifier": "default",
-	"permissions": [
-		"zustand:default",
-		"core:default",
-		"os:default",
-		"process:default",
-		"updater:default",
-		"opener:default",
-		"dialog:default",
-		"clipboard-manager:default",
-		"clipboard-manager:allow-write-text"
-	],
-	"windows": ["main"]
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "description": "Capability for the main window",
+  "identifier": "default",
+  "permissions": [
+    "zustand:default",
+    "core:default",
+    "os:default",
+    "process:default",
+    "updater:default",
+    "opener:default",
+    "dialog:default",
+    "clipboard-manager:default",
+    "clipboard-manager:allow-write-text"
+  ],
+  "windows": ["main"]
 }

@@ -57,6 +57,8 @@ pub fn run() {
             versions::move_versions_folder,
             versions::remove_all_versions,
             // Installations
+            installations::get_all_installations,
+            installations::save_installation,
             installations::play_game,
             installations::confirm_vintage_story_exe,
             installations::initialize_game,

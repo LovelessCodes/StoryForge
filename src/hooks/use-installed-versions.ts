@@ -1,13 +1,25 @@
-import { type UseMutationOptions, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
+import { useMemo } from "react";
 
-export const installedVersionsQueryKey = () => ["installedVersions"];
+export const installedVersionsQueryKey = () => ["installedVersions"] as const;
 
-export const useInstalledVersions = (props?: UseMutationOptions<string[]>) => {
-	return useQuery({
-		initialData: [],
-		queryFn: () => invoke<string[]>("get_installed_versions"),
-		queryKey: installedVersionsQueryKey(),
-		...props,
-	});
+export type InstalledVersion = {
+  name: string;
+  size_bytes: number;
+  size_display: string;
+};
+
+export const useInstalledVersions = () => {
+  return useQuery({
+    initialData: [] as InstalledVersion[],
+    queryFn: () => invoke<InstalledVersion[]>("get_installed_versions"),
+    queryKey: installedVersionsQueryKey(),
+  });
+};
+
+/** Convenience: just the version strings (for backward compat) */
+export const useInstalledVersionNames = () => {
+  const { data } = useInstalledVersions();
+  return useMemo(() => (data ?? []).map((v) => v.name), [data]);
 };

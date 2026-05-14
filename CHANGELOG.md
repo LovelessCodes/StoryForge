@@ -1,4 +1,3 @@
-
 # Changelog
 
 <!-- markdownlint-disable MD024 -->
@@ -92,7 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Biome formatting to the "Bump version" workflow.
 - Better version selection process on installations.
 - Feedback on connecting to a server.
-- [Code of conduct](/CODE_OF_CONDUCT.md) adapted from [Contributor Covenant](https://www.contributor-covenant.org/). 
+- [Code of conduct](/CODE_OF_CONDUCT.md) adapted from [Contributor Covenant](https://www.contributor-covenant.org/).
 - [Contributing document](./CONTRIBUTING.md) to help new contributors.
 - "Any" side filtering on mods page.
 - Labels added to selects/dropdowns on mods page.
@@ -257,6 +256,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stabilized login dialog and authentication flow.
 
 <!-- Version links for diff and release pages -->
+
 [0.5.4]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.5.4
 [0.5.3]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.5.3
 [0.5.2]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.5.2

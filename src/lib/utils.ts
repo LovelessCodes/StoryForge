@@ -4,51 +4,52 @@ import { platform } from "@tauri-apps/plugin-os";
 import { type ClassValue, clsx } from "clsx";
 import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
+
 import type { OutputMod } from "@/routes/install-mods/$id";
 import type { Installation } from "@/stores/installations";
 
 export function cn(...inputs: ClassValue[]) {
-	return twMerge(clsx(inputs));
+  return twMerge(clsx(inputs));
 }
 
 export function capitalizeFirstLetter(string: string) {
-	return string.charAt(0).toUpperCase() + string.slice(1);
+  return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
 export function makeStringFolderSafe(string: string) {
-	return string.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+  return string.replace(/[^a-z0-9]/gi, "_").toLowerCase();
 }
 
 function parseVer(v: string) {
-	const parts = String(v).trim().split(".");
-	const major = Number(parts[0] ?? 0) || 0;
-	const minor = Number(parts[1] ?? 0) || 0;
-	const patch = Number(parts[2] ?? 0) || 0;
-	return [major, minor, patch];
+  const parts = String(v).trim().split(".");
+  const major = Number(parts[0] ?? 0) || 0;
+  const minor = Number(parts[1] ?? 0) || 0;
+  const patch = Number(parts[2] ?? 0) || 0;
+  return [major, minor, patch];
 }
 
 export function compareSemverDesc(a: string, b: string) {
-	const [ma, mi, pa] = parseVer(a);
-	const [mb, mj, pb] = parseVer(b);
-	if (ma !== mb) return mb - ma;
-	if (mi !== mj) return mj - mi;
-	return pb - pa;
+  const [ma, mi, pa] = parseVer(a);
+  const [mb, mj, pb] = parseVer(b);
+  if (ma !== mb) return mb - ma;
+  if (mi !== mj) return mj - mi;
+  return pb - pa;
 }
 
 export function compareSemverAsc(a: string, b: string) {
-	const [ma, mi, pa] = parseVer(a);
-	const [mb, mj, pb] = parseVer(b);
-	if (ma !== mb) return ma - mb;
-	if (mi !== mj) return mi - mj;
-	return pa - pb;
+  const [ma, mi, pa] = parseVer(a);
+  const [mb, mj, pb] = parseVer(b);
+  if (ma !== mb) return ma - mb;
+  if (mi !== mj) return mi - mj;
+  return pa - pb;
 }
 
 export const zipfolderprefix = () => {
-	const currentPlatform = platform();
-	const pf = currentPlatform.charAt(0).toLowerCase();
-	if (pf === "w") return "app/";
-	if (pf === "m") return "*.app/";
-	return "";
+  const currentPlatform = platform();
+  const pf = currentPlatform.charAt(0).toLowerCase();
+  if (pf === "w") return "app/";
+  if (pf === "m") return "*.app/";
+  return "";
 };
 
 export const isMac = platform() === "macos";
@@ -65,11 +66,8 @@ export const pathDelimiter = isWindows ? "\\" : "/";
  * @param subdir - The subdirectory name (from settings, default: "installations")
  * @returns The full path to the installations directory
  */
-export function buildInstallationsPath(
-	parentPath: string,
-	subdir = "installations",
-): string {
-	return `${parentPath}${pathDelimiter}${subdir}`;
+export function buildInstallationsPath(parentPath: string, subdir = "installations"): string {
+  return `${parentPath}${pathDelimiter}${subdir}`;
 }
 
 /**
@@ -78,11 +76,8 @@ export function buildInstallationsPath(
  * @param subdir - The subdirectory name (from settings, default: "versions")
  * @returns The full path to the versions directory
  */
-export function buildVersionsPath(
-	parentPath: string,
-	subdir = "versions",
-): string {
-	return `${parentPath}${pathDelimiter}${subdir}`;
+export function buildVersionsPath(parentPath: string, subdir = "versions"): string {
+  return `${parentPath}${pathDelimiter}${subdir}`;
 }
 
 /**
@@ -93,11 +88,11 @@ export function buildVersionsPath(
  * @returns The full path to the specific installation
  */
 export function buildInstallationPath(
-	parentPath: string,
-	installationName: string,
-	subdir = "installations",
+  parentPath: string,
+  installationName: string,
+  subdir = "installations",
 ): string {
-	return `${parentPath}${pathDelimiter}${subdir}${pathDelimiter}${installationName}`;
+  return `${parentPath}${pathDelimiter}${subdir}${pathDelimiter}${installationName}`;
 }
 
 /**
@@ -108,11 +103,11 @@ export function buildInstallationPath(
  * @returns The full path to the specific version
  */
 export function buildVersionPath(
-	parentPath: string,
-	versionName: string,
-	subdir = "versions",
+  parentPath: string,
+  versionName: string,
+  subdir = "versions",
 ): string {
-	return `${parentPath}${pathDelimiter}${subdir}${pathDelimiter}${versionName}`;
+  return `${parentPath}${pathDelimiter}${subdir}${pathDelimiter}${versionName}`;
 }
 
 /**
@@ -123,54 +118,50 @@ export function buildVersionPath(
  * @returns Sorted array of installations
  */
 export const sortInstallations = (a: Installation, b: Installation) => {
-	// Sort favorites first
-	if (a.favorite && !b.favorite) return -1;
-	if (!a.favorite && b.favorite) return 1;
-	// Then sort by lastTimePlayed descending
-	const aTime = a.lastTimePlayed ? new Date(a.lastTimePlayed).getTime() : 0;
-	const bTime = b.lastTimePlayed ? new Date(b.lastTimePlayed).getTime() : 0;
-	return bTime - aTime;
+  // Sort favorites first
+  if (a.favorite && !b.favorite) return -1;
+  if (!a.favorite && b.favorite) return 1;
+  // Then sort by lastTimePlayed descending
+  const aTime = a.lastTimePlayed ? new Date(a.lastTimePlayed).getTime() : 0;
+  const bTime = b.lastTimePlayed ? new Date(b.lastTimePlayed).getTime() : 0;
+  return bTime - aTime;
 };
 
 /**
  * Exports the installation data (mods, name, version) to clipboard as JSON
  * @param installation - The installation to export
  */
-export const exportInstallation = async ({
-	installation,
-}: {
-	installation: Installation;
-}) => {
-	const installationMods = await invoke<{ mods: OutputMod[] }>("get_mods", {
-		path: installation.path,
-	});
-	const data = {
-		mods: installationMods.mods.map((m) => ({
-			id: m.modid,
-			version: m.version,
-		})),
-		name: installation.name,
-		version: installation.version,
-	};
-	// Copy to clipboard
-	await writeText(JSON.stringify(data, null, 2));
-	toast.success("Installation copied to clipboard");
+export const exportInstallation = async ({ installation }: { installation: Installation }) => {
+  const installationMods = await invoke<{ mods: OutputMod[] }>("get_mods", {
+    path: installation.path,
+  });
+  const data = {
+    mods: installationMods.mods.map((m) => ({
+      id: m.modid,
+      version: m.version,
+    })),
+    name: installation.name,
+    version: installation.version,
+  };
+  // Copy to clipboard
+  await writeText(JSON.stringify(data, null, 2));
+  toast.success("Installation copied to clipboard");
 };
 
 /**
  * Variants for the item animations
  */
 export const itemVariants = {
-	exit: { opacity: 0, transition: { duration: 0.15 }, y: -4 },
-	hidden: { opacity: 0, y: 8 },
-	show: (i: number) => ({
-		opacity: 1,
-		transition: {
-			damping: 32,
-			delay: i * 0.05, // 50ms incremental stagger based on current index
-			stiffness: 420,
-			type: "spring" as const,
-		},
-		y: 0,
-	}),
+  exit: { opacity: 0, transition: { duration: 0.15 }, y: -4 },
+  hidden: { opacity: 0, y: 8 },
+  show: (i: number) => ({
+    opacity: 1,
+    transition: {
+      damping: 32,
+      delay: i * 0.05, // 50ms incremental stagger based on current index
+      stiffness: 420,
+      type: "spring" as const,
+    },
+    y: 0,
+  }),
 };

@@ -1,10 +1,9 @@
 ---
 name: "✨ Feature Request"
 about: Suggest an idea for Story Forge
-title: ''
+title: ""
 labels: feature
-assignees: ''
-
+assignees: ""
 ---
 
 ## ✨ Feature Request

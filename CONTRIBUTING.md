@@ -65,11 +65,12 @@ bun biome check
 ## Development Workflow
 
 1. Create a new branch for your changes:
+
    ```bash
    git checkout -b type/description
    # Example: git checkout -b feat/new-location
    ```
-   
+
    Branch type prefixes:
    - `feat/` - New features
    - `fix/` - Bug fixes
@@ -79,26 +80,30 @@ bun biome check
 2. Make your changes following the code style guidelines
 3. Commit your changes with a descriptive message following this format:
    For changes that need to be included in the changelog (excluding chore changes), use the `fix` or `feat` format with a specific scope:
+
    ```
    fix(saves): fix incorrect save location
-   
+
    feat(versions): add support for pre-release candidates
    ```
 
    For core changes that don't have a specific scope, you can use `fix` and `feat` without a scope:
+
    ```
    fix: resolve memory leak in saves handling
-   
+
    feat: add support for server version lookup
    ```
-   
+
    For changes that refactor or don't change the functionality of the application, use `chore`:
+
    ```bash
    chore(refactor): reorganize auth module
    chore: update dependencies to latest versions
    ```
 
    Each commit message should be clear and descriptive, explaining what the change does. For features and fixes, include context about what was added or resolved.
+
 4. Push your branch to your fork
 5. Open a pull request against the **release** branch. In your PR description:
    - Clearly describe what changes you made and why

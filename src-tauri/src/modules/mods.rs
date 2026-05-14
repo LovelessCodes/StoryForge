@@ -1,7 +1,7 @@
 use json5::from_str as json5_from_str;
 use reqwest::{get, Client};
 use serde::{Deserialize, Serialize};
-use serde_json::{from_str, from_value, json, Value};
+use serde_json::{from_str, json, Value};
 use std::{
     fs::{create_dir_all, read_dir, remove_file, File},
     io::{Read, Write},
@@ -9,10 +9,10 @@ use std::{
     str::FromStr,
 };
 use tauri::{command, AppHandle};
-use tauri_plugin_zustand::ManagerExt;
 use zip::read::ZipArchive;
 
 use super::errors::UiError;
+use super::installations::find_installation_by_id;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -497,26 +497,8 @@ pub fn get_mods(path: String) -> Result<ModsResult, UiError> {
 
 #[command]
 pub fn get_mod_configs(app: AppHandle, installation_id: u64) -> Result<Vec<Value>, UiError> {
-    let installation_zustand = app.zustand().get("installations", "installations").unwrap();
-    let installation_json: Value = from_value(installation_zustand).unwrap();
-    // Find installation with matching id
-    let installation = installation_json.as_array().and_then(|arr| {
-        arr.iter()
-            .find(|inst| inst["id"].as_u64() == Some(installation_id))
-    });
-
-    let installation = match installation {
-        Some(inst) => inst,
-        None => {
-            // Optionally, log the error or handle it as needed
-            return Err(UiError {
-                name: "installation_not_found".into(),
-                message: format!("Installation with id {} not found", installation_id),
-            });
-        }
-    };
-
-    let mod_config_path = Path::new(installation["path"].as_str().unwrap()).join("ModConfig");
+    let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
+    let mod_config_path = pb.join("ModConfig");
     if !mod_config_path.exists() || !mod_config_path.is_dir() {
         return Err(UiError {
             name: "not_found".into(),
@@ -565,25 +547,8 @@ pub fn save_mod_config(
     file: String,
     new_code: String,
 ) -> Result<(), UiError> {
-    // Find installation path from zustand
-    let installation_zustand = app.zustand().get("installations", "installations").unwrap();
-    let installation_json: Value = from_value(installation_zustand).unwrap();
-    let installation = installation_json.as_array().and_then(|arr| {
-        arr.iter()
-            .find(|inst| inst["id"].as_u64() == Some(installation_id))
-    });
-
-    let installation = match installation {
-        Some(inst) => inst,
-        None => {
-            return Err(UiError {
-                name: "installation_not_found".into(),
-                message: format!("Installation with id {} not found", installation_id),
-            });
-        }
-    };
-
-    let mod_config_path = Path::new(installation["path"].as_str().unwrap()).join("ModConfig");
+    let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
+    let mod_config_path = pb.join("ModConfig");
     if !mod_config_path.exists() || !mod_config_path.is_dir() {
         return Err(UiError {
             name: "not_found".into(),
@@ -634,17 +599,9 @@ pub async fn get_mod_updates(params: String) -> Result<Value, UiError> {
 }
 
 #[command]
-pub fn get_installation_mods(app: AppHandle, id: i64) -> Result<Vec<OutputMod>, UiError> {
-    let installations_zustand = app.zustand().get("installations", "installations").unwrap();
-    let installations_json: Value = from_value(installations_zustand).unwrap();
-    let installation = installations_json
-        .as_array()
-        .and_then(|arr| arr.iter().find(|inst| inst["id"].as_i64() == Some(id)))
-        .ok_or_else(|| UiError {
-            name: "not_found".into(),
-            message: format!("Installation with id {} not found", id),
-        })?;
-    let path = installation["path"].as_str().unwrap_or("");
+pub fn get_installation_mods(app: AppHandle, id: u64) -> Result<Vec<OutputMod>, UiError> {
+    let (pb, _installation) = find_installation_by_id(&app, id)?;
+    let path = pb.to_string_lossy().to_string();
     get_mods(path.to_string())
         .map(|res| res.mods)
         .map_err(|e| UiError {
