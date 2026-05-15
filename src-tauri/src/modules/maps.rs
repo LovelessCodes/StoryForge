@@ -3,13 +3,24 @@ use prost::Message;
 use rusqlite::{Connection, OpenFlags};
 use serde::{Deserialize, Serialize};
 use std::{
+    fs::read_dir,
     io::Cursor,
     path::{Path, PathBuf},
 };
-use tauri::command;
+use tauri::{command, AppHandle};
 
 use super::errors::UiError;
 use super::proto::{GameData, MapPieceDb};
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct MapInfo {
+    pub id: u64,
+    pub name: String,
+    pub installation_id: u64,
+    pub installation_name: String,
+    pub path: String,
+    pub size_bytes: u64,
+}
 
 /// Information about the Maps database structure
 #[derive(Serialize, Deserialize, Debug)]
@@ -114,6 +125,83 @@ fn get_maps_db_path(world_path: &str) -> Result<PathBuf, UiError> {
     }
 
     Ok(maps_path)
+}
+
+/// Scan all installations for Maps databases
+#[command]
+pub fn get_all_maps(app: AppHandle) -> Result<Vec<MapInfo>, UiError> {
+    use super::utils::{installations_folder, installations_subdir};
+    use std::fs::metadata;
+
+    let subdir = installations_subdir(app.clone());
+    let installations_dir = installations_folder(app.clone()).join(&subdir);
+    let mut maps = Vec::new();
+
+    if !installations_dir.is_dir() {
+        return Ok(maps);
+    }
+
+    for entry in read_dir(&installations_dir).map_err(|e| UiError {
+        name: "io_error".into(),
+        message: format!("Failed to read installations dir: {e}"),
+    })? {
+        let entry = entry.map_err(|e| UiError {
+            name: "io_error".into(),
+            message: format!("Dir entry error: {e}"),
+        })?;
+        let dir = entry.path();
+        if !dir.is_dir() {
+            continue;
+        }
+        let inst_name = entry.file_name().to_string_lossy().to_string();
+        let inst_id = super::installations::generate_id(&inst_name);
+
+        let maps_dir = dir.join("Maps");
+        if !maps_dir.is_dir() {
+            continue;
+        }
+
+        for map_entry in read_dir(&maps_dir).map_err(|e| UiError {
+            name: "io_error".into(),
+            message: format!("Failed to read Maps dir: {e}"),
+        })? {
+            let map_entry = map_entry.map_err(|e| UiError {
+                name: "io_error".into(),
+                message: format!("Map entry error: {e}"),
+            })?;
+            let map_path = map_entry.path();
+            if !map_path.is_file() {
+                continue;
+            }
+            if map_path.extension().and_then(|e| e.to_str()) != Some("db") {
+                continue;
+            }
+            let name = map_path
+                .file_stem()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_default();
+            let size_bytes = metadata(&map_path).map(|m| m.len()).unwrap_or(0);
+
+            // Generate id from installation_name + map_name
+            let combined = format!("{}|{}", inst_name, name);
+            let mut hash: u32 = 0x811c9dc5;
+            for byte in combined.bytes() {
+                hash ^= byte as u32;
+                hash = hash.wrapping_mul(0x01000193);
+            }
+
+            maps.push(MapInfo {
+                id: hash as u64,
+                name,
+                installation_id: inst_id,
+                installation_name: inst_name.clone(),
+                path: map_path.to_string_lossy().to_string(),
+                size_bytes,
+            });
+        }
+    }
+
+    Ok(maps)
 }
 
 /// Inspect the Maps database for a given world
@@ -487,4 +575,104 @@ fn detect_image_dimensions(data: &[u8]) -> Option<(u32, u32)> {
         .ok()?;
     let dimensions = reader.into_dimensions().ok()?;
     Some(dimensions)
+}
+
+// ── Direct-path variants (no world needed) ──
+
+fn read_map_db(map_path: &str) -> Result<Connection, UiError> {
+    let uri = format!("file:{}?immutable=1", map_path);
+    Connection::open_with_flags(
+        &uri,
+        OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
+    )
+    .map_err(|e| UiError::from(format!("Map DB open error: {e}")))
+}
+
+fn find_map_table(conn: &Connection) -> Result<String, UiError> {
+    conn.query_row(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' LIMIT 1",
+        [],
+        |row| row.get(0),
+    )
+    .map_err(|e| UiError::from(format!("Table query error: {e}")))
+}
+
+#[command]
+pub fn get_map_bounds_by_path(map_path: String) -> Result<MapBounds, UiError> {
+    let conn = read_map_db(&map_path)?;
+    let table_name = find_map_table(&conn)?;
+
+    let tile_count: i64 = conn
+        .query_row(&format!("SELECT COUNT(*) FROM {}", table_name), [], |row| {
+            row.get(0)
+        })
+        .map_err(|e| UiError::from(format!("Count query error: {e}")))?;
+
+    let mut stmt = conn
+        .prepare(&format!("SELECT position FROM {}", table_name))
+        .map_err(|e| UiError::from(format!("Position query error: {e}")))?;
+    let mut rows = stmt
+        .query([])
+        .map_err(|e| UiError::from(format!("Position query error: {e}")))?;
+
+    let mut min_x = i32::MAX;
+    let mut max_x = i32::MIN;
+    let mut min_y = i32::MAX;
+    let mut max_y = i32::MIN;
+
+    while let Some(row) = rows.next().map_err(|e| UiError::from(format!("{e}")))? {
+        let position: i64 = row.get(0).map_err(|e| UiError::from(format!("{e}")))?;
+        let (x, y) = decode_position(position);
+        min_x = min_x.min(x);
+        max_x = max_x.max(x);
+        min_y = min_y.min(y);
+        max_y = max_y.max(y);
+    }
+
+    Ok(MapBounds {
+        min_x,
+        max_x,
+        min_y,
+        max_y,
+        tile_count,
+    })
+}
+
+#[command]
+pub fn get_all_map_tiles_by_path(map_path: String) -> Result<Vec<MapTile>, UiError> {
+    let conn = read_map_db(&map_path)?;
+    let table_name = find_map_table(&conn)?;
+
+    let mut stmt = conn
+        .prepare(&format!("SELECT position, data FROM {}", table_name))
+        .map_err(|e| UiError::from(format!("Tile query error: {e}")))?;
+    let mut rows = stmt
+        .query([])
+        .map_err(|e| UiError::from(format!("Tile query error: {e}")))?;
+
+    let mut tiles = Vec::new();
+    while let Some(row) = rows.next().map_err(|e| UiError::from(format!("{e}")))? {
+        let position: i64 = row.get(0).map_err(|e| UiError::from(format!("{e}")))?;
+        let data: Vec<u8> = row.get(1).map_err(|e| UiError::from(format!("{e}")))?;
+        let (x, y) = decode_position(position);
+        let (image_data, width, height) = if let Ok(map_piece) = MapPieceDb::decode(data.as_slice())
+        {
+            let pixel_count = map_piece.pixels.len();
+            let size = (pixel_count as f64).sqrt() as u32;
+            let png_data = pixels_to_png(&map_piece.pixels, size, size)?;
+            (png_data, size, size)
+        } else {
+            let (w, h) = detect_image_dimensions(&data).unwrap_or((512, 512));
+            (data, w, h)
+        };
+        tiles.push(MapTile {
+            x,
+            y,
+            position,
+            image_data,
+            width,
+            height,
+        });
+    }
+    Ok(tiles)
 }
