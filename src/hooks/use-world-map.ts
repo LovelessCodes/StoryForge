@@ -3,7 +3,8 @@ import { invoke } from "@tauri-apps/api/core";
 
 import type { MapBounds, MapDatabaseInfo, MapTile } from "@/lib/types";
 
-// Query key factories
+// ── Query key factories ──
+
 export const worldMapKeys = {
   all: ["world-map"] as const,
   allTiles: (worldPath: string) => [...worldMapKeys.all, "tiles", worldPath] as const,
@@ -13,10 +14,8 @@ export const worldMapKeys = {
     [...worldMapKeys.all, "tile", worldPath, position] as const,
 };
 
-/**
- * Hook to inspect the Maps database for a world
- * Returns schema information, table count, and sample positions
- */
+// ── World-based hooks (existing) ──
+
 export const useMapDatabaseInspection = (
   worldPath: string,
   options?: Omit<UseQueryOptions<MapDatabaseInfo, Error, MapDatabaseInfo>, "queryKey" | "queryFn">,
@@ -28,10 +27,6 @@ export const useMapDatabaseInspection = (
     ...options,
   });
 
-/**
- * Hook to get the bounds (min/max X,Y) of the map
- * Useful for setting up the initial viewport
- */
 export const useMapBounds = (
   worldPath: string,
   options?: Omit<UseQueryOptions<MapBounds, Error, MapBounds>, "queryKey" | "queryFn">,
@@ -43,10 +38,6 @@ export const useMapBounds = (
     ...options,
   });
 
-/**
- * Hook to get a single map tile by position
- * Useful for testing or lazy loading individual tiles
- */
 export const useMapTile = (
   worldPath: string,
   position: number,
@@ -59,10 +50,6 @@ export const useMapTile = (
     ...options,
   });
 
-/**
- * Hook to get all map tiles for a world
- * Use with caution for large maps - consider pagination or lazy loading
- */
 export const useAllMapTiles = (
   worldPath: string,
   options?: Omit<UseQueryOptions<MapTile[], Error, MapTile[]>, "queryKey" | "queryFn">,
@@ -71,13 +58,93 @@ export const useAllMapTiles = (
     enabled: !!worldPath,
     queryFn: () => invoke<MapTile[]>("get_all_map_tiles", { worldPath }),
     queryKey: worldMapKeys.allTiles(worldPath),
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    staleTime: 1000 * 60 * 5,
     ...options,
   });
 
-/**
- * Utility function to convert image_data array to a data URL
- */
+// ── Map listing (all installations) ──
+
+export type MapEntry = {
+  id: number;
+  name: string;
+  installation_id: number;
+  installation_name: string;
+  path: string;
+  size_bytes: number;
+};
+
+const allMapsKeys = ["all-maps"] as const;
+
+export const useAllMaps = (
+  options?: Omit<UseQueryOptions<MapEntry[], Error, MapEntry[]>, "queryKey" | "queryFn">,
+) =>
+  useQuery({
+    queryFn: () => invoke<MapEntry[]>("get_all_maps"),
+    queryKey: allMapsKeys,
+    staleTime: 1000 * 60 * 2,
+    ...options,
+  });
+
+// ── Direct-path variants (no world needed) ──
+
+const dirMapKeys = {
+  bounds: (mapPath: string) => ["map-bounds-direct", mapPath] as const,
+  tiles: (mapPath: string) => ["map-tiles-direct", mapPath] as const,
+};
+
+export const useMapBoundsByPath = (
+  mapPath: string,
+  options?: Omit<UseQueryOptions<MapBounds, Error, MapBounds>, "queryKey" | "queryFn">,
+) =>
+  useQuery({
+    enabled: !!mapPath,
+    queryFn: () => invoke<MapBounds>("get_map_bounds_by_path", { mapPath }),
+    queryKey: dirMapKeys.bounds(mapPath),
+    ...options,
+  });
+
+export const useAllMapTilesByPath = (
+  mapPath: string,
+  options?: Omit<UseQueryOptions<MapTile[], Error, MapTile[]>, "queryKey" | "queryFn">,
+) =>
+  useQuery({
+    enabled: !!mapPath,
+    queryFn: () => invoke<MapTile[]>("get_all_map_tiles_by_path", { mapPath }),
+    queryKey: dirMapKeys.tiles(mapPath),
+    staleTime: 1000 * 60 * 5,
+    ...options,
+  });
+
+// ── Map favorites (localStorage-backed) ──
+
+const FAV_KEY = "storyforge-map-favorites";
+
+export function getFavoriteMaps(): Set<number> {
+  try {
+    const raw = localStorage.getItem(FAV_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+export function saveFavoriteMaps(favorites: Set<number>) {
+  localStorage.setItem(FAV_KEY, JSON.stringify([...favorites]));
+}
+
+export function toggleFavoriteMap(mapId: number) {
+  const favs = getFavoriteMaps();
+  if (favs.has(mapId)) {
+    favs.delete(mapId);
+  } else {
+    favs.add(mapId);
+  }
+  saveFavoriteMaps(favs);
+  return favs;
+}
+
+// ── Utilities ──
+
 export function imageDataToDataUrl(imageData: number[]): string {
   const bytes = new Uint8Array(imageData);
   let binary = "";
@@ -88,9 +155,6 @@ export function imageDataToDataUrl(imageData: number[]): string {
   return `data:image/png;base64,${base64}`;
 }
 
-/**
- * Utility function to create an Image element from map tile data
- */
 export function createImageFromTile(tile: MapTile): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();

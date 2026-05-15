@@ -2,7 +2,13 @@ import { ArrowDownToDotIcon, Loader2Icon, MapIcon, SparkleIcon } from "lucide-re
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Card } from "@/components/ui/card";
-import { imageDataToDataUrl, useAllMapTiles, useMapBounds } from "@/hooks/use-world-map";
+import {
+  imageDataToDataUrl,
+  useAllMapTiles,
+  useAllMapTilesByPath,
+  useMapBounds,
+  useMapBoundsByPath,
+} from "@/hooks/use-world-map";
 import type {
   MapMarker,
   MapMarkers,
@@ -13,7 +19,8 @@ import type {
 import { cn } from "@/lib/utils";
 
 type WorldMapViewerProps = {
-  worldPath: string;
+  worldPath?: string;
+  mapPath?: string;
   mapMarkers?: MapMarkers | null | undefined;
   prospectingLogs?: [string, ProspectingLog][];
   selectedPlayer: string | null;
@@ -22,18 +29,28 @@ type WorldMapViewerProps = {
 
 export function WorldMapViewer({
   worldPath,
+  mapPath,
   mapMarkers,
   prospectingLogs,
   selectedPlayer,
   showProspect,
 }: WorldMapViewerProps) {
+  // Use direct path if provided, otherwise world path
+  const effectivePath = mapPath ?? worldPath ?? "";
+  const isDirectPath = !!mapPath;
   // Base (tiles) and overlay (markers, cursor) canvases
   const baseCanvasRef = useRef<HTMLCanvasElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { data: tiles, isLoading: tilesLoading, error: tilesError } = useAllMapTiles(worldPath);
-  const { data: bounds, isLoading: boundsLoading } = useMapBounds(worldPath);
+  const {
+    data: tiles,
+    isLoading: tilesLoading,
+    error: tilesError,
+  } = isDirectPath ? useAllMapTilesByPath(effectivePath) : useAllMapTiles(effectivePath);
+  const { data: bounds, isLoading: boundsLoading } = isDirectPath
+    ? useMapBoundsByPath(effectivePath)
+    : useMapBounds(effectivePath);
 
   // Viewport state (x, y = top-left corner in world coords, zoom = scale factor)
   const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 0.5 });

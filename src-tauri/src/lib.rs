@@ -79,10 +79,13 @@ pub fn run() {
             saves::update_world,
             saves::remove_world,
             // Maps
+            maps::get_all_maps,
             maps::inspect_map_database,
             maps::get_map_bounds,
+            maps::get_map_bounds_by_path,
             maps::get_map_tile,
             maps::get_all_map_tiles,
+            maps::get_all_map_tiles_by_path,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

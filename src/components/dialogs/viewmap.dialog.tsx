@@ -15,20 +15,27 @@ import type { World } from "@/lib/types";
 import { useDialogStore } from "@/stores/dialogs";
 
 export type ViewMapDialogProps = {
-  world: World;
+  world?: World;
+  mapPath?: string;
+  mapName?: string;
 };
 
 export function ViewMapDialog({
   open,
   world,
+  mapPath: directMapPath,
+  mapName,
 }: {
   open: boolean;
 } & ViewMapDialogProps) {
   const { closeDialog } = useDialogStore();
-  const worldData = world.data;
-  const worldPath = world.path;
-  const mapMarkers = world.map_markers;
-  const prospectingLogs = world.prospecting_logs;
+  const worldData = world?.data;
+  const worldPath = world?.path;
+  const mapMarkers = world?.map_markers;
+  const prospectingLogs = world?.prospecting_logs;
+
+  // Use direct map path if provided, otherwise derive from world
+  const displayName = mapName ?? worldData?.world_name ?? "Map";
   const players = useMemo(() => {
     const players: string[] = [];
     if (mapMarkers && prospectingLogs) {
@@ -63,7 +70,7 @@ export function ViewMapDialog({
         }}
       >
         <DialogHeader className="shrink-0 border-b px-6 pt-6 pb-4">
-          <DialogTitle>{worldData.world_name} - World Map</DialogTitle>
+          <DialogTitle>{displayName} - World Map</DialogTitle>
           <DialogDescription>
             Interactive map viewer • Drag to pan • Scroll to zoom
           </DialogDescription>
@@ -97,6 +104,7 @@ export function ViewMapDialog({
         <div className="min-h-0 w-full flex-1 overflow-hidden p-4">
           <WorldMapViewer
             mapMarkers={mapMarkers}
+            mapPath={directMapPath}
             prospectingLogs={prospectingLogs}
             selectedPlayer={selectedPlayer}
             showProspect={showProspect}
