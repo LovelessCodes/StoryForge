@@ -12,7 +12,7 @@
     "fmt:check": "oxfmt --check",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
-    "bump": "./scripts/bump-version.sh"
+    "bump": "bun run scripts/bump-version.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
