@@ -16,6 +16,7 @@ use std::{
 use tauri::{command, Emitter, Listener, Runtime};
 
 use super::errors::UiError;
+use crate::log_info;
 
 #[derive(Serialize, Clone)]
 pub struct ProgressPayload {
@@ -44,6 +45,7 @@ pub async fn download_and_maybe_extract<R: Runtime>(
 ) -> Result<String, UiError> {
     let destpath = PathBuf::from(&destpath);
 
+    log_info!("download: url={} dest={:?}", url, destpath);
     let cancelled = Arc::new(AtomicBool::new(false));
     let cancel_clone = cancelled.clone();
     let cancel_event_name = format!("{}:cancel", emitevent);
