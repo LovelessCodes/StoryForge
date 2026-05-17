@@ -11,6 +11,7 @@ use tauri::{command, AppHandle};
 
 use super::errors::UiError;
 use super::proto::{GameData, MapPieceDb};
+use crate::log_error;
 use crate::log_info;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -85,25 +86,41 @@ fn get_maps_db_path(world_path: &str) -> Result<PathBuf, UiError> {
         &uri,
         OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
     )
-    .map_err(|e| UiError::from(format!("DB open error: {e}")))?;
+    .map_err(|e| {
+        log_error!("maps: DB open error: {e}");
+
+        UiError::from(format!("DB open error: {e}"))
+    })?;
 
     let mut stmt = conn
         .prepare("SELECT data FROM gamedata LIMIT 1")
-        .map_err(|e| UiError::from(format!("DB prepare error: {e}")))?;
+        .map_err(|e| {
+            log_error!("maps: DB prepare error: {e}");
 
-    let mut rows = stmt
-        .query([])
-        .map_err(|e| UiError::from(format!("DB query error: {e}")))?;
+            UiError::from(format!("DB prepare error: {e}"))
+        })?;
 
-    let gamedata = if let Some(row) = rows
-        .next()
-        .map_err(|e| UiError::from(format!("DB row error: {e}")))?
-    {
-        let data: Vec<u8> = row
-            .get(0)
-            .map_err(|e| UiError::from(format!("DB get error: {e}")))?;
-        GameData::decode(data.as_slice())
-            .map_err(|e| UiError::from(format!("Protobuf decode error: {e}")))?
+    let mut rows = stmt.query([]).map_err(|e| {
+        log_error!("maps: DB query error: {e}");
+
+        UiError::from(format!("DB query error: {e}"))
+    })?;
+
+    let gamedata = if let Some(row) = rows.next().map_err(|e| {
+        log_error!("maps: DB row error: {e}");
+
+        UiError::from(format!("DB row error: {e}"))
+    })? {
+        let data: Vec<u8> = row.get(0).map_err(|e| {
+            log_error!("maps: DB get error: {e}");
+
+            UiError::from(format!("DB get error: {e}"))
+        })?;
+        GameData::decode(data.as_slice()).map_err(|e| {
+            log_error!("maps: Protobuf decode error: {e}");
+
+            UiError::from(format!("Protobuf decode error: {e}"))
+        })?
     } else {
         return Err(UiError::from("No gamedata found"));
     };
@@ -224,25 +241,41 @@ pub fn inspect_map_database(world_path: String) -> Result<MapDatabaseInfo, UiErr
         &uri,
         OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
     )
-    .map_err(|e| UiError::from(format!("DB open error: {e}")))?;
+    .map_err(|e| {
+        log_error!("maps: DB open error: {e}");
+
+        UiError::from(format!("DB open error: {e}"))
+    })?;
 
     let mut stmt = conn
         .prepare("SELECT data FROM gamedata LIMIT 1")
-        .map_err(|e| UiError::from(format!("DB prepare error: {e}")))?;
+        .map_err(|e| {
+            log_error!("maps: DB prepare error: {e}");
 
-    let mut rows = stmt
-        .query([])
-        .map_err(|e| UiError::from(format!("DB query error: {e}")))?;
+            UiError::from(format!("DB prepare error: {e}"))
+        })?;
 
-    let gamedata = if let Some(row) = rows
-        .next()
-        .map_err(|e| UiError::from(format!("DB row error: {e}")))?
-    {
-        let data: Vec<u8> = row
-            .get(0)
-            .map_err(|e| UiError::from(format!("DB get error: {e}")))?;
-        GameData::decode(data.as_slice())
-            .map_err(|e| UiError::from(format!("Protobuf decode error: {e}")))?
+    let mut rows = stmt.query([]).map_err(|e| {
+        log_error!("maps: DB query error: {e}");
+
+        UiError::from(format!("DB query error: {e}"))
+    })?;
+
+    let gamedata = if let Some(row) = rows.next().map_err(|e| {
+        log_error!("maps: DB row error: {e}");
+
+        UiError::from(format!("DB row error: {e}"))
+    })? {
+        let data: Vec<u8> = row.get(0).map_err(|e| {
+            log_error!("maps: DB get error: {e}");
+
+            UiError::from(format!("DB get error: {e}"))
+        })?;
+        GameData::decode(data.as_slice()).map_err(|e| {
+            log_error!("maps: Protobuf decode error: {e}");
+
+            UiError::from(format!("Protobuf decode error: {e}"))
+        })?
     } else {
         return Err(UiError::from("No gamedata found"));
     };
@@ -279,25 +312,39 @@ pub fn inspect_map_database(world_path: String) -> Result<MapDatabaseInfo, UiErr
         &maps_uri,
         OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
     )
-    .map_err(|e| UiError::from(format!("Map DB open error: {e}")))?;
+    .map_err(|e| {
+        log_error!("maps: Map DB open error: {e}");
+
+        UiError::from(format!("Map DB open error: {e}"))
+    })?;
 
     // Get all tables
     let mut tables = Vec::new();
     let mut table_stmt = map_conn
         .prepare("SELECT name, sql FROM sqlite_master WHERE type='table' ORDER BY name")
-        .map_err(|e| UiError::from(format!("Schema query error: {e}")))?;
+        .map_err(|e| {
+            log_error!("maps: Schema query error: {e}");
 
-    let mut table_rows = table_stmt
-        .query([])
-        .map_err(|e| UiError::from(format!("Schema query error: {e}")))?;
+            UiError::from(format!("Schema query error: {e}"))
+        })?;
+
+    let mut table_rows = table_stmt.query([]).map_err(|e| {
+        log_error!("maps: Schema query error: {e}");
+
+        UiError::from(format!("Schema query error: {e}"))
+    })?;
 
     let mut main_table_name: Option<String> = None;
 
-    while let Some(row) = table_rows
-        .next()
-        .map_err(|e| UiError::from(format!("Schema row error: {e}")))?
-    {
-        let name: String = row.get(0).map_err(|e| UiError::from(format!("{e}")))?;
+    while let Some(row) = table_rows.next().map_err(|e| {
+        log_error!("maps: Schema row error: {e}");
+
+        UiError::from(format!("Schema row error: {e}"))
+    })? {
+        let name: String = row.get(0).map_err(|e| {
+            log_error!("maps: : {e}");
+            UiError::from(format!("{e}"))
+        })?;
         let schema: Option<String> = row.get(1).ok();
 
         // Try to find the main map table (usually the first non-sqlite table)
@@ -326,17 +373,24 @@ pub fn inspect_map_database(world_path: String) -> Result<MapDatabaseInfo, UiErr
                 "SELECT position FROM {} ORDER BY position LIMIT 20",
                 table_name
             ))
-            .map_err(|e| UiError::from(format!("Position query error: {e}")))?;
+            .map_err(|e| {
+                log_error!("maps: Position query error: {e}");
 
-        let mut pos_rows = pos_stmt
-            .query([])
-            .map_err(|e| UiError::from(format!("Position query error: {e}")))?;
+                UiError::from(format!("Position query error: {e}"))
+            })?;
+
+        let mut pos_rows = pos_stmt.query([]).map_err(|e| {
+            log_error!("maps: Position query error: {e}");
+
+            UiError::from(format!("Position query error: {e}"))
+        })?;
 
         let mut positions = Vec::new();
-        while let Some(row) = pos_rows
-            .next()
-            .map_err(|e| UiError::from(format!("Position row error: {e}")))?
-        {
+        while let Some(row) = pos_rows.next().map_err(|e| {
+            log_error!("maps: Position row error: {e}");
+
+            UiError::from(format!("Position row error: {e}"))
+        })? {
             if let Ok(pos) = row.get::<_, i64>(0) {
                 positions.push(pos);
             }
@@ -365,7 +419,11 @@ pub fn get_map_bounds(world_path: String) -> Result<MapBounds, UiError> {
         &maps_uri,
         OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
     )
-    .map_err(|e| UiError::from(format!("Map DB open error: {e}")))?;
+    .map_err(|e| {
+        log_error!("maps: Map DB open error: {e}");
+
+        UiError::from(format!("Map DB open error: {e}"))
+    })?;
 
     // Find the main table
     let table_name: String = map_conn
@@ -373,35 +431,54 @@ pub fn get_map_bounds(world_path: String) -> Result<MapBounds, UiError> {
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' LIMIT 1",
             [],
             |row| row.get(0),
-        )
-        .map_err(|e| UiError::from(format!("Table query error: {e}")))?;
+        ).map_err(|e| {
+
+            log_error!("maps: Table query error: {e}");
+
+            UiError::from(format!("Table query error: {e}"))
+
+        })?;
 
     // Get count
     let tile_count: i64 = map_conn
         .query_row(&format!("SELECT COUNT(*) FROM {}", table_name), [], |row| {
             row.get(0)
         })
-        .map_err(|e| UiError::from(format!("Count query error: {e}")))?;
+        .map_err(|e| {
+            log_error!("maps: Count query error: {e}");
+
+            UiError::from(format!("Count query error: {e}"))
+        })?;
 
     // Get all positions to calculate bounds
     let mut stmt = map_conn
         .prepare(&format!("SELECT position FROM {}", table_name))
-        .map_err(|e| UiError::from(format!("Position query error: {e}")))?;
+        .map_err(|e| {
+            log_error!("maps: Position query error: {e}");
 
-    let mut rows = stmt
-        .query([])
-        .map_err(|e| UiError::from(format!("Position query error: {e}")))?;
+            UiError::from(format!("Position query error: {e}"))
+        })?;
+
+    let mut rows = stmt.query([]).map_err(|e| {
+        log_error!("maps: Position query error: {e}");
+
+        UiError::from(format!("Position query error: {e}"))
+    })?;
 
     let mut min_x = i32::MAX;
     let mut max_x = i32::MIN;
     let mut min_y = i32::MAX;
     let mut max_y = i32::MIN;
 
-    while let Some(row) = rows
-        .next()
-        .map_err(|e| UiError::from(format!("Position row error: {e}")))?
-    {
-        let position: i64 = row.get(0).map_err(|e| UiError::from(format!("{e}")))?;
+    while let Some(row) = rows.next().map_err(|e| {
+        log_error!("maps: Position row error: {e}");
+
+        UiError::from(format!("Position row error: {e}"))
+    })? {
+        let position: i64 = row.get(0).map_err(|e| {
+            log_error!("maps: : {e}");
+            UiError::from(format!("{e}"))
+        })?;
         let (x, y) = decode_position(position);
 
         min_x = min_x.min(x);
@@ -429,7 +506,11 @@ pub fn get_map_tile(world_path: String, position: i64) -> Result<MapTile, UiErro
         &maps_uri,
         OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
     )
-    .map_err(|e| UiError::from(format!("Map DB open error: {e}")))?;
+    .map_err(|e| {
+        log_error!("maps: Map DB open error: {e}");
+
+        UiError::from(format!("Map DB open error: {e}"))
+    })?;
 
     // Find the main table
     let table_name: String = map_conn
@@ -437,8 +518,13 @@ pub fn get_map_tile(world_path: String, position: i64) -> Result<MapTile, UiErro
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' LIMIT 1",
             [],
             |row| row.get(0),
-        )
-        .map_err(|e| UiError::from(format!("Table query error: {e}")))?;
+        ).map_err(|e| {
+
+            log_error!("maps: Table query error: {e}");
+
+            UiError::from(format!("Table query error: {e}"))
+
+        })?;
 
     // Get the tile data
     let data: Vec<u8> = map_conn
@@ -447,7 +533,11 @@ pub fn get_map_tile(world_path: String, position: i64) -> Result<MapTile, UiErro
             [position],
             |row| row.get(0),
         )
-        .map_err(|e| UiError::from(format!("Tile query error: {e}")))?;
+        .map_err(|e| {
+            log_error!("maps: Tile query error: {e}");
+
+            UiError::from(format!("Tile query error: {e}"))
+        })?;
 
     let (x, y) = decode_position(position);
 
@@ -488,7 +578,11 @@ pub fn get_all_map_tiles(world_path: String) -> Result<Vec<MapTile>, UiError> {
         &maps_uri,
         OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
     )
-    .map_err(|e| UiError::from(format!("Map DB open error: {e}")))?;
+    .map_err(|e| {
+        log_error!("maps: Map DB open error: {e}");
+
+        UiError::from(format!("Map DB open error: {e}"))
+    })?;
 
     // Find the main table
     let table_name: String = map_conn
@@ -496,25 +590,43 @@ pub fn get_all_map_tiles(world_path: String) -> Result<Vec<MapTile>, UiError> {
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' LIMIT 1",
             [],
             |row| row.get(0),
-        )
-        .map_err(|e| UiError::from(format!("Table query error: {e}")))?;
+        ).map_err(|e| {
+
+            log_error!("maps: Table query error: {e}");
+
+            UiError::from(format!("Table query error: {e}"))
+
+        })?;
 
     let mut stmt = map_conn
         .prepare(&format!("SELECT position, data FROM {}", table_name))
-        .map_err(|e| UiError::from(format!("Tile query error: {e}")))?;
+        .map_err(|e| {
+            log_error!("maps: Tile query error: {e}");
 
-    let mut rows = stmt
-        .query([])
-        .map_err(|e| UiError::from(format!("Tile query error: {e}")))?;
+            UiError::from(format!("Tile query error: {e}"))
+        })?;
+
+    let mut rows = stmt.query([]).map_err(|e| {
+        log_error!("maps: Tile query error: {e}");
+
+        UiError::from(format!("Tile query error: {e}"))
+    })?;
 
     let mut tiles = Vec::new();
 
-    while let Some(row) = rows
-        .next()
-        .map_err(|e| UiError::from(format!("Tile row error: {e}")))?
-    {
-        let position: i64 = row.get(0).map_err(|e| UiError::from(format!("{e}")))?;
-        let data: Vec<u8> = row.get(1).map_err(|e| UiError::from(format!("{e}")))?;
+    while let Some(row) = rows.next().map_err(|e| {
+        log_error!("maps: Tile row error: {e}");
+
+        UiError::from(format!("Tile row error: {e}"))
+    })? {
+        let position: i64 = row.get(0).map_err(|e| {
+            log_error!("maps: : {e}");
+            UiError::from(format!("{e}"))
+        })?;
+        let data: Vec<u8> = row.get(1).map_err(|e| {
+            log_error!("maps: : {e}");
+            UiError::from(format!("{e}"))
+        })?;
 
         let (x, y) = decode_position(position);
 
@@ -565,7 +677,11 @@ fn pixels_to_png(pixels: &[i32], width: u32, height: u32) -> Result<Vec<u8>, UiE
 
     let mut png_bytes = Vec::new();
     img.write_to(&mut Cursor::new(&mut png_bytes), ImageFormat::Png)
-        .map_err(|e| UiError::from(format!("PNG encoding error: {e}")))?;
+        .map_err(|e| {
+            log_error!("maps: PNG encoding error: {e}");
+
+            UiError::from(format!("PNG encoding error: {e}"))
+        })?;
 
     Ok(png_bytes)
 }
@@ -587,7 +703,11 @@ fn read_map_db(map_path: &str) -> Result<Connection, UiError> {
         &uri,
         OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
     )
-    .map_err(|e| UiError::from(format!("Map DB open error: {e}")))
+    .map_err(|e| {
+        log_error!("maps: Map DB open error: {e}");
+
+        UiError::from(format!("Map DB open error: {e}"))
+    })
 }
 
 fn find_map_table(conn: &Connection) -> Result<String, UiError> {
@@ -596,7 +716,11 @@ fn find_map_table(conn: &Connection) -> Result<String, UiError> {
         [],
         |row| row.get(0),
     )
-    .map_err(|e| UiError::from(format!("Table query error: {e}")))
+    .map_err(|e| {
+        log_error!("maps: Table query error: {e}");
+
+        UiError::from(format!("Table query error: {e}"))
+    })
 }
 
 #[command]
@@ -609,22 +733,38 @@ pub fn get_map_bounds_by_path(map_path: String) -> Result<MapBounds, UiError> {
         .query_row(&format!("SELECT COUNT(*) FROM {}", table_name), [], |row| {
             row.get(0)
         })
-        .map_err(|e| UiError::from(format!("Count query error: {e}")))?;
+        .map_err(|e| {
+            log_error!("maps: Count query error: {e}");
+
+            UiError::from(format!("Count query error: {e}"))
+        })?;
 
     let mut stmt = conn
         .prepare(&format!("SELECT position FROM {}", table_name))
-        .map_err(|e| UiError::from(format!("Position query error: {e}")))?;
-    let mut rows = stmt
-        .query([])
-        .map_err(|e| UiError::from(format!("Position query error: {e}")))?;
+        .map_err(|e| {
+            log_error!("maps: Position query error: {e}");
+
+            UiError::from(format!("Position query error: {e}"))
+        })?;
+    let mut rows = stmt.query([]).map_err(|e| {
+        log_error!("maps: Position query error: {e}");
+
+        UiError::from(format!("Position query error: {e}"))
+    })?;
 
     let mut min_x = i32::MAX;
     let mut max_x = i32::MIN;
     let mut min_y = i32::MAX;
     let mut max_y = i32::MIN;
 
-    while let Some(row) = rows.next().map_err(|e| UiError::from(format!("{e}")))? {
-        let position: i64 = row.get(0).map_err(|e| UiError::from(format!("{e}")))?;
+    while let Some(row) = rows.next().map_err(|e| {
+        log_error!("maps: : {e}");
+        UiError::from(format!("{e}"))
+    })? {
+        let position: i64 = row.get(0).map_err(|e| {
+            log_error!("maps: : {e}");
+            UiError::from(format!("{e}"))
+        })?;
         let (x, y) = decode_position(position);
         min_x = min_x.min(x);
         max_x = max_x.max(x);
@@ -649,15 +789,30 @@ pub fn get_all_map_tiles_by_path(map_path: String) -> Result<Vec<MapTile>, UiErr
 
     let mut stmt = conn
         .prepare(&format!("SELECT position, data FROM {}", table_name))
-        .map_err(|e| UiError::from(format!("Tile query error: {e}")))?;
-    let mut rows = stmt
-        .query([])
-        .map_err(|e| UiError::from(format!("Tile query error: {e}")))?;
+        .map_err(|e| {
+            log_error!("maps: Tile query error: {e}");
+
+            UiError::from(format!("Tile query error: {e}"))
+        })?;
+    let mut rows = stmt.query([]).map_err(|e| {
+        log_error!("maps: Tile query error: {e}");
+
+        UiError::from(format!("Tile query error: {e}"))
+    })?;
 
     let mut tiles = Vec::new();
-    while let Some(row) = rows.next().map_err(|e| UiError::from(format!("{e}")))? {
-        let position: i64 = row.get(0).map_err(|e| UiError::from(format!("{e}")))?;
-        let data: Vec<u8> = row.get(1).map_err(|e| UiError::from(format!("{e}")))?;
+    while let Some(row) = rows.next().map_err(|e| {
+        log_error!("maps: : {e}");
+        UiError::from(format!("{e}"))
+    })? {
+        let position: i64 = row.get(0).map_err(|e| {
+            log_error!("maps: : {e}");
+            UiError::from(format!("{e}"))
+        })?;
+        let data: Vec<u8> = row.get(1).map_err(|e| {
+            log_error!("maps: : {e}");
+            UiError::from(format!("{e}"))
+        })?;
         let (x, y) = decode_position(position);
         let (image_data, width, height) = if let Ok(map_piece) = MapPieceDb::decode(data.as_slice())
         {
