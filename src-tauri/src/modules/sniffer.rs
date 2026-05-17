@@ -6,7 +6,7 @@ use std::{
 };
 
 use super::errors::UiError;
-use crate::log_info;
+use crate::{log_error, log_info};
 
 // ── Varint ──
 
@@ -102,21 +102,28 @@ fn build_wire_packet(payload: &[u8]) -> Vec<u8> {
 // ── Network I/O ──
 
 fn send_packet(addr: &SocketAddr, wire: &[u8], timeout: Duration) -> Result<Vec<u8>, UiError> {
-    let mut stream = TcpStream::connect_timeout(addr, timeout).map_err(|e| UiError {
-        name: "connect_failed".into(),
-        message: format!("Failed to connect to {}: {e}", addr),
+    let mut stream = TcpStream::connect_timeout(addr, timeout).map_err(|e| {
+        log_error!("sniff_server: connect failed to {}: {e}", addr);
+        UiError {
+            name: "connect_failed".into(),
+            message: format!("Failed to connect to {}: {e}", addr),
+        }
     })?;
     stream.set_read_timeout(Some(Duration::from_secs(2))).ok();
-    stream
-        .set_write_timeout(Some(timeout))
-        .map_err(|e| UiError {
+    stream.set_write_timeout(Some(timeout)).map_err(|e| {
+        log_error!("sniff_server: set_write_timeout failed: {e}");
+        UiError {
             name: "timeout_error".into(),
             message: format!("Failed to set write timeout: {e}"),
-        })?;
+        }
+    })?;
 
-    stream.write_all(wire).map_err(|e| UiError {
-        name: "send_failed".into(),
-        message: format!("Failed to send packet: {e}"),
+    stream.write_all(wire).map_err(|e| {
+        log_error!("sniff_server: send failed: {e}");
+        UiError {
+            name: "send_failed".into(),
+            message: format!("Failed to send packet: {e}"),
+        }
     })?;
 
     let mut data = Vec::new();
@@ -128,6 +135,7 @@ fn send_packet(addr: &SocketAddr, wire: &[u8], timeout: Duration) -> Result<Vec<
             Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => break,
             Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => break,
             Err(e) => {
+                log_error!("sniff_server: recv failed: {e}");
                 return Err(UiError {
                     name: "recv_failed".into(),
                     message: format!("Failed to read response: {e}"),
@@ -351,14 +359,20 @@ pub fn sniff_server(
     let host_port = format!("{host}:{port}");
     let addr = host_port
         .to_socket_addrs()
-        .map_err(|e| UiError {
-            name: "invalid_address".into(),
-            message: format!("Failed to resolve {host}:{port} - {e}"),
+        .map_err(|e| {
+            log_error!("sniff_server: failed to resolve {}:{} - {e}", host, port);
+            UiError {
+                name: "invalid_address".into(),
+                message: format!("Failed to resolve {host}:{port} - {e}"),
+            }
         })?
         .next()
-        .ok_or_else(|| UiError {
-            name: "invalid_address".into(),
-            message: format!("Could not resolve {host}:{port}"),
+        .ok_or_else(|| {
+            log_error!("sniff_server: could not resolve {}:{}", host, port);
+            UiError {
+                name: "invalid_address".into(),
+                message: format!("Could not resolve {host}:{port}"),
+            }
         })?;
 
     // ── Step 1: probe with wrong version ──
