@@ -13,6 +13,7 @@ import type { EditServerDialogProps } from "@/components/dialogs/editserver.dial
 import type { EditWorldDialogProps } from "@/components/dialogs/editworld.dialog";
 import type { RemoveModDialogProps } from "@/components/dialogs/removemod.dialog";
 import type { UpdateModDialogProps } from "@/components/dialogs/updatemod.dialog";
+import type { ViewLogsDialogProps } from "@/components/dialogs/viewlogs.dialog";
 import type { ViewMapDialogProps } from "@/components/dialogs/viewmap.dialog";
 
 export type DialogMap = {
@@ -33,6 +34,7 @@ export type DialogMap = {
   EditWorldDialog: EditWorldDialogProps;
   DeleteWorldDialog: DeleteWorldDialogProps;
   ViewMapDialog: ViewMapDialogProps;
+  ViewLogsDialog: ViewLogsDialogProps;
 };
 
 type DialogKey = keyof DialogMap;
