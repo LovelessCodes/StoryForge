@@ -4,7 +4,7 @@ import ReactDOM from "react-dom/client";
 
 import { SidebarProvider } from "./components/ui/sidebar";
 import { routeTree } from "./routeTree.gen";
-import { tauriAccountsHandler } from "./stores/accounts";
+import { useAccountStore } from "./stores/accounts";
 import { useInstallationsStore } from "./stores/installations";
 import { useServerStore } from "./stores/servers";
 import { tauriSettingsHandler } from "./stores/settings";
@@ -18,7 +18,7 @@ if (dark) {
 }
 
 useServerStore.getState().loadServers();
-await tauriAccountsHandler.start();
+useAccountStore.getState().loadAccounts();
 useInstallationsStore.getState().loadInstallations();
 
 const queryClient = new QueryClient();

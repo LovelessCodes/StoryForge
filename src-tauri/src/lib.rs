@@ -63,6 +63,8 @@ pub fn run() {
             // Authorization
             auth::login,
             auth::verify,
+            auth::save_accounts,
+            auth::load_accounts,
             // News
             news::fetch_news,
             // Mods
