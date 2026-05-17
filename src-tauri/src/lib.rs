@@ -1,5 +1,5 @@
 mod modules;
-use modules::{auth, download, installations, maps, mods, news, saves, servers, versions};
+use modules::{auth, download, installations, maps, mods, news, saves, servers, sniffer, versions};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -70,6 +70,8 @@ pub fn run() {
             // Servers
             servers::fetch_public_servers,
             servers::fetch_all_servers,
+            // Sniffer
+            sniffer::sniff_server,
             servers::add_server_to_installation,
             servers::remove_server_from_installation,
             servers::check_server_in_installation,

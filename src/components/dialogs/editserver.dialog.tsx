@@ -1,8 +1,23 @@
 import { useForm } from "@tanstack/react-form";
+import { useMutation } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import clsx from "clsx";
-import { useId } from "react";
+import { Loader2Icon } from "lucide-react";
+import { useState, useId } from "react";
+import { toast } from "sonner";
 
+type SniffResult = {
+  server_game_version: string | null;
+  server_network_version: string | null;
+  password_protected: boolean;
+  password_valid: boolean | null;
+  whitelisted: boolean;
+  banned: boolean;
+  server_full: boolean;
+  auth_required: boolean;
+  login_token: string | null;
+  disconnect_message: string | null;
+};
 import { serverSchema } from "@/components/dialogs/addserver.dialog";
 import { PasswordInput } from "@/components/inputs";
 import { Button } from "@/components/ui/button";
@@ -36,6 +51,26 @@ export function EditServerDialog({
   const { closeDialog } = useDialogStore();
   const { installations } = useInstallations();
   const { updateServer, loadServers } = useServerStore();
+  const [sniffResult, setSniffResult] = useState<SniffResult | null>(null);
+  const { mutate: testServer, isPending: isTesting } = useMutation({
+    mutationFn: async () => {
+      const ip = form.getFieldValue("ip");
+      const portStr = form.getFieldValue("port");
+      const password = form.getFieldValue("password");
+      return invoke<SniffResult>("sniff_server", {
+        host: ip,
+        password: password || undefined,
+        port: portStr ? Number.parseInt(portStr, 10) : undefined,
+      });
+    },
+    onError: (error) => {
+      toast.error(`Failed to test server: ${error.message}`);
+      setSniffResult(null);
+    },
+    onSuccess: (data) => {
+      setSniffResult(data);
+    },
+  });
   const form = useForm({
     defaultValues: {
       favorite: server.favorite,
@@ -191,10 +226,10 @@ export function EditServerDialog({
                 </div>
               )}
             </form.Field>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <form.Field name="ip">
                 {(field) => (
-                  <div className="grid gap-2">
+                  <div className="grid w-full gap-2">
                     <Tooltip>
                       <TooltipTrigger
                         render={
@@ -240,7 +275,7 @@ export function EditServerDialog({
               </form.Field>
               <form.Field name="port">
                 {(field) => (
-                  <div className="grid gap-2">
+                  <div className="grid w-full gap-2">
                     <Tooltip>
                       <TooltipTrigger
                         render={
@@ -340,9 +375,74 @@ export function EditServerDialog({
               )}
             </form.Field>
           </div>
-          <Button className="w-full" onClick={() => form.handleSubmit()} type="button">
-            Update Server
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              className="flex-1"
+              disabled={isTesting}
+              onClick={() => testServer()}
+              type="button"
+              variant="outline"
+            >
+              {isTesting ? (
+                <>
+                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                  Testing...
+                </>
+              ) : (
+                "Test Server"
+              )}
+            </Button>
+            <Button className="flex-1" onClick={() => form.handleSubmit()} type="button">
+              Update Server
+            </Button>
+          </div>
+          {sniffResult && (
+            <div className="bg-muted space-y-1 rounded border p-3 text-xs">
+              {sniffResult.server_game_version && (
+                <p>
+                  <span className="text-muted-foreground">Version:</span>{" "}
+                  <span className="font-mono">v{sniffResult.server_game_version}</span>
+                  {(() => {
+                    const instId = form.getFieldValue("installationId");
+                    const inst = installations.find((i) => i.id.toString() === instId);
+                    if (inst && sniffResult.server_game_version) {
+                      const match = inst.version === sniffResult.server_game_version;
+                      return (
+                        <span className={match ? "text-success ml-1" : "text-destructive ml-1"}>
+                          {match
+                            ? "✓ matches your installation"
+                            : "✗ differs from your installation"}
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
+                </p>
+              )}
+              {sniffResult.password_protected && (
+                <p>
+                  <span className="text-muted-foreground">Password:</span>{" "}
+                  {sniffResult.password_valid === true ? (
+                    <span className="text-success">Correct</span>
+                  ) : sniffResult.password_valid === false ? (
+                    <span className="text-destructive">Incorrect</span>
+                  ) : (
+                    <span className="text-warning-foreground">
+                      Required (enter password to test)
+                    </span>
+                  )}
+                </p>
+              )}
+              {sniffResult.whitelisted && (
+                <p className="text-warning-foreground">Server is whitelisted</p>
+              )}
+              {sniffResult.server_full && <p className="text-destructive">Server is full</p>}
+              {sniffResult.banned && <p className="text-destructive">You are banned</p>}
+              {sniffResult.disconnect_message && (
+                <p className="text-muted-foreground truncate">{sniffResult.disconnect_message}</p>
+              )}
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
