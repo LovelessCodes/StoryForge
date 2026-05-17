@@ -11,6 +11,7 @@ use tauri::{command, AppHandle};
 
 use super::errors::UiError;
 use super::proto::{GameData, MapPieceDb};
+use crate::log_info;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MapInfo {
@@ -130,6 +131,7 @@ fn get_maps_db_path(world_path: &str) -> Result<PathBuf, UiError> {
 /// Scan all installations for Maps databases
 #[command]
 pub fn get_all_maps(app: AppHandle) -> Result<Vec<MapInfo>, UiError> {
+    log_info!("get_all_maps");
     use super::utils::{installations_folder, installations_subdir};
     use std::fs::metadata;
 
@@ -599,6 +601,7 @@ fn find_map_table(conn: &Connection) -> Result<String, UiError> {
 
 #[command]
 pub fn get_map_bounds_by_path(map_path: String) -> Result<MapBounds, UiError> {
+    log_info!("get_map_bounds_by_path");
     let conn = read_map_db(&map_path)?;
     let table_name = find_map_table(&conn)?;
 
@@ -640,6 +643,7 @@ pub fn get_map_bounds_by_path(map_path: String) -> Result<MapBounds, UiError> {
 
 #[command]
 pub fn get_all_map_tiles_by_path(map_path: String) -> Result<Vec<MapTile>, UiError> {
+    log_info!("get_all_map_tiles_by_path");
     let conn = read_map_db(&map_path)?;
     let table_name = find_map_table(&conn)?;
 
