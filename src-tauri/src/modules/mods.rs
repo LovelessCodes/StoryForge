@@ -13,6 +13,7 @@ use zip::read::ZipArchive;
 
 use super::errors::UiError;
 use super::installations::find_installation_by_id;
+use crate::log_info;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -225,6 +226,7 @@ pub async fn fetch_authors(search: String) -> Result<Value, UiError> {
 
 #[command]
 pub async fn add_mod_to_installation(path: String, url: String) -> Result<String, UiError> {
+    log_info!("add_mod_to_installation: {:?}", path);
     // Download the mod from the url and save it to the Mods directory inside the path
     let pb = PathBuf::from(path).join("Mods");
     if !pb.exists() {
@@ -497,6 +499,7 @@ pub fn get_mods(path: String) -> Result<ModsResult, UiError> {
 
 #[command]
 pub fn get_mod_configs(app: AppHandle, installation_id: u64) -> Result<Vec<Value>, UiError> {
+    log_info!("get_mod_configs: installation={}", installation_id);
     let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
     let mod_config_path = pb.join("ModConfig");
     if !mod_config_path.exists() || !mod_config_path.is_dir() {
@@ -547,6 +550,11 @@ pub fn save_mod_config(
     file: String,
     new_code: String,
 ) -> Result<(), UiError> {
+    log_info!(
+        "save_mod_config: installation={} file={}",
+        installation_id,
+        file
+    );
     let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
     let mod_config_path = pb.join("ModConfig");
     if !mod_config_path.exists() || !mod_config_path.is_dir() {
@@ -600,6 +608,7 @@ pub async fn get_mod_updates(params: String) -> Result<Value, UiError> {
 
 #[command]
 pub fn get_installation_mods(app: AppHandle, id: u64) -> Result<Vec<OutputMod>, UiError> {
+    log_info!("get_installation_mods: installation={}", id);
     let (pb, _installation) = find_installation_by_id(&app, id)?;
     let path = pb.to_string_lossy().to_string();
     get_mods(path.to_string())
@@ -612,6 +621,7 @@ pub fn get_installation_mods(app: AppHandle, id: u64) -> Result<Vec<OutputMod>, 
 
 #[command]
 pub async fn remove_mod_from_installation(params: ModRemoveParams) -> Result<String, UiError> {
+    log_info!("remove_mod_from_installation: {:?}", params.modpath);
     let mods_path = PathBuf::from(&params.path).join("Mods");
     if !mods_path.exists() || !mods_path.is_dir() {
         return Err(UiError {
