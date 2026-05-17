@@ -24,6 +24,7 @@ pub struct AuthVerifyResponse {
     pub valid: u8,
     pub entitlements: Option<String>,
     pub mptoken: Option<String>,
+    #[serde(default)]
     pub hasgameserver: bool,
     pub reason: Option<String>,
 }
@@ -60,9 +61,17 @@ pub async fn verify(uid: String, sessionkey: String) -> Result<AuthVerifyRespons
         });
     }
 
-    let json_response = res.json::<AuthVerifyResponse>().await.map_err(|e| {
-        log_error!("auth: Parse error: {e}");
+    let response_text = res.text().await.map_err(|e| {
+        log_error!("auth: Read error: {e}");
+        format!("Read error: {e}")
+    })?;
+    log_info!(
+        "verify response: {}",
+        &response_text[..response_text.len().min(500)]
+    );
 
+    let json_response: AuthVerifyResponse = serde_json::from_str(&response_text).map_err(|e| {
+        log_error!("auth: Parse error: {e}");
         format!("Parse error: {e}")
     })?;
 
