@@ -6,6 +6,7 @@ use std::{
 };
 
 use super::errors::UiError;
+use crate::log_info;
 
 // ── Varint ──
 
@@ -361,6 +362,7 @@ pub fn sniff_server(
         })?;
 
     // ── Step 1: probe with wrong version ──
+    log_info!("sniff_server: probing {}:{}", host, port);
     let ident1 = build_client_identification(
         "1.99.99",
         "ServerSniffer",
@@ -434,5 +436,11 @@ pub fn sniff_server(
         }
     }
 
+    log_info!(
+        "sniff_server result: version={:?} password_protected={} password_valid={:?}",
+        info.server_game_version,
+        info.password_protected,
+        info.password_valid
+    );
     Ok(info)
 }
