@@ -3,6 +3,7 @@ pub mod dotnet;
 pub mod download;
 pub mod errors;
 pub mod installations;
+pub mod logger;
 pub mod maps;
 pub mod mods;
 pub mod news;
