@@ -1,5 +1,29 @@
 mod modules;
 use modules::{auth, download, installations, maps, mods, news, saves, servers, sniffer, versions};
+
+// ── Logging macros (crate root so accessible everywhere) ──
+
+#[macro_export]
+macro_rules! log_info {
+    ($($arg:tt)*) => {{
+        $crate::modules::logger::log("INFO ", &format!($($arg)*));
+    }};
+}
+
+#[macro_export]
+macro_rules! log_debug {
+    ($($arg:tt)*) => {{
+        $crate::modules::logger::log("DEBUG", &format!($($arg)*));
+    }};
+}
+
+#[macro_export]
+macro_rules! log_error {
+    ($($arg:tt)*) => {{
+        $crate::modules::logger::log("ERROR", &format!($($arg)*));
+    }};
+}
+
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -13,6 +37,13 @@ pub fn run() {
         .plugin(tauri_plugin_os::init())
         .setup(|app| {
             let app_handle = app.handle();
+
+            // Init logger
+            if let Ok(data_dir) = app_handle.path().app_data_dir() {
+                modules::logger::init(&data_dir);
+                log_info!("App started, data dir: {:?}", data_dir);
+            }
+
             let store_path = app.path().app_data_dir().unwrap().join("store");
             std::fs::create_dir_all(&store_path).unwrap();
             app_handle
