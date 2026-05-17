@@ -8,6 +8,7 @@ use std::{
 use tauri::{AppHandle, Emitter};
 
 use super::errors::UiError;
+use crate::{log_debug, log_error, log_info};
 
 /// Map Vintage Story game version to .NET runtime channel.
 /// VS >= 1.22.x → "10.0", VS 1.21.x → "8.0", older → "7.0"
@@ -149,21 +150,27 @@ async fn resolve_dotnet_version(channel: &str) -> Result<String, UiError> {
         "https://dotnetcli.azureedge.net/dotnet/release-metadata/{}/releases.json",
         channel
     );
-    let resp = get(&url)
-        .await
-        .map_err(|e| UiError::from(format!("Failed to fetch dotnet releases: {e}")))?;
+    let resp = get(&url).await.map_err(|e| {
+        log_error!("dotnet: Failed to fetch dotnet releases: {e}");
+
+        UiError::from(format!("Failed to fetch dotnet releases: {e}"))
+    })?;
     if !resp.status().is_success() {
         return Err(UiError::from(format!(
             "Failed to fetch dotnet releases: HTTP {}",
             resp.status()
         )));
     }
-    let text = resp
-        .text()
-        .await
-        .map_err(|e| UiError::from(format!("Failed to read dotnet releases body: {e}")))?;
-    let release_index: ReleaseIndex = serde_json::from_str(&text)
-        .map_err(|e| UiError::from(format!("Failed to parse dotnet releases: {e}")))?;
+    let text = resp.text().await.map_err(|e| {
+        log_error!("dotnet: Failed to read dotnet releases body: {e}");
+
+        UiError::from(format!("Failed to read dotnet releases body: {e}"))
+    })?;
+    let release_index: ReleaseIndex = serde_json::from_str(&text).map_err(|e| {
+        log_error!("dotnet: Failed to parse dotnet releases: {e}");
+
+        UiError::from(format!("Failed to parse dotnet releases: {e}"))
+    })?;
     Ok(release_index.latest_runtime)
 }
 
@@ -194,23 +201,26 @@ async fn download_dotnet_runtime(
     dest_dir: &Path,
     event_id: u64,
 ) -> Result<PathBuf, UiError> {
-    create_dir_all(dest_dir).map_err(|e| UiError {
-        name: "create_dir_failed".into(),
-        message: format!("Failed to create dotnet dir: {e}"),
+    create_dir_all(dest_dir).map_err(|e| {
+        log_error!("dotnet: create_dir_failed: {e}");
+        UiError {
+            name: "create_dir_failed".into(),
+            message: format!("Failed to create dotnet dir: {e}"),
+        }
     })?;
 
     let url = download_url(version);
-    eprintln!("[dotnet] downloading {} ...", url);
+    log_debug!("[dotnet] downloading {} ...", url);
 
     let event_name = format!("dotnet-download-{}", event_id);
     let _ = app.emit(&event_name, json!({"phase": "downloading", "percent": 0.0}));
 
     let client = reqwest::Client::new();
-    let resp = client
-        .get(&url)
-        .send()
-        .await
-        .map_err(|e| UiError::from(format!("Failed to download dotnet runtime: {e}")))?;
+    let resp = client.get(&url).send().await.map_err(|e| {
+        log_error!("dotnet: Failed to download dotnet runtime: {e}");
+
+        UiError::from(format!("Failed to download dotnet runtime: {e}"))
+    })?;
 
     if !resp.status().is_success() {
         return Err(UiError::from(format!(
@@ -226,7 +236,10 @@ async fn download_dotnet_runtime(
 
     use futures_util::StreamExt;
     while let Some(chunk) = stream.next().await {
-        let chunk = chunk.map_err(|e| UiError::from(format!("Download error: {e}")))?;
+        let chunk = chunk.map_err(|e| {
+            log_error!("dotnet: Download error: {e}");
+            UiError::from(format!("Download error: {e}"))
+        })?;
         buf.extend_from_slice(&chunk);
         downloaded += chunk.len() as u64;
         if total_size > 0 {
@@ -251,20 +264,27 @@ async fn download_dotnet_runtime(
         let cursor = std::io::Cursor::new(&bytes);
         let gz = flate2::read::GzDecoder::new(cursor);
         let mut archive = tar::Archive::new(gz);
-        archive
-            .unpack(dest_dir)
-            .map_err(|e| UiError::from(format!("Failed to extract dotnet runtime: {e}")))?;
+        archive.unpack(dest_dir).map_err(|e| {
+            log_error!("dotnet: Failed to extract dotnet runtime: {e}");
+
+            UiError::from(format!("Failed to extract dotnet runtime: {e}"))
+        })?;
     }
 
     #[cfg(target_os = "windows")]
     {
         // zip
         let cursor = std::io::Cursor::new(&bytes);
-        let mut archive = zip::ZipArchive::new(cursor)
-            .map_err(|e| UiError::from(format!("Failed to open dotnet zip: {e}")))?;
-        archive
-            .extract(dest_dir)
-            .map_err(|e| UiError::from(format!("Failed to extract dotnet runtime: {e}")))?;
+        let mut archive = zip::ZipArchive::new(cursor).map_err(|e| {
+            log_error!("dotnet: Failed to open dotnet zip: {e}");
+
+            UiError::from(format!("Failed to open dotnet zip: {e}"))
+        })?;
+        archive.extract(dest_dir).map_err(|e| {
+            log_error!("dotnet: Failed to extract dotnet runtime: {e}");
+
+            UiError::from(format!("Failed to extract dotnet runtime: {e}"))
+        })?;
     }
 
     // The tarball/zip contains a top-level directory like "dotnet-runtime-7.0.20-osx-x64/"
@@ -301,14 +321,14 @@ pub async fn ensure_dotnet(
 
     // 1. Try system installation
     if let Some(root) = find_system_dotnet_root(channel) {
-        eprintln!("[dotnet] found system dotnet at {:?}", root);
+        log_info!("[dotnet] found system dotnet at {:?}", root);
         return Ok(root);
     }
 
     // 2. Check if we already downloaded it
     let local_dir = app_data_dir.join("dotnet").join(channel);
     if has_runtime(&local_dir, channel) {
-        eprintln!("[dotnet] using cached dotnet at {:?}", local_dir);
+        log_info!("[dotnet] using cached dotnet at {:?}", local_dir);
         return Ok(local_dir);
     }
 
@@ -317,20 +337,21 @@ pub async fn ensure_dotnet(
         for entry in entries.flatten() {
             let p = entry.path();
             if p.is_dir() && has_runtime(&p, channel) {
-                eprintln!("[dotnet] using cached dotnet at {:?}", p);
+                log_info!("[dotnet] using cached dotnet at {:?}", p);
                 return Ok(p);
             }
         }
     }
 
     // 3. Download
-    eprintln!(
+    log_info!(
         "[dotnet] downloading dotnet {} for game version {} ...",
-        channel, game_version
+        channel,
+        game_version
     );
     let version = resolve_dotnet_version(channel).await?;
-    eprintln!("[dotnet] resolved to version {}", version);
+    log_info!("[dotnet] resolved to version {}", version);
     let root = download_dotnet_runtime(app, &version, &local_dir, installation_id).await?;
-    eprintln!("[dotnet] installed to {:?}", root);
+    log_info!("[dotnet] installed to {:?}", root);
     Ok(root)
 }

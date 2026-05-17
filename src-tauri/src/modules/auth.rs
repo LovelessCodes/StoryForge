@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use tauri::command;
 
 use super::errors::UiError;
+use crate::{log_error, log_info};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GameLoginResponse {
@@ -29,6 +30,7 @@ pub struct AuthVerifyResponse {
 
 #[command]
 pub async fn verify(uid: String, sessionkey: String) -> Result<AuthVerifyResponse, UiError> {
+    log_info!("verify: uid={}", uid);
     let client = reqwest::Client::new();
     let mut headers = HeaderMap::new();
     headers.insert(
@@ -45,7 +47,11 @@ pub async fn verify(uid: String, sessionkey: String) -> Result<AuthVerifyRespons
         .form(&params)
         .send()
         .await
-        .map_err(|e| format!("Request error: {e}"))?;
+        .map_err(|e| {
+            log_error!("auth: Request error: {e}");
+
+            format!("Request error: {e}")
+        })?;
 
     if !res.status().is_success() {
         return Err(UiError {
@@ -54,10 +60,11 @@ pub async fn verify(uid: String, sessionkey: String) -> Result<AuthVerifyRespons
         });
     }
 
-    let json_response = res
-        .json::<AuthVerifyResponse>()
-        .await
-        .map_err(|e| format!("Parse error: {e}"))?;
+    let json_response = res.json::<AuthVerifyResponse>().await.map_err(|e| {
+        log_error!("auth: Parse error: {e}");
+
+        format!("Parse error: {e}")
+    })?;
 
     if json_response.valid == 0 {
         return Err(UiError {
@@ -78,6 +85,7 @@ pub async fn login(
     totpcode: Option<String>,
     prelogintoken: Option<String>,
 ) -> Result<GameLoginResponse, UiError> {
+    log_info!("login: email={}", email);
     let client = reqwest::Client::new();
     let mut headers = HeaderMap::new();
     headers.insert(
@@ -100,7 +108,11 @@ pub async fn login(
         .form(&params)
         .send()
         .await
-        .map_err(|e| format!("Request error: {e}"))?;
+        .map_err(|e| {
+            log_error!("auth: Request error: {e}");
+
+            format!("Request error: {e}")
+        })?;
 
     if !res.status().is_success() {
         return Err(UiError {
@@ -109,10 +121,11 @@ pub async fn login(
         });
     }
 
-    let json_response = res
-        .json::<GameLoginResponse>()
-        .await
-        .map_err(|e| format!("JSON error: {e}"))?;
+    let json_response = res.json::<GameLoginResponse>().await.map_err(|e| {
+        log_error!("auth: JSON error: {e}");
+
+        format!("JSON error: {e}")
+    })?;
 
     if json_response.valid == 0 {
         if json_response.prelogintoken.is_some() {

@@ -12,6 +12,7 @@ use super::errors::UiError;
 use super::installations::find_installation_by_id;
 use super::proto::{GameData, MapMarkers, ProspectingLog};
 use super::utils::{installations_folder, installations_subdir};
+use crate::log_error;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct World {
@@ -32,20 +33,30 @@ pub fn get_all_saves(app: AppHandle) -> Result<Vec<World>, UiError> {
     let installation_dir_path = installations_folder(app.clone()).join(&subdir);
     let mut saves: Vec<World> = Vec::new();
     if installation_dir_path.exists() && installation_dir_path.is_dir() {
-        for entry in read_dir(&installation_dir_path)
-            .map_err(|e| UiError::from(format!("Read dir error: {e}")))?
-        {
-            let entry = entry.map_err(|e| UiError::from(format!("Dir entry error: {e}")))?;
+        for entry in read_dir(&installation_dir_path).map_err(|e| {
+            log_error!("saves: Read dir error: {e}");
+
+            UiError::from(format!("Read dir error: {e}"))
+        })? {
+            let entry = entry.map_err(|e| {
+                log_error!("saves: Dir entry error: {e}");
+                UiError::from(format!("Dir entry error: {e}"))
+            })?;
             let path = entry.path();
             let installation_name = entry.file_name().into_string().unwrap_or_default();
             if path.is_dir() {
                 let saves_path = path.join("Saves");
                 if saves_path.exists() && saves_path.is_dir() {
-                    for save_entry in read_dir(saves_path)
-                        .map_err(|e| UiError::from(format!("Read dir error: {e}")))?
-                    {
-                        let save_entry = save_entry
-                            .map_err(|e| UiError::from(format!("Dir entry error: {e}")))?;
+                    for save_entry in read_dir(saves_path).map_err(|e| {
+                        log_error!("saves: Read dir error: {e}");
+
+                        UiError::from(format!("Read dir error: {e}"))
+                    })? {
+                        let save_entry = save_entry.map_err(|e| {
+                            log_error!("saves: Dir entry error: {e}");
+
+                            UiError::from(format!("Dir entry error: {e}"))
+                        })?;
                         let save_path = save_entry.path();
                         if save_path.is_file() {
                             if let Some(ext) = save_path.extension() {
@@ -67,7 +78,11 @@ pub fn get_all_saves(app: AppHandle) -> Result<Vec<World>, UiError> {
                                         OpenFlags::SQLITE_OPEN_READ_ONLY
                                             | OpenFlags::SQLITE_OPEN_URI,
                                     )
-                                    .map_err(|e| UiError::from(format!("DB open error: {e}")))?;
+                                    .map_err(|e| {
+                                        log_error!("saves: DB open error: {e}");
+
+                                        UiError::from(format!("DB open error: {e}"))
+                                    })?;
                                     let mut stmt =
                                         conn.prepare("SELECT data FROM gamedata LIMIT 1").map_err(
                                             |e| UiError::from(format!("DB prepare error: {e}")),
@@ -75,10 +90,11 @@ pub fn get_all_saves(app: AppHandle) -> Result<Vec<World>, UiError> {
                                     let mut rows = stmt.query([]).map_err(|e| {
                                         UiError::from(format!("DB query error: {e}"))
                                     })?;
-                                    if let Some(row) = rows
-                                        .next()
-                                        .map_err(|e| UiError::from(format!("DB row error: {e}")))?
-                                    {
+                                    if let Some(row) = rows.next().map_err(|e| {
+                                        log_error!("saves: DB row error: {e}");
+
+                                        UiError::from(format!("DB row error: {e}"))
+                                    })? {
                                         let data: Vec<u8> = row.get(0).map_err(|e| {
                                             UiError::from(format!("DB get error: {e}"))
                                         })?;
@@ -177,10 +193,14 @@ pub fn get_installation_saves(
     // Traverse the saves directory and collect save names from the .vcdbs files
     let mut saves = Vec::new();
     if saves_path.exists() && saves_path.is_dir() {
-        for entry in
-            read_dir(saves_path).map_err(|e| UiError::from(format!("Read dir error: {e}")))?
-        {
-            let entry = entry.map_err(|e| UiError::from(format!("Dir entry error: {e}")))?;
+        for entry in read_dir(saves_path).map_err(|e| {
+            log_error!("saves: Read dir error: {e}");
+            UiError::from(format!("Read dir error: {e}"))
+        })? {
+            let entry = entry.map_err(|e| {
+                log_error!("saves: Dir entry error: {e}");
+                UiError::from(format!("Dir entry error: {e}"))
+            })?;
             let path = entry.path();
             if path.is_file() {
                 if let Some(ext) = path.extension() {
@@ -210,7 +230,10 @@ pub fn update_world(
     let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
     let saves_path = pb.join("Saves");
     if !saves_path.exists() {
-        create_dir_all(&saves_path).map_err(|e| UiError::from(format!("Create dir error: {e}")))?;
+        create_dir_all(&saves_path).map_err(|e| {
+            log_error!("saves: Create dir error: {e}");
+            UiError::from(format!("Create dir error: {e}"))
+        })?;
     }
     let world_path = Path::new(&world_path);
     if !world_path.exists() || !world_path.is_file() {
@@ -257,50 +280,81 @@ pub fn update_world(
                 // Ensure the Maps directory exists
                 let maps_dir = new_maps_path.parent().unwrap();
                 if !maps_dir.exists() {
-                    create_dir_all(maps_dir)
-                        .map_err(|e| UiError::from(format!("Create dir error: {e}")))?;
+                    create_dir_all(maps_dir).map_err(|e| {
+                        log_error!("saves: Create dir error: {e}");
+
+                        UiError::from(format!("Create dir error: {e}"))
+                    })?;
                 }
-                rename(maps_path, &new_maps_path)
-                    .map_err(|e| UiError::from(format!("Rename error: {e}")))?;
+                rename(maps_path, &new_maps_path).map_err(|e| {
+                    log_error!("saves: Rename error: {e}");
+
+                    UiError::from(format!("Rename error: {e}"))
+                })?;
             }
         }
     }
-    rename(world_path, &new_world_path).map_err(|e| UiError::from(format!("Rename error: {e}")))?;
+    rename(world_path, &new_world_path).map_err(|e| {
+        log_error!("saves: Rename error: {e}");
+        UiError::from(format!("Rename error: {e}"))
+    })?;
 
     // Update the "WorldName" field in the protobuf data inside the .vcdbs file
     let conn = rusqlite::Connection::open_with_flags(
         &new_world_path,
         OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_URI,
     )
-    .map_err(|e| UiError::from(format!("DB open error: {e}")))?;
+    .map_err(|e| {
+        log_error!("saves: DB open error: {e}");
+
+        UiError::from(format!("DB open error: {e}"))
+    })?;
     let mut stmt = conn
         .prepare("SELECT data FROM gamedata LIMIT 1")
-        .map_err(|e| UiError::from(format!("DB prepare error: {e}")))?;
+        .map_err(|e| {
+            log_error!("saves: DB prepare error: {e}");
 
-    let mut rows = stmt
-        .query([])
-        .map_err(|e| UiError::from(format!("DB query error: {e}")))?;
-    if let Some(row) = rows
-        .next()
-        .map_err(|e| UiError::from(format!("DB row error: {e}")))?
-    {
-        let data: Vec<u8> = row
-            .get(0)
-            .map_err(|e| UiError::from(format!("DB get error: {e}")))?;
+            UiError::from(format!("DB prepare error: {e}"))
+        })?;
+
+    let mut rows = stmt.query([]).map_err(|e| {
+        log_error!("saves: DB query error: {e}");
+
+        UiError::from(format!("DB query error: {e}"))
+    })?;
+    if let Some(row) = rows.next().map_err(|e| {
+        log_error!("saves: DB row error: {e}");
+
+        UiError::from(format!("DB row error: {e}"))
+    })? {
+        let data: Vec<u8> = row.get(0).map_err(|e| {
+            log_error!("saves: DB get error: {e}");
+
+            UiError::from(format!("DB get error: {e}"))
+        })?;
         // The data is a protobuf string, we need to parse it to get the save name
         // The save name is stored in the "WorldName" field
         // Use prost to decode the protobuf string
-        let mut gamedata = GameData::decode(data.as_slice())
-            .map_err(|e| UiError::from(format!("Protobuf decode error: {e}")))?;
+        let mut gamedata = GameData::decode(data.as_slice()).map_err(|e| {
+            log_error!("saves: Protobuf decode error: {e}");
+
+            UiError::from(format!("Protobuf decode error: {e}"))
+        })?;
         gamedata.world_name = name.clone();
         // Re-encode the protobuf string
         let mut buf = Vec::new();
-        gamedata
-            .encode(&mut buf)
-            .map_err(|e| UiError::from(format!("Protobuf encode error: {e}")))?;
+        gamedata.encode(&mut buf).map_err(|e| {
+            log_error!("saves: Protobuf encode error: {e}");
+
+            UiError::from(format!("Protobuf encode error: {e}"))
+        })?;
         // Update the database with the new data
         conn.execute("UPDATE gamedata SET data = ?1", [&buf])
-            .map_err(|e| UiError::from(format!("DB update error: {e}")))?;
+            .map_err(|e| {
+                log_error!("saves: DB update error: {e}");
+
+                UiError::from(format!("DB update error: {e}"))
+            })?;
     }
     Ok(())
 }
@@ -323,27 +377,42 @@ pub fn remove_world(world_path: String) -> Result<(), UiError> {
     }
 
     // Update the "WorldName" field in the protobuf data inside the .vcdbs file
-    let conn = rusqlite::Connection::open(world_path)
-        .map_err(|e| UiError::from(format!("DB open error: {e}")))?;
+    let conn = rusqlite::Connection::open(world_path).map_err(|e| {
+        log_error!("saves: DB open error: {e}");
+
+        UiError::from(format!("DB open error: {e}"))
+    })?;
     let mut stmt = conn
         .prepare("SELECT data FROM gamedata LIMIT 1")
-        .map_err(|e| UiError::from(format!("DB prepare error: {e}")))?;
+        .map_err(|e| {
+            log_error!("saves: DB prepare error: {e}");
 
-    let mut rows = stmt
-        .query([])
-        .map_err(|e| UiError::from(format!("DB query error: {e}")))?;
-    if let Some(row) = rows
-        .next()
-        .map_err(|e| UiError::from(format!("DB row error: {e}")))?
-    {
-        let data: Vec<u8> = row
-            .get(0)
-            .map_err(|e| UiError::from(format!("DB get error: {e}")))?;
+            UiError::from(format!("DB prepare error: {e}"))
+        })?;
+
+    let mut rows = stmt.query([]).map_err(|e| {
+        log_error!("saves: DB query error: {e}");
+
+        UiError::from(format!("DB query error: {e}"))
+    })?;
+    if let Some(row) = rows.next().map_err(|e| {
+        log_error!("saves: DB row error: {e}");
+
+        UiError::from(format!("DB row error: {e}"))
+    })? {
+        let data: Vec<u8> = row.get(0).map_err(|e| {
+            log_error!("saves: DB get error: {e}");
+
+            UiError::from(format!("DB get error: {e}"))
+        })?;
         // The data is a protobuf string, we need to parse it to get the save name
         // The save name is stored in the "WorldName" field
         // Use prost to decode the protobuf string
-        let gamedata = GameData::decode(data.as_slice())
-            .map_err(|e| UiError::from(format!("Protobuf decode error: {e}")))?;
+        let gamedata = GameData::decode(data.as_slice()).map_err(|e| {
+            log_error!("saves: Protobuf decode error: {e}");
+
+            UiError::from(format!("Protobuf decode error: {e}"))
+        })?;
 
         let maps_path = Path::new(&world_path)
             .parent()
@@ -354,11 +423,17 @@ pub fn remove_world(world_path: String) -> Result<(), UiError> {
             });
         if let Some(maps_path) = maps_path {
             if maps_path.exists() && maps_path.is_file() {
-                remove_file(maps_path)
-                    .map_err(|e| UiError::from(format!("Remove file error: {e}")))?;
+                remove_file(maps_path).map_err(|e| {
+                    log_error!("saves: Remove file error: {e}");
+
+                    UiError::from(format!("Remove file error: {e}"))
+                })?;
             }
         }
     }
-    remove_file(world_path).map_err(|e| UiError::from(format!("Remove file error: {e}")))?;
+    remove_file(world_path).map_err(|e| {
+        log_error!("saves: Remove file error: {e}");
+        UiError::from(format!("Remove file error: {e}"))
+    })?;
     Ok(())
 }

@@ -10,6 +10,7 @@ use tauri::{command, AppHandle};
 use super::errors::UiError;
 use super::installations::find_installation_by_id;
 use super::utils::{installations_folder, installations_subdir};
+use crate::{log_error, log_info};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct SavedServer {
@@ -90,6 +91,7 @@ fn extract_servers_from_directory(
 
 #[command]
 pub fn fetch_all_servers(app: AppHandle) -> Result<Vec<SavedServer>, UiError> {
+    log_info!("fetch_all_servers");
     let subdir = installations_subdir(app.clone());
     let installations_dir = installations_folder(app.clone()).join(&subdir);
     let mut all_servers: Vec<SavedServer> = Vec::new();
@@ -126,6 +128,7 @@ pub fn remove_server_from_installation(
     installation_id: u64,
     server: String,
 ) -> Result<(), UiError> {
+    log_info!("remove_server_from_installation: id={}", installation_id);
     let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
     let clientsettings_path = pb.join("clientsettings.json");
     let mut clientsettings: Value = if clientsettings_path.exists() {
@@ -220,6 +223,7 @@ pub fn add_server_to_installation(
     installation_id: u64,
     server: String,
 ) -> Result<(), UiError> {
+    log_info!("add_server_to_installation: id={}", installation_id);
     let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
     let clientsettings_path = pb.join("clientsettings.json");
     let mut clientsettings: Value = if clientsettings_path.exists() {
@@ -277,21 +281,26 @@ pub fn add_server_to_installation(
 
 #[command]
 pub async fn fetch_public_servers() -> Result<Value, UiError> {
+    log_info!("fetch_public_servers");
     let url = "https://masterserver.vintagestory.at/api/v1/servers/list";
-    let res = get(url)
-        .await
-        .map_err(|e| UiError::from(format!("Request error: {e}")))?;
+    let res = get(url).await.map_err(|e| {
+        log_error!("fetch_public_servers: request failed: {e}");
+        UiError::from(format!("Request error: {e}"))
+    })?;
     if !res.status().is_success() {
+        log_error!("fetch_public_servers: HTTP {}", res.status());
         return Err(UiError {
             name: "http_error".into(),
             message: format!("HTTP error: {}", res.status()),
         });
     }
-    let res_text = res
-        .text()
-        .await
-        .map_err(|e| UiError::from(format!("Read error: {e}")))?;
-    let json: Value =
-        from_str(&res_text).map_err(|e| UiError::from(format!("Parse error: {e}")))?;
+    let res_text = res.text().await.map_err(|e| {
+        log_error!("fetch_public_servers: read failed: {e}");
+        UiError::from(format!("Read error: {e}"))
+    })?;
+    let json: Value = from_str(&res_text).map_err(|e| {
+        log_error!("fetch_public_servers: parse failed: {e}");
+        UiError::from(format!("Parse error: {e}"))
+    })?;
     Ok(json)
 }
