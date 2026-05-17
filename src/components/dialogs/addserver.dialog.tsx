@@ -98,7 +98,7 @@ export function AddServerDialog({ open, installation }: { open: boolean } & AddS
       ip: "",
       name: "",
       password: "",
-      port: null as string | null,
+      port: "42420",
     },
     onSubmit: async ({ value }) => {
       await mutateAsync(
