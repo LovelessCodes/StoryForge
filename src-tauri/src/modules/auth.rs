@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use tauri::command;
 
 use super::errors::UiError;
+use crate::log_info;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GameLoginResponse {
@@ -29,6 +30,7 @@ pub struct AuthVerifyResponse {
 
 #[command]
 pub async fn verify(uid: String, sessionkey: String) -> Result<AuthVerifyResponse, UiError> {
+    log_info!("verify: uid={}", uid);
     let client = reqwest::Client::new();
     let mut headers = HeaderMap::new();
     headers.insert(
@@ -78,6 +80,7 @@ pub async fn login(
     totpcode: Option<String>,
     prelogintoken: Option<String>,
 ) -> Result<GameLoginResponse, UiError> {
+    log_info!("login: email={}", email);
     let client = reqwest::Client::new();
     let mut headers = HeaderMap::new();
     headers.insert(
