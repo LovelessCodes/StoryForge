@@ -53,7 +53,7 @@ pub fn run() {
                         .build(),
                 )
                 .map_err(|e| {
-                    eprintln!("Failed to initialize zustand plugin: {}", e);
+                    log_error!("Failed to initialize zustand plugin: {}", e);
                     e
                 })?;
             Ok(())
