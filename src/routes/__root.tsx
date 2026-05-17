@@ -25,6 +25,7 @@ import { EditWorldDialog } from "@/components/dialogs/editworld.dialog";
 import { ImportInstallationDialog } from "@/components/dialogs/importinstallation.dialog";
 import { RemoveModDialog } from "@/components/dialogs/removemod.dialog";
 import { UpdateModDialog } from "@/components/dialogs/updatemod.dialog";
+import { ViewLogsDialog } from "@/components/dialogs/viewlogs.dialog";
 import { ViewMapDialog } from "@/components/dialogs/viewmap.dialog";
 import { AppSidebar } from "@/components/sidebars/app.sidebar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -227,6 +228,14 @@ function RootComponent() {
         <ViewMapDialog
           open={active?.key === "ViewMapDialog"}
           {...((active?.key === "ViewMapDialog" ? active.props : {}) as DialogMap["ViewMapDialog"])}
+        />
+      )}
+      {active?.key === "ViewLogsDialog" && (
+        <ViewLogsDialog
+          open={active?.key === "ViewLogsDialog"}
+          {...((active?.key === "ViewLogsDialog"
+            ? active.props
+            : {}) as DialogMap["ViewLogsDialog"])}
         />
       )}
       <Toaster richColors theme={darkMode ? "dark" : "light"} />
