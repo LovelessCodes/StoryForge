@@ -22,6 +22,7 @@ use super::errors::UiError;
 use super::utils::{
     installations_folder, installations_subdir, move_folder, versions_folder, versions_subdir,
 };
+use crate::{log_debug, log_error, log_info};
 
 // --- Installation JSON5 persistence ---
 
@@ -330,10 +331,12 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
         message: "Invalid play game parameters.".into(),
     })?;
     let (pb, installation) = find_installation_by_id(&app, options.installation_id)?;
-    eprintln!("[play_game] installation dir: {:?}", pb);
-    eprintln!(
+    log_info!("[play_game] installation dir: {:?}", pb);
+    log_info!(
         "[play_game] installation info: name={}, version={}, startParams={}",
-        installation.name, installation.version, installation.start_params
+        installation.name,
+        installation.version,
+        installation.start_params
     );
 
     // Ensure .NET runtime
@@ -348,15 +351,15 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
         options.installation_id,
     )
     .await?;
-    eprintln!("[play_game] DOTNET_ROOT={:?}", dotnet_root);
+    log_info!("[play_game] DOTNET_ROOT={:?}", dotnet_root);
     // Debug: show what's at DOTNET_ROOT
     if let Ok(entries) = std::fs::read_dir(&dotnet_root) {
         for e in entries.flatten() {
-            eprintln!("[play_game]   {}", e.file_name().to_string_lossy());
+            log_debug!("[play_game]   {}", e.file_name().to_string_lossy());
         }
     }
     let hostfxr_dir = dotnet_root.join("host").join("fxr");
-    eprintln!(
+    log_debug!(
         "[play_game] hostfxr dir exists: {}, path: {:?}",
         hostfxr_dir.is_dir(),
         hostfxr_dir
@@ -364,7 +367,7 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
     if hostfxr_dir.is_dir() {
         if let Ok(entries) = std::fs::read_dir(&hostfxr_dir) {
             for e in entries.flatten() {
-                eprintln!(
+                log_debug!(
                     "[play_game]   fxr version: {}",
                     e.file_name().to_string_lossy()
                 );
@@ -376,7 +379,7 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
     let version_path = versions_folder(app.clone())
         .join(&subdir)
         .join(&installation.version);
-    eprintln!("[play_game] version_path: {:?}", version_path);
+    log_info!("[play_game] version_path: {:?}", version_path);
     if !version_path.exists() || !version_path.is_dir() {
         return Err(UiError {
             name: "not_found".into(),
@@ -403,12 +406,12 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
         }
     }
     if !found_exe {
-        eprintln!("[play_game] ERROR: exe not found in version_path");
+        log_error!("[play_game] ERROR: exe not found in version_path");
         return Err(UiError::from(
             "Could not find Vintage Story executable in installation path",
         ));
     }
-    eprintln!("[play_game] using exe: {:?}", combined_path);
+    log_info!("[play_game] using exe: {:?}", combined_path);
     if !combined_path.exists() || !combined_path.is_file() {
         return Err(UiError {
             name: "not_found".into(),
@@ -496,9 +499,11 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
     );
 
     // Build command with piped stdout/stderr so we can inspect output
-    eprintln!(
+    log_info!(
         "[play_game] spawning: {:?} --dataPath {:?} DOTNET_ROOT={:?}",
-        combined_path, pb, dotnet_root
+        combined_path,
+        pb,
+        dotnet_root
     );
     let mut child = Command::new(&combined_path)
         .env("DOTNET_ROOT", &dotnet_root)
@@ -587,7 +592,7 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
                     break;
                 }
                 if let Ok(line) = line_res {
-                    eprintln!("[play_game] stdout: {}", line);
+                    log_debug!("[play_game] stdout: {}", line);
                     if emit_success(&app_clone, &line) {
                         found_flag_stdout.store(true, Ordering::SeqCst);
                         break;
@@ -611,7 +616,7 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
                     break;
                 }
                 if let Ok(line) = line_res {
-                    eprintln!("[play_game] stderr: {}", line);
+                    log_debug!("[play_game] stderr: {}", line);
                     if emit_success(&app_clone, &line) {
                         found_flag_stderr.store(true, Ordering::SeqCst);
                         break;
@@ -633,7 +638,7 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
             thread::sleep(Duration::from_millis(150));
         }
         if !found_flag.load(Ordering::SeqCst) {
-            eprintln!("[play_game] TIMEOUT after {}ms", timeout.as_millis());
+            log_error!("[play_game] TIMEOUT after {}ms", timeout.as_millis());
             let _ = app_for_timeout.emit(
                 &format!("launch-{}", installation_id),
                 json!({

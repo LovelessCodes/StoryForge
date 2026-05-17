@@ -8,6 +8,7 @@ use std::{
 use tauri::{AppHandle, Emitter};
 
 use super::errors::UiError;
+use crate::{log_debug, log_info};
 
 /// Map Vintage Story game version to .NET runtime channel.
 /// VS >= 1.22.x → "10.0", VS 1.21.x → "8.0", older → "7.0"
@@ -200,7 +201,7 @@ async fn download_dotnet_runtime(
     })?;
 
     let url = download_url(version);
-    eprintln!("[dotnet] downloading {} ...", url);
+    log_debug!("[dotnet] downloading {} ...", url);
 
     let event_name = format!("dotnet-download-{}", event_id);
     let _ = app.emit(&event_name, json!({"phase": "downloading", "percent": 0.0}));
@@ -301,14 +302,14 @@ pub async fn ensure_dotnet(
 
     // 1. Try system installation
     if let Some(root) = find_system_dotnet_root(channel) {
-        eprintln!("[dotnet] found system dotnet at {:?}", root);
+        log_info!("[dotnet] found system dotnet at {:?}", root);
         return Ok(root);
     }
 
     // 2. Check if we already downloaded it
     let local_dir = app_data_dir.join("dotnet").join(channel);
     if has_runtime(&local_dir, channel) {
-        eprintln!("[dotnet] using cached dotnet at {:?}", local_dir);
+        log_info!("[dotnet] using cached dotnet at {:?}", local_dir);
         return Ok(local_dir);
     }
 
@@ -317,20 +318,21 @@ pub async fn ensure_dotnet(
         for entry in entries.flatten() {
             let p = entry.path();
             if p.is_dir() && has_runtime(&p, channel) {
-                eprintln!("[dotnet] using cached dotnet at {:?}", p);
+                log_info!("[dotnet] using cached dotnet at {:?}", p);
                 return Ok(p);
             }
         }
     }
 
     // 3. Download
-    eprintln!(
+    log_info!(
         "[dotnet] downloading dotnet {} for game version {} ...",
-        channel, game_version
+        channel,
+        game_version
     );
     let version = resolve_dotnet_version(channel).await?;
-    eprintln!("[dotnet] resolved to version {}", version);
+    log_info!("[dotnet] resolved to version {}", version);
     let root = download_dotnet_runtime(app, &version, &local_dir, installation_id).await?;
-    eprintln!("[dotnet] installed to {:?}", root);
+    log_info!("[dotnet] installed to {:?}", root);
     Ok(root)
 }

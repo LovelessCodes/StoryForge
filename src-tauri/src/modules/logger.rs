@@ -22,6 +22,7 @@ pub fn init(app_data: &PathBuf) {
             );
         }
         Err(e) => {
+            // Can't use log macros here — logger itself failed. Fallback to stderr.
             eprintln!("[logger] Failed to create log file {:?}: {e}", log_path);
         }
     }
