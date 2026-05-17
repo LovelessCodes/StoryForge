@@ -16,6 +16,7 @@ use std::{
 use tauri::{command, Emitter, Listener, Runtime};
 
 use super::errors::UiError;
+use crate::log_error;
 use crate::log_info;
 
 #[derive(Serialize, Clone)]
@@ -115,13 +116,18 @@ pub async fn download_and_maybe_extract<R: Runtime>(
     }
 
     if !destpath.exists() {
-        fs::create_dir_all(&destpath)
-            .map_err(|e| UiError::from(format!("create dir error: {e}")))?;
+        fs::create_dir_all(&destpath).map_err(|e| {
+            log_error!("download: create dir error: {e}");
+
+            UiError::from(format!("create dir error: {e}"))
+        })?;
     }
 
     let total = resp.content_length();
-    let mut file =
-        File::create(filepath).map_err(|e| UiError::from(format!("file create error: {e}")))?;
+    let mut file = File::create(filepath).map_err(|e| {
+        log_error!("download: file create error: {e}");
+        UiError::from(format!("file create error: {e}"))
+    })?;
 
     let mut stream = resp.bytes_stream();
     let mut downloaded: u64 = 0;
@@ -183,12 +189,17 @@ pub async fn download_and_maybe_extract<R: Runtime>(
                 .map_err(|e| format!("create extract dir error: {e}"))?;
 
             let mut zip_file = File::open(filepath).map_err(|e| format!("open zip error: {e}"))?;
-            zip_file
-                .rewind()
-                .map_err(|e| UiError::from(format!("rewind error: {e}")))?;
+            zip_file.rewind().map_err(|e| {
+                log_error!("download: rewind error: {e}");
 
-            let mut archive = zip::ZipArchive::new(zip_file)
-                .map_err(|e| UiError::from(format!("zip open error: {e}")))?;
+                UiError::from(format!("rewind error: {e}"))
+            })?;
+
+            let mut archive = zip::ZipArchive::new(zip_file).map_err(|e| {
+                log_error!("download: zip open error: {e}");
+
+                UiError::from(format!("zip open error: {e}"))
+            })?;
 
             // Normalize the prefix (folder inside zip)
             let mut prefix = zipsubfolderprefix.unwrap_or_default();
@@ -199,9 +210,11 @@ pub async fn download_and_maybe_extract<R: Runtime>(
             // First pass: count entries to extract for progress
             let mut count_to_extract: u64 = 0;
             for i in 0..archive.len() {
-                let entry = archive
-                    .by_index(i)
-                    .map_err(|e| UiError::from(format!("zip index error: {e}")))?;
+                let entry = archive.by_index(i).map_err(|e| {
+                    log_error!("download: zip index error: {e}");
+
+                    UiError::from(format!("zip index error: {e}"))
+                })?;
                 let entry_name = entry.name();
                 if should_extract(entry_name, &prefix) {
                     count_to_extract += 1;
@@ -211,10 +224,15 @@ pub async fn download_and_maybe_extract<R: Runtime>(
             // Second pass: extract
             let mut processed: u64 = 0;
             // Reopen archive to reset cursor (simplest)
-            let mut zip_file =
-                File::open(filepath).map_err(|e| UiError::from(format!("open zip error: {e}")))?;
-            let mut archive = zip::ZipArchive::new(&mut zip_file)
-                .map_err(|e| UiError::from(format!("zip open error: {e}")))?;
+            let mut zip_file = File::open(filepath).map_err(|e| {
+                log_error!("download: open zip error: {e}");
+                UiError::from(format!("open zip error: {e}"))
+            })?;
+            let mut archive = zip::ZipArchive::new(&mut zip_file).map_err(|e| {
+                log_error!("download: zip open error: {e}");
+
+                UiError::from(format!("zip open error: {e}"))
+            })?;
 
             for i in 0..archive.len() {
                 if cancelled.load(Ordering::SeqCst) {
@@ -237,30 +255,48 @@ pub async fn download_and_maybe_extract<R: Runtime>(
                     app.unlisten(listener_id);
                     return Ok("cancelled".into());
                 }
-                let mut entry = archive
-                    .by_index(i)
-                    .map_err(|e| UiError::from(format!("zip index error: {e}")))?;
+                let mut entry = archive.by_index(i).map_err(|e| {
+                    log_error!("download: zip index error: {e}");
+
+                    UiError::from(format!("zip index error: {e}"))
+                })?;
                 let entry_name = entry.name().to_string();
 
                 if !should_extract(&entry_name, &prefix) {
                     continue;
                 }
 
-                let out_path = make_output_path(&extract_dir, &entry_name, &prefix)
-                    .map_err(|e| UiError::from(format!("path error: {e}")))?;
+                let out_path =
+                    make_output_path(&extract_dir, &entry_name, &prefix).map_err(|e| {
+                        log_error!("download: path error: {e}");
+
+                        UiError::from(format!("path error: {e}"))
+                    })?;
 
                 if entry.is_dir() {
-                    fs::create_dir_all(&out_path)
-                        .map_err(|e| UiError::from(format!("mkdir error: {e}")))?;
+                    fs::create_dir_all(&out_path).map_err(|e| {
+                        log_error!("download: mkdir error: {e}");
+
+                        UiError::from(format!("mkdir error: {e}"))
+                    })?;
                 } else {
                     if let Some(parent) = out_path.parent() {
-                        fs::create_dir_all(parent)
-                            .map_err(|e| UiError::from(format!("mkdir parent error: {e}")))?;
+                        fs::create_dir_all(parent).map_err(|e| {
+                            log_error!("download: mkdir parent error: {e}");
+
+                            UiError::from(format!("mkdir parent error: {e}"))
+                        })?;
                     }
-                    let mut out_file = File::create(&out_path)
-                        .map_err(|e| UiError::from(format!("create file error: {e}")))?;
-                    io::copy(&mut entry, &mut out_file)
-                        .map_err(|e| UiError::from(format!("extract write error: {e}")))?;
+                    let mut out_file = File::create(&out_path).map_err(|e| {
+                        log_error!("download: create file error: {e}");
+
+                        UiError::from(format!("create file error: {e}"))
+                    })?;
+                    io::copy(&mut entry, &mut out_file).map_err(|e| {
+                        log_error!("download: extract write error: {e}");
+
+                        UiError::from(format!("extract write error: {e}"))
+                    })?;
                     // Preserve unix permissions if present
                     #[cfg(unix)]
                     {
@@ -290,15 +326,25 @@ pub async fn download_and_maybe_extract<R: Runtime>(
                         message: Some(format!("Extracted {}", entry_name)),
                     },
                 )
-                .map_err(|e| UiError::from(format!("emit error: {e}")))?;
+                .map_err(|e| {
+                    log_error!("download: emit error: {e}");
+
+                    UiError::from(format!("emit error: {e}"))
+                })?;
             }
             // Remove the downloaded archive after extraction
-            fs::remove_file(filepath)
-                .map_err(|e| UiError::from(format!("remove file error: {e}")))?;
+            fs::remove_file(filepath).map_err(|e| {
+                log_error!("download: remove file error: {e}");
+
+                UiError::from(format!("remove file error: {e}"))
+            })?;
             // Traverse the destination path and try to find Vintagestory executable
             let mut found_exe = false;
             for entry in walkdir::WalkDir::new(&destpath) {
-                let entry = entry.map_err(|e| UiError::from(format!("walkdir error: {e}")))?;
+                let entry = entry.map_err(|e| {
+                    log_error!("download: walkdir error: {e}");
+                    UiError::from(format!("walkdir error: {e}"))
+                })?;
                 if entry.file_type().is_file() {
                     let fname = entry.file_name().to_string_lossy();
                     if fname.eq_ignore_ascii_case("vintagestory.exe") {
@@ -315,8 +361,11 @@ pub async fn download_and_maybe_extract<R: Runtime>(
                 ));
             }
         } else {
-            fs::create_dir_all(&destpath)
-                .map_err(|e| UiError::from(format!("create dir error: {e}")))?;
+            fs::create_dir_all(&destpath).map_err(|e| {
+                log_error!("download: create dir error: {e}");
+
+                UiError::from(format!("create dir error: {e}"))
+            })?;
             let destpath_str = destpath.to_str().unwrap();
             let mut args = vec![
                 "--strip-components=1",
@@ -345,7 +394,11 @@ pub async fn download_and_maybe_extract<R: Runtime>(
                     message: None,
                 },
             )
-            .map_err(|e| UiError::from(format!("emit error: {e}")))?;
+            .map_err(|e| {
+                log_error!("download: emit error: {e}");
+
+                UiError::from(format!("emit error: {e}"))
+            })?;
             let status = Command::new(if cfg!(target_os = "macos") {
                 "bsdtar"
             } else {
@@ -353,7 +406,11 @@ pub async fn download_and_maybe_extract<R: Runtime>(
             })
             .args(&args)
             .status()
-            .map_err(|e| UiError::from(format!("tar error: {e}")))?;
+            .map_err(|e| {
+                log_error!("download: tar error: {e}");
+
+                UiError::from(format!("tar error: {e}"))
+            })?;
             if !status.success() {
                 return Err(UiError::from(format!("tar failed: {}", status)));
             }
@@ -377,13 +434,19 @@ pub async fn download_and_maybe_extract<R: Runtime>(
                 return Ok("cancelled".into());
             }
             // Remove the downloaded archive after extraction
-            fs::remove_file(filepath)
-                .map_err(|e| UiError::from(format!("remove file error: {e}")))?;
+            fs::remove_file(filepath).map_err(|e| {
+                log_error!("download: remove file error: {e}");
+
+                UiError::from(format!("remove file error: {e}"))
+            })?;
 
             // Traverse the destination path and try to find Vintagestory executable
             let mut found_exe = false;
             for entry in walkdir::WalkDir::new(&destpath) {
-                let entry = entry.map_err(|e| UiError::from(format!("walkdir error: {e}")))?;
+                let entry = entry.map_err(|e| {
+                    log_error!("download: walkdir error: {e}");
+                    UiError::from(format!("walkdir error: {e}"))
+                })?;
                 if entry.file_type().is_file() {
                     let fname = entry.file_name().to_string_lossy();
                     if fname.eq_ignore_ascii_case("vintagestory")
@@ -458,12 +521,22 @@ fn make_output_path(base: &Path, entry_name: &str, prefix: &str) -> Result<PathB
 pub async fn get_download_links() -> Result<Value, UiError> {
     let res = reqwest::get("https://vsapi.betterjs.dev/download")
         .await
-        .map_err(|e| UiError::from(format!("Request error: {e}")))?
+        .map_err(|e| {
+            log_error!("download: Request error: {e}");
+
+            UiError::from(format!("Request error: {e}"))
+        })?
         .text()
         .await
-        .map_err(|e| UiError::from(format!("Read error: {e}")))?;
-    let json: Value =
-        serde_json::from_str(&res).map_err(|e| UiError::from(format!("JSON parse error: {e}")))?;
+        .map_err(|e| {
+            log_error!("download: Read error: {e}");
+
+            UiError::from(format!("Read error: {e}"))
+        })?;
+    let json: Value = serde_json::from_str(&res).map_err(|e| {
+        log_error!("download: JSON parse error: {e}");
+        UiError::from(format!("JSON parse error: {e}"))
+    })?;
     Ok(json)
 }
 
@@ -477,13 +550,23 @@ pub async fn get_download_link(version: &str) -> Result<String, UiError> {
     );
     let res = get(&url)
         .await
-        .map_err(|e| UiError::from(format!("Request error: {e}")))?
+        .map_err(|e| {
+            log_error!("download: Request error: {e}");
+
+            UiError::from(format!("Request error: {e}"))
+        })?
         .text()
         .await
-        .map_err(|e| UiError::from(format!("Read error: {e}")))?;
+        .map_err(|e| {
+            log_error!("download: Read error: {e}");
 
-    let json: serde_json::Value =
-        serde_json::from_str(&res).map_err(|e| UiError::from(format!("JSON parse error: {e}")))?;
+            UiError::from(format!("Read error: {e}"))
+        })?;
+
+    let json: serde_json::Value = serde_json::from_str(&res).map_err(|e| {
+        log_error!("download: JSON parse error: {e}");
+        UiError::from(format!("JSON parse error: {e}"))
+    })?;
     if let Some(link) = json.get("url").and_then(|v| v.as_str()) {
         Ok(link.to_string())
     } else {
