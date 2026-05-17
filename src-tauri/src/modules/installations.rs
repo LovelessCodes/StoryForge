@@ -113,15 +113,21 @@ pub fn read_installation_json(dir: &Path) -> Result<InstallationInfo, UiError> {
 
 pub fn write_installation_json(dir: &Path, info: &InstallationInfo) -> Result<(), UiError> {
     if !dir.exists() {
-        create_dir_all(dir).map_err(|e| UiError {
-            name: "create_dir_failed".into(),
-            message: format!("Failed to create directory: {e}"),
+        create_dir_all(dir).map_err(|e| {
+            log_error!("installations: create_dir_failed: {e}");
+            UiError {
+                name: "create_dir_failed".into(),
+                message: format!("Failed to create directory: {e}"),
+            }
         })?;
     }
     let file_path = dir.join("installation.json");
-    let content = json5::to_string(info).map_err(|e| UiError {
-        name: "serialize_failed".into(),
-        message: format!("Failed to serialize installation.json: {e}"),
+    let content = json5::to_string(info).map_err(|e| {
+        log_error!("installations: serialize_failed: {e}");
+        UiError {
+            name: "serialize_failed".into(),
+            message: format!("Failed to serialize installation.json: {e}"),
+        }
     })?;
     write(&file_path, content).map_err(|e| UiError {
         name: "write_failed".into(),
@@ -142,13 +148,19 @@ pub fn find_installation_by_id(
             message: format!("Installation with id {} not found", id),
         });
     }
-    for entry in read_dir(&installations_dir).map_err(|e| UiError {
-        name: "io_error".into(),
-        message: format!("Failed to read installations directory: {e}"),
-    })? {
-        let entry = entry.map_err(|e| UiError {
+    for entry in read_dir(&installations_dir).map_err(|e| {
+        log_error!("installations: io_error: {e}");
+        UiError {
             name: "io_error".into(),
-            message: format!("Failed to read directory entry: {e}"),
+            message: format!("Failed to read installations directory: {e}"),
+        }
+    })? {
+        let entry = entry.map_err(|e| {
+            log_error!("installations: io_error: {e}");
+            UiError {
+                name: "io_error".into(),
+                message: format!("Failed to read directory entry: {e}"),
+            }
         })?;
         let dir = entry.path();
         if !dir.is_dir() {
@@ -187,9 +199,12 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
 
     // Ensure dir exists
     if !installations_dir.exists() {
-        create_dir_all(&installations_dir).map_err(|e| UiError {
-            name: "create_dir_failed".into(),
-            message: format!("Failed to create installations directory: {e}"),
+        create_dir_all(&installations_dir).map_err(|e| {
+            log_error!("installations: create_dir_failed: {e}");
+            UiError {
+                name: "create_dir_failed".into(),
+                message: format!("Failed to create installations directory: {e}"),
+            }
         })?;
     }
 
@@ -220,13 +235,19 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
     // --- Scan directories ---
     let mut results: Vec<InstallationResult> = Vec::new();
     if installations_dir.is_dir() {
-        for entry in read_dir(&installations_dir).map_err(|e| UiError {
-            name: "io_error".into(),
-            message: format!("Failed to read installations directory: {e}"),
-        })? {
-            let entry = entry.map_err(|e| UiError {
+        for entry in read_dir(&installations_dir).map_err(|e| {
+            log_error!("installations: io_error: {e}");
+            UiError {
                 name: "io_error".into(),
-                message: format!("Failed to read directory entry: {e}"),
+                message: format!("Failed to read installations directory: {e}"),
+            }
+        })? {
+            let entry = entry.map_err(|e| {
+                log_error!("installations: io_error: {e}");
+                UiError {
+                    name: "io_error".into(),
+                    message: format!("Failed to read directory entry: {e}"),
+                }
             })?;
             let dir = entry.path();
             if !dir.is_dir() {
@@ -301,9 +322,12 @@ pub async fn initialize_game(path: String) -> Result<String, UiError> {
     log_info!("initialize_game: {:?}", path);
     let pb = PathBuf::from(path).join("Mods");
     if !pb.exists() {
-        create_dir_all(&pb).map_err(|e| UiError {
-            name: "create_dir_failed".into(),
-            message: format!("Failed to create directory: {e}"),
+        create_dir_all(&pb).map_err(|e| {
+            log_error!("installations: create_dir_failed: {e}");
+            UiError {
+                name: "create_dir_failed".into(),
+                message: format!("Failed to create directory: {e}"),
+            }
         })?;
     }
     Ok("initialized".into())
@@ -346,9 +370,12 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
     );
 
     // Ensure .NET runtime
-    let app_data = app.path().app_data_dir().map_err(|e| UiError {
-        name: "app_data_failed".into(),
-        message: format!("Failed to get app data dir: {e}"),
+    let app_data = app.path().app_data_dir().map_err(|e| {
+        log_error!("installations: app_data_failed: {e}");
+        UiError {
+            name: "app_data_failed".into(),
+            message: format!("Failed to get app data dir: {e}"),
+        }
     })?;
     let dotnet_root = dotnet::ensure_dotnet(
         &app,
@@ -399,7 +426,10 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
     let mut found_exe = false;
     let mut combined_path = PathBuf::from("/");
     for entry in WalkDir::new(&version_path) {
-        let entry = entry.map_err(|e| UiError::from(format!("walkdir error: {e}")))?;
+        let entry = entry.map_err(|e| {
+            log_error!("installations: walkdir error: {e}");
+            UiError::from(format!("walkdir error: {e}"))
+        })?;
         if entry.file_type().is_file() {
             let fname = entry.file_name().to_string_lossy();
             if fname.eq_ignore_ascii_case("vintagestory")
@@ -445,9 +475,14 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
             let mut existing_settings = String::new();
             File::open(&settings_path)
                 .and_then(|mut f| f.read_to_string(&mut existing_settings))
-                .map_err(|e| UiError {
-                    name: "read_failed".into(),
-                    message: format!("Failed to read existing clientsettings.json: {e}"),
+                .map_err(|e| {
+                    log_error!("installations: read_failed: {e}");
+
+                    UiError {
+                        name: "read_failed".into(),
+
+                        message: format!("Failed to read existing clientsettings.json: {e}"),
+                    }
                 })?;
             let mut existing_json: Value = from_str(&existing_settings).unwrap_or(json!({}));
             if let Some(obj) = existing_json.as_object_mut() {
@@ -488,13 +523,19 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
                 }
             })?;
         } else {
-            create_dir_all(settings_path.parent().unwrap()).map_err(|e| UiError {
-                name: "create_dir_failed".into(),
-                message: format!("Failed to create directory for clientsettings.json: {e}"),
+            create_dir_all(settings_path.parent().unwrap()).map_err(|e| {
+                log_error!("installations: create_dir_failed: {e}");
+                UiError {
+                    name: "create_dir_failed".into(),
+                    message: format!("Failed to create directory for clientsettings.json: {e}"),
+                }
             })?;
-            write(&settings_path, to_string_pretty(&settings).unwrap()).map_err(|e| UiError {
-                name: "write_failed".into(),
-                message: format!("Failed to write clientsettings.json: {e}"),
+            write(&settings_path, to_string_pretty(&settings).unwrap()).map_err(|e| {
+                log_error!("installations: write_failed: {e}");
+                UiError {
+                    name: "write_failed".into(),
+                    message: format!("Failed to write clientsettings.json: {e}"),
+                }
             })?;
         }
     }
@@ -548,9 +589,14 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
         )
         .args(start_params.split_whitespace().collect::<Vec<&str>>())
         .spawn()
-        .map_err(|e| UiError {
-            name: "launch_failed".into(),
-            message: format!("Failed to launch: {e}"),
+        .map_err(|e| {
+            log_error!("installations: launch_failed: {e}");
+
+            UiError {
+                name: "launch_failed".into(),
+
+                message: format!("Failed to launch: {e}"),
+            }
         })?;
 
     // Clone data needed inside watcher threads
@@ -671,9 +717,12 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
         // Validate path exists, create directory if needed
         if !path.exists() {
             // If path doesn't exist, it should be a directory - create it
-            create_dir_all(path).map_err(|e| UiError {
-                name: "create_dir_failed".into(),
-                message: format!("Failed to create directory: {e}"),
+            create_dir_all(path).map_err(|e| {
+                log_error!("installations: create_dir_failed: {e}");
+                UiError {
+                    name: "create_dir_failed".into(),
+                    message: format!("Failed to create directory: {e}"),
+                }
             })?;
         }
 
@@ -683,13 +732,21 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
             Command::new("explorer")
                 .args(["/select,", &path.as_os_str().to_string_lossy()])
                 .status()
-                .map_err(|e| UiError::from(format!("Failed to open explorer: {e}")))?;
+                .map_err(|e| {
+                    log_error!("installations: Failed to open explorer: {e}");
+
+                    UiError::from(format!("Failed to open explorer: {e}"))
+                })?;
         } else if path.is_dir() {
             // If it's a directory, just open it
             Command::new("explorer")
                 .arg(path.as_os_str().to_string_lossy().into_owned())
                 .status()
-                .map_err(|e| UiError::from(format!("Failed to open explorer: {e}")))?;
+                .map_err(|e| {
+                    log_error!("installations: Failed to open explorer: {e}");
+
+                    UiError::from(format!("Failed to open explorer: {e}"))
+                })?;
         } else {
             // This shouldn't happen after we created the directory, but handle it anyway
             return Err(UiError {
@@ -700,9 +757,12 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
     } else if cfg!(target_os = "macos") {
         // Validate path exists, create directory if needed
         if !path.exists() {
-            create_dir_all(path).map_err(|e| UiError {
-                name: "create_dir_failed".into(),
-                message: format!("Failed to create directory: {e}"),
+            create_dir_all(path).map_err(|e| {
+                log_error!("installations: create_dir_failed: {e}");
+                UiError {
+                    name: "create_dir_failed".into(),
+                    message: format!("Failed to create directory: {e}"),
+                }
             })?;
         }
 
@@ -710,12 +770,20 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
             Command::new("open")
                 .arg(path.as_os_str())
                 .status()
-                .map_err(|e| UiError::from(format!("Failed to open Finder: {e}")))?;
+                .map_err(|e| {
+                    log_error!("installations: Failed to open Finder: {e}");
+
+                    UiError::from(format!("Failed to open Finder: {e}"))
+                })?;
         } else if path.is_file() {
             Command::new("open")
                 .args(["-R", &path.as_os_str().to_string_lossy()])
                 .status()
-                .map_err(|e| UiError::from(format!("Failed to open Finder: {e}")))?;
+                .map_err(|e| {
+                    log_error!("installations: Failed to open Finder: {e}");
+
+                    UiError::from(format!("Failed to open Finder: {e}"))
+                })?;
         } else {
             return Err(UiError {
                 name: "invalid_path".into(),
@@ -725,9 +793,12 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
     } else if cfg!(target_os = "linux") {
         // Validate path exists, create directory if needed
         if !path.exists() {
-            create_dir_all(path).map_err(|e| UiError {
-                name: "create_dir_failed".into(),
-                message: format!("Failed to create directory: {e}"),
+            create_dir_all(path).map_err(|e| {
+                log_error!("installations: create_dir_failed: {e}");
+                UiError {
+                    name: "create_dir_failed".into(),
+                    message: format!("Failed to create directory: {e}"),
+                }
             })?;
         }
 
@@ -802,9 +873,12 @@ pub fn remove_installation(app: AppHandle, id: u64) -> Result<String, UiError> {
     log_info!("remove_installation: id={}", id);
     let (pb, _info) = find_installation_by_id(&app, id)?;
     if pb.exists() && pb.is_dir() {
-        remove_dir_all(&pb).map_err(|e| UiError {
-            name: "remove_failed".into(),
-            message: format!("Failed to remove installation directory: {e}"),
+        remove_dir_all(&pb).map_err(|e| {
+            log_error!("installations: remove_failed: {e}");
+            UiError {
+                name: "remove_failed".into(),
+                message: format!("Failed to remove installation directory: {e}"),
+            }
         })?;
     }
     Ok("removed".into())
@@ -849,9 +923,12 @@ pub async fn remove_all_installations(source: String, subdir: String) -> Result<
     if !source_path.exists() || !source_path.is_dir() {
         return Ok("not_exists".into());
     }
-    remove_dir_all(&source_path).map_err(|e| UiError {
-        name: "remove_failed".into(),
-        message: format!("Failed to remove installations directory: {e}"),
+    remove_dir_all(&source_path).map_err(|e| {
+        log_error!("installations: remove_failed: {e}");
+        UiError {
+            name: "remove_failed".into(),
+            message: format!("Failed to remove installations directory: {e}"),
+        }
     })?;
     Ok("removed".into())
 }
