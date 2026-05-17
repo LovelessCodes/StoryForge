@@ -2,7 +2,7 @@ use json5;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, json, to_string_pretty, Value};
 use std::{
-    fs::{create_dir_all, read_dir, remove_dir_all, write, File},
+    fs::{create_dir_all, read_dir, read_to_string, remove_dir_all, write, File},
     io::{BufRead, BufReader, Read},
     path::{Path, PathBuf},
     process::{Command, Stdio},
@@ -931,4 +931,59 @@ pub async fn remove_all_installations(source: String, subdir: String) -> Result<
         }
     })?;
     Ok("removed".into())
+}
+
+// ── Installation log files ──
+
+#[derive(Debug, Clone, Serialize)]
+pub struct InstallationLog {
+    pub name: String,
+    pub size_bytes: u64,
+    pub path: String,
+}
+
+#[command]
+pub fn get_installation_logs(installation_path: String) -> Result<Vec<InstallationLog>, UiError> {
+    let logs_dir = PathBuf::from(&installation_path).join("Logs");
+    let mut logs = Vec::new();
+    if !logs_dir.is_dir() {
+        return Ok(logs);
+    }
+    for entry in read_dir(&logs_dir).map_err(|e| {
+        log_error!("get_installation_logs: read_dir failed: {e}");
+        UiError {
+            name: "io_error".into(),
+            message: format!("Failed to read Logs directory: {e}"),
+        }
+    })? {
+        let entry = entry.map_err(|e| {
+            log_error!("get_installation_logs: entry error: {e}");
+            UiError {
+                name: "io_error".into(),
+                message: format!("Failed to read log entry: {e}"),
+            }
+        })?;
+        let path = entry.path();
+        if path.is_file() {
+            let name = path
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_default();
+            let size = path.metadata().map(|m| m.len()).unwrap_or(0);
+            logs.push(InstallationLog {
+                name,
+                size_bytes: size,
+                path: path.to_string_lossy().to_string(),
+            });
+        }
+    }
+    Ok(logs)
+}
+
+#[command]
+pub fn read_installation_log(log_path: String) -> Result<String, UiError> {
+    read_to_string(&log_path).map_err(|e| UiError {
+        name: "read_failed".into(),
+        message: format!("Failed to read log file: {e}"),
+    })
 }
