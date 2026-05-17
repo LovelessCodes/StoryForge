@@ -87,6 +87,8 @@ pub fn run() {
             versions::remove_installed_version,
             versions::move_versions_folder,
             versions::remove_all_versions,
+            // Logger
+            modules::logger::get_logs,
             // Installations
             installations::get_all_installations,
             installations::save_installation,
