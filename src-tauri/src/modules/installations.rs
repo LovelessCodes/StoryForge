@@ -183,6 +183,7 @@ pub fn find_installation_by_id(
 pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, UiError> {
     let subdir = installations_subdir(app.clone());
     let installations_dir = installations_folder(app.clone()).join(&subdir);
+    log_info!("get_all_installations: scanning {:?}", installations_dir);
 
     // Ensure dir exists
     if !installations_dir.exists() {
@@ -272,6 +273,9 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
         }
     }
 
+    let count = results.len();
+    log_info!("get_all_installations: found {} installations", count);
+
     Ok(results)
 }
 
@@ -282,6 +286,7 @@ pub fn save_installation(
     version: String,
     start_params: String,
 ) -> Result<(), UiError> {
+    log_info!("save_installation: path={:?} name={:?}", path, name);
     let dir = PathBuf::from(&path);
     let info = InstallationInfo {
         name,
@@ -293,6 +298,7 @@ pub fn save_installation(
 
 #[command]
 pub async fn initialize_game(path: String) -> Result<String, UiError> {
+    log_info!("initialize_game: {:?}", path);
     let pb = PathBuf::from(path).join("Mods");
     if !pb.exists() {
         create_dir_all(&pb).map_err(|e| UiError {
@@ -650,6 +656,10 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
             );
         }
     });
+    log_info!(
+        "play_game: process spawned for installation {}",
+        options.installation_id
+    );
     Ok("started".into())
 }
 
@@ -789,6 +799,7 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
 
 #[command]
 pub fn remove_installation(app: AppHandle, id: u64) -> Result<String, UiError> {
+    log_info!("remove_installation: id={}", id);
     let (pb, _info) = find_installation_by_id(&app, id)?;
     if pb.exists() && pb.is_dir() {
         remove_dir_all(&pb).map_err(|e| UiError {
