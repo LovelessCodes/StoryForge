@@ -9,7 +9,7 @@ use crate::modules::utils::move_folder;
 
 use super::errors::UiError;
 use super::utils::{versions_folder, versions_subdir};
-use crate::log_info;
+use crate::{log_error, log_info};
 
 fn format_size(bytes: u64) -> String {
     const KB: u64 = 1024;
@@ -59,13 +59,19 @@ pub fn get_installed_versions(app: AppHandle) -> Result<Vec<VersionInfo>, UiErro
         return Ok(vec![]);
     }
     let mut versions = vec![];
-    for entry in read_dir(versions_dir).map_err(|e| UiError {
-        name: "io_error".into(),
-        message: format!("Failed to read versions directory: {e}"),
-    })? {
-        let entry = entry.map_err(|e| UiError {
+    for entry in read_dir(versions_dir).map_err(|e| {
+        log_error!("get_installed_versions: read_dir failed: {e}");
+        UiError {
             name: "io_error".into(),
-            message: format!("Failed to read directory entry: {e}"),
+            message: format!("Failed to read versions directory: {e}"),
+        }
+    })? {
+        let entry = entry.map_err(|e| {
+            log_error!("get_installed_versions: dir entry error: {e}");
+            UiError {
+                name: "io_error".into(),
+                message: format!("Failed to read directory entry: {e}"),
+            }
         })?;
         if entry.path().is_dir() {
             if let Some(name) = entry.file_name().to_str() {
@@ -88,6 +94,7 @@ pub fn remove_installed_version(version: String, app: AppHandle) -> Result<Strin
     let subdir = versions_subdir(app.clone());
     let versions_path = versions_folder(app.clone()).join(&subdir).join(&version);
     if !versions_path.exists() || !versions_path.is_dir() {
+        log_error!("remove_installed_version: not found: {:?}", versions_path);
         return Err(UiError {
             name: "not_found".into(),
             message: format!(
@@ -96,9 +103,12 @@ pub fn remove_installed_version(version: String, app: AppHandle) -> Result<Strin
             ),
         });
     }
-    remove_dir_all(&versions_path).map_err(|e| UiError {
-        name: "remove_failed".into(),
-        message: format!("Failed to remove version directory: {e}"),
+    remove_dir_all(&versions_path).map_err(|e| {
+        log_error!("remove_installed_version: remove_dir_all failed: {e}");
+        UiError {
+            name: "remove_failed".into(),
+            message: format!("Failed to remove version directory: {e}"),
+        }
     })?;
     Ok("removed".into())
 }
@@ -107,19 +117,23 @@ pub fn remove_installed_version(version: String, app: AppHandle) -> Result<Strin
 pub async fn fetch_versions() -> Result<Vec<String>, UiError> {
     let res = reqwest::get("https://vsapi.betterjs.dev/versions")
         .await
-        .map_err(|e| format!("Request error: {e}"))?;
+        .map_err(|e| {
+            log_error!("fetch_versions: request failed: {e}");
+            format!("Request error: {e}")
+        })?;
 
     if !res.status().is_success() {
+        log_error!("fetch_versions: HTTP {}", res.status());
         return Err(UiError {
             name: "http_error".into(),
             message: format!("HTTP error: {}", res.status()),
         });
     }
 
-    let json = res
-        .json::<Vec<String>>()
-        .await
-        .map_err(|e| format!("JSON error: {e}"))?;
+    let json = res.json::<Vec<String>>().await.map_err(|e| {
+        log_error!("fetch_versions: JSON parse failed: {e}");
+        format!("JSON error: {e}")
+    })?;
 
     Ok(json)
 }
@@ -145,9 +159,12 @@ pub async fn remove_all_versions(source: String, subdir: String) -> Result<Strin
         return Ok("not_exists".into());
     }
 
-    remove_dir_all(&source_path).map_err(|e| UiError {
-        name: "remove_failed".into(),
-        message: format!("Failed to remove versions directory: {e}"),
+    remove_dir_all(&source_path).map_err(|e| {
+        log_error!("remove_all_versions: remove_dir_all failed: {e}");
+        UiError {
+            name: "remove_failed".into(),
+            message: format!("Failed to remove versions directory: {e}"),
+        }
     })?;
 
     Ok("removed".into())
