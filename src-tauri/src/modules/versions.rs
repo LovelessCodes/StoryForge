@@ -9,6 +9,7 @@ use crate::modules::utils::move_folder;
 
 use super::errors::UiError;
 use super::utils::{versions_folder, versions_subdir};
+use crate::log_info;
 
 fn format_size(bytes: u64) -> String {
     const KB: u64 = 1024;
@@ -49,6 +50,7 @@ pub struct VersionInfo {
 
 #[command]
 pub fn get_installed_versions(app: AppHandle) -> Result<Vec<VersionInfo>, UiError> {
+    log_info!("get_installed_versions");
     // Should look up the versions folder and return a list of installed versions
     let base_dir = versions_folder(app.clone());
     let subdir = versions_subdir(app.clone());
@@ -82,6 +84,7 @@ pub fn get_installed_versions(app: AppHandle) -> Result<Vec<VersionInfo>, UiErro
 
 #[command]
 pub fn remove_installed_version(version: String, app: AppHandle) -> Result<String, UiError> {
+    log_info!("remove_installed_version: {}", version);
     let subdir = versions_subdir(app.clone());
     let versions_path = versions_folder(app.clone()).join(&subdir).join(&version);
     if !versions_path.exists() || !versions_path.is_dir() {
