@@ -2,6 +2,7 @@ import { useRouter } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import {
   DownloadCloudIcon,
+  FileTextIcon,
   FileUpIcon,
   FolderOpenIcon,
   PackageOpenIcon,
@@ -203,6 +204,31 @@ export function InstallationRow({ installation }: InstallationRowProps) {
             }
           />
           <TooltipContent>Open Folder</TooltipContent>
+        </Tooltip>
+        <GroupSeparator />
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <GroupItem
+                render={
+                  <Button
+                    aria-label="View logs"
+                    onClick={() =>
+                      openDialog("ViewLogsDialog", {
+                        installationName: installation.name,
+                        installationPath: installation.path,
+                      })
+                    }
+                    size="icon"
+                    variant="outline"
+                  />
+                }
+              >
+                <FileTextIcon aria-hidden="true" className="-ms-1 opacity-60" size={16} />
+              </GroupItem>
+            }
+          />
+          <TooltipContent>View Logs</TooltipContent>
         </Tooltip>
         <GroupSeparator />
         <Tooltip>

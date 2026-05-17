@@ -100,6 +100,8 @@ pub fn run() {
             installations::move_installations_folder,
             installations::remove_all_installations,
             installations::rename_installations_folder,
+            installations::get_installation_logs,
+            installations::read_installation_log,
             // Servers
             servers::fetch_public_servers,
             servers::fetch_all_servers,
