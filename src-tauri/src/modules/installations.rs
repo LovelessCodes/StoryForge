@@ -17,6 +17,7 @@ use tauri::{command, AppHandle, Emitter, Manager};
 use tauri_plugin_zustand::ManagerExt;
 use walkdir::WalkDir;
 
+use super::auth::SavedAccount;
 use super::dotnet;
 use super::errors::UiError;
 use super::utils::{
@@ -354,6 +355,16 @@ pub struct PlayGameParams {
     pub save: Option<String>,
 }
 
+fn load_selected_account(app: &AppHandle) -> Option<SavedAccount> {
+    use std::fs::read_to_string;
+    use tauri::Manager;
+    let data_dir = app.path().app_data_dir().ok()?;
+    let path = data_dir.join("accounts.json");
+    let json = read_to_string(&path).ok()?;
+    let accounts: Vec<SavedAccount> = serde_json::from_str(&json).ok()?;
+    accounts.into_iter().next()
+}
+
 #[command]
 pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<String, UiError> {
     let options = options.ok_or_else(|| UiError {
@@ -454,19 +465,15 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
             message: format!("Launch file not found: {}", combined_path.to_string_lossy()),
         });
     }
-    let account_result = app.zustand().get::<Value>("accounts", "selectedUser");
-    let account = match account_result {
-        Ok(val) if !val.is_null() => Some(val),
-        _ => None,
-    };
+    let account = load_selected_account(&app);
 
     if let Some(account) = account {
         let settings = json!({
             "stringSettings": {
-                "playeruid": account["uid"].as_str().unwrap_or(""),
-                "sessionkey": account["sessionkey"].as_str().unwrap_or(""),
-                "sessionsignature": account["sessionsignature"].as_str().unwrap_or(""),
-                "playername": account["playername"].as_str().unwrap_or(""),
+                "playeruid": account.uid.as_deref().unwrap_or(""),
+                "sessionkey": account.sessionkey.as_deref().unwrap_or(""),
+                "sessionsignature": account.sessionsignature.as_deref().unwrap_or(""),
+                "playername": account.playername.as_deref().unwrap_or(""),
             }
         });
         let settings_path = pb.join("clientsettings.json");
