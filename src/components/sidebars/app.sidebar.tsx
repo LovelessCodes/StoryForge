@@ -52,6 +52,7 @@ export function AppSidebar() {
   const { openDialog } = useDialogStore();
   const { mutate: verifyAuth } = useVerifyAuth({
     onError: (error, variables) => {
+      removeUser(variables.uid);
       toast.error(
         `Error verifying auth for ${users.find((user) => user.uid === variables.uid)?.playername}: ${error.message}`,
         {
@@ -72,6 +73,7 @@ export function AppSidebar() {
           { id: `verify-auth-${variables.uid}` },
         );
       } else {
+        removeUser(variables.uid);
         toast.error(
           `Auth is NOT valid for ${users.find((user) => user.uid === variables.uid)?.playername}`,
           { id: `verify-auth-${variables.uid}` },

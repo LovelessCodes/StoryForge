@@ -24,6 +24,7 @@ pub struct AuthVerifyResponse {
     pub valid: u8,
     pub entitlements: Option<String>,
     pub mptoken: Option<String>,
+    #[serde(default)]
     pub hasgameserver: bool,
     pub reason: Option<String>,
 }
@@ -60,9 +61,17 @@ pub async fn verify(uid: String, sessionkey: String) -> Result<AuthVerifyRespons
         });
     }
 
-    let json_response = res.json::<AuthVerifyResponse>().await.map_err(|e| {
-        log_error!("auth: Parse error: {e}");
+    let response_text = res.text().await.map_err(|e| {
+        log_error!("auth: Read error: {e}");
+        format!("Read error: {e}")
+    })?;
+    log_info!(
+        "verify response: {}",
+        &response_text[..response_text.len().min(500)]
+    );
 
+    let json_response: AuthVerifyResponse = serde_json::from_str(&response_text).map_err(|e| {
+        log_error!("auth: Parse error: {e}");
         format!("Parse error: {e}")
     })?;
 
@@ -145,4 +154,58 @@ pub async fn login(
     }
 
     Ok(json_response)
+}
+
+// ── Account persistence ──
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SavedAccount {
+    pub uid: Option<String>,
+    pub email: String,
+    pub playername: Option<String>,
+    pub sessionkey: Option<String>,
+    pub sessionsignature: Option<String>,
+}
+
+#[command]
+pub fn save_accounts(app: tauri::AppHandle, accounts: Vec<SavedAccount>) -> Result<(), String> {
+    use std::fs::write;
+    use tauri::Manager;
+    let data_dir = app.path().app_data_dir().map_err(|e| format!("{e}"))?;
+    let path = data_dir.join("accounts.json");
+    let json = serde_json::to_string_pretty(&accounts).map_err(|e| format!("{e}"))?;
+    write(&path, json).map_err(|e| format!("{e}"))
+}
+
+#[command]
+pub fn load_accounts(app: tauri::AppHandle) -> Result<Vec<SavedAccount>, String> {
+    use std::fs::{read_to_string, remove_file};
+    use tauri::Manager;
+    let data_dir = app.path().app_data_dir().map_err(|e| format!("{e}"))?;
+    let path = data_dir.join("accounts.json");
+
+    // Migration: check old zustand store at {app_data}/store/accounts.json
+    let old_path = data_dir.join("store").join("accounts.json");
+    if old_path.exists() && !path.exists() {
+        if let Ok(old_json) = read_to_string(&old_path) {
+            if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&old_json) {
+                // Extract users array directly (no "state" wrapper)
+                if let Some(users) = parsed
+                    .get("users")
+                    .and_then(|u| serde_json::from_value::<Vec<SavedAccount>>(u.clone()).ok())
+                {
+                    let json = serde_json::to_string_pretty(&users).map_err(|e| format!("{e}"))?;
+                    std::fs::write(&path, &json).map_err(|e| format!("{e}"))?;
+                    let _ = remove_file(&old_path);
+                    return Ok(users);
+                }
+            }
+        }
+    }
+
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let json = read_to_string(&path).map_err(|e| format!("{e}"))?;
+    serde_json::from_str(&json).map_err(|e| format!("{e}"))
 }
