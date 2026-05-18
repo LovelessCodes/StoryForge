@@ -406,7 +406,9 @@ export function EditServerDialog({
                     const instId = form.getFieldValue("installationId");
                     const inst = installations.find((i) => i.id.toString() === instId);
                     if (inst && sniffResult.server_game_version) {
-                      const match = inst.version === sniffResult.server_game_version;
+                      const [instMajor, instMinor] = inst.version.split(".");
+                      const [resultMajor, resultMinor] = sniffResult.server_game_version.split(".");
+                      const match = instMajor === resultMajor && instMinor === resultMinor;
                       return (
                         <span className={match ? "text-success ml-1" : "text-destructive ml-1"}>
                           {match
