@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { TooltipTrigger } from "@/components/ui/tooltip";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { installedVersionsQueryKey } from "@/hooks/use-installed-versions";
@@ -280,8 +281,8 @@ function RouteComponent() {
   };
 
   return (
-    <div className="bg-background grid h-full w-full grid-rows-[min-content] overflow-hidden">
-      <main className="h-full space-y-8 overflow-y-auto px-6 py-6">
+    <ScrollArea className="bg-background h-full w-full" scrollFade>
+      <div className="flex flex-col gap-2 px-4 pt-8">
         <div className="mb-4 flex items-center gap-3">
           <Checkbox
             checked={useAppDirectory}
@@ -459,10 +460,10 @@ function RouteComponent() {
             </Button>
           )}
         </form.Subscribe>
-      </main>
-      <section className="border-t px-6 py-6">
-        <LogViewer />
-      </section>
+        <section className="border-t px-6 py-6">
+          <LogViewer />
+        </section>
+      </div>
       <AlertDialog onOpenChange={setDialogOpen} open={dialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -490,7 +491,7 @@ function RouteComponent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </ScrollArea>
   );
 }
 
