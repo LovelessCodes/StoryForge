@@ -17,9 +17,8 @@ import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Group, GroupItem, GroupSeparator } from "@/components/ui/group";
+import { Group, GroupSeparator } from "@/components/ui/group";
 import {
-  Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
@@ -32,15 +31,17 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { TooltipTrigger } from "@/components/ui/tooltip";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { useSaves } from "@/hooks/use-saves";
 import { useVerifyAuth } from "@/hooks/use-verify-auth";
+import { rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
 import { useAccountStore } from "@/stores/accounts";
-import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
 
+import { AddUserDialog } from "../dialogs/adduser.dialog";
+import { DialogTrigger } from "../ui/dialog";
 import { Menu, MenuPopup, MenuTrigger } from "../ui/menu";
 
 export function AppSidebar() {
@@ -49,7 +50,6 @@ export function AppSidebar() {
   const { data: saves } = useSaves();
   const { data: installedVersions } = useInstalledVersions();
   const { servers } = useServerStore();
-  const { openDialog } = useDialogStore();
   const { mutate: verifyAuth } = useVerifyAuth({
     onError: (error, variables) => {
       removeUser(variables.uid);
@@ -82,7 +82,7 @@ export function AppSidebar() {
     },
   });
   return (
-    <Sidebar>
+    <>
       <SidebarHeader>
         {selectedUser ? (
           <Menu>
@@ -90,7 +90,9 @@ export function AppSidebar() {
               className="w-full"
               render={
                 <Button
-                  onClick={() => !selectedUser && openDialog("AddUserDialog")}
+                  render={
+                    <DialogTrigger handle={rootDialogHandle} payload={() => <AddUserDialog />} />
+                  }
                   variant="outline"
                 />
               }
@@ -101,7 +103,9 @@ export function AppSidebar() {
                     <AvatarImage src="./placeholder.png" />
                     <AvatarFallback>{selectedUser.playername?.charAt(0)}</AvatarFallback>
                   </Avatar>
-                  <span className="font-medium">{selectedUser.playername}</span>
+                  <span className="font-medium in-data-[state=collapsed]:hidden">
+                    {selectedUser.playername}
+                  </span>
                 </div>
               ) : (
                 <>
@@ -113,17 +117,13 @@ export function AppSidebar() {
             <MenuPopup align="start" side="right">
               {users.map((user) => (
                 <Group className="rounded-none first:rounded-t-md last:rounded-b-md" key={user.uid}>
-                  <GroupItem
-                    render={
-                      <Button
-                        className="flex h-8 items-center gap-2"
-                        onClick={() => setSelectedUser(user.uid)}
-                        onKeyUp={(e) => {
-                          if (e.key === "Enter") setSelectedUser(user.uid);
-                        }}
-                        variant="outline"
-                      />
-                    }
+                  <Button
+                    className="flex h-8 items-center gap-2"
+                    onClick={() => setSelectedUser(user.uid)}
+                    onKeyUp={(e) => {
+                      if (e.key === "Enter") setSelectedUser(user.uid);
+                    }}
+                    variant="outline"
                   >
                     <Avatar className="h-6 w-6">
                       <AvatarImage src="./placeholder.png" />
@@ -133,72 +133,64 @@ export function AppSidebar() {
                     {user.uid === selectedUser.uid && (
                       <CheckIcon className="text-muted-foreground size-4 opacity-50" />
                     )}
-                  </GroupItem>
+                  </Button>
                   <GroupSeparator />
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <GroupItem
-                          render={
-                            <Button
-                              className="hover:text-success flex items-center justify-center p-1"
-                              onClick={() => {
-                                verifyAuth({
-                                  sessionkey: user.sessionkey || "",
-                                  uid: user.uid || "",
-                                });
-                              }}
-                              onKeyUp={(e) => {
-                                if (e.key === "Enter") {
-                                  verifyAuth({
-                                    sessionkey: user.sessionkey || "",
-                                    uid: user.uid || "",
-                                  });
-                                }
-                              }}
-                              size="icon"
-                              variant="outline"
-                            />
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        className="hover:text-success flex items-center justify-center p-1"
+                        onClick={() => {
+                          verifyAuth({
+                            sessionkey: user.sessionkey || "",
+                            uid: user.uid || "",
+                          });
+                        }}
+                        onKeyUp={(e) => {
+                          if (e.key === "Enter") {
+                            verifyAuth({
+                              sessionkey: user.sessionkey || "",
+                              uid: user.uid || "",
+                            });
                           }
-                        >
-                          <RefreshCcwIcon />
-                        </GroupItem>
-                      }
-                    />
-                    <TooltipContent>Verify {user.playername}&#39;s auth</TooltipContent>
-                  </Tooltip>
+                        }}
+                        size="icon"
+                        variant="outline"
+                      >
+                        <RefreshCcwIcon />
+                      </Button>
+                    }
+                    handle={rootTooltipHandle}
+                    payload={() => `Verify ${user.playername}&#39;s auth`}
+                  />
                   <GroupSeparator />
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <GroupItem
-                          render={
-                            <Button
-                              className="flex items-center justify-center p-1 hover:text-red-900"
-                              onClick={() => {
-                                removeUser(user.uid);
-                              }}
-                              onKeyUp={(e) => {
-                                if (e.key === "Enter") {
-                                  removeUser(user.uid);
-                                }
-                              }}
-                              size="icon"
-                              variant="destructive-outline"
-                            />
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        className="flex items-center justify-center p-1 hover:text-red-900"
+                        onClick={() => {
+                          removeUser(user.uid);
+                        }}
+                        onKeyUp={(e) => {
+                          if (e.key === "Enter") {
+                            removeUser(user.uid);
                           }
-                        >
-                          <UserMinus2 />
-                        </GroupItem>
-                      }
-                    />
-                    <TooltipContent>Remove {user.playername}</TooltipContent>
-                  </Tooltip>
+                        }}
+                        size="icon"
+                        variant="destructive-outline"
+                      >
+                        <UserMinus2 />
+                      </Button>
+                    }
+                    handle={rootTooltipHandle}
+                    payload={() => `Remove ${user.playername}`}
+                  />
                 </Group>
               ))}
               <Button
                 className="mt-2 w-full justify-between"
-                onClick={() => openDialog("AddUserDialog")}
+                render={
+                  <DialogTrigger handle={rootDialogHandle} payload={() => <AddUserDialog />} />
+                }
                 variant="outline"
               >
                 <span className="flex text-xs">Add user</span>
@@ -209,7 +201,7 @@ export function AppSidebar() {
         ) : (
           <Button
             className="w-full justify-between"
-            onClick={() => openDialog("AddUserDialog")}
+            render={<DialogTrigger handle={rootDialogHandle} payload={() => <AddUserDialog />} />}
             variant="outline"
           >
             <span className="flex text-xs">Sign in</span>
@@ -225,7 +217,7 @@ export function AppSidebar() {
                 render={
                   <Link
                     activeProps={{
-                      className: "bg-accent text-accent-foreground",
+                      "data-active": true,
                     }}
                     to="/"
                     viewTransition={{ types: ["warp"] }}
@@ -241,7 +233,7 @@ export function AppSidebar() {
                 render={
                   <Link
                     activeProps={{
-                      className: "bg-accent text-accent-foreground",
+                      "data-active": true,
                     }}
                     to="/installations"
                     viewTransition={{ types: ["warp"] }}
@@ -260,7 +252,7 @@ export function AppSidebar() {
                     render={
                       <Link
                         activeProps={{
-                          className: "bg-accent text-accent-foreground",
+                          "data-active": true,
                         }}
                         to="/worlds"
                         viewTransition={{ types: ["warp"] }}
@@ -270,10 +262,10 @@ export function AppSidebar() {
                   >
                     <EarthIcon />
                     Worlds
+                    <SidebarMenuBadge className="text-muted-foreground text-xs">
+                      {saves?.length ?? 0}
+                    </SidebarMenuBadge>
                   </SidebarMenuSubButton>
-                  <SidebarMenuBadge className="text-muted-foreground text-xs">
-                    {saves?.length ?? 0}
-                  </SidebarMenuBadge>
                 </SidebarMenuSubItem>
               </SidebarMenuSub>
             </SidebarMenuItem>
@@ -282,7 +274,7 @@ export function AppSidebar() {
                 render={
                   <Link
                     activeProps={{
-                      className: "bg-accent text-accent-foreground",
+                      "data-active": true,
                     }}
                     to="/servers"
                     viewTransition={{ types: ["warp"] }}
@@ -301,7 +293,7 @@ export function AppSidebar() {
                     render={
                       <Link
                         activeProps={{
-                          className: "bg-accent text-accent-foreground",
+                          "data-active": true,
                         }}
                         to="/public-servers"
                         viewTransition={{ types: ["warp"] }}
@@ -320,7 +312,7 @@ export function AppSidebar() {
                 render={
                   <Link
                     activeProps={{
-                      className: "bg-accent text-accent-foreground",
+                      "data-active": true,
                     }}
                     to="/versions"
                     viewTransition={{ types: ["warp"] }}
@@ -339,7 +331,7 @@ export function AppSidebar() {
                 render={
                   <Link
                     activeProps={{
-                      className: "bg-accent text-accent-foreground",
+                      "data-active": true,
                     }}
                     to="/news"
                     viewTransition={{ types: ["warp"] }}
@@ -356,26 +348,27 @@ export function AppSidebar() {
       <SidebarFooter>
         <Link to="/settings" viewTransition={{ types: ["warp"] }}>
           <button
-            className="group/button bg-background relative w-auto w-full cursor-pointer overflow-hidden rounded-md border p-2 px-6 text-center font-semibold"
+            className="group/button bg-background relative w-full cursor-pointer overflow-hidden rounded-md border p-2 px-6 text-center font-semibold in-data-[state='collapsed']:px-2"
             type="button"
           >
             <div className="flex items-center justify-center gap-2">
-              <div className="bg-primary absolute h-2 w-2 rounded-full opacity-0 transition-all duration-300 group-hover/button:scale-[100.8] group-hover/button:opacity-100"></div>
+              <div className="bg-foreground absolute h-2 w-2 rounded-full opacity-0 transition-all duration-300 group-hover/button:scale-[100.8] group-hover/button:opacity-100" />
+              <div className="bg-primary absolute h-2 w-2 rounded-full opacity-0 transition-all duration-300 group-hover/button:scale-[100.8] group-hover/button:opacity-100 in-data-[state='collapsed']:hidden"></div>
               <CogIcon className="inline-block h-4 w-4 transition-all duration-300 group-hover/button:translate-x-12 group-hover/button:opacity-0" />
             </div>
-            <div className="text-primary-foreground absolute top-0 z-10 flex h-full w-full translate-x-12 items-center justify-center gap-2 opacity-0 transition-all duration-300 group-hover/button:-translate-x-5 group-hover/button:opacity-100">
-              <span>Settings</span>
+            <div className="text-primary-foreground absolute top-0 z-10 flex h-full w-full translate-x-12 items-center justify-center gap-2 opacity-0 transition-all duration-300 group-hover/button:-translate-x-5 group-hover/button:opacity-100 in-data-[state='collapsed']:group-hover/button:-translate-x-2">
+              <span className="in-data-[state='collapsed']:hidden">Settings</span>
               <CogIcon className="inline-block h-4 w-4" />
             </div>
           </button>
         </Link>
         <a className="w-full" href="https://discord.gg/gByx63peUC" rel="noreferrer" target="_blank">
           <button
-            className="group/button bg-background relative w-auto w-full cursor-pointer overflow-hidden rounded-md border p-2 px-6 text-center font-semibold"
+            className="group/button bg-background relative w-full cursor-pointer overflow-hidden rounded-md border p-2 px-6 text-center font-semibold in-data-[state='collapsed']:px-2"
             type="button"
           >
             <div className="flex items-center justify-center gap-2">
-              <div className="absolute h-2 w-2 rounded-full bg-[#5865F2] opacity-0 transition-all duration-300 group-hover/button:scale-[100.8] group-hover/button:opacity-100"></div>
+              <div className="absolute h-2 w-2 rounded-full bg-[#5865F2] opacity-0 transition-all duration-300 group-hover/button:scale-[100.8] group-hover/button:opacity-100" />
               <svg
                 className="inline-block h-4 w-4 transition-all duration-300 group-hover/button:translate-x-12 group-hover/button:opacity-0"
                 role="img"
@@ -389,8 +382,8 @@ export function AppSidebar() {
                 />
               </svg>
             </div>
-            <div className="text-primary-foreground absolute top-0 z-10 flex h-full w-full translate-x-12 items-center justify-center gap-2 opacity-0 transition-all duration-300 group-hover/button:-translate-x-5 group-hover/button:opacity-100">
-              <span>Discord</span>
+            <div className="text-primary-foreground absolute top-0 z-10 flex h-full w-full translate-x-12 items-center justify-center gap-2 opacity-0 transition-all duration-300 group-hover/button:-translate-x-5 group-hover/button:opacity-100 in-data-[state='collapsed']:group-hover/button:-translate-x-2">
+              <span className="in-data-[state='collapsed']:hidden">Discord</span>
               <svg
                 className="h-4 w-4"
                 role="img"
@@ -407,6 +400,6 @@ export function AppSidebar() {
           </button>
         </a>
       </SidebarFooter>
-    </Sidebar>
+    </>
   );
 }
