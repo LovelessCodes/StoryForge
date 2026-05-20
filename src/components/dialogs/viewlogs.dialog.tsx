@@ -3,15 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { FileTextIcon, Loader2Icon } from "lucide-react";
 import { useState } from "react";
 
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { useDialogStore } from "@/stores/dialogs";
+import { DialogClose, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 type LogFile = {
   name: string;
@@ -31,19 +23,15 @@ export type ViewLogsDialogProps = {
 };
 
 export function ViewLogsDialog({
-  open,
   installationPath,
   installationName,
 }: {
-  open: boolean;
   installationPath: string;
   installationName: string;
 }) {
-  const { closeDialog } = useDialogStore();
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
   const { data: logs, isLoading } = useQuery({
-    enabled: open,
     queryFn: () => invoke<LogFile[]>("get_installation_logs", { installationPath }),
     queryKey: ["installation-logs", installationPath],
   });
@@ -58,69 +46,63 @@ export function ViewLogsDialog({
   });
 
   return (
-    <Dialog onOpenChange={closeDialog} open={open}>
+    <>
       <DialogClose />
-      <DialogContent className="flex max-h-[85vh] max-w-[80vw] flex-col gap-0 p-0">
-        <DialogHeader className="shrink-0 border-b px-6 pt-6 pb-4">
-          <DialogTitle>{installationName} — Logs</DialogTitle>
-          <DialogDescription>View the game's log files for this installation</DialogDescription>
-        </DialogHeader>
+      <DialogHeader className="shrink-0 border-b px-6 pt-6 pb-4">
+        <DialogTitle>{installationName} — Logs</DialogTitle>
+        <DialogDescription>View the game's log files for this installation</DialogDescription>
+      </DialogHeader>
 
-        <div className="min-h-0 flex-1 overflow-hidden">
-          {isLoading ? (
+      {isLoading ? (
+        <div className="flex h-full items-center justify-center gap-2 p-8">
+          <Loader2Icon className="text-muted-foreground h-5 w-5 animate-spin" />
+          <span className="text-muted-foreground text-sm">Loading logs...</span>
+        </div>
+      ) : !logs || logs.length === 0 ? (
+        <div className="flex h-full items-center justify-center p-8">
+          <p className="text-muted-foreground text-sm">No log files found</p>
+        </div>
+      ) : (
+        <div className="flex h-full flex-col">
+          {/* Tabs */}
+          <div className="flex shrink-0 gap-0 overflow-x-auto border-b">
+            {logs.map((log) => (
+              <button
+                className={`shrink-0 cursor-pointer border-b-2 px-4 py-2 text-xs font-medium transition-colors ${
+                  activeTab === log.name
+                    ? "border-foreground text-foreground"
+                    : "text-muted-foreground hover:text-foreground border-transparent"
+                }`}
+                key={log.name}
+                onClick={() => setActiveTab(log.name)}
+                type="button"
+              >
+                <FileTextIcon className="mr-1 inline size-3" />
+                {log.name}
+                <span className="text-muted-foreground ml-2 opacity-50">
+                  {formatSize(log.size_bytes)}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Content */}
+          {!activeTab ? (
+            <div className="flex h-full items-center justify-center p-8">
+              <p className="text-muted-foreground text-sm">Select a log file to view</p>
+            </div>
+          ) : isLoadingContent ? (
             <div className="flex h-full items-center justify-center gap-2 p-8">
               <Loader2Icon className="text-muted-foreground h-5 w-5 animate-spin" />
-              <span className="text-muted-foreground text-sm">Loading logs...</span>
-            </div>
-          ) : !logs || logs.length === 0 ? (
-            <div className="flex h-full items-center justify-center p-8">
-              <p className="text-muted-foreground text-sm">No log files found</p>
+              <span className="text-muted-foreground text-sm">Loading...</span>
             </div>
           ) : (
-            <div className="flex h-full flex-col">
-              {/* Tabs */}
-              <div className="flex shrink-0 gap-0 overflow-x-auto border-b">
-                {logs.map((log) => (
-                  <button
-                    className={`shrink-0 cursor-pointer border-b-2 px-4 py-2 text-xs font-medium transition-colors ${
-                      activeTab === log.name
-                        ? "border-foreground text-foreground"
-                        : "text-muted-foreground hover:text-foreground border-transparent"
-                    }`}
-                    key={log.name}
-                    onClick={() => setActiveTab(log.name)}
-                    type="button"
-                  >
-                    <FileTextIcon className="mr-1 inline size-3" />
-                    {log.name}
-                    <span className="text-muted-foreground ml-2 opacity-50">
-                      {formatSize(log.size_bytes)}
-                    </span>
-                  </button>
-                ))}
-              </div>
-
-              {/* Content */}
-              <div className="min-h-0 flex-1 overflow-auto">
-                {!activeTab ? (
-                  <div className="flex h-full items-center justify-center p-8">
-                    <p className="text-muted-foreground text-sm">Select a log file to view</p>
-                  </div>
-                ) : isLoadingContent ? (
-                  <div className="flex h-full items-center justify-center gap-2 p-8">
-                    <Loader2Icon className="text-muted-foreground h-5 w-5 animate-spin" />
-                    <span className="text-muted-foreground text-sm">Loading...</span>
-                  </div>
-                ) : (
-                  <pre className="p-4 font-mono text-xs break-all whitespace-pre-wrap">
-                    {content || "Empty"}
-                  </pre>
-                )}
-              </div>
-            </div>
+            <pre className="p-4 font-mono text-xs break-all whitespace-pre-wrap">
+              {content || "Empty"}
+            </pre>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      )}
+    </>
   );
 }
