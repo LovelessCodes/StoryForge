@@ -7,9 +7,7 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
   DialogClose,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -21,7 +19,7 @@ import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import type { ModInfo, ProgressPayload } from "@/lib/types";
 import { buildInstallationPath, makeStringFolderSafe } from "@/lib/utils";
-import { useDialogStore } from "@/stores/dialogs";
+import { rootDialogHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
 import { useSettingsStore } from "@/stores/settings";
 
@@ -50,10 +48,9 @@ const installationSchema = z.object({
   version: z.string().min(2).max(100),
 });
 
-export function ImportInstallationDialog({ open }: { open: boolean }) {
+export function ImportInstallationDialog() {
   const [newInstallation, setNewInstallation] = useState<string>("");
   const { addInstallation, installations, loadInstallations } = useInstallations();
-  const { closeDialog } = useDialogStore();
   const listenRef = useRef<() => void>(null);
   const queryClient = useQueryClient();
   const { installationsParent, installationsSubdir } = useSettingsStore();
@@ -99,11 +96,11 @@ export function ImportInstallationDialog({ open }: { open: boolean }) {
       await queryClient.invalidateQueries({
         queryKey: modUpdatesQueryKey(variables.installation.id),
       });
-      closeDialog();
+      rootDialogHandle.close();
     },
   });
 
-  const { mutateAsync: initializeGame, isPending: initializePending } = useMutation({
+  const { mutateAsync: initializeGame } = useMutation({
     mutationFn: (path: string) => invoke("initialize_game", { path }) as Promise<string>,
     onError: (error, path) => {
       toast.error(`Error initializing game: ${error}`, {
@@ -181,30 +178,28 @@ export function ImportInstallationDialog({ open }: { open: boolean }) {
   };
 
   return (
-    <Dialog onOpenChange={() => !isPending && !initializePending && closeDialog()} open={open}>
+    <>
       <DialogClose />
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Import a new installation</DialogTitle>
-          <DialogDescription>
-            Enter the JSON configuration of the installation you want to import.
-          </DialogDescription>
-        </DialogHeader>
-        <textarea
-          className="h-48 w-full resize-none rounded border p-2"
-          onChange={(e) => setNewInstallation(e.target.value)}
-          placeholder="Paste installation JSON here..."
-          value={newInstallation}
-        />
-        <DialogFooter>
-          <Button
-            disabled={isPending || newInstallation.trim() === ""}
-            onClick={() => handleImportInstallation()}
-          >
-            {isPending ? "Importing..." : "Import"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <DialogHeader>
+        <DialogTitle>Import a new installation</DialogTitle>
+        <DialogDescription>
+          Enter the JSON configuration of the installation you want to import.
+        </DialogDescription>
+      </DialogHeader>
+      <textarea
+        className="h-48 w-full resize-none rounded border p-2"
+        onChange={(e) => setNewInstallation(e.target.value)}
+        placeholder="Paste installation JSON here..."
+        value={newInstallation}
+      />
+      <DialogFooter>
+        <Button
+          disabled={isPending || newInstallation.trim() === ""}
+          onClick={() => handleImportInstallation()}
+        >
+          {isPending ? "Importing..." : "Import"}
+        </Button>
+      </DialogFooter>
+    </>
   );
 }
