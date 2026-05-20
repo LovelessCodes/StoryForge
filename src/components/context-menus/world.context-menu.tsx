@@ -25,8 +25,14 @@ import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import type { World } from "@/lib/types";
-import { useDialogStore } from "@/stores/dialogs";
+import { rootAlertDialogHandle, rootDialogHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
+
+import { DeleteWorldDialog } from "../dialogs/deleteworld.dialog";
+import { EditWorldDialog } from "../dialogs/editworld.dialog";
+import { ViewMapDialog } from "../dialogs/viewmap.dialog";
+import { AlertDialogTrigger } from "../ui/alert-dialog";
+import { DialogTrigger } from "../ui/dialog";
 
 export const WorldContextMenu = ({
   world,
@@ -41,7 +47,6 @@ export const WorldContextMenu = ({
   const installation = installations.find(
     (installation) => installation.path.split("/").pop() === world.installation_name,
   );
-  const { openDialog } = useDialogStore();
 
   // Mutations
   const { mutate: revealInstallationInFolder } = useRevealInFolder();
@@ -79,7 +84,13 @@ export const WorldContextMenu = ({
           <ContextMenuItem
             className="flex items-center justify-between gap-4"
             disabled={!world.has_map}
-            onClick={() => world.has_map && openDialog("ViewMapDialog", { world })}
+            nativeButton
+            render={
+              <DialogTrigger
+                handle={rootDialogHandle}
+                payload={() => <ViewMapDialog world={world} />}
+              />
+            }
           >
             View Map
             <MapIcon className="inline-block h-4 w-4" />
@@ -119,14 +130,26 @@ export const WorldContextMenu = ({
           </ContextMenuItem>
           <ContextMenuItem
             className="flex items-center justify-between gap-4"
-            onClick={() => openDialog("EditWorldDialog", { world })}
+            nativeButton
+            render={
+              <DialogTrigger
+                handle={rootDialogHandle}
+                payload={() => <EditWorldDialog world={world} />}
+              />
+            }
           >
             Edit
             <PencilIcon className="inline-block h-4 w-4" />
           </ContextMenuItem>
           <ContextMenuItem
             className="flex items-center justify-between gap-4"
-            onClick={() => openDialog("DeleteWorldDialog", { world })}
+            nativeButton
+            render={
+              <AlertDialogTrigger
+                handle={rootAlertDialogHandle}
+                payload={() => <DeleteWorldDialog world={world} />}
+              />
+            }
             variant="destructive"
           >
             Delete
