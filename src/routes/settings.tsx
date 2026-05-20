@@ -281,8 +281,8 @@ function RouteComponent() {
   };
 
   return (
-    <ScrollArea className="bg-background h-full w-full" scrollFade>
-      <div className="flex flex-col gap-2 px-4 pt-8">
+    <ScrollArea className="h-full w-full" scrollFade>
+      <div className="flex flex-col gap-2 px-4 pt-10">
         <div className="mb-4 flex items-center gap-3">
           <Checkbox
             checked={useAppDirectory}
