@@ -48,36 +48,34 @@ function Dashboard() {
   const { mutate: playWithInstallation } = usePlayInstallation();
 
   return (
-    <div className="h-full w-full">
+    <div className="grid h-full w-full grid-rows-[min-content_auto]">
       {/* Header */}
       <header className="h-fit border-b">
         <div className="container py-2 pr-6 pl-9">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img alt="Story Forge" className="h-10 w-10" src="/StoryForge.png" />
-              <div>
-                <h1 className="text-xl font-bold">
-                  Story Forge{" "}
-                  <a
-                    className="text-muted-foreground text-xs font-normal hover:underline"
-                    href={`https://github.com/lovelesscodes/storyforge/releases/storyforge-v${appVersion}`}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    (v{appVersion})
-                  </a>
-                </h1>
-                <p className="text-muted-foreground text-sm">
-                  Manage your installations, servers, and mods
-                </p>
-              </div>
+          <div className="flex items-center gap-3">
+            <img alt="Story Forge" className="h-10 w-10" src="/StoryForge.png" />
+            <div>
+              <h1 className="text-xl font-bold">
+                Story Forge{" "}
+                <a
+                  className="text-muted-foreground text-xs font-normal hover:underline"
+                  href={`https://github.com/lovelesscodes/storyforge/releases/storyforge-v${appVersion}`}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  (v{appVersion})
+                </a>
+              </h1>
+              <p className="text-muted-foreground text-sm">
+                Manage your installations, servers, and mods
+              </p>
             </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="h-full space-y-8 overflow-y-auto px-6 py-6">
+      <main className="h-full space-y-8 px-6 py-6">
         <section className="flex h-full gap-6">
           {/* Installations */}
           <div className="relative flex h-full w-full flex-col overflow-y-auto">
