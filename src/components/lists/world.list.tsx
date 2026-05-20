@@ -8,35 +8,33 @@ import { MotionWorldContextMenu } from "../context-menus/world.context-menu";
 
 export function WorldList({ worlds }: { worlds: World[] }) {
   return (
-    <div className="bg-card relative flex w-full flex-col overflow-y-auto rounded border p-2 shadow">
-      <AnimatePresence>
-        {worlds
-          .sort((a, b) => {
-            const aLastPlayed = a.data.last_played ? new Date(a.data.last_played).getTime() : 0;
-            const bLastPlayed = b.data.last_played ? new Date(b.data.last_played).getTime() : 0;
-            return bLastPlayed - aLastPlayed;
-          })
-          .map((world, index) => (
-            <MotionWorldContextMenu
-              animate="show"
-              className="flex w-full gap-2 p-2 not-last:border-b"
-              custom={index}
-              exit="exit"
-              initial="hidden"
-              key={world.data.world_name + world.installation_name}
-              layout="position"
-              variants={itemVariants}
-              world={world}
-            >
-              <WorldItem key={world.data.world_name + world.installation_name} world={world} />
-            </MotionWorldContextMenu>
-          ))}
-        {worlds.length === 0 && (
-          <p className="text-muted-foreground p-4 text-sm select-none">
-            No worlds found yet. Create a world in-game to get started.
-          </p>
-        )}
-      </AnimatePresence>
-    </div>
+    <AnimatePresence>
+      {worlds
+        .sort((a, b) => {
+          const aLastPlayed = a.data.last_played ? new Date(a.data.last_played).getTime() : 0;
+          const bLastPlayed = b.data.last_played ? new Date(b.data.last_played).getTime() : 0;
+          return bLastPlayed - aLastPlayed;
+        })
+        .map((world, index) => (
+          <MotionWorldContextMenu
+            animate="show"
+            className="flex w-full gap-2 p-2 not-last:border-b"
+            custom={index}
+            exit="exit"
+            initial="hidden"
+            key={world.data.world_name + world.installation_name}
+            layout="position"
+            variants={itemVariants}
+            world={world}
+          >
+            <WorldItem key={world.data.world_name + world.installation_name} world={world} />
+          </MotionWorldContextMenu>
+        ))}
+      {worlds.length === 0 && (
+        <p className="text-muted-foreground p-4 text-sm select-none">
+          No worlds found yet. Create a world in-game to get started.
+        </p>
+      )}
+    </AnimatePresence>
   );
 }
