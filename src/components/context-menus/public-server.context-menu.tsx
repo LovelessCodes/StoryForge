@@ -46,7 +46,7 @@ export const PublicServerContextMenu = ({
           </ContextMenuLabel>
           {installedVersions?.includes(server.gameVersion) ? (
             <ContextMenuItem
-              className="flex items-center justify-between gap-4"
+              className="flex w-full items-center justify-between gap-4"
               nativeButton
               render={
                 <AlertDialogTrigger
@@ -68,7 +68,7 @@ export const PublicServerContextMenu = ({
             </ContextMenuItem>
           ) : (
             <ContextMenuItem
-              className="flex items-center justify-between gap-4"
+              className="flex w-full items-center justify-between gap-4"
               nativeButton
               render={
                 <DialogTrigger
