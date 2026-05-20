@@ -13,8 +13,11 @@ import {
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import { pathDelimiter } from "@/lib/utils";
-import { useDialogStore } from "@/stores/dialogs";
+import { rootAlertDialogHandle } from "@/routes/__root";
 import { useSettingsStore } from "@/stores/settings";
+
+import { DeleteVersionDialog } from "../dialogs/deleteversion.dialog";
+import { AlertDialogTrigger } from "../ui/alert-dialog";
 
 export const VersionContextMenu = ({
   version,
@@ -25,7 +28,6 @@ export const VersionContextMenu = ({
   const { appFolder } = useAppFolder();
 
   // Stores
-  const { openDialog } = useDialogStore();
   const { versionsParent, versionsSubdir } = useSettingsStore();
 
   // Mutations
@@ -52,7 +54,13 @@ export const VersionContextMenu = ({
           </ContextMenuItem>
           <ContextMenuItem
             className="flex items-center justify-between gap-4"
-            onClick={() => openDialog("DeleteVersionDialog", { version })}
+            nativeButton
+            render={
+              <AlertDialogTrigger
+                handle={rootAlertDialogHandle}
+                payload={() => <DeleteVersionDialog version={version} />}
+              />
+            }
             variant="destructive"
           >
             Delete
