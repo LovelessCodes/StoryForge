@@ -50,13 +50,13 @@ function Dashboard() {
   return (
     <div className="bg-background grid h-full w-full grid-rows-[min-content] overflow-hidden">
       {/* Header */}
-      <header className="bg-card sticky top-0 z-10 h-fit border-b">
-        <div className="container mx-auto px-6 py-4">
+      <header className="bg-card h-fit border-b">
+        <div className="container py-2 pr-6 pl-9">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img alt="Story Forge" className="h-10 w-10" src="/StoryForge.png" />
               <div>
-                <h1 className="text-2xl font-bold">
+                <h1 className="text-xl font-bold">
                   Story Forge{" "}
                   <a
                     className="text-muted-foreground text-xs font-normal hover:underline"
