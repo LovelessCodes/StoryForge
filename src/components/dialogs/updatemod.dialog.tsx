@@ -5,20 +5,14 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-} from "@/components/ui/dialog";
+import { DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import type { ProgressPayload } from "@/lib/types";
 import { pathDelimiter } from "@/lib/utils";
+import { rootDialogHandle } from "@/routes/__root";
 import type { OutputMod } from "@/routes/install-mods/$id";
-import { useDialogStore } from "@/stores/dialogs";
 import type { Installation } from "@/stores/installations";
 
 type Release = {
@@ -72,17 +66,8 @@ export type UpdateModDialogProps = {
   versionFrom: string;
 };
 
-export function UpdateModDialog({
-  open,
-  mod,
-  installation,
-  versionFrom,
-}: {
-  open: boolean;
-} & UpdateModDialogProps) {
-  const { closeDialog } = useDialogStore();
+export function UpdateModDialog({ mod, installation, versionFrom }: UpdateModDialogProps) {
   const { data: modInfo } = useQuery({
-    enabled: open,
     queryFn: () => invoke("fetch_mod_info", { modid: mod.modid }) as Promise<ModInfo>,
     queryKey: ["modInfo", mod.modid],
     refetchOnReconnect: false,
@@ -153,7 +138,7 @@ export function UpdateModDialog({
       await queryClient.invalidateQueries({
         queryKey: modUpdatesQueryKey(installation.id),
       });
-      closeDialog();
+      rootDialogHandle.close();
     },
   });
 
@@ -165,94 +150,86 @@ export function UpdateModDialog({
   }, [modInfo, versionFrom]);
 
   return (
-    <Dialog
-      onOpenChange={() => {
-        if (isPending || removePending) return;
-        closeDialog();
-      }}
-      open={open}
-    >
-      <DialogContent>
-        <DialogHeader>
-          <h3 className="text-lg leading-6 font-medium">
-            {selectedVersion && selectedVersion?.modversion >= versionFrom ? "Update" : "Downgrade"}{" "}
-            <span className="text-warning-foreground">{modInfo?.mod.name}</span> in{" "}
-            <span className="text-blue-200">{installation.name}</span>
-          </h3>
-        </DialogHeader>
-        <DialogDescription>
-          Select the version of <span className="text-warning-foreground">{modInfo?.mod.name}</span>{" "}
-          you want to change to, in <span className="text-blue-200">{installation.name}</span>.
-        </DialogDescription>
-        {/* We need a select, incase the installation version is not compatible */}
-        <div className="mt-2 w-full overflow-hidden">
-          <Select
-            onValueChange={(value) => {
-              const release = modInfo?.mod.releases.find((r) => r.modversion === value) || null;
-              setSelectedVersion(release);
-            }}
-            value={selectedVersion?.modversion || undefined}
-          >
-            <SelectTrigger className="w-full truncate">
-              <span>
-                {selectedVersion?.modversion ? (
+    <>
+      <DialogHeader>
+        <h3 className="text-lg leading-6 font-medium">
+          {selectedVersion && selectedVersion?.modversion >= versionFrom ? "Update" : "Downgrade"}{" "}
+          <span className="text-warning-foreground">{modInfo?.mod.name}</span> in{" "}
+          <span className="text-blue-200">{installation.name}</span>
+        </h3>
+      </DialogHeader>
+      <DialogDescription>
+        Select the version of <span className="text-warning-foreground">{modInfo?.mod.name}</span>{" "}
+        you want to change to, in <span className="text-blue-200">{installation.name}</span>.
+      </DialogDescription>
+      {/* We need a select, incase the installation version is not compatible */}
+      <div className="mt-2 w-full overflow-hidden">
+        <Select
+          onValueChange={(value) => {
+            const release = modInfo?.mod.releases.find((r) => r.modversion === value) || null;
+            setSelectedVersion(release);
+          }}
+          value={selectedVersion?.modversion || undefined}
+        >
+          <SelectTrigger className="w-full truncate">
+            <span>
+              {selectedVersion?.modversion ? (
+                <span>
+                  {selectedVersion.modversion}{" "}
+                  <span className="text-muted-foreground">
+                    for {selectedVersion.tags[0]}{" "}
+                    {selectedVersion.tags.length > 1
+                      ? `(+${selectedVersion.tags.length - 1} more)`
+                      : ""}
+                  </span>
+                </span>
+              ) : (
+                "Select Version"
+              )}
+            </span>
+          </SelectTrigger>
+          <SelectContent alignItemWithTrigger={false}>
+            {modInfo?.mod.releases.map((release) => (
+              <SelectItem key={release.fileid} value={release.modversion}>
+                <div className="flex flex-col">
                   <span>
-                    {selectedVersion.modversion}{" "}
+                    {release.modversion}
                     <span className="text-muted-foreground">
-                      for {selectedVersion.tags[0]}{" "}
-                      {selectedVersion.tags.length > 1
-                        ? `(+${selectedVersion.tags.length - 1} more)`
-                        : ""}
+                      {" "}
+                      for {release.tags[0]}{" "}
+                      {release.tags.length > 1 ? `(+${release.tags.length - 1} more)` : ""}
                     </span>
                   </span>
-                ) : (
-                  "Select Version"
-                )}
-              </span>
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false}>
-              {modInfo?.mod.releases.map((release) => (
-                <SelectItem key={release.fileid} value={release.modversion}>
-                  <div className="flex flex-col">
-                    <span>
-                      {release.modversion}
-                      <span className="text-muted-foreground">
-                        {" "}
-                        for {release.tags[0]}{" "}
-                        {release.tags.length > 1 ? `(+${release.tags.length - 1} more)` : ""}
-                      </span>
-                    </span>
-                    <span className="text-muted-foreground text-xs">
-                      {release.downloads} downloads
-                    </span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <DialogFooter>
-          <Button
-            disabled={
-              !selectedVersion ||
-              isPending ||
-              removePending ||
-              selectedVersion.modversion === versionFrom
+                  <span className="text-muted-foreground text-xs">
+                    {release.downloads} downloads
+                  </span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <DialogFooter>
+        <Button
+          disabled={
+            !selectedVersion ||
+            isPending ||
+            removePending ||
+            selectedVersion.modversion === versionFrom
+          }
+          onClick={async () => {
+            if (selectedVersion && selectedVersion.modversion !== versionFrom) {
+              removeModFromInstallation({
+                modpath: mod.path,
+                path: installation.path,
+              });
             }
-            onClick={async () => {
-              if (selectedVersion && selectedVersion.modversion !== versionFrom) {
-                removeModFromInstallation({
-                  modpath: mod.path,
-                  path: installation.path,
-                });
-              }
-            }}
-          >
-            {selectedVersion && selectedVersion?.modversion >= versionFrom ? "Update" : "Downgrade"}{" "}
-            Mod
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          }}
+        >
+          {selectedVersion && selectedVersion?.modversion >= versionFrom ? "Update" : "Downgrade"}{" "}
+          Mod
+        </Button>
+      </DialogFooter>
+    </>
   );
 }
