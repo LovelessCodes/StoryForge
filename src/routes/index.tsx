@@ -13,16 +13,22 @@ import { InstallationCard } from "@/components/cards/installation.card";
 import { ServerCard } from "@/components/cards/server.card";
 import { MotionInstallationContextMenu } from "@/components/context-menus/installation.context-menu";
 import { MotionServerContextMenu } from "@/components/context-menus/server.context-menu";
+import { AddInstallationDialog } from "@/components/dialogs/addinstallation.dialog";
+import { AddServerDialog } from "@/components/dialogs/addserver.dialog";
+import { EditInstallationDialog } from "@/components/dialogs/editinstallation.dialog";
+import { EditServerDialog } from "@/components/dialogs/editserver.dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DialogTrigger } from "@/components/ui/dialog";
 import { ErrorComponent } from "@/components/ui/error";
 import { useAppVersion } from "@/hooks/use-app-version";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
 import { sortInstallations } from "@/lib/utils";
-import { useDialogStore } from "@/stores/dialogs";
 import { useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
+
+import { rootDialogHandle } from "./__root";
 
 export const Route = createFileRoute("/")({
   component: RouteComponent,
@@ -40,10 +46,9 @@ function Dashboard() {
   const router = useRouter();
   const { mutate: connectToServer } = useConnectToServer();
   const { mutate: playWithInstallation } = usePlayInstallation();
-  const { openDialog } = useDialogStore();
 
   return (
-    <div className="bg-background grid h-screen w-full grid-rows-[min-content] overflow-hidden">
+    <div className="bg-background grid h-full w-full grid-rows-[min-content] overflow-hidden">
       {/* Header */}
       <header className="bg-card sticky top-0 z-10 h-fit border-b">
         <div className="container mx-auto px-6 py-4">
@@ -121,9 +126,9 @@ function Dashboard() {
                           })
                         }
                         onEdit={(i) =>
-                          openDialog("EditInstallationDialog", {
-                            installation: i,
-                          })
+                          rootDialogHandle.openWithPayload(() => (
+                            <EditInstallationDialog installation={i} />
+                          ))
                         }
                         onPlay={(i) => playWithInstallation({ id: i.id })}
                         onUnfavorite={(i) => toggleFavoriteInstallation(i.id)}
@@ -133,7 +138,12 @@ function Dashboard() {
                 </AnimatePresence>
                 <Button
                   className="text-muted-foreground sticky bottom-0 w-full rounded-t-none text-center text-sm"
-                  onClick={() => openDialog("AddInstallationDialog")}
+                  render={
+                    <DialogTrigger
+                      handle={rootDialogHandle}
+                      payload={() => <AddInstallationDialog />}
+                    />
+                  }
                   variant="secondary"
                 >
                   Add Installation
@@ -146,7 +156,12 @@ function Dashboard() {
                 <p className="text-muted-foreground">No installations yet</p>
                 <Button
                   className="text-muted-foreground w-full text-center text-sm"
-                  onClick={() => openDialog("AddInstallationDialog")}
+                  render={
+                    <DialogTrigger
+                      handle={rootDialogHandle}
+                      payload={() => <AddInstallationDialog />}
+                    />
+                  }
                   variant="secondary"
                 >
                   Add Installation
@@ -207,7 +222,9 @@ function Dashboard() {
                               password: s.password,
                             })
                           }
-                          onEdit={(s) => openDialog("EditServerDialog", { server: s })}
+                          onEdit={(s) =>
+                            rootDialogHandle.openWithPayload(() => <EditServerDialog server={s} />)
+                          }
                           onUnfavorite={(s) => toggleFavoriteServer(s.id)}
                           server={server}
                         />
@@ -216,7 +233,9 @@ function Dashboard() {
                 </AnimatePresence>
                 <Button
                   className="text-muted-foreground sticky bottom-0 w-full rounded-t-none text-center text-sm"
-                  onClick={() => openDialog("AddServerDialog")}
+                  render={
+                    <DialogTrigger handle={rootDialogHandle} payload={() => <AddServerDialog />} />
+                  }
                   variant="secondary"
                 >
                   Add Server
@@ -229,7 +248,9 @@ function Dashboard() {
                 <p className="text-muted-foreground">No servers yet</p>
                 <Button
                   className="text-muted-foreground w-full text-center text-sm"
-                  onClick={() => openDialog("AddServerDialog")}
+                  render={
+                    <DialogTrigger handle={rootDialogHandle} payload={() => <AddServerDialog />} />
+                  }
                   variant="secondary"
                 >
                   Add Server
