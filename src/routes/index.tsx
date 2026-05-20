@@ -48,9 +48,9 @@ function Dashboard() {
   const { mutate: playWithInstallation } = usePlayInstallation();
 
   return (
-    <div className="bg-background grid h-full w-full grid-rows-[min-content] overflow-hidden">
+    <div className="h-full w-full">
       {/* Header */}
-      <header className="bg-card h-fit border-b">
+      <header className="h-fit border-b">
         <div className="container py-2 pr-6 pl-9">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
