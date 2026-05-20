@@ -42,7 +42,7 @@ import { useServerStore } from "@/stores/servers";
 
 import { AddUserDialog } from "../dialogs/adduser.dialog";
 import { DialogTrigger } from "../ui/dialog";
-import { Menu, MenuPopup, MenuTrigger } from "../ui/menu";
+import { MenuTrigger } from "../ui/menu";
 
 export function AppSidebar() {
   const { selectedUser, users, removeUser, setSelectedUser } = useAccountStore();
