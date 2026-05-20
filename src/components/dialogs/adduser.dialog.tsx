@@ -9,18 +9,12 @@ import z from "zod";
 
 import { EmailInput, PasswordInput } from "@/components/inputs";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
 import { useAccountStore } from "@/stores/accounts";
-import { useDialogStore } from "@/stores/dialogs";
 
 type SignInResponse = {
   valid: number;
@@ -49,7 +43,7 @@ const signInSchema = z.object({
     .max(6, { message: "TOTP code must be 6 digits long" }),
 });
 
-export function AddUserDialog({ open }: { open: boolean }) {
+export function AddUserDialog() {
   const id = useId();
   const form = useForm({
     defaultValues: {
@@ -65,7 +59,6 @@ export function AddUserDialog({ open }: { open: boolean }) {
       onChange: signInSchema,
     },
   });
-  const { closeDialog } = useDialogStore();
   const { addUser, selectedUser } = useAccountStore();
   const {
     mutate: signInMutate,
@@ -127,58 +120,54 @@ export function AddUserDialog({ open }: { open: boolean }) {
         sessionsignature: data.sessionsignature,
         uid: data.uid,
       });
-      closeDialog();
+      rootDialogHandle.close();
     },
   });
   return (
-    <Dialog onOpenChange={() => !isPending && closeDialog()} open={open}>
-      <DialogContent>
-        {signInError?.message === "requiretotpcode" || signInError?.message === "wrongtotpcode" ? (
-          <form.Field name="totpcode">
-            {(field) => (
-              <TOTPComponent
-                setValue={(v) => field.handleChange(v)}
-                submit={() => form.handleSubmit()}
-                value={field.state.value || ""}
-              />
-            )}
-          </form.Field>
-        ) : (
-          <>
-            <div className="flex flex-col items-center gap-2">
-              <DialogHeader>
-                <DialogTitle className="sm:text-center">
-                  {selectedUser ? "Add user" : "Welcome back"}
-                </DialogTitle>
-                <DialogDescription className="sm:text-center">
-                  {selectedUser
-                    ? "Enter the new user's credentials."
-                    : "Enter your credentials to sign in to your account."}
-                </DialogDescription>
-              </DialogHeader>
-            </div>
+    <>
+      {signInError?.message === "requiretotpcode" || signInError?.message === "wrongtotpcode" ? (
+        <form.Field name="totpcode">
+          {(field) => (
+            <TOTPComponent
+              setValue={(v) => field.handleChange(v)}
+              submit={() => form.handleSubmit()}
+              value={field.state.value || ""}
+            />
+          )}
+        </form.Field>
+      ) : (
+        <>
+          <div className="flex flex-col items-center gap-2">
+            <DialogHeader>
+              <DialogTitle className="sm:text-center">
+                {selectedUser ? "Add user" : "Welcome back"}
+              </DialogTitle>
+              <DialogDescription className="sm:text-center">
+                {selectedUser
+                  ? "Enter the new user's credentials."
+                  : "Enter your credentials to sign in to your account."}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
 
-            <div className="space-y-5">
-              <div className="space-y-4">
-                <form.Field name="email">
-                  {(field) => (
-                    <div className="grid gap-2">
-                      <Tooltip>
-                        <TooltipTrigger
-                          render={
-                            <Label
-                              className={clsx([
-                                field.state.meta.errors.length ? "text-destructive" : "",
-                                "w-fit",
-                              ])}
-                              htmlFor="email"
-                            />
-                          }
-                        >
-                          Email
-                          <span className="text-destructive">*</span>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">
+          <div className="space-y-5">
+            <div className="space-y-4">
+              <form.Field name="email">
+                {(field) => (
+                  <div className="grid gap-2">
+                    <TooltipTrigger
+                      render={
+                        <Label
+                          className={clsx([
+                            field.state.meta.errors.length ? "text-destructive" : "",
+                            "w-fit",
+                          ])}
+                          htmlFor="email"
+                        />
+                      }
+                      handle={rootTooltipHandle}
+                      payload={() => (
+                        <>
                           <p className="text-xs">Enter email address</p>
                           {field.state.meta.errors.length > 0 &&
                             field.state.meta.errors.map((error, index) => (
@@ -190,51 +179,52 @@ export function AddUserDialog({ open }: { open: boolean }) {
                                 {error?.message}
                               </p>
                             ))}
-                        </TooltipContent>
-                      </Tooltip>
-                      <EmailInput
-                        className={field.state.meta.errors.length ? "text-destructive" : ""}
-                        disabled={isPending}
-                        id={`${id}-email`}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        onKeyUp={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            form.handleSubmit();
-                          }
-                          if (e.key === "Tab" && !e.shiftKey) {
-                            e.preventDefault();
-                            const passwordField = document.getElementById(
-                              `${id}-password`,
-                            ) as HTMLInputElement | null;
-                            passwordField?.focus();
-                          }
-                        }}
-                        value={field.state.value}
-                      />
-                    </div>
-                  )}
-                </form.Field>
-                <form.Field name="password">
-                  {(field) => (
-                    <div className="grid gap-2">
-                      <div className="flex items-center">
-                        <Tooltip>
-                          <TooltipTrigger
-                            render={
-                              <Label
-                                className={clsx([
-                                  field.state.meta.errors.length ? "text-destructive" : "",
-                                  "w-fit",
-                                ])}
-                                htmlFor="password"
-                              />
-                            }
-                          >
-                            Password
-                            <span className="text-destructive">*</span>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom">
+                        </>
+                      )}
+                    >
+                      Email
+                      <span className="text-destructive">*</span>
+                    </TooltipTrigger>
+                    <EmailInput
+                      className={field.state.meta.errors.length ? "text-destructive" : ""}
+                      disabled={isPending}
+                      id={`${id}-email`}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onKeyUp={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          form.handleSubmit();
+                        }
+                        if (e.key === "Tab" && !e.shiftKey) {
+                          e.preventDefault();
+                          const passwordField = document.getElementById(
+                            `${id}-password`,
+                          ) as HTMLInputElement | null;
+                          passwordField?.focus();
+                        }
+                      }}
+                      value={field.state.value}
+                    />
+                  </div>
+                )}
+              </form.Field>
+              <form.Field name="password">
+                {(field) => (
+                  <div className="grid gap-2">
+                    <div className="flex items-center">
+                      <TooltipTrigger
+                        render={
+                          <Label
+                            className={clsx([
+                              field.state.meta.errors.length ? "text-destructive" : "",
+                              "w-fit",
+                            ])}
+                            htmlFor="password"
+                          />
+                        }
+                        handle={rootTooltipHandle}
+                        payload={() => (
+                          <>
                             <p className="text-xs">Enter password</p>
                             {field.state.meta.errors.length > 0 &&
                               field.state.meta.errors.map((error, index) => (
@@ -246,74 +236,77 @@ export function AddUserDialog({ open }: { open: boolean }) {
                                   {error?.message}
                                 </p>
                               ))}
-                          </TooltipContent>
-                        </Tooltip>
-                        <a
-                          className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                          href="https://account.vintagestory.at/requestresetpwd"
-                          rel="noopener noreferrer"
-                          target="_blank"
-                        >
-                          Forgot password?
-                        </a>
-                      </div>
-                      <PasswordInput
-                        className={field.state.meta.errors.length ? "text-destructive" : ""}
-                        disabled={isPending}
-                        id={`${id}-password`}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        onKeyUp={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            form.handleSubmit();
-                          }
-                          if (e.key === "Tab" && e.shiftKey) {
-                            e.preventDefault();
-                            const emailField = document.getElementById(
-                              `${id}-email`,
-                            ) as HTMLInputElement | null;
-                            emailField?.focus();
-                          }
-                          if (e.key === "Tab" && !e.shiftKey) {
-                            e.preventDefault();
-                            const submitButton = document.getElementById(
-                              `${id}-submit`,
-                            ) as HTMLButtonElement | null;
-                            submitButton?.focus();
-                          }
-                        }}
-                        value={field.state.value}
-                      />
+                          </>
+                        )}
+                      >
+                        Password
+                        <span className="text-destructive">*</span>
+                      </TooltipTrigger>
+                      <a
+                        className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+                        href="https://account.vintagestory.at/requestresetpwd"
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        Forgot password?
+                      </a>
                     </div>
-                  )}
-                </form.Field>
-              </div>
-              <form.Subscribe
-                selector={(s) =>
-                  s.errors.length > 0 ||
-                  !s.isTouched ||
-                  !s.isFormValid ||
-                  (s.fieldMeta.email && s.fieldMeta.email.errors.length > 0) ||
-                  (s.fieldMeta.password && s.fieldMeta.password.errors.length > 0)
-                }
-              >
-                {(hasErrors) => (
-                  <Button
-                    className="w-full"
-                    disabled={isPending || hasErrors}
-                    id={`${id}-submit`}
-                    onClick={() => form.handleSubmit()}
-                    type="button"
-                  >
-                    {isPending ? "Signing in..." : "Sign in"}
-                  </Button>
+                    <PasswordInput
+                      className={field.state.meta.errors.length ? "text-destructive" : ""}
+                      disabled={isPending}
+                      id={`${id}-password`}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onKeyUp={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          form.handleSubmit();
+                        }
+                        if (e.key === "Tab" && e.shiftKey) {
+                          e.preventDefault();
+                          const emailField = document.getElementById(
+                            `${id}-email`,
+                          ) as HTMLInputElement | null;
+                          emailField?.focus();
+                        }
+                        if (e.key === "Tab" && !e.shiftKey) {
+                          e.preventDefault();
+                          const submitButton = document.getElementById(
+                            `${id}-submit`,
+                          ) as HTMLButtonElement | null;
+                          submitButton?.focus();
+                        }
+                      }}
+                      value={field.state.value}
+                    />
+                  </div>
                 )}
-              </form.Subscribe>
+              </form.Field>
             </div>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
+            <form.Subscribe
+              selector={(s) =>
+                s.errors.length > 0 ||
+                !s.isTouched ||
+                !s.isFormValid ||
+                (s.fieldMeta.email && s.fieldMeta.email.errors.length > 0) ||
+                (s.fieldMeta.password && s.fieldMeta.password.errors.length > 0)
+              }
+            >
+              {(hasErrors) => (
+                <Button
+                  className="w-full"
+                  disabled={isPending || hasErrors}
+                  id={`${id}-submit`}
+                  onClick={() => form.handleSubmit()}
+                  type="button"
+                >
+                  {isPending ? "Signing in..." : "Sign in"}
+                </Button>
+              )}
+            </form.Subscribe>
+          </div>
+        </>
+      )}
+    </>
   );
 }
 
@@ -366,7 +359,7 @@ function Slot(props: SlotProps) {
   return (
     <div
       className={cn(
-        "border-input bg-background text-foreground flex size-9 items-center justify-center rounded-md border font-medium shadow-xs transition-[color,box-shadow]",
+        "border-input bg-background text-foreground flex size-9 items-center justify-center rounded-md border font-medium transition-colors",
         { "border-ring ring-ring/50 z-10 ring-[3px]": props.isActive },
       )}
     >

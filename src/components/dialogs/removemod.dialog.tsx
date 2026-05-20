@@ -3,9 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 
 import {
-  AlertDialog,
   AlertDialogClose,
-  AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
@@ -13,7 +11,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
-import { useDialogStore } from "@/stores/dialogs";
+import { rootAlertDialogHandle } from "@/routes/__root";
 import type { Installation } from "@/stores/installations";
 
 export type RemoveModDialogProps = {
@@ -22,16 +20,8 @@ export type RemoveModDialogProps = {
   installation: Installation;
 };
 
-export function RemoveModDialog({
-  open,
-  name,
-  path,
-  installation,
-}: {
-  open: boolean;
-} & RemoveModDialogProps) {
+export function RemoveModDialog({ name, path, installation }: RemoveModDialogProps) {
   const queryClient = useQueryClient();
-  const { closeDialog } = useDialogStore();
   const { mutate: removeModFromInstallation, isPending } = useMutation({
     mutationFn: ({ path, modpath }: { path: string; modpath: string }) =>
       invoke("remove_mod_from_installation", { params: { modpath, path } }),
@@ -54,48 +44,40 @@ export function RemoveModDialog({
         await queryClient.invalidateQueries({
           queryKey: installedModsQueryKey(installation.path),
         });
-        closeDialog();
+        rootAlertDialogHandle.close();
       }
     },
   });
 
   return (
-    <AlertDialog
-      onOpenChange={() => {
-        if (isPending) return;
-        closeDialog();
-      }}
-      open={open}
-    >
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            Are you sure you want to remove <span className="text-warning-foreground">{name}</span>{" "}
-            from <span className="text-blue-200">{installation.name}</span>?
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            This action cannot be undone. This will permanently remove{" "}
-            <span className="text-warning-foreground">{name}</span> from{" "}
-            <span className="text-blue-200">{installation.name}</span>.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogClose disabled={isPending} render={<Button variant="outline" />}>
-            Cancel
-          </AlertDialogClose>
-          <Button
-            disabled={isPending}
-            onClick={() =>
-              removeModFromInstallation({
-                modpath: path,
-                path: installation.path,
-              })
-            }
-          >
-            Remove
-          </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <>
+      <AlertDialogHeader>
+        <AlertDialogTitle>
+          Are you sure you want to remove <span className="text-warning-foreground">{name}</span>{" "}
+          from <span className="text-blue-200">{installation.name}</span>?
+        </AlertDialogTitle>
+        <AlertDialogDescription>
+          This action cannot be undone. This will permanently remove{" "}
+          <span className="text-warning-foreground">{name}</span> from{" "}
+          <span className="text-blue-200">{installation.name}</span>.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogClose disabled={isPending} render={<Button variant="outline" />}>
+          Cancel
+        </AlertDialogClose>
+        <Button
+          disabled={isPending}
+          onClick={() =>
+            removeModFromInstallation({
+              modpath: path,
+              path: installation.path,
+            })
+          }
+        >
+          Remove
+        </Button>
+      </AlertDialogFooter>
+    </>
   );
 }

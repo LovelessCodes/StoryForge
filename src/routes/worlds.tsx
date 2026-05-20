@@ -5,6 +5,7 @@ import { SearchInput } from "@/components/inputs";
 import { MapItem } from "@/components/items/map.item";
 import { WorldList } from "@/components/lists/world.list";
 import { ErrorComponent } from "@/components/ui/error";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { useSaves } from "@/hooks/use-saves";
 import { useAllMaps } from "@/hooks/use-world-map";
@@ -54,8 +55,8 @@ function RouteComponent() {
   });
 
   return (
-    <div className="grid w-full grid-rows-[min-content_1fr] gap-2" style={{ height: "100vh" }}>
-      <div className="bg-background/10 sticky top-0 z-10 flex h-fit flex-wrap items-center gap-2 px-4 py-2 backdrop-blur-md">
+    <div className="grid h-full w-full grid-rows-[min-content_auto] gap-2">
+      <div className="flex h-fit flex-wrap items-center gap-2 pt-1 pr-2 pl-9">
         <SearchInput
           onChange={(e) => setSearchText(e.target.value)}
           placeholder="Search worlds and maps..."
@@ -87,7 +88,7 @@ function RouteComponent() {
         </Select>
       </div>
       {filteredWorlds && (
-        <div className="relative h-full w-full overflow-auto px-4">
+        <ScrollArea className="h-full px-2" scrollFade>
           <WorldList worlds={filteredWorlds} />
           {filteredMaps.length > 0 && (
             <div className="mt-4">
@@ -103,7 +104,7 @@ function RouteComponent() {
               </div>
             </div>
           )}
-        </div>
+        </ScrollArea>
       )}
     </div>
   );

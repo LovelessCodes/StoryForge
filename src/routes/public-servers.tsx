@@ -6,6 +6,7 @@ import { SearchInput } from "@/components/inputs";
 import { PublicServerList } from "@/components/lists/public.servers.list";
 import { TextSwitch } from "@/components/switches/text.switch";
 import { ErrorComponent } from "@/components/ui/error";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { publicServersQuery } from "@/hooks/use-public-servers";
 import { gameVersionsQuery } from "@/lib/queries";
@@ -47,8 +48,8 @@ function RouteComponent() {
   const { data: gameVersions } = useQuery(gameVersionsQuery);
   const { data: publicServers } = useQuery(publicServersQuery());
   return (
-    <div className="grid w-full grid-rows-[min-content_1fr] gap-2" style={{ height: "100vh" }}>
-      <div className="bg-background/10 sticky top-0 z-10 flex h-fit flex-wrap items-center gap-2 px-4 py-2 backdrop-blur-md">
+    <div className="grid h-full w-full grid-rows-[min-content_auto] gap-2">
+      <div className="flex h-fit flex-wrap items-center gap-2 pt-1 pr-2 pl-9">
         <SearchInput
           onChange={(e) => setSearchText(e.target.value)}
           placeholder="Search servers..."
@@ -99,16 +100,11 @@ function RouteComponent() {
           textUnchecked="Desc"
         />
       </div>
-      <div className="h-full w-full overflow-hidden px-4">
-        <div
-          className="bg-card relative h-full w-full overflow-auto rounded border p-2 shadow"
-          ref={parentRef}
-        >
-          {publicServers && (
-            <PublicServerList parentRef={parentRef} publicServers={publicServers?.data} />
-          )}
-        </div>
-      </div>
+      <ScrollArea className="h-full px-4" scrollFade viewportRef={parentRef}>
+        {publicServers && (
+          <PublicServerList parentRef={parentRef} publicServers={publicServers?.data} />
+        )}
+      </ScrollArea>
     </div>
   );
 }

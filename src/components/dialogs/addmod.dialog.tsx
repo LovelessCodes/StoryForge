@@ -5,20 +5,13 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-} from "@/components/ui/dialog";
+import { DialogClose, DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { useAddModToInstallation } from "@/hooks/use-add-mod-to-installation";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import type { ModInfo, ProgressPayload, Release } from "@/lib/types";
-import { useDialogStore } from "@/stores/dialogs";
+import { rootDialogHandle } from "@/routes/__root";
 import type { Installation } from "@/stores/installations";
 
 export type AddModDialogProps = {
@@ -26,25 +19,17 @@ export type AddModDialogProps = {
   installation: Installation;
 };
 
-export function AddModDialog({
-  open,
-  modid,
-  installation,
-}: {
-  open: boolean;
-} & AddModDialogProps) {
+export function AddModDialog({ modid, installation }: AddModDialogProps) {
   const { data: modInfo } = useQuery({
-    enabled: open,
     queryFn: () => invoke("fetch_mod_info", { modid: modid.toString() }) as Promise<ModInfo>,
     queryKey: ["modInfo", modid],
     refetchOnReconnect: false,
     refetchOnWindowFocus: false,
   });
-  const { closeDialog } = useDialogStore();
   const listenRef = useRef<UnlistenFn>(null);
   const [selectedVersion, setSelectedVersion] = useState<Release | null>(null);
   const queryClient = useQueryClient();
-  const { mutate: addModToInstallation, isPending } = useAddModToInstallation({
+  const { mutate: addModToInstallation } = useAddModToInstallation({
     onError: (error, variables) => {
       toast.error(
         `Error adding ${variables.mod.mod.name} to ${variables.installation.name}: ${error.message}`,
@@ -84,7 +69,7 @@ export function AddModDialog({
       await queryClient.invalidateQueries({
         queryKey: modUpdatesQueryKey(variables.installation.id),
       });
-      closeDialog();
+      rootDialogHandle.close();
     },
   });
 
@@ -98,91 +83,82 @@ export function AddModDialog({
   }, [modInfo, installation.version]);
 
   return (
-    <Dialog
-      onOpenChange={(op) => {
-        if (isPending) return;
-        if (op === false) setSelectedVersion(null);
-        closeDialog();
-      }}
-      open={open}
-    >
+    <>
       <DialogClose />
-      <DialogContent>
-        <DialogHeader>
-          <h3 className="text-lg leading-6 font-medium">
-            Add <span className="text-warning-foreground">{modInfo?.mod.name}</span> to{" "}
-            <span className="text-blue-200">{installation.name}</span>
-          </h3>
-        </DialogHeader>
-        <DialogDescription>
-          Select the version of <span className="text-warning-foreground">{modInfo?.mod.name}</span>{" "}
-          you want to add to <span className="text-blue-200">{installation.name}</span>.
-        </DialogDescription>
-        {/* We need a select, incase the installation version is not compatible */}
-        <div className="mt-2 w-full overflow-hidden">
-          <Select
-            onValueChange={(value) => {
-              const release = modInfo?.mod.releases.find((r) => r.modversion === value) || null;
-              setSelectedVersion(release);
-            }}
-            value={selectedVersion?.modversion || undefined}
-          >
-            <SelectTrigger className="w-full truncate">
-              <span>
-                {selectedVersion?.modversion ? (
+      <DialogHeader>
+        <h3 className="text-lg leading-6 font-medium">
+          Add <span className="text-warning-foreground">{modInfo?.mod.name}</span> to{" "}
+          <span className="text-blue-200">{installation.name}</span>
+        </h3>
+      </DialogHeader>
+      <DialogDescription>
+        Select the version of <span className="text-warning-foreground">{modInfo?.mod.name}</span>{" "}
+        you want to add to <span className="text-blue-200">{installation.name}</span>.
+      </DialogDescription>
+      {/* We need a select, incase the installation version is not compatible */}
+      <div className="mt-2 w-full overflow-hidden">
+        <Select
+          onValueChange={(value) => {
+            const release = modInfo?.mod.releases.find((r) => r.modversion === value) || null;
+            setSelectedVersion(release);
+          }}
+          value={selectedVersion?.modversion || undefined}
+        >
+          <SelectTrigger className="w-full truncate">
+            <span>
+              {selectedVersion?.modversion ? (
+                <span>
+                  {selectedVersion.modversion}{" "}
+                  <span className="text-muted-foreground">
+                    for {selectedVersion.tags[0]}{" "}
+                    {selectedVersion.tags.length > 1
+                      ? `(+${selectedVersion.tags.length - 1} more)`
+                      : ""}
+                  </span>
+                </span>
+              ) : (
+                "Select Version"
+              )}
+            </span>
+          </SelectTrigger>
+          <SelectContent alignItemWithTrigger={false}>
+            {modInfo?.mod.releases.map((release) => (
+              <SelectItem key={release.fileid} value={release.modversion}>
+                <div className="flex flex-col">
                   <span>
-                    {selectedVersion.modversion}{" "}
+                    {release.modversion}
                     <span className="text-muted-foreground">
-                      for {selectedVersion.tags[0]}{" "}
-                      {selectedVersion.tags.length > 1
-                        ? `(+${selectedVersion.tags.length - 1} more)`
-                        : ""}
+                      {" "}
+                      for {release.tags[0]}{" "}
+                      {release.tags.length > 1 ? `(+${release.tags.length - 1} more)` : ""}
                     </span>
                   </span>
-                ) : (
-                  "Select Version"
-                )}
-              </span>
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false}>
-              {modInfo?.mod.releases.map((release) => (
-                <SelectItem key={release.fileid} value={release.modversion}>
-                  <div className="flex flex-col">
-                    <span>
-                      {release.modversion}
-                      <span className="text-muted-foreground">
-                        {" "}
-                        for {release.tags[0]}{" "}
-                        {release.tags.length > 1 ? `(+${release.tags.length - 1} more)` : ""}
-                      </span>
-                    </span>
-                    <span className="text-muted-foreground text-xs">
-                      {release.downloads} downloads
-                    </span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <DialogFooter>
-          <Button
-            disabled={!selectedVersion}
-            onClick={async () => {
-              if (selectedVersion && modInfo) {
-                addModToInstallation({
-                  emitevent: `mod-download-${modid}-${installation.id}`,
-                  installation: installation,
-                  mod: modInfo,
-                  version: selectedVersion.modversion,
-                });
-              }
-            }}
-          >
-            Add Mod
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+                  <span className="text-muted-foreground text-xs">
+                    {release.downloads} downloads
+                  </span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <DialogFooter>
+        <Button
+          disabled={!selectedVersion}
+          onClick={async () => {
+            if (selectedVersion && modInfo) {
+              addModToInstallation({
+                emitevent: `mod-download-${modid}-${installation.id}`,
+                installation: installation,
+                mod: modInfo,
+                version: selectedVersion.modversion,
+              });
+            }
+          }}
+        >
+          Add Mod
+        </Button>
+      </DialogFooter>
+    </>
   );
 }

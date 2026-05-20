@@ -6,11 +6,12 @@
   "tailwind": {
     "config": "",
     "css": "src/App.css",
-    "baseColor": "zinc",
+    "baseColor": "neutral",
     "cssVariables": true,
     "prefix": ""
   },
   "iconLibrary": "lucide",
+  "rtl": false,
   "aliases": {
     "components": "@/components",
     "utils": "@/lib/utils",
@@ -19,6 +20,7 @@
     "hooks": "@/hooks"
   },
   "registries": {
-    "@dotmatrix": "https://dotmatrix.zzzzshawn.cloud/r/{name}.json"
+    "@dotmatrix": "https://dotmatrix.zzzzshawn.cloud/r/{name}.json",
+    "@coss": "https://coss.com/ui/r/{name}.json"
   }
 }

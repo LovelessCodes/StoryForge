@@ -26,8 +26,13 @@ import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import { cn, exportInstallation } from "@/lib/utils";
-import { useDialogStore } from "@/stores/dialogs";
+import { rootAlertDialogHandle, rootDialogHandle } from "@/routes/__root";
 import { type Installation, useInstallations } from "@/stores/installations";
+
+import { DeleteInstallationDialog } from "../dialogs/deleteinstallation.dialog";
+import { EditInstallationDialog } from "../dialogs/editinstallation.dialog";
+import { AlertDialogTrigger } from "../ui/alert-dialog";
+import { DialogTrigger } from "../ui/dialog";
 
 export const InstallationContextMenu = ({
   installation,
@@ -39,7 +44,6 @@ export const InstallationContextMenu = ({
 
   // Stores
   const { toggleFavorite } = useInstallations();
-  const { openDialog } = useDialogStore();
 
   // Mutations
   const { mutate: revealInstallationInFolder } = useRevealInFolder();
@@ -125,16 +129,30 @@ export const InstallationContextMenu = ({
             <FileUpIcon className="inline-block h-4 w-4" />
           </ContextMenuItem>
           <ContextMenuItem
-            className="flex items-center justify-between gap-4"
-            onClick={() => openDialog("EditInstallationDialog", { installation })}
+            className="flex w-full items-center justify-between gap-4"
+            nativeButton={true}
+            render={
+              <DialogTrigger
+                nativeButton={true}
+                handle={rootDialogHandle}
+                payload={() => <EditInstallationDialog installation={installation} />}
+              />
+            }
           >
             Edit
             <FolderPenIcon className="inline-block h-4 w-4" />
           </ContextMenuItem>
           <ContextMenuItem
-            className="flex items-center justify-between gap-4"
-            onClick={() => openDialog("DeleteInstallationDialog", { installation })}
+            className="flex w-full items-center justify-between gap-4"
             variant="destructive"
+            nativeButton={true}
+            render={
+              <AlertDialogTrigger
+                nativeButton={true}
+                handle={rootAlertDialogHandle}
+                payload={() => <DeleteInstallationDialog installation={installation} />}
+              />
+            }
           >
             Delete
             <FolderXIcon className="inline-block h-4 w-4" />

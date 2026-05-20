@@ -104,12 +104,7 @@ function RouteComponent() {
   const parentRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div
-      className="flex w-full flex-col gap-2"
-      style={{
-        height: "100vh",
-      }}
-    >
+    <div className="flex h-full w-full flex-col gap-2">
       <div className="bg-background/10 sticky top-0 z-10 flex h-fit flex-wrap items-center gap-2 px-4 py-2 backdrop-blur-md">
         <SearchInput
           className="h-9"

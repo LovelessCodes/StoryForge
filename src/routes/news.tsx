@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ErrorComponent } from "@/components/ui/error";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface NewsItem {
   title: string;
@@ -48,33 +49,37 @@ function RouteComponent() {
   }
 
   return (
-    <div className="flex h-screen w-full grid-rows-[min-content_1fr] flex-col gap-2 py-2">
-      <h2 className="mb-2 px-4 text-xl font-bold">Newest releases</h2>
-      <div className="box-border flex w-full flex-col space-y-4 overflow-auto px-4">
+    <div className="flex h-full w-full grid-rows-[min-content_auto] flex-col gap-2">
+      <div className="pt-1.5 pr-2 pl-9">
+        <h2 className="text-xl font-bold">Newest releases</h2>
+      </div>
+      <ScrollArea className="h-full px-2" scrollFade>
         {news && news.length > 0 ? (
-          news.map((item) => (
-            <Card className="w-full transition-shadow hover:shadow-lg" key={item.guid}>
-              <Link className="block" rel="noopener noreferrer" target="_blank" to={item.link}>
-                <CardContent>
-                  <CardHeader>
-                    <CardTitle className="text-xl">{item.title}</CardTitle>
-                  </CardHeader>
-                  <CardDescription className="text-s text-muted-foreground mb-2 line-clamp-4">
-                    {item.description.replace(/<\/?[^>]+(>|$)/g, "")}
-                  </CardDescription>
-                  <CardFooter className="flex justify-end">
-                    <p className="text-muted-foreground text-xs">
-                      {new Date(item.pubDate).toLocaleString()}
-                    </p>
-                  </CardFooter>
-                </CardContent>
-              </Link>
-            </Card>
-          ))
+          <div className="flex flex-col gap-2">
+            {news.map((item) => (
+              <Card className="hover:bg-accent/50 w-full transition-colors" key={item.guid}>
+                <Link className="block" rel="noopener noreferrer" target="_blank" to={item.link}>
+                  <CardContent className="p-3">
+                    <CardHeader className="p-0">
+                      <CardTitle className="text-xl">{item.title}</CardTitle>
+                    </CardHeader>
+                    <CardDescription className="text-s text-muted-foreground mb-2 line-clamp-4">
+                      {item.description.replace(/<\/?[^>]+(>|$)/g, "")}
+                    </CardDescription>
+                    <CardFooter className="flex justify-end p-0">
+                      <p className="text-muted-foreground text-xs">
+                        {new Date(item.pubDate).toLocaleString()}
+                      </p>
+                    </CardFooter>
+                  </CardContent>
+                </Link>
+              </Card>
+            ))}
+          </div>
         ) : (
           <div className="text-muted-foreground">No news found.</div>
         )}
-      </div>
+      </ScrollArea>
     </div>
   );
 }

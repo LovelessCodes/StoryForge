@@ -5,24 +5,17 @@ import clsx from "clsx";
 import { useId } from "react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { DialogClose, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { TooltipTrigger } from "@/components/ui/tooltip";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { gameVersionsQuery } from "@/lib/queries";
 import { buildInstallationPath, compareSemverDesc, makeStringFolderSafe } from "@/lib/utils";
-import { useDialogStore } from "@/stores/dialogs";
+import { rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
 import { type Installation, useInstallationsStore } from "@/stores/installations";
 import { useSettingsStore } from "@/stores/settings";
 
@@ -46,20 +39,14 @@ export type EditInstallationDialogProps = {
   installation: Installation;
 };
 
-export function EditInstallationDialog({
-  open,
-  installation,
-}: {
-  open: boolean;
-} & EditInstallationDialogProps) {
+export function EditInstallationDialog({ installation }: EditInstallationDialogProps) {
   const id = useId();
   const { data: gameVersions } = useQuery(gameVersionsQuery);
-  const { closeDialog } = useDialogStore();
   const installedVersions = useInstalledVersionNames();
   const { appFolder } = useAppFolder();
   const { installationsParent, installationsSubdir } = useSettingsStore();
   const { updateInstallation, loadInstallations } = useInstallationsStore();
-  const { mutateAsync: downloadVersion, isPending } = useDownloadVersion();
+  const { mutateAsync: downloadVersion } = useDownloadVersion();
   const form = useForm({
     defaultValues: {
       favorite: installation.favorite,
@@ -108,7 +95,7 @@ export function EditInstallationDialog({
               version: value.version,
             });
             await loadInstallations();
-            closeDialog();
+            rootDialogHandle.close();
           }
         },
       );
@@ -118,42 +105,35 @@ export function EditInstallationDialog({
     },
   });
   return (
-    <Dialog
-      onOpenChange={() => !form.state.isSubmitting && !isPending && closeDialog()}
-      open={open}
-    >
+    <>
       <DialogClose />
-      <DialogContent>
-        <div className="flex flex-col items-center gap-2">
-          <DialogHeader>
-            <DialogTitle className="sm:text-center">Edit installation</DialogTitle>
-            <DialogDescription className="sm:text-center">
-              Enter the installation's details.
-            </DialogDescription>
-          </DialogHeader>
-        </div>
+      <div className="flex flex-col items-center gap-2">
+        <DialogHeader>
+          <DialogTitle className="sm:text-center">Edit installation</DialogTitle>
+          <DialogDescription className="sm:text-center">
+            Enter the installation's details.
+          </DialogDescription>
+        </DialogHeader>
+      </div>
 
-        <div className="space-y-5">
-          <div className="space-y-4">
-            <form.Field name="name">
-              {(field) => (
-                <div className="grid gap-2">
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Label
-                          className={clsx([
-                            field.state.meta.errors.length ? "text-destructive" : "",
-                            "w-fit",
-                          ])}
-                          htmlFor="name"
-                        />
-                      }
-                    >
-                      Name
-                      <span className="text-destructive">*</span>
-                    </TooltipTrigger>
-                    <TooltipContent align="start" side="bottom">
+      <div className="space-y-5">
+        <div className="space-y-4">
+          <form.Field name="name">
+            {(field) => (
+              <div className="grid gap-2">
+                <TooltipTrigger
+                  render={
+                    <Label
+                      className={clsx([
+                        field.state.meta.errors.length ? "text-destructive" : "",
+                        "w-fit",
+                      ])}
+                      htmlFor="name"
+                    />
+                  }
+                  handle={rootTooltipHandle}
+                  payload={() => (
+                    <>
                       <p className="text-xs">Enter server name</p>
                       {field.state.meta.errors.length > 0 &&
                         field.state.meta.errors.map((error, index) => (
@@ -165,57 +145,58 @@ export function EditInstallationDialog({
                             {error?.message}
                           </p>
                         ))}
-                    </TooltipContent>
-                  </Tooltip>
-                  <Input
-                    className={field.state.meta.errors.length ? "text-destructive" : ""}
-                    onChange={(e) => {
-                      field.handleChange(e.target.value);
-                      if (e.target.value.length > 0 && appFolder) {
-                        const safeName = makeStringFolderSafe(e.target.value);
-                        form.setFieldValue(
-                          "path",
-                          buildInstallationPath(
-                            installationsParent ?? appFolder,
-                            safeName,
-                            installationsSubdir,
-                          ),
-                        );
-                      } else {
-                        form.resetField("path");
-                      }
-                    }}
-                    onKeyUp={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        form.handleSubmit();
-                      }
-                    }}
-                    value={field.state.value}
-                  />
-                </div>
-              )}
-            </form.Field>
-            <form.Field name="startParams">
-              {(field) => (
-                <div className="grid gap-2">
-                  <div className="flex items-center">
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <Label
-                            className={clsx([
-                              field.state.meta.errors.length ? "text-destructive" : "",
-                              "w-fit",
-                            ])}
-                            htmlFor="startParams"
-                          />
-                        }
-                      >
-                        Start parameters
-                        <span className="text-muted-foreground text-xs">(optional)</span>
-                      </TooltipTrigger>
-                      <TooltipContent align="start" side="bottom">
+                    </>
+                  )}
+                >
+                  Name
+                  <span className="text-destructive">*</span>
+                </TooltipTrigger>
+                <Input
+                  className={field.state.meta.errors.length ? "text-destructive" : ""}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                    if (e.target.value.length > 0 && appFolder) {
+                      const safeName = makeStringFolderSafe(e.target.value);
+                      form.setFieldValue(
+                        "path",
+                        buildInstallationPath(
+                          installationsParent ?? appFolder,
+                          safeName,
+                          installationsSubdir,
+                        ),
+                      );
+                    } else {
+                      form.resetField("path");
+                    }
+                  }}
+                  onKeyUp={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      form.handleSubmit();
+                    }
+                  }}
+                  value={field.state.value}
+                />
+              </div>
+            )}
+          </form.Field>
+          <form.Field name="startParams">
+            {(field) => (
+              <div className="grid gap-2">
+                <div className="flex items-center">
+                  <TooltipTrigger
+                    render={
+                      <Label
+                        className={clsx([
+                          field.state.meta.errors.length ? "text-destructive" : "",
+                          "w-fit",
+                        ])}
+                        htmlFor="startParams"
+                      />
+                    }
+                    handle={rootTooltipHandle}
+                    payload={() => (
+                      <>
                         <p className="text-xs">Enter start parameters</p>
                         {field.state.meta.errors.length > 0 &&
                           field.state.meta.errors.map((error, index) => (
@@ -227,42 +208,43 @@ export function EditInstallationDialog({
                               {error?.message}
                             </p>
                           ))}
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <Input
-                    id={`${id}-start-params`}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onKeyUp={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        form.handleSubmit();
-                      }
-                    }}
-                    value={field.state.value}
-                  />
+                      </>
+                    )}
+                  >
+                    Start parameters
+                    <span className="text-muted-foreground text-xs">(optional)</span>
+                  </TooltipTrigger>
                 </div>
-              )}
-            </form.Field>
-            <form.Field name="path">
-              {(field) => (
-                <div className="grid gap-2">
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Label
-                          className={clsx([
-                            field.state.meta.errors.length ? "text-destructive" : "",
-                            "w-fit",
-                          ])}
-                          htmlFor="path"
-                        />
-                      }
-                    >
-                      Path
-                      <span className="text-destructive">*</span>
-                    </TooltipTrigger>
-                    <TooltipContent align="start" side="bottom">
+                <Input
+                  id={`${id}-start-params`}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onKeyUp={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      form.handleSubmit();
+                    }
+                  }}
+                  value={field.state.value}
+                />
+              </div>
+            )}
+          </form.Field>
+          <form.Field name="path">
+            {(field) => (
+              <div className="grid gap-2">
+                <TooltipTrigger
+                  render={
+                    <Label
+                      className={clsx([
+                        field.state.meta.errors.length ? "text-destructive" : "",
+                        "w-fit",
+                      ])}
+                      htmlFor="path"
+                    />
+                  }
+                  handle={rootTooltipHandle}
+                  payload={() => (
+                    <>
                       <p className="text-xs">Enter installation path</p>
                       {field.state.meta.errors.length > 0 &&
                         field.state.meta.errors.map((error, index) => (
@@ -274,35 +256,36 @@ export function EditInstallationDialog({
                             {error?.message}
                           </p>
                         ))}
-                    </TooltipContent>
-                  </Tooltip>
-                  <Input
-                    className={field.state.meta.errors.length ? "text-destructive" : ""}
-                    disabled
-                    value={field.state.value}
-                  />
-                </div>
-              )}
-            </form.Field>
-            <form.Field name="icon">
-              {(field) => (
-                <div className="grid gap-2">
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Label
-                          className={clsx([
-                            field.state.meta.errors.length ? "text-destructive" : "",
-                            "w-fit",
-                          ])}
-                          htmlFor="icon"
-                        />
-                      }
-                    >
-                      Icon
-                      <span className="text-muted-foreground text-xs">(optional)</span>
-                    </TooltipTrigger>
-                    <TooltipContent align="start" side="bottom">
+                    </>
+                  )}
+                >
+                  Path
+                  <span className="text-destructive">*</span>
+                </TooltipTrigger>
+                <Input
+                  className={field.state.meta.errors.length ? "text-destructive" : ""}
+                  disabled
+                  value={field.state.value}
+                />
+              </div>
+            )}
+          </form.Field>
+          <form.Field name="icon">
+            {(field) => (
+              <div className="grid gap-2">
+                <TooltipTrigger
+                  render={
+                    <Label
+                      className={clsx([
+                        field.state.meta.errors.length ? "text-destructive" : "",
+                        "w-fit",
+                      ])}
+                      htmlFor="icon"
+                    />
+                  }
+                  handle={rootTooltipHandle}
+                  payload={() => (
+                    <>
                       <p className="text-xs">Enter installation icon</p>
                       {field.state.meta.errors.length > 0 &&
                         field.state.meta.errors.map((error, index) => (
@@ -314,41 +297,42 @@ export function EditInstallationDialog({
                             {error?.message}
                           </p>
                         ))}
-                    </TooltipContent>
-                  </Tooltip>
-                  <Input
-                    className={field.state.meta.errors.length ? "text-destructive" : ""}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onKeyUp={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        form.handleSubmit();
-                      }
-                    }}
-                    value={field.state.value ?? ""}
-                  />
-                </div>
-              )}
-            </form.Field>
-            <form.Field name="version">
-              {(field) => (
-                <div className="grid gap-2">
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Label
-                          className={clsx([
-                            field.state.meta.errors.length ? "text-destructive" : "",
-                            "w-fit",
-                          ])}
-                          htmlFor="version"
-                        />
-                      }
-                    >
-                      Version
-                      <span className="text-destructive">*</span>
-                    </TooltipTrigger>
-                    <TooltipContent align="start" side="bottom">
+                    </>
+                  )}
+                >
+                  Icon
+                  <span className="text-muted-foreground text-xs">(optional)</span>
+                </TooltipTrigger>
+                <Input
+                  className={field.state.meta.errors.length ? "text-destructive" : ""}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onKeyUp={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      form.handleSubmit();
+                    }
+                  }}
+                  value={field.state.value ?? ""}
+                />
+              </div>
+            )}
+          </form.Field>
+          <form.Field name="version">
+            {(field) => (
+              <div className="grid gap-2">
+                <TooltipTrigger
+                  render={
+                    <Label
+                      className={clsx([
+                        field.state.meta.errors.length ? "text-destructive" : "",
+                        "w-fit",
+                      ])}
+                      htmlFor="version"
+                    />
+                  }
+                  handle={rootTooltipHandle}
+                  payload={() => (
+                    <>
                       <p className="text-xs">Pick game version</p>
                       {field.state.meta.errors.length > 0 &&
                         field.state.meta.errors.map((error, index) => (
@@ -360,57 +344,57 @@ export function EditInstallationDialog({
                             {error?.message}
                           </p>
                         ))}
-                    </TooltipContent>
-                  </Tooltip>
-                  <Select
-                    onValueChange={(v) => v && field.handleChange(v)}
-                    value={field.state.value}
-                  >
-                    <SelectTrigger className="flex w-full gap-1 truncate">
-                      <p>
-                        {field.state.value ?? "Game version"}
-                        {installedVersions.includes(field.state.value) ? (
+                    </>
+                  )}
+                >
+                  Version
+                  <span className="text-destructive">*</span>
+                </TooltipTrigger>
+                <Select onValueChange={(v) => v && field.handleChange(v)} value={field.state.value}>
+                  <SelectTrigger className="flex w-full gap-1 truncate">
+                    <p>
+                      {field.state.value ?? "Game version"}
+                      {installedVersions.includes(field.state.value) ? (
+                        <span className="text-muted-foreground ml-2 text-xs opacity-50">
+                          (installed)
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground ml-2 text-xs opacity-50">
+                          (will be downloaded)
+                        </span>
+                      )}
+                    </p>
+                  </SelectTrigger>
+                  <SelectContent align="start" alignItemWithTrigger={false}>
+                    {gameVersions?.sort(compareSemverDesc).map((version) => (
+                      <SelectItem
+                        className={installedVersions.includes(version) ? "bg-success/5" : ""}
+                        key={version}
+                        value={version}
+                      >
+                        {version}
+                        {installedVersions.includes(version) && (
                           <span className="text-muted-foreground ml-2 text-xs opacity-50">
                             (installed)
                           </span>
-                        ) : (
-                          <span className="text-muted-foreground ml-2 text-xs opacity-50">
-                            (will be downloaded)
-                          </span>
                         )}
-                      </p>
-                    </SelectTrigger>
-                    <SelectContent align="start" alignItemWithTrigger={false}>
-                      {gameVersions?.sort(compareSemverDesc).map((version) => (
-                        <SelectItem
-                          className={installedVersions.includes(version) ? "bg-success/5" : ""}
-                          key={version}
-                          value={version}
-                        >
-                          {version}
-                          {installedVersions.includes(version) && (
-                            <span className="text-muted-foreground ml-2 text-xs opacity-50">
-                              (installed)
-                            </span>
-                          )}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </form.Field>
-          </div>
-          <Button
-            className="w-full"
-            disabled={form.state.isSubmitting}
-            onClick={() => form.handleSubmit()}
-            type="button"
-          >
-            {form.state.isSubmitting ? "Updating..." : "Update Installation"}
-          </Button>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </form.Field>
         </div>
-      </DialogContent>
-    </Dialog>
+        <Button
+          className="w-full"
+          disabled={form.state.isSubmitting}
+          onClick={() => form.handleSubmit()}
+          type="button"
+        >
+          {form.state.isSubmitting ? "Updating..." : "Update Installation"}
+        </Button>
+      </div>
+    </>
   );
 }

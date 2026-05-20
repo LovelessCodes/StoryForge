@@ -1,20 +1,22 @@
 import { FolderOpenIcon, TrashIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Group, GroupItem, GroupSeparator } from "@/components/ui/group";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Group, GroupSeparator } from "@/components/ui/group";
+import { TooltipTrigger } from "@/components/ui/tooltip";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import type { InstalledVersion } from "@/hooks/use-installed-versions";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import { pathDelimiter } from "@/lib/utils";
-import { useDialogStore } from "@/stores/dialogs";
+import { rootAlertDialogHandle, rootTooltipHandle } from "@/routes/__root";
 import { useSettingsStore } from "@/stores/settings";
+
+import { DeleteVersionDialog } from "../dialogs/deleteversion.dialog";
+import { AlertDialogTrigger } from "../ui/alert-dialog";
 
 export function VersionRow({ version }: { version: InstalledVersion }) {
   const { appFolder } = useAppFolder();
 
   // Stores
-  const { openDialog } = useDialogStore();
   const { versionsParent, versionsSubdir } = useSettingsStore();
 
   // Mutations
@@ -34,49 +36,44 @@ export function VersionRow({ version }: { version: InstalledVersion }) {
         <span className="text-muted-foreground text-xs opacity-60">{version.size_display}</span>
       </span>
       <Group>
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <GroupItem
-                render={
-                  <Button
-                    aria-label="Open Folder"
-                    onClick={() =>
-                      openFolder(
-                        `${versionsParent ?? appFolder}${pathDelimiter}${versionsSubdir}${pathDelimiter}${version.name}`,
-                      )
-                    }
-                    size="icon"
-                    variant="outline"
-                  />
-                }
-              >
-                <FolderOpenIcon aria-hidden="true" className="opacity-60" size={16} />
-              </GroupItem>
-            }
-          />
-          <TooltipContent>Open Folder</TooltipContent>
-        </Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              aria-label="Open Folder"
+              onClick={() =>
+                openFolder(
+                  `${versionsParent ?? appFolder}${pathDelimiter}${versionsSubdir}${pathDelimiter}${version.name}`,
+                )
+              }
+              size="icon"
+              variant="outline"
+            >
+              <FolderOpenIcon aria-hidden="true" className="opacity-60" size={16} />
+            </Button>
+          }
+          handle={rootTooltipHandle}
+          payload={() => "Open Folder"}
+        />
         <GroupSeparator />
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <GroupItem
-                render={
-                  <Button
-                    aria-label="Delete"
-                    onClick={() => openDialog("DeleteVersionDialog", { version: version.name })}
-                    size="icon"
-                    variant="outline"
-                  />
-                }
-              >
-                <TrashIcon aria-hidden="true" className="opacity-60" size={16} />
-              </GroupItem>
-            }
-          />
-          <TooltipContent>Delete</TooltipContent>
-        </Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              aria-label="Delete"
+              render={
+                <AlertDialogTrigger
+                  handle={rootAlertDialogHandle}
+                  payload={() => <DeleteVersionDialog version={version.name} />}
+                />
+              }
+              size="icon"
+              variant="outline"
+            >
+              <TrashIcon aria-hidden="true" className="opacity-60" size={16} />
+            </Button>
+          }
+          handle={rootTooltipHandle}
+          payload={() => "Delete"}
+        />
       </Group>
     </>
   );

@@ -2,15 +2,17 @@ import { Download, XIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useDialogStore } from "@/stores/dialogs";
+import { TooltipTrigger } from "@/components/ui/tooltip";
+import { rootAlertDialogHandle, rootTooltipHandle } from "@/routes/__root";
+
+import { DeleteVersionDialog } from "../dialogs/deleteversion.dialog";
+import { AlertDialogTrigger } from "../ui/alert-dialog";
 
 interface VersionItemProps {
   version: string;
 }
 
 export function VersionItem({ version }: VersionItemProps) {
-  const { openDialog } = useDialogStore();
   return (
     <div className="hover:bg-muted/50 flex items-center justify-between rounded-lg border p-4 transition-colors">
       <div className="flex items-center gap-3">
@@ -26,21 +28,25 @@ export function VersionItem({ version }: VersionItemProps) {
           </Badge>
         </div>
       </div>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              aria-label="Delete"
-              onClick={() => openDialog("DeleteVersionDialog", { version })}
-              size="icon"
-              variant="outline"
-            >
-              <XIcon aria-hidden="true" className="opacity-60" size={16} />
-            </Button>
-          }
-        />
-        <TooltipContent>Delete</TooltipContent>
-      </Tooltip>
+      <TooltipTrigger
+        render={
+          <Button
+            aria-label="Delete"
+            render={
+              <AlertDialogTrigger
+                handle={rootAlertDialogHandle}
+                payload={() => <DeleteVersionDialog version={version} />}
+              />
+            }
+            size="icon"
+            variant="outline"
+          >
+            <XIcon aria-hidden="true" className="opacity-60" size={16} />
+          </Button>
+        }
+        handle={rootTooltipHandle}
+        payload={() => "Delete"}
+      />
     </div>
   );
 }

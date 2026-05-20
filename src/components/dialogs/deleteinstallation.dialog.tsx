@@ -5,9 +5,7 @@ import { MapIcon, MapPinXIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import {
-  AlertDialog,
   AlertDialogClose,
-  AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
@@ -15,7 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useSavesFromInstallation } from "@/hooks/use-saves";
-import { useDialogStore } from "@/stores/dialogs";
+import { rootAlertDialogHandle } from "@/routes/__root";
 import { type Installation, useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
 
@@ -23,14 +21,8 @@ export type DeleteInstallationDialogProps = {
   installation: Installation;
 };
 
-export function DeleteInstallationDialog({
-  open,
-  installation,
-}: {
-  open: boolean;
-} & DeleteInstallationDialogProps) {
+export function DeleteInstallationDialog({ installation }: DeleteInstallationDialogProps) {
   const { removeInstallation } = useInstallations();
-  const { closeDialog } = useDialogStore();
   const { servers } = useServerStore();
   const { data: saves } = useSavesFromInstallation(installation.id);
 
@@ -56,103 +48,95 @@ export function DeleteInstallationDialog({
         toast.success("Installation deleted", {
           id: `installation-delete-${variables}`,
         });
-        closeDialog();
+        rootAlertDialogHandle.close();
       }
     },
   });
 
   return (
-    <AlertDialog
-      onOpenChange={() => {
-        if (isPending) return;
-        closeDialog();
-      }}
-      open={open}
-    >
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Are you sure you want to delete this installation?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the installation from your
-            computer as well as all its data.
-          </AlertDialogDescription>
+    <>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Are you sure you want to delete this installation?</AlertDialogTitle>
+        <AlertDialogDescription>
+          This action cannot be undone. This will permanently delete the installation from your
+          computer as well as all its data.
+        </AlertDialogDescription>
 
-          {/* Warning for active servers */}
-          {activeServers.length > 0 && (
-            <motion.div
-              animate={{ opacity: 1, y: 0 }}
-              className="border-destructive bg-destructive/10 text-destructive mb-4 rounded-md border p-3"
-              exit={{ opacity: 0, y: -10 }}
-              initial={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-            >
-              <strong>Warning:</strong>
-              <br />
-              The following servers are using this installation and must be removed first:
-              <ul className="mt-2 space-y-1">
-                <AnimatePresence>
-                  {activeServers.map((srv) => (
-                    <motion.li
-                      animate={{ opacity: 1, x: 0 }}
-                      className="flex items-center gap-2 rounded-sm border pl-2"
-                      exit={{ opacity: 0, x: 20 }}
-                      initial={{ opacity: 0, x: -20 }}
-                      key={srv.id}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <MapPinXIcon className="mr-1 inline h-4 w-4" />
-                      {srv.name || `Server #${srv.id}`}
-                    </motion.li>
-                  ))}
-                </AnimatePresence>
-              </ul>
-            </motion.div>
-          )}
-
-          {/* List saves if present */}
-          {Array.isArray(saves) && saves.length > 0 && (
-            <motion.div
-              animate={{ opacity: 1, y: 0 }}
-              className="border-warning bg-warning/10 text-warning-foreground mb-4 rounded-md border p-3"
-              exit={{ opacity: 0, y: 10 }}
-              initial={{ opacity: 0, y: 10 }}
-              transition={{ delay: 0.1, duration: 0.3 }}
-            >
-              <strong>Saves:</strong>
-              <br />
-              The following saves will be deleted:
-              <ul className="mt-2 space-y-1">
-                <AnimatePresence>
-                  {saves.map((save) => (
-                    <motion.li
-                      animate={{ opacity: 1, x: 0 }}
-                      className="flex items-center gap-2 rounded-sm border pl-2"
-                      exit={{ opacity: 0, x: -20 }}
-                      initial={{ opacity: 0, x: 20 }}
-                      key={save}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <MapIcon className="mr-1 inline h-4 w-4" />
-                      {save}
-                    </motion.li>
-                  ))}
-                </AnimatePresence>
-              </ul>
-            </motion.div>
-          )}
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogClose disabled={isPending} render={<Button variant="outline" />}>
-            Cancel
-          </AlertDialogClose>
-          <Button
-            disabled={!canDelete || isPending}
-            onClick={() => deleteInstallation(installation.id)}
+        {/* Warning for active servers */}
+        {activeServers.length > 0 && (
+          <motion.div
+            animate={{ opacity: 1, y: 0 }}
+            className="border-destructive bg-destructive/10 text-destructive mb-4 rounded-md border p-3"
+            exit={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
           >
-            {isPending ? "Deleting..." : "Delete"}
-          </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+            <strong>Warning:</strong>
+            <br />
+            The following servers are using this installation and must be removed first:
+            <ul className="mt-2 space-y-1">
+              <AnimatePresence>
+                {activeServers.map((srv) => (
+                  <motion.li
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex items-center gap-2 rounded-sm border pl-2"
+                    exit={{ opacity: 0, x: 20 }}
+                    initial={{ opacity: 0, x: -20 }}
+                    key={srv.id}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <MapPinXIcon className="mr-1 inline h-4 w-4" />
+                    {srv.name || `Server #${srv.id}`}
+                  </motion.li>
+                ))}
+              </AnimatePresence>
+            </ul>
+          </motion.div>
+        )}
+
+        {/* List saves if present */}
+        {Array.isArray(saves) && saves.length > 0 && (
+          <motion.div
+            animate={{ opacity: 1, y: 0 }}
+            className="border-warning bg-warning/10 text-warning-foreground mb-4 rounded-md border p-3"
+            exit={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 10 }}
+            transition={{ delay: 0.1, duration: 0.3 }}
+          >
+            <strong>Saves:</strong>
+            <br />
+            The following saves will be deleted:
+            <ul className="mt-2 space-y-1">
+              <AnimatePresence>
+                {saves.map((save) => (
+                  <motion.li
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex items-center gap-2 rounded-sm border pl-2"
+                    exit={{ opacity: 0, x: -20 }}
+                    initial={{ opacity: 0, x: 20 }}
+                    key={save}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <MapIcon className="mr-1 inline h-4 w-4" />
+                    {save}
+                  </motion.li>
+                ))}
+              </AnimatePresence>
+            </ul>
+          </motion.div>
+        )}
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogClose disabled={isPending} render={<Button variant="outline" />}>
+          Cancel
+        </AlertDialogClose>
+        <Button
+          disabled={!canDelete || isPending}
+          onClick={() => deleteInstallation(installation.id)}
+        >
+          {isPending ? "Deleting..." : "Delete"}
+        </Button>
+      </AlertDialogFooter>
+    </>
   );
 }

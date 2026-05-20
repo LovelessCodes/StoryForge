@@ -4,9 +4,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 
 import {
-  AlertDialog,
   AlertDialogClose,
-  AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
@@ -14,20 +12,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { installedVersionsQueryKey } from "@/hooks/use-installed-versions";
-import { useDialogStore } from "@/stores/dialogs";
+import { rootAlertDialogHandle } from "@/routes/__root";
 
 export type DeleteVersionDialogProps = {
   version: string;
 };
 
-export function DeleteVersionDialog({
-  open,
-  version,
-}: {
-  open: boolean;
-} & DeleteVersionDialogProps) {
+export function DeleteVersionDialog({ version }: DeleteVersionDialogProps) {
   const queryClient = useQueryClient();
-  const { closeDialog } = useDialogStore();
   const { mutate: removeVersion, isPending } = useMutation({
     mutationFn: (version: string) => invoke("remove_installed_version", { version }),
     onError: (error) => {
@@ -47,48 +39,40 @@ export function DeleteVersionDialog({
       await queryClient.invalidateQueries({
         queryKey: installedVersionsQueryKey(),
       });
-      closeDialog();
+      rootAlertDialogHandle.close();
     },
   });
 
   return (
-    <AlertDialog
-      onOpenChange={() => {
-        if (isPending) return;
-        closeDialog();
-      }}
-      open={open}
-    >
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Are you sure you want to delete version {version}?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete version {version} from Story
-            Forge.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          className="border-warning bg-warning/10 text-warning-foreground my-4 rounded-md border p-3"
-          exit={{ opacity: 0, y: -10 }}
-          initial={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.3 }}
-        >
-          <strong>Note:</strong>
-          <br />
-          Deleting versions that are currently in use by installations will not harm these
-          installations or their servers. However, you will not be able to create new installations
-          with this version until you reinstall it.
-        </motion.div>
-        <AlertDialogFooter>
-          <AlertDialogClose disabled={isPending} render={<Button variant="outline" />}>
-            Cancel
-          </AlertDialogClose>
-          <Button disabled={isPending} onClick={() => removeVersion(version)}>
-            {isPending ? "Deleting..." : "Delete"}
-          </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Are you sure you want to delete version {version}?</AlertDialogTitle>
+        <AlertDialogDescription>
+          This action cannot be undone. This will permanently delete version {version} from Story
+          Forge.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <motion.div
+        animate={{ opacity: 1, y: 0 }}
+        className="border-warning bg-warning/10 text-warning-foreground my-4 rounded-md border p-3"
+        exit={{ opacity: 0, y: -10 }}
+        initial={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.3 }}
+      >
+        <strong>Note:</strong>
+        <br />
+        Deleting versions that are currently in use by installations will not harm these
+        installations or their servers. However, you will not be able to create new installations
+        with this version until you reinstall it.
+      </motion.div>
+      <AlertDialogFooter>
+        <AlertDialogClose disabled={isPending} render={<Button variant="outline" />}>
+          Cancel
+        </AlertDialogClose>
+        <Button disabled={isPending} onClick={() => removeVersion(version)}>
+          {isPending ? "Deleting..." : "Delete"}
+        </Button>
+      </AlertDialogFooter>
+    </>
   );
 }

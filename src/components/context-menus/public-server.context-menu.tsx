@@ -13,8 +13,13 @@ import {
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import type { PublicServer } from "@/hooks/use-public-servers";
-import { useDialogStore } from "@/stores/dialogs";
+import { rootAlertDialogHandle, rootDialogHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
+
+import { AddInstallationDialog } from "../dialogs/addinstallation.dialog";
+import { ConnectServerDialog } from "../dialogs/connectserver.dialog";
+import { AlertDialogTrigger } from "../ui/alert-dialog";
+import { DialogTrigger } from "../ui/dialog";
 
 export const PublicServerContextMenu = ({
   server,
@@ -23,7 +28,6 @@ export const PublicServerContextMenu = ({
   server: PublicServer;
 }) => {
   // Stores
-  const { openDialog } = useDialogStore();
   const { installations } = useInstallations();
 
   // Queries
@@ -42,8 +46,14 @@ export const PublicServerContextMenu = ({
           </ContextMenuLabel>
           {installedVersions?.includes(server.gameVersion) ? (
             <ContextMenuItem
-              className="flex items-center justify-between gap-4"
-              onClick={() => openDialog("ConnectServerDialog", { server })}
+              className="flex w-full items-center justify-between gap-4"
+              nativeButton
+              render={
+                <AlertDialogTrigger
+                  handle={rootAlertDialogHandle}
+                  payload={() => <ConnectServerDialog server={server} />}
+                />
+              }
             >
               Connect
               <PlugIcon className="inline-block h-4 w-4" />
@@ -58,12 +68,13 @@ export const PublicServerContextMenu = ({
             </ContextMenuItem>
           ) : (
             <ContextMenuItem
-              className="flex items-center justify-between gap-4"
-              onClick={() =>
-                server &&
-                openDialog("AddInstallationDialog", {
-                  version: server.gameVersion,
-                })
+              className="flex w-full items-center justify-between gap-4"
+              nativeButton
+              render={
+                <DialogTrigger
+                  handle={rootDialogHandle}
+                  payload={() => <AddInstallationDialog version={server.gameVersion} />}
+                />
               }
             >
               Add Installation
