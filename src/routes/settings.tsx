@@ -19,12 +19,14 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { TooltipTrigger } from "@/components/ui/tooltip";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { installedVersionsQueryKey } from "@/hooks/use-installed-versions";
 import { cn } from "@/lib/utils";
 import { useInstallationsStore } from "@/stores/installations";
 import { type SetParentConfigProps, useSettingsStore } from "@/stores/settings";
+
+import { rootTooltipHandle } from "./__root";
 
 export const Route = createFileRoute("/settings")({
   component: RouteComponent,
@@ -278,7 +280,7 @@ function RouteComponent() {
   };
 
   return (
-    <div className="bg-background grid h-screen w-full grid-rows-[min-content] overflow-hidden">
+    <div className="bg-background grid h-full w-full grid-rows-[min-content] overflow-hidden">
       <main className="h-full space-y-8 overflow-y-auto px-6 py-6">
         <div className="mb-4 flex items-center gap-3">
           <Checkbox
@@ -305,38 +307,39 @@ function RouteComponent() {
         <form.Field name="installationsParent">
           {(field) => (
             <div className="grid gap-2">
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Label
-                      className={cn([
-                        field.state.meta.errors.length
-                          ? "text-destructive"
-                          : useAppDirectory
-                            ? "text-muted-foreground"
-                            : "",
-                        "w-fit",
-                      ])}
-                      htmlFor="installationsParent"
-                    />
-                  }
-                >
-                  Installations Parent Directory
-                </TooltipTrigger>
-                <TooltipContent align="start" side="bottom">
-                  <p className="text-xs">Defaults to the app data directory</p>
-                  {field.state.meta.errors.length > 0 &&
-                    field.state.meta.errors.map((error, index) => (
-                      <p
-                        className="text-destructive text-xs"
-                        // biome-ignore lint/suspicious/noArrayIndexKey: Needed
-                        key={index}
-                      >
-                        {error?.message}
-                      </p>
-                    ))}
-                </TooltipContent>
-              </Tooltip>
+              <TooltipTrigger
+                render={
+                  <Label
+                    className={cn([
+                      field.state.meta.errors.length
+                        ? "text-destructive"
+                        : useAppDirectory
+                          ? "text-muted-foreground"
+                          : "",
+                      "w-fit",
+                    ])}
+                    htmlFor="installationsParent"
+                  />
+                }
+                handle={rootTooltipHandle}
+                payload={() => (
+                  <>
+                    <p className="text-xs">Defaults to the app data directory</p>
+                    {field.state.meta.errors.length > 0 &&
+                      field.state.meta.errors.map((error, index) => (
+                        <p
+                          className="text-destructive text-xs"
+                          // biome-ignore lint/suspicious/noArrayIndexKey: Needed
+                          key={index}
+                        >
+                          {error?.message}
+                        </p>
+                      ))}
+                  </>
+                )}
+              >
+                Installations Parent Directory
+              </TooltipTrigger>
               <div className="flex gap-2">
                 <Input
                   className={field.state.meta.errors.length ? "text-destructive" : ""}
@@ -358,38 +361,39 @@ function RouteComponent() {
         <form.Field name="versionsParent">
           {(field) => (
             <div className="grid gap-2">
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Label
-                      className={cn([
-                        field.state.meta.errors.length
-                          ? "text-destructive"
-                          : useAppDirectory
-                            ? "text-muted-foreground"
-                            : "",
-                        "w-fit",
-                      ])}
-                      htmlFor="versionsParent"
-                    />
-                  }
-                >
-                  Versions Parent Directory
-                </TooltipTrigger>
-                <TooltipContent align="start" side="bottom">
-                  <p className="text-xs">Defaults to the app data directory</p>
-                  {field.state.meta.errors.length > 0 &&
-                    field.state.meta.errors.map((error, index) => (
-                      <p
-                        className="text-destructive text-xs"
-                        // biome-ignore lint/suspicious/noArrayIndexKey: Needed
-                        key={index}
-                      >
-                        {error?.message}
-                      </p>
-                    ))}
-                </TooltipContent>
-              </Tooltip>
+              <TooltipTrigger
+                render={
+                  <Label
+                    className={cn([
+                      field.state.meta.errors.length
+                        ? "text-destructive"
+                        : useAppDirectory
+                          ? "text-muted-foreground"
+                          : "",
+                      "w-fit",
+                    ])}
+                    htmlFor="versionsParent"
+                  />
+                }
+                handle={rootTooltipHandle}
+                payload={() => (
+                  <>
+                    <p className="text-xs">Defaults to the app data directory</p>
+                    {field.state.meta.errors.length > 0 &&
+                      field.state.meta.errors.map((error, index) => (
+                        <p
+                          className="text-destructive text-xs"
+                          // biome-ignore lint/suspicious/noArrayIndexKey: Needed
+                          key={index}
+                        >
+                          {error?.message}
+                        </p>
+                      ))}
+                  </>
+                )}
+              >
+                Versions Parent Directory
+              </TooltipTrigger>
               <div className="flex gap-2">
                 <Input
                   className={field.state.meta.errors.length ? "text-destructive" : ""}
