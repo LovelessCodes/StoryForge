@@ -25,9 +25,14 @@ import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import { cn } from "@/lib/utils";
-import { useDialogStore } from "@/stores/dialogs";
+import { rootAlertDialogHandle, rootDialogHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
 import { type Server, useServerStore } from "@/stores/servers";
+
+import { DeleteServerDialog } from "../dialogs/deleteserver.dialog";
+import { EditServerDialog } from "../dialogs/editserver.dialog";
+import { AlertDialogTrigger } from "../ui/alert-dialog";
+import { DialogTrigger } from "../ui/dialog";
 
 export const ServerContextMenu = ({
   server,
@@ -39,7 +44,6 @@ export const ServerContextMenu = ({
 
   // Stores
   const { toggleFavorite } = useServerStore();
-  const { openDialog } = useDialogStore();
   const { installations } = useInstallations();
   const installation = installations.find((inst) => inst.id === server.installationId);
 
@@ -120,14 +124,26 @@ export const ServerContextMenu = ({
           </ContextMenuItem>
           <ContextMenuItem
             className="flex items-center justify-between gap-4"
-            onClick={() => openDialog("EditServerDialog", { server })}
+            nativeButton
+            render={
+              <DialogTrigger
+                handle={rootDialogHandle}
+                payload={() => <EditServerDialog server={server} />}
+              />
+            }
           >
             Edit
             <PenIcon className="inline-block h-4 w-4" />
           </ContextMenuItem>
           <ContextMenuItem
             className="flex items-center justify-between gap-4"
-            onClick={() => openDialog("DeleteServerDialog", { server })}
+            nativeButton
+            render={
+              <AlertDialogTrigger
+                handle={rootAlertDialogHandle}
+                payload={() => <DeleteServerDialog server={server} />}
+              />
+            }
             variant="destructive"
           >
             Delete
