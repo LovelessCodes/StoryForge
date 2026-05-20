@@ -82,7 +82,7 @@ export const WorldContextMenu = ({
             </ContextMenuItem>
           )}
           <ContextMenuItem
-            className="flex items-center justify-between gap-4"
+            className="flex w-full items-center justify-between gap-4"
             disabled={!world.has_map}
             nativeButton
             render={
@@ -129,7 +129,7 @@ export const WorldContextMenu = ({
             <FolderOpenIcon className="inline-block h-4 w-4" />
           </ContextMenuItem>
           <ContextMenuItem
-            className="flex items-center justify-between gap-4"
+            className="flex w-full items-center justify-between gap-4"
             nativeButton
             render={
               <DialogTrigger
@@ -142,7 +142,7 @@ export const WorldContextMenu = ({
             <PencilIcon className="inline-block h-4 w-4" />
           </ContextMenuItem>
           <ContextMenuItem
-            className="flex items-center justify-between gap-4"
+            className="flex w-full items-center justify-between gap-4"
             nativeButton
             render={
               <AlertDialogTrigger
