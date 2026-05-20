@@ -11,15 +11,18 @@ import { useCallback } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { TooltipTrigger } from "@/components/ui/tooltip";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import type { PublicServer } from "@/hooks/use-public-servers";
-import { useDialogStore } from "@/stores/dialogs";
+import { rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
 import { useServersFilters } from "@/stores/serversFilters";
 
 import { MotionPublicServerContextMenu } from "../context-menus/public-server.context-menu";
+import { AddInstallationDialog } from "../dialogs/addinstallation.dialog";
+import { ConnectServerDialog } from "../dialogs/connectserver.dialog";
+import { DialogTrigger } from "../ui/dialog";
 
 export function PublicServerList({
   parentRef,
@@ -30,7 +33,6 @@ export function PublicServerList({
 }) {
   const installedVersions = useInstalledVersionNames();
   const { installations } = useInstallations();
-  const { openDialog } = useDialogStore();
   const { mutate: downloadVersion } = useDownloadVersion();
   const { searchText, selectedGameVersions, sortBy, orderDirection } = useServersFilters();
 
@@ -167,64 +169,67 @@ export function PublicServerList({
                   </div>
                 </div>
                 {installedVersions.includes(server.gameVersion) ? (
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Button
-                          aria-label="Connect to server"
-                          className="shadow-none focus-visible:z-10"
-                          onClick={() => openDialog("ConnectServerDialog", { server })}
-                          size="icon"
-                          variant="outline"
-                        />
-                      }
-                    >
-                      <PlugIcon aria-hidden="true" className="text-success opacity-60" size={16} />
-                    </TooltipTrigger>
-                    <TooltipContent>Connect to {server?.serverName}</TooltipContent>
-                  </Tooltip>
-                ) : installations.find((i) => i.version === server.gameVersion) ? (
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Button
-                          aria-label="Connect to server"
-                          className="shadow-none focus-visible:z-10"
-                          onClick={() => downloadVersion(server.gameVersion)}
-                          size="icon"
-                          variant="outline"
-                        />
-                      }
-                    >
-                      <DownloadCloudIcon
-                        aria-hidden="true"
-                        className="text-warning-foreground -ms-1 opacity-60"
-                        size={16}
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        aria-label="Connect to server"
+                        className="shadow-none focus-visible:z-10"
+                        render={
+                          <DialogTrigger
+                            handle={rootDialogHandle}
+                            payload={() => <ConnectServerDialog server={server} />}
+                          />
+                        }
+                        size="icon"
+                        variant="outline"
                       />
-                    </TooltipTrigger>
-                    <TooltipContent>Download {server?.gameVersion}</TooltipContent>
-                  </Tooltip>
+                    }
+                    handle={rootTooltipHandle}
+                    payload={() => `Connect to ${server?.serverName}`}
+                  >
+                    <PlugIcon aria-hidden="true" className="text-success opacity-60" size={16} />
+                  </TooltipTrigger>
+                ) : installations.find((i) => i.version === server.gameVersion) ? (
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        aria-label="Connect to server"
+                        className="shadow-none focus-visible:z-10"
+                        onClick={() => downloadVersion(server.gameVersion)}
+                        size="icon"
+                        variant="outline"
+                      />
+                    }
+                    handle={rootTooltipHandle}
+                    payload={() => `Download ${server?.gameVersion}`}
+                  >
+                    <DownloadCloudIcon
+                      aria-hidden="true"
+                      className="text-warning-foreground -ms-1 opacity-60"
+                      size={16}
+                    />
+                  </TooltipTrigger>
                 ) : (
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Button
-                          aria-label="Install version"
-                          className="shadow-none focus-visible:z-10"
-                          onClick={() =>
-                            openDialog("AddInstallationDialog", {
-                              version: server.gameVersion,
-                            })
-                          }
-                          size="icon"
-                          variant="outline"
-                        />
-                      }
-                    >
-                      <FolderPlusIcon aria-hidden="true" className="opacity-60" size={16} />
-                    </TooltipTrigger>
-                    <TooltipContent>Add installation for {server?.gameVersion}</TooltipContent>
-                  </Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        aria-label="Install version"
+                        className="shadow-none focus-visible:z-10"
+                        render={
+                          <DialogTrigger
+                            handle={rootDialogHandle}
+                            payload={() => <AddInstallationDialog version={server.gameVersion} />}
+                          />
+                        }
+                        size="icon"
+                        variant="outline"
+                      />
+                    }
+                    handle={rootTooltipHandle}
+                    payload={() => `Add installation for ${server?.gameVersion}`}
+                  >
+                    <FolderPlusIcon aria-hidden="true" className="opacity-60" size={16} />
+                  </TooltipTrigger>
                 )}
               </MotionPublicServerContextMenu>
             </div>
