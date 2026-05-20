@@ -53,7 +53,7 @@ export const VersionContextMenu = ({
             <FolderOpenIcon className="inline-block h-4 w-4" />
           </ContextMenuItem>
           <ContextMenuItem
-            className="flex items-center justify-between gap-4"
+            className="flex w-full items-center justify-between gap-4"
             nativeButton
             render={
               <AlertDialogTrigger
