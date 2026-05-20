@@ -35,7 +35,7 @@ import { TooltipTrigger } from "@/components/ui/tooltip";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { useSaves } from "@/hooks/use-saves";
 import { useVerifyAuth } from "@/hooks/use-verify-auth";
-import { rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
+import { rootDialogHandle, rootMenuHandle, rootTooltipHandle } from "@/routes/__root";
 import { useAccountStore } from "@/stores/accounts";
 import { useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
@@ -85,119 +85,116 @@ export function AppSidebar() {
     <>
       <SidebarHeader>
         {selectedUser ? (
-          <Menu>
-            <MenuTrigger
-              className="w-full"
-              render={
-                <Button
-                  render={
-                    <DialogTrigger handle={rootDialogHandle} payload={() => <AddUserDialog />} />
-                  }
-                  variant="outline"
-                />
-              }
-            >
-              {selectedUser ? (
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage src="./placeholder.png" />
-                    <AvatarFallback>{selectedUser.playername?.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium in-data-[state=collapsed]:hidden">
-                    {selectedUser.playername}
-                  </span>
-                </div>
-              ) : (
-                <>
-                  <span className="flex text-xs">Sign in</span>
-                  <UserPlus2 className="size-4" />
-                </>
-              )}
-            </MenuTrigger>
-            <MenuPopup align="start" side="right">
-              {users.map((user) => (
-                <Group className="rounded-none first:rounded-t-md last:rounded-b-md" key={user.uid}>
-                  <Button
-                    className="flex h-8 items-center gap-2"
-                    onClick={() => setSelectedUser(user.uid)}
-                    onKeyUp={(e) => {
-                      if (e.key === "Enter") setSelectedUser(user.uid);
-                    }}
-                    variant="outline"
+          <MenuTrigger
+            className="w-full"
+            render={<Button variant="outline" />}
+            handle={rootMenuHandle}
+            payload={() => (
+              <>
+                {users.map((user) => (
+                  <Group
+                    className="rounded-none first:rounded-t-md last:rounded-b-md"
+                    key={user.uid}
                   >
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src="./placeholder.png" />
-                      <AvatarFallback>{user.playername?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium">{user.playername}</span>
-                    {user.uid === selectedUser.uid && (
-                      <CheckIcon className="text-muted-foreground size-4 opacity-50" />
-                    )}
-                  </Button>
-                  <GroupSeparator />
-                  <TooltipTrigger
-                    render={
-                      <Button
-                        className="hover:text-success flex items-center justify-center p-1"
-                        onClick={() => {
-                          verifyAuth({
-                            sessionkey: user.sessionkey || "",
-                            uid: user.uid || "",
-                          });
-                        }}
-                        onKeyUp={(e) => {
-                          if (e.key === "Enter") {
+                    <Button
+                      className="flex h-8 items-center gap-2"
+                      onClick={() => setSelectedUser(user.uid)}
+                      onKeyUp={(e) => {
+                        if (e.key === "Enter") setSelectedUser(user.uid);
+                      }}
+                      variant="outline"
+                    >
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src="./placeholder.png" />
+                        <AvatarFallback>{user.playername?.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{user.playername}</span>
+                      {user.uid === selectedUser.uid && (
+                        <CheckIcon className="text-muted-foreground size-4 opacity-50" />
+                      )}
+                    </Button>
+                    <GroupSeparator />
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          className="hover:text-success flex items-center justify-center p-1"
+                          onClick={() => {
                             verifyAuth({
                               sessionkey: user.sessionkey || "",
                               uid: user.uid || "",
                             });
-                          }
-                        }}
-                        size="icon"
-                        variant="outline"
-                      >
-                        <RefreshCcwIcon />
-                      </Button>
-                    }
-                    handle={rootTooltipHandle}
-                    payload={() => `Verify ${user.playername}&#39;s auth`}
-                  />
-                  <GroupSeparator />
-                  <TooltipTrigger
-                    render={
-                      <Button
-                        className="flex items-center justify-center p-1 hover:text-red-900"
-                        onClick={() => {
-                          removeUser(user.uid);
-                        }}
-                        onKeyUp={(e) => {
-                          if (e.key === "Enter") {
+                          }}
+                          onKeyUp={(e) => {
+                            if (e.key === "Enter") {
+                              verifyAuth({
+                                sessionkey: user.sessionkey || "",
+                                uid: user.uid || "",
+                              });
+                            }
+                          }}
+                          size="icon"
+                          variant="outline"
+                        >
+                          <RefreshCcwIcon />
+                        </Button>
+                      }
+                      handle={rootTooltipHandle}
+                      payload={() => `Verify ${user.playername}&#39;s auth`}
+                    />
+                    <GroupSeparator />
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          className="flex items-center justify-center p-1 hover:text-red-900"
+                          onClick={() => {
                             removeUser(user.uid);
-                          }
-                        }}
-                        size="icon"
-                        variant="destructive-outline"
-                      >
-                        <UserMinus2 />
-                      </Button>
-                    }
-                    handle={rootTooltipHandle}
-                    payload={() => `Remove ${user.playername}`}
-                  />
-                </Group>
-              ))}
-              <Button
-                className="mt-2 w-full justify-between"
-                render={
-                  <DialogTrigger handle={rootDialogHandle} payload={() => <AddUserDialog />} />
-                }
-                variant="outline"
-              >
-                <span className="flex text-xs">Add user</span>
+                          }}
+                          onKeyUp={(e) => {
+                            if (e.key === "Enter") {
+                              removeUser(user.uid);
+                            }
+                          }}
+                          size="icon"
+                          variant="destructive-outline"
+                        >
+                          <UserMinus2 />
+                        </Button>
+                      }
+                      handle={rootTooltipHandle}
+                      payload={() => `Remove ${user.playername}`}
+                    />
+                  </Group>
+                ))}
+                <Button
+                  className="mt-2 w-full justify-between"
+                  render={
+                    <DialogTrigger handle={rootDialogHandle} payload={() => <AddUserDialog />} />
+                  }
+                  variant="outline"
+                >
+                  <span className="flex text-xs">Add user</span>
+                  <UserPlus2 className="size-4" />
+                </Button>
+              </>
+            )}
+          >
+            {selectedUser ? (
+              <div className="flex items-center gap-2">
+                <Avatar className="h-6 w-6">
+                  <AvatarImage src="./placeholder.png" />
+                  <AvatarFallback>{selectedUser.playername?.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <span className="font-medium in-data-[state=collapsed]:hidden">
+                  {selectedUser.playername}
+                </span>
+              </div>
+            ) : (
+              <>
+                <span className="flex text-xs">Sign in</span>
                 <UserPlus2 className="size-4" />
-              </Button>
-            </MenuPopup>
-          </Menu>
+              </>
+            )}
+          </MenuTrigger>
         ) : (
           <Button
             className="w-full justify-between"
