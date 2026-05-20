@@ -59,7 +59,7 @@ function RouteComponent() {
   });
 
   return (
-    <div className="flex h-screen w-full flex-col">
+    <div className="flex h-full w-full flex-col">
       <div className="flex items-center gap-4 px-4 py-2">
         <h1 className="flex-1 text-2xl font-bold">Mod Configurations for {installation?.name}</h1>
         <Button
