@@ -12,6 +12,10 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 
+import { DeleteWorldDialog } from "@/components/dialogs/deleteworld.dialog";
+import { EditWorldDialog } from "@/components/dialogs/editworld.dialog";
+import { ViewMapDialog } from "@/components/dialogs/viewmap.dialog";
+import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -20,6 +24,7 @@ import {
   ContextMenuLabel,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { DialogTrigger } from "@/components/ui/dialog";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
@@ -27,12 +32,6 @@ import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import type { World } from "@/lib/types";
 import { rootAlertDialogHandle, rootDialogHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
-
-import { DeleteWorldDialog } from "../dialogs/deleteworld.dialog";
-import { EditWorldDialog } from "../dialogs/editworld.dialog";
-import { ViewMapDialog } from "../dialogs/viewmap.dialog";
-import { AlertDialogTrigger } from "../ui/alert-dialog";
-import { DialogTrigger } from "../ui/dialog";
 
 export const WorldContextMenu = ({
   world,
