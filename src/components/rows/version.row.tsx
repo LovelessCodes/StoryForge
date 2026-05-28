@@ -1,5 +1,7 @@
 import { FolderOpenIcon, TrashIcon } from "lucide-react";
 
+import { DeleteVersionDialog } from "@/components/dialogs/deleteversion.dialog";
+import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Group, GroupSeparator } from "@/components/ui/group";
 import { TooltipTrigger } from "@/components/ui/tooltip";
@@ -9,9 +11,6 @@ import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import { pathDelimiter } from "@/lib/utils";
 import { rootAlertDialogHandle, rootTooltipHandle } from "@/routes/__root";
 import { useSettingsStore } from "@/stores/settings";
-
-import { DeleteVersionDialog } from "../dialogs/deleteversion.dialog";
-import { AlertDialogTrigger } from "../ui/alert-dialog";
 
 export function VersionRow({ version }: { version: InstalledVersion }) {
   const { appFolder } = useAppFolder();
