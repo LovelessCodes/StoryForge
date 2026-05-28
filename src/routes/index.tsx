@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { ErrorComponent } from "@/components/ui/error";
-import { useAppVersion } from "@/hooks/use-app-version";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
 import { sortInstallations } from "@/lib/utils";
@@ -42,61 +42,34 @@ function RouteComponent() {
 function Dashboard() {
   const { installations, toggleFavorite: toggleFavoriteInstallation } = useInstallations();
   const { servers, toggleFavorite: toggleFavoriteServer } = useServerStore();
-  const { data: appVersion } = useAppVersion();
   const router = useRouter();
   const { mutate: connectToServer } = useConnectToServer();
   const { mutate: playWithInstallation } = usePlayInstallation();
 
   return (
-    <div className="grid h-full w-full grid-rows-[min-content_auto]">
-      {/* Header */}
-      <header className="h-fit border-b">
-        <div className="container py-2 pr-6 pl-9">
-          <div className="flex items-center gap-3">
-            <img alt="Story Forge" className="h-10 w-10" src="/StoryForge.png" />
-            <div>
-              <h1 className="text-xl font-bold">
-                Story Forge{" "}
-                <a
-                  className="text-muted-foreground text-xs font-normal hover:underline"
-                  href={`https://github.com/lovelesscodes/storyforge/releases/storyforge-v${appVersion}`}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  (v{appVersion})
-                </a>
-              </h1>
-              <p className="text-muted-foreground text-sm">
-                Manage your installations, servers, and mods
-              </p>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="h-full space-y-8 px-6 py-6">
-        <section className="flex h-full gap-6">
-          {/* Installations */}
-          <div className="relative flex h-full w-full flex-col overflow-y-auto">
-            {installations.length > 0 ? (
-              <div className="bg-card flex w-full flex-col rounded-lg border shadow">
-                <AnimatePresence>
-                  <Link className="sticky top-0 z-10" to="/installations">
-                    <Button
-                      className="text-muted-foreground hover:text-foreground group relative w-full rounded-b-none text-center text-sm"
-                      variant="secondary"
+    <main className="h-full space-y-8 px-2 py-2 max-md:pt-8">
+      <section className="flex h-full gap-6">
+        {/* Installations */}
+        <div className="flex w-full flex-col">
+          {installations.length > 0 ? (
+            <>
+              <AnimatePresence>
+                <Link to="/installations">
+                  <Button
+                    className="text-muted-foreground hover:text-foreground group relative w-full text-center text-sm"
+                    variant="outline"
+                  >
+                    <Badge
+                      className="group-hover:text-foreground text-muted-foreground absolute top-1.5 left-1.5"
+                      variant="outline"
                     >
-                      <Badge
-                        className="group-hover:text-foreground text-muted-foreground absolute top-2 left-2"
-                        variant="outline"
-                      >
-                        {installations.length}
-                      </Badge>
-                      Installations
-                      <FolderIcon className="ml-2 inline size-3" />
-                    </Button>
-                  </Link>
+                      {installations.length}
+                    </Badge>
+                    Installations
+                    <FolderIcon className="ml-2 inline size-3" />
+                  </Button>
+                </Link>
+                <ScrollArea className="border-input h-full border-x" scrollFade>
                   {installations.sort(sortInstallations).map((installation, index) => (
                     <MotionInstallationContextMenu
                       animate={{ opacity: 1, y: 0 }}
@@ -104,7 +77,7 @@ function Dashboard() {
                       exit={{ opacity: 0, y: -12 }}
                       initial={{ opacity: 0, y: 12 }}
                       installation={installation}
-                      key={`${installation.id}-context-menu`}
+                      key={`${installation.id}-installation-context-menu`}
                       layout
                       transition={{
                         damping: 32,
@@ -120,7 +93,6 @@ function Dashboard() {
                           router.navigate({
                             params: { id: i.id.toString() },
                             to: "/install-mods/$id",
-                            viewTransition: { types: ["warp"] },
                           })
                         }
                         onEdit={(i) =>
@@ -133,59 +105,61 @@ function Dashboard() {
                       />
                     </MotionInstallationContextMenu>
                   ))}
-                </AnimatePresence>
+                </ScrollArea>
+              </AnimatePresence>
+              <Button
+                className="text-muted-foreground w-full text-center text-sm"
+                render={
+                  <DialogTrigger
+                    handle={rootDialogHandle}
+                    payload={() => <AddInstallationDialog />}
+                  />
+                }
+                variant="outline"
+              >
+                Add Installation
+                <FolderPlusIcon className="ml-2 size-3" />
+              </Button>
+            </>
+          ) : (
+            <div className="bg-card flex w-full flex-col gap-6 border p-4 shadow">
+              <FolderHeartIcon className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
+              <p className="text-muted-foreground">No installations yet</p>
+              <Button
+                className="text-muted-foreground w-full text-center text-sm"
+                render={
+                  <DialogTrigger
+                    handle={rootDialogHandle}
+                    payload={() => <AddInstallationDialog />}
+                  />
+                }
+                variant="secondary"
+              >
+                Add Installation
+                <FolderPlusIcon className="ml-2 size-3" />
+              </Button>
+            </div>
+          )}
+        </div>
+        <div className="flex w-full flex-col">
+          {servers.length > 0 ? (
+            <>
+              <Link to="/servers">
                 <Button
-                  className="text-muted-foreground sticky bottom-0 w-full rounded-t-none text-center text-sm"
-                  render={
-                    <DialogTrigger
-                      handle={rootDialogHandle}
-                      payload={() => <AddInstallationDialog />}
-                    />
-                  }
-                  variant="secondary"
+                  className="text-muted-foreground hover:text-foreground group relative w-full text-center text-sm"
+                  variant="outline"
                 >
-                  Add Installation
-                  <FolderPlusIcon className="ml-2 size-3" />
-                </Button>
-              </div>
-            ) : (
-              <div className="bg-card flex w-full flex-col gap-6 rounded border p-4 shadow">
-                <FolderHeartIcon className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-                <p className="text-muted-foreground">No installations yet</p>
-                <Button
-                  className="text-muted-foreground w-full text-center text-sm"
-                  render={
-                    <DialogTrigger
-                      handle={rootDialogHandle}
-                      payload={() => <AddInstallationDialog />}
-                    />
-                  }
-                  variant="secondary"
-                >
-                  Add Installation
-                  <FolderPlusIcon className="ml-2 size-3" />
-                </Button>
-              </div>
-            )}
-          </div>
-          <div className="flex w-full flex-col">
-            {servers.length > 0 ? (
-              <div className="bg-card relative flex h-fit flex-col overflow-y-auto rounded-lg border shadow">
-                <Link className="sticky top-0 z-10" to="/servers">
-                  <Button
-                    className="text-muted-foreground hover:text-foreground group relative w-full rounded-b-none text-center text-sm"
-                    variant="secondary"
+                  <Badge
+                    className="group-hover:text-foreground text-muted-foreground absolute top-1.5 left-1.5"
+                    variant="outline"
                   >
-                    <Badge
-                      className="group-hover:text-foreground text-muted-foreground absolute top-2 left-2"
-                      variant="outline"
-                    >
-                      {servers.length}
-                    </Badge>
-                    Servers
-                    <MapPinIcon className="ml-2 inline size-3" />
-                  </Button>
-                </Link>
+                    {servers.length}
+                  </Badge>
+                  Servers
+                  <MapPinIcon className="ml-2 inline size-3" />
+                </Button>
+              </Link>
+              <ScrollArea scrollFade className="border-input h-full border-x">
                 <AnimatePresence>
                   {servers
                     .sort((a, b) => {
@@ -200,7 +174,7 @@ function Dashboard() {
                         className="flex items-center justify-between px-4 py-3 not-last:border-b"
                         exit={{ opacity: 0, y: -12 }}
                         initial={{ opacity: 0, y: 12 }}
-                        key={`${server.id}-context-menu`}
+                        key={`${server.id}-${server.installationId}-server-context-menu`}
                         layout
                         server={server}
                         transition={{
@@ -229,36 +203,36 @@ function Dashboard() {
                       </MotionServerContextMenu>
                     ))}
                 </AnimatePresence>
-                <Button
-                  className="text-muted-foreground sticky bottom-0 w-full rounded-t-none text-center text-sm"
-                  render={
-                    <DialogTrigger handle={rootDialogHandle} payload={() => <AddServerDialog />} />
-                  }
-                  variant="secondary"
-                >
-                  Add Server
-                  <MapPinPlusIcon className="mr-2 size-3" />
-                </Button>
-              </div>
-            ) : (
-              <div className="bg-card flex w-full flex-col gap-6 rounded border p-4 shadow">
-                <ServerIcon className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-                <p className="text-muted-foreground">No servers yet</p>
-                <Button
-                  className="text-muted-foreground w-full text-center text-sm"
-                  render={
-                    <DialogTrigger handle={rootDialogHandle} payload={() => <AddServerDialog />} />
-                  }
-                  variant="secondary"
-                >
-                  Add Server
-                  <MapPinPlusIcon className="ml-2 size-3" />
-                </Button>
-              </div>
-            )}
-          </div>
-        </section>
-      </main>
-    </div>
+              </ScrollArea>
+              <Button
+                className="text-muted-foreground sticky bottom-0 w-full text-center text-sm"
+                render={
+                  <DialogTrigger handle={rootDialogHandle} payload={() => <AddServerDialog />} />
+                }
+                variant="outline"
+              >
+                Add Server
+                <MapPinPlusIcon className="mr-2 size-3" />
+              </Button>
+            </>
+          ) : (
+            <div className="bg-card flex w-full flex-col gap-6 border p-4 shadow">
+              <ServerIcon className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
+              <p className="text-muted-foreground">No servers yet</p>
+              <Button
+                className="text-muted-foreground w-full text-center text-sm"
+                render={
+                  <DialogTrigger handle={rootDialogHandle} payload={() => <AddServerDialog />} />
+                }
+                variant="secondary"
+              >
+                Add Server
+                <MapPinPlusIcon className="ml-2 size-3" />
+              </Button>
+            </div>
+          )}
+        </div>
+      </section>
+    </main>
   );
 }

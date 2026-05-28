@@ -32,7 +32,7 @@ export const TextSwitch = forwardRef<HTMLInputElement, TextSwitchProps>(
         <Switch
           checked={active}
           className={clsx([
-            "peer data-unchecked:bg-input/50 absolute inset-0 h-[inherit] border w-auto rounded-md [&_span]:z-10 [&_span]:h-full [&_span]:w-1/2 [&_span]:rounded-sm [&_span]:transition-transform [&_span]:duration-300 [&_span]:ease-[cubic-bezier(0.16,1,0.3,1)] [&_span]:data-checked:translate-x-full [&_span]:data-checked:rtl:-translate-x-full",
+            "peer data-unchecked:bg-input/50 absolute inset-0 h-[inherit] border w-auto [&_span]:z-10 [&_span]:h-full [&_span]:w-1/2 [&_span]:transition-transform [&_span]:duration-300 [&_span]:ease-[cubic-bezier(0.16,1,0.3,1)] [&_span]:data-checked:translate-x-full [&_span]:data-checked:rtl:-translate-x-full",
             computedClassName,
           ])}
           id={id}

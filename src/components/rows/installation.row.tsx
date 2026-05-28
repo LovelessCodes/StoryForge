@@ -2,6 +2,7 @@ import { useRouter } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import {
   DownloadCloudIcon,
+  EllipsisIcon,
   FileTextIcon,
   FileUpIcon,
   FolderOpenIcon,
@@ -13,22 +14,28 @@ import {
   TrashIcon,
 } from "lucide-react";
 
+import { DeleteInstallationDialog } from "@/components/dialogs/deleteinstallation.dialog";
+import { EditInstallationDialog } from "@/components/dialogs/editinstallation.dialog";
+import { ViewLogsDialog } from "@/components/dialogs/viewlogs.dialog";
+import { InstallationMenu } from "@/components/menus/installation.menu";
+import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { DialogTrigger } from "@/components/ui/dialog";
 import { Group, GroupSeparator } from "@/components/ui/group";
+import { MenuTrigger } from "@/components/ui/menu";
 import { TooltipTrigger } from "@/components/ui/tooltip";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import { cn, exportInstallation } from "@/lib/utils";
-import { rootAlertDialogHandle, rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
+import {
+  rootAlertDialogHandle,
+  rootDialogHandle,
+  rootMenuHandle,
+  rootTooltipHandle,
+} from "@/routes/__root";
 import { type Installation, useInstallations } from "@/stores/installations";
-
-import { DeleteInstallationDialog } from "../dialogs/deleteinstallation.dialog";
-import { EditInstallationDialog } from "../dialogs/editinstallation.dialog";
-import { ViewLogsDialog } from "../dialogs/viewlogs.dialog";
-import { AlertDialogTrigger } from "../ui/alert-dialog";
-import { DialogTrigger } from "../ui/dialog";
 
 export type InstallationRowProps = {
   installation: Installation;
@@ -104,8 +111,9 @@ export function InstallationRow({ installation }: InstallationRowProps) {
           handle={rootTooltipHandle}
           payload={() => (version ? "Launch" : `Download ${installation.version}`)}
         />
-        <GroupSeparator />
+        <GroupSeparator className="max-md:hidden" />
         <TooltipTrigger
+          className="max-md:hidden"
           render={
             <Button onClick={() => toggleFavorite(installation.id)} size="icon" variant="outline">
               <StarIcon
@@ -129,9 +137,6 @@ export function InstallationRow({ installation }: InstallationRowProps) {
                 router.navigate({
                   params: { id: installation.id.toString() },
                   to: "/install-mods/$id",
-                  viewTransition: {
-                    types: ["warp"],
-                  },
                 })
               }
               size="icon"
@@ -143,17 +148,15 @@ export function InstallationRow({ installation }: InstallationRowProps) {
           handle={rootTooltipHandle}
           payload={() => "Manage Mods"}
         />
-        <GroupSeparator />
+        <GroupSeparator className="max-md:hidden" />
         <TooltipTrigger
+          className="max-md:hidden"
           render={
             <Button
               onClick={() =>
                 router.navigate({
                   params: { id: installation.id.toString() },
                   to: "/mod-configs/$id",
-                  viewTransition: {
-                    types: ["warp"],
-                  },
                 })
               }
               size="icon"
@@ -165,8 +168,9 @@ export function InstallationRow({ installation }: InstallationRowProps) {
           handle={rootTooltipHandle}
           payload={() => "Open Mod Configs"}
         />
-        <GroupSeparator />
+        <GroupSeparator className="max-md:hidden" />
         <TooltipTrigger
+          className="max-md:hidden"
           render={
             <Button
               aria-label="Open folder"
@@ -180,8 +184,9 @@ export function InstallationRow({ installation }: InstallationRowProps) {
           handle={rootTooltipHandle}
           payload={() => "Open Folder"}
         />
-        <GroupSeparator />
+        <GroupSeparator className="max-md:hidden" />
         <TooltipTrigger
+          className="max-md:hidden"
           render={
             <Button
               aria-label="View logs"
@@ -205,8 +210,9 @@ export function InstallationRow({ installation }: InstallationRowProps) {
           handle={rootTooltipHandle}
           payload={() => "View Logs"}
         />
-        <GroupSeparator />
+        <GroupSeparator className="max-md:hidden" />
         <TooltipTrigger
+          className="max-md:hidden"
           render={
             <Button
               onClick={() => exportInstallation({ installation })}
@@ -219,8 +225,9 @@ export function InstallationRow({ installation }: InstallationRowProps) {
           handle={rootTooltipHandle}
           payload={() => "Export"}
         />
-        <GroupSeparator />
+        <GroupSeparator className="max-md:hidden" />
         <TooltipTrigger
+          className="max-md:hidden"
           render={
             <Button
               render={
@@ -238,8 +245,9 @@ export function InstallationRow({ installation }: InstallationRowProps) {
           handle={rootTooltipHandle}
           payload={() => "Edit"}
         />
-        <GroupSeparator />
+        <GroupSeparator className="max-md:hidden" />
         <TooltipTrigger
+          className="max-md:hidden"
           render={
             <Button
               aria-label="Delete"
@@ -257,6 +265,27 @@ export function InstallationRow({ installation }: InstallationRowProps) {
           }
           handle={rootTooltipHandle}
           payload={() => "Delete"}
+        />
+        <GroupSeparator className="md:hidden" />
+        <TooltipTrigger
+          className="md:hidden"
+          render={
+            <Button
+              aria-label="More Actions"
+              render={
+                <MenuTrigger
+                  handle={rootMenuHandle}
+                  payload={() => <InstallationMenu installation={installation} />}
+                />
+              }
+              size="icon"
+              variant="outline"
+            >
+              <EllipsisIcon aria-hidden="true" className="opacity-60" size={16} />
+            </Button>
+          }
+          handle={rootTooltipHandle}
+          payload={() => "More Actions"}
         />
       </Group>
     </>

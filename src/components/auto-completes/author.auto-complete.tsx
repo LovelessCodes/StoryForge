@@ -61,7 +61,7 @@ export const AuthorAutocomplete = (props: React.InputHTMLAttributes<HTMLInputEle
           .sort(([_authorA, countA], [_authorB, countB]) => countB - countA)
           .map(([author]) => author)
       : [];
-  }, [modAuthors, actualValue]);
+  }, [modAuthors, actualValue, contains]);
 
   const shouldRenderPopup = actualValue !== "";
 
@@ -108,7 +108,7 @@ export const AuthorAutocomplete = (props: React.InputHTMLAttributes<HTMLInputEle
             <AutocompleteList>
               {filteredItems.length > 0 && (
                 <div
-                  className="h-[min(22rem,var(--total-size))] max-h-[var(--available-height)] scroll-pt-2 overflow-auto overscroll-contain"
+                  className="h-[min(22rem,var(--total-size))] max-h-(--available-height) scroll-pt-2 overflow-auto overscroll-contain"
                   ref={handleScrollElementRef}
                   role="presentation"
                   style={{ "--total-size": totalSizePx } as React.CSSProperties}

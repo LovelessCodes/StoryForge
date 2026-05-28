@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { SearchInput } from "@/components/inputs";
+import { SearchInput } from "@/components/inputs/search.input";
 import { MapItem } from "@/components/items/map.item";
 import { WorldList } from "@/components/lists/world.list";
 import { ErrorComponent } from "@/components/ui/error";
@@ -56,7 +56,7 @@ function RouteComponent() {
 
   return (
     <div className="grid h-full w-full grid-rows-[min-content_auto] gap-2">
-      <div className="flex h-fit flex-wrap items-center gap-2 pt-1 pr-2 pl-9">
+      <div className="flex h-fit flex-wrap items-center gap-2 pt-1 pr-2 pl-2 max-md:pl-9">
         <SearchInput
           onChange={(e) => setSearchText(e.target.value)}
           placeholder="Search worlds and maps..."

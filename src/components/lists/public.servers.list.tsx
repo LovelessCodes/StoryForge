@@ -9,8 +9,12 @@ import {
 } from "lucide-react";
 import { useCallback } from "react";
 
+import { MotionPublicServerContextMenu } from "@/components/context-menus/public-server.context-menu";
+import { AddInstallationDialog } from "@/components/dialogs/addinstallation.dialog";
+import { ConnectServerDialog } from "@/components/dialogs/connectserver.dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DialogTrigger } from "@/components/ui/dialog";
 import { TooltipTrigger } from "@/components/ui/tooltip";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
@@ -18,11 +22,6 @@ import type { PublicServer } from "@/hooks/use-public-servers";
 import { rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
 import { useServersFilters } from "@/stores/serversFilters";
-
-import { MotionPublicServerContextMenu } from "../context-menus/public-server.context-menu";
-import { AddInstallationDialog } from "../dialogs/addinstallation.dialog";
-import { ConnectServerDialog } from "../dialogs/connectserver.dialog";
-import { DialogTrigger } from "../ui/dialog";
 
 export function PublicServerList({
   parentRef,
@@ -93,7 +92,7 @@ export function PublicServerList({
     estimateSize,
     getScrollElement: () => parentRef.current,
     measureElement,
-    overscan: 20,
+    overscan: 5,
   });
 
   const items = rowVirtualizer.getVirtualItems();

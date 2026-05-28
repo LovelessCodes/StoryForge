@@ -2,6 +2,9 @@ import type { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context
 import { DownloadCloudIcon, FolderPlusIcon, PlugIcon } from "lucide-react";
 import { motion } from "motion/react";
 
+import { AddInstallationDialog } from "@/components/dialogs/addinstallation.dialog";
+import { ConnectServerDialog } from "@/components/dialogs/connectserver.dialog";
+import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -10,16 +13,12 @@ import {
   ContextMenuLabel,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { DialogTrigger } from "@/components/ui/dialog";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import type { PublicServer } from "@/hooks/use-public-servers";
 import { rootAlertDialogHandle, rootDialogHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
-
-import { AddInstallationDialog } from "../dialogs/addinstallation.dialog";
-import { ConnectServerDialog } from "../dialogs/connectserver.dialog";
-import { AlertDialogTrigger } from "../ui/alert-dialog";
-import { DialogTrigger } from "../ui/dialog";
 
 export const PublicServerContextMenu = ({
   server,

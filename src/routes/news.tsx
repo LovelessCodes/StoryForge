@@ -50,7 +50,7 @@ function RouteComponent() {
 
   return (
     <div className="flex h-full w-full grid-rows-[min-content_auto] flex-col gap-2">
-      <div className="pt-1.5 pr-2 pl-9">
+      <div className="pt-1.5 pr-2 pl-2 max-md:pl-9">
         <h2 className="text-xl font-bold">Newest releases</h2>
       </div>
       <ScrollArea className="h-full px-2" scrollFade>

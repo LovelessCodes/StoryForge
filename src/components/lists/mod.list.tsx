@@ -3,12 +3,11 @@ import { measureElement, useVirtualizer } from "@tanstack/react-virtual";
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback } from "react";
 
+import { ModItem } from "@/components/items/mod.item";
 import { useInstalledMods } from "@/hooks/use-installed-mods";
 import { useModUpdates } from "@/hooks/use-mod-updates";
 import type { Installation } from "@/stores/installations";
 import { useModsFilters } from "@/stores/modsFilters";
-
-import { ModItem } from "../items/mod.item";
 
 type ModsParams = {
   versions: string[];
@@ -194,7 +193,7 @@ export function ModList({
     estimateSize,
     getScrollElement: () => parentRef.current,
     measureElement,
-    overscan: 20,
+    overscan: 5,
   });
 
   const items = rowVirtualizer.getVirtualItems();

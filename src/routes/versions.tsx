@@ -26,7 +26,7 @@ function RouteComponent() {
 
   return (
     <div className="grid w-full grid-rows-[min-content_auto] gap-2">
-      <div className="flex h-fit gap-2 pt-1 pr-2 pl-9">
+      <div className="flex h-fit gap-2 pt-1 pr-2 pl-2 max-md:pl-9">
         <Button
           className="w-full cursor-pointer justify-between"
           render={<DialogTrigger handle={rootDialogHandle} payload={() => <AddVersionDialog />} />}

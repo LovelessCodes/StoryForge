@@ -2,6 +2,8 @@ import type { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context
 import { FolderOpenIcon, TrashIcon } from "lucide-react";
 import { motion } from "motion/react";
 
+import { DeleteVersionDialog } from "@/components/dialogs/deleteversion.dialog";
+import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -15,9 +17,6 @@ import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import { pathDelimiter } from "@/lib/utils";
 import { rootAlertDialogHandle } from "@/routes/__root";
 import { useSettingsStore } from "@/stores/settings";
-
-import { DeleteVersionDialog } from "../dialogs/deleteversion.dialog";
-import { AlertDialogTrigger } from "../ui/alert-dialog";
 
 export const VersionContextMenu = ({
   version,

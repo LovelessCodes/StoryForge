@@ -1,0 +1,161 @@
+import { useNavigate } from "@tanstack/react-router";
+import {
+  DownloadCloudIcon,
+  FileTextIcon,
+  FileUpIcon,
+  FolderOpenIcon,
+  FolderPenIcon,
+  FolderXIcon,
+  PackageOpenIcon,
+  PackageSearchIcon,
+  PlayIcon,
+  StarIcon,
+} from "lucide-react";
+
+import { DeleteInstallationDialog } from "@/components/dialogs/deleteinstallation.dialog";
+import { EditInstallationDialog } from "@/components/dialogs/editinstallation.dialog";
+import { ViewLogsDialog } from "@/components/dialogs/viewlogs.dialog";
+import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { DialogTrigger } from "@/components/ui/dialog";
+import { MenuGroup, MenuItem } from "@/components/ui/menu";
+import { useDownloadVersion } from "@/hooks/use-download-version";
+import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
+import { usePlayInstallation } from "@/hooks/use-play-installation";
+import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
+import { cn, exportInstallation } from "@/lib/utils";
+import { rootAlertDialogHandle, rootDialogHandle } from "@/routes/__root";
+import { type Installation, useInstallations } from "@/stores/installations";
+
+export const InstallationMenu = ({ installation }: { installation: Installation }) => {
+  const navigate = useNavigate();
+
+  // Stores
+  const { toggleFavorite } = useInstallations();
+
+  // Mutations
+  const { mutate: revealInstallationInFolder } = useRevealInFolder();
+  const { mutate: launchInstallation } = usePlayInstallation();
+  const { mutate: downloadVersion } = useDownloadVersion();
+
+  // Queries
+  const installedVersions = useInstalledVersionNames();
+
+  return (
+    <MenuGroup>
+      {installedVersions?.includes(installation.version) ? (
+        <MenuItem
+          className="flex items-center justify-between gap-4"
+          onClick={() => launchInstallation({ id: installation.id })}
+        >
+          Launch
+          <PlayIcon className="inline-block h-4 w-4" />
+        </MenuItem>
+      ) : (
+        <MenuItem
+          className="flex items-center justify-between gap-4"
+          onClick={() => downloadVersion(installation.version)}
+        >
+          Download {installation.version}
+          <DownloadCloudIcon className="inline-block h-4 w-4" />
+        </MenuItem>
+      )}
+      <MenuItem
+        className="flex items-center justify-between gap-4"
+        onClick={() => toggleFavorite(installation.id)}
+      >
+        {installation.favorite ? "Unfavorite" : "Favorite"}
+        <StarIcon
+          className={cn(
+            "inline-block h-4 w-4",
+            installation.favorite && "text-warning fill-warning",
+          )}
+        />
+      </MenuItem>
+      <MenuItem
+        className="flex items-center justify-between gap-4"
+        onClick={() =>
+          navigate({
+            params: { id: installation.id.toString() },
+            to: "/install-mods/$id",
+          })
+        }
+      >
+        Manage Mods
+        <PackageSearchIcon className="inline-block h-4 w-4" />
+      </MenuItem>
+      <MenuItem
+        className="flex items-center justify-between gap-4"
+        onClick={() =>
+          navigate({
+            params: { id: installation.id.toString() },
+            to: "/mod-configs/$id",
+          })
+        }
+      >
+        Configure Mods
+        <PackageOpenIcon className="inline-block h-4 w-4" />
+      </MenuItem>
+      <MenuItem
+        className="flex items-center justify-between gap-4"
+        onClick={() => revealInstallationInFolder(installation.path)}
+      >
+        Open Folder
+        <FolderOpenIcon className="inline-block h-4 w-4" />
+      </MenuItem>
+      <MenuItem
+        className="flex w-full items-center justify-between gap-4"
+        nativeButton
+        render={
+          <DialogTrigger
+            handle={rootDialogHandle}
+            payload={() => (
+              <ViewLogsDialog
+                installationName={installation.name}
+                installationPath={installation.path}
+              />
+            )}
+          />
+        }
+      >
+        View Logs
+        <FileTextIcon className="inline-block h-4 w-4" />
+      </MenuItem>
+      <MenuItem
+        className="flex items-center justify-between gap-4"
+        onClick={() => exportInstallation({ installation })}
+      >
+        Export
+        <FileUpIcon className="inline-block h-4 w-4" />
+      </MenuItem>
+      <MenuItem
+        className="flex w-full items-center justify-between gap-4"
+        nativeButton={true}
+        render={
+          <DialogTrigger
+            nativeButton={true}
+            handle={rootDialogHandle}
+            payload={() => <EditInstallationDialog installation={installation} />}
+          />
+        }
+      >
+        Edit
+        <FolderPenIcon className="inline-block h-4 w-4" />
+      </MenuItem>
+      <MenuItem
+        className="flex w-full items-center justify-between gap-4"
+        variant="destructive"
+        nativeButton={true}
+        render={
+          <AlertDialogTrigger
+            nativeButton={true}
+            handle={rootAlertDialogHandle}
+            payload={() => <DeleteInstallationDialog installation={installation} />}
+          />
+        }
+      >
+        Delete
+        <FolderXIcon className="inline-block h-4 w-4" />
+      </MenuItem>
+    </MenuGroup>
+  );
+};

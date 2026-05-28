@@ -1,5 +1,6 @@
 mod modules;
 use modules::{auth, download, installations, maps, mods, news, saves, servers, sniffer, versions};
+use tauri::{WebviewUrl, WebviewWindowBuilder};
 
 // ── Logging macros (crate root so accessible everywhere) ──
 
@@ -29,6 +30,7 @@ use tauri::Manager;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
@@ -56,6 +58,52 @@ pub fn run() {
                     log_error!("Failed to initialize zustand plugin: {}", e);
                     e
                 })?;
+
+            let win_builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
+                .title("Story Forge")
+                .inner_size(800.0, 600.0);
+
+            let window = win_builder.build().unwrap();
+            #[cfg(target_os = "windows")]
+            {
+                window.set_decorations(false);
+            }
+
+            // set background color only when building for macOS
+            #[cfg(target_os = "macos")]
+            {
+                use objc2::rc::Retained;
+                use objc2_app_kit::{NSColor, NSWindowStyleMask, NSWindowTitleVisibility};
+
+                unsafe {
+                    let ns_window: Retained<objc2_app_kit::NSWindow> =
+                        Retained::retain(window.ns_window().unwrap() as *mut _).unwrap();
+
+                    // Hide the title bar and traffic lights, keep resizable
+                    ns_window.setTitlebarAppearsTransparent(true);
+                    ns_window.setTitleVisibility(NSWindowTitleVisibility::Hidden);
+                    let mut mask = ns_window.styleMask();
+                    mask.insert(NSWindowStyleMask::FullSizeContentView);
+                    mask.insert(NSWindowStyleMask::Resizable);
+                    mask.remove(NSWindowStyleMask::Titled);
+                    ns_window.setStyleMask(mask);
+
+                    // Rounded corners
+                    if let Some(content_view) = ns_window.contentView() {
+                        content_view.setWantsLayer(true);
+                        content_view.layer().unwrap().setCornerRadius(12.0);
+                        content_view.layer().unwrap().setMasksToBounds(true);
+                    }
+
+                    let bg_color = NSColor::colorWithRed_green_blue_alpha(
+                        50.0 / 255.0,
+                        158.0 / 255.0,
+                        163.5 / 255.0,
+                        0.0,
+                    );
+                    ns_window.setBackgroundColor(Some(&bg_color));
+                }
+            }
             Ok(())
         })
         .plugin(tauri_plugin_window_state::Builder::default().build())

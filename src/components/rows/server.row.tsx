@@ -1,6 +1,10 @@
 import { DownloadCloudIcon, PencilIcon, PlugIcon, StarIcon, TrashIcon } from "lucide-react";
 
+import { DeleteServerDialog } from "@/components/dialogs/deleteserver.dialog";
+import { EditServerDialog } from "@/components/dialogs/editserver.dialog";
+import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { DialogTrigger } from "@/components/ui/dialog";
 import { Group, GroupSeparator } from "@/components/ui/group";
 import { TooltipTrigger } from "@/components/ui/tooltip";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
@@ -11,11 +15,6 @@ import { rootAlertDialogHandle, rootDialogHandle, rootTooltipHandle } from "@/ro
 import { findInstallationForServer, useInstallations } from "@/stores/installations";
 import { type Server, useServerStore } from "@/stores/servers";
 import { useSettingsStore } from "@/stores/settings";
-
-import { DeleteServerDialog } from "../dialogs/deleteserver.dialog";
-import { EditServerDialog } from "../dialogs/editserver.dialog";
-import { AlertDialogTrigger } from "../ui/alert-dialog";
-import { DialogTrigger } from "../ui/dialog";
 
 type ServerRowProps = {
   server: Server;

@@ -1,12 +1,11 @@
 import { Download, XIcon } from "lucide-react";
 
+import { DeleteVersionDialog } from "@/components/dialogs/deleteversion.dialog";
+import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TooltipTrigger } from "@/components/ui/tooltip";
 import { rootAlertDialogHandle, rootTooltipHandle } from "@/routes/__root";
-
-import { DeleteVersionDialog } from "../dialogs/deleteversion.dialog";
-import { AlertDialogTrigger } from "../ui/alert-dialog";
 
 interface VersionItemProps {
   version: string;
