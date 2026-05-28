@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef } from "react";
 
-import { SearchInput } from "@/components/inputs";
+import { SearchInput } from "@/components/inputs/search.input";
 import { PublicServerList } from "@/components/lists/public.servers.list";
 import { TextSwitch } from "@/components/switches/text.switch";
 import { ErrorComponent } from "@/components/ui/error";
@@ -49,7 +49,7 @@ function RouteComponent() {
   const { data: publicServers } = useQuery(publicServersQuery());
   return (
     <div className="grid h-full w-full grid-rows-[min-content_auto] gap-2">
-      <div className="flex h-fit flex-wrap items-center gap-2 pt-1 pr-2 pl-9">
+      <div className="flex h-fit flex-wrap items-center gap-2 pt-1 pr-2 pl-2 max-md:pl-9">
         <SearchInput
           onChange={(e) => setSearchText(e.target.value)}
           placeholder="Search servers..."
