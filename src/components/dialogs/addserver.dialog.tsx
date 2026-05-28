@@ -7,7 +7,7 @@ import { useState, useId } from "react";
 import { toast } from "sonner";
 import z from "zod";
 
-import { PasswordInput } from "@/components/inputs";
+import { PasswordInput } from "@/components/inputs/password.input";
 import { Button } from "@/components/ui/button";
 import { DialogClose, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
