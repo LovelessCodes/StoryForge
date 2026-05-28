@@ -1,6 +1,6 @@
 import Editor from "@monaco-editor/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ import {
   NumberFieldIncrement,
   NumberFieldInput,
 } from "@/components/ui/number-field";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { modConfigsQueryKey, useModConfigs } from "@/hooks/use-mod-configs";
@@ -59,7 +60,7 @@ function RouteComponent() {
   });
 
   return (
-    <div className="flex h-full w-full flex-col">
+    <div className="grid h-full w-full grid-rows-[min-content_1fr] flex-col">
       <div className="flex items-center gap-4 px-4 py-2">
         <h1 className="flex-1 text-2xl font-bold">Mod Configurations for {installation?.name}</h1>
         <Button
@@ -71,35 +72,31 @@ function RouteComponent() {
         </Button>
       </div>
       <Tabs
-        className="grid h-full w-full grid-cols-[min-content_1fr] overflow-hidden"
+        className="flex h-full w-full overflow-hidden"
         defaultValue={modConfigs?.[0]?.filename ?? ""}
         orientation="vertical"
       >
-        <div className="w-full">
-          <TabsList className="h-fit">
-            <Button
-              className="mb-2 w-fit w-full rounded-none"
-              render={<Link to="/installations" />}
-            >
-              &larr; Back to Installations
-            </Button>
+        <ScrollArea className="h-full max-w-48">
+          <TabsList className="w-full">
             {modConfigs?.map((config) => (
               <TabsTrigger key={config.filename} value={config.filename}>
-                {config.filename}
+                <p className="truncate">{config.filename}</p>
               </TabsTrigger>
             ))}
           </TabsList>
-        </div>
+        </ScrollArea>
         {modConfigs?.map((config) => (
           <TabsContent
-            className="relative h-full w-full overflow-hidden"
+            className="relative h-full w-full"
             key={`$${config.filename}-content`}
             value={config.filename}
           >
             {codeEditor ? (
               <CodeBlock code={config.content} file={config.filename} onSave={save} />
             ) : (
-              <LiveBlock code={config.content} file={config.filename} onSave={save} />
+              <ScrollArea className="h-full" scrollFade>
+                <LiveBlock code={config.content} file={config.filename} onSave={save} />
+              </ScrollArea>
             )}
           </TabsContent>
         ))}
