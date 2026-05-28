@@ -4,12 +4,13 @@ import { useRef } from "react";
 
 import { AuthorAutocomplete } from "@/components/auto-completes/author.auto-complete";
 import { UpdateAllButton } from "@/components/buttons/update-all.button";
-import { SearchInput } from "@/components/inputs";
+import { SearchInput } from "@/components/inputs/search.input";
 import { ModList } from "@/components/lists/mod.list";
 import { TextSwitch } from "@/components/switches/text.switch";
 import SideToggleGroup from "@/components/tabs/side.tab";
 import { ErrorComponent } from "@/components/ui/error";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -104,8 +105,8 @@ function RouteComponent() {
   const parentRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="flex h-full w-full flex-col gap-2">
-      <div className="bg-background/10 sticky top-0 z-10 flex h-fit flex-wrap items-center gap-2 px-4 py-2 backdrop-blur-md">
+    <div className="grid h-full w-full grid-rows-[min-content_auto] gap-2">
+      <div className="flex h-fit flex-wrap items-center gap-2 py-2 pr-2 pl-2 max-md:pl-9">
         <SearchInput
           className="h-9"
           onChange={(e) => setSearchText(e.target.value)}
@@ -242,14 +243,9 @@ function RouteComponent() {
           />
         )}
       </div>
-      <div className="h-full w-full overflow-hidden px-4">
-        <div
-          className="bg-card relative h-full w-full overflow-auto rounded border p-2 shadow"
-          ref={parentRef}
-        >
-          <ModList installation={installation} parentRef={parentRef} />
-        </div>
-      </div>
+      <ScrollArea viewportRef={parentRef} className="h-full w-full px-4" scrollFade>
+        <ModList installation={installation} parentRef={parentRef} />
+      </ScrollArea>
     </div>
   );
 }
