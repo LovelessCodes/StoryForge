@@ -1,6 +1,6 @@
 <p align="center">
    <a href="https://getstoryforge.app/">
-      <img src="public/StoryForge.png" alt="Story Forge" />
+      <img src="/public/StoryForge.png" style="height: 200px;" alt="Story Forge" />
    </a>
    <br />
    <br />
