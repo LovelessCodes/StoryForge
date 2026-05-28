@@ -3,7 +3,12 @@ import { formatDistanceToNow } from "date-fns";
 import { DownloadCloudIcon, MapIcon, PenIcon, PlayIcon, SproutIcon, TrashIcon } from "lucide-react";
 import { toast } from "sonner";
 
+import { DeleteWorldDialog } from "@/components/dialogs/deleteworld.dialog";
+import { EditWorldDialog } from "@/components/dialogs/editworld.dialog";
+import { ViewMapDialog } from "@/components/dialogs/viewmap.dialog";
+import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { DialogTrigger } from "@/components/ui/dialog";
 import { Group, GroupSeparator } from "@/components/ui/group";
 import { TooltipTrigger } from "@/components/ui/tooltip";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
@@ -13,12 +18,6 @@ import type { World } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { rootAlertDialogHandle, rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
-
-import { DeleteWorldDialog } from "../dialogs/deleteworld.dialog";
-import { EditWorldDialog } from "../dialogs/editworld.dialog";
-import { ViewMapDialog } from "../dialogs/viewmap.dialog";
-import { AlertDialogTrigger } from "../ui/alert-dialog";
-import { DialogTrigger } from "../ui/dialog";
 
 export const WorldItem = ({ world }: { world: World }) => {
   const { installations } = useInstallations();
