@@ -11,8 +11,13 @@ import { motion } from "motion/react";
 import { useRef } from "react";
 import { toast } from "sonner";
 
+import { AddModDialog } from "@/components/dialogs/addmod.dialog";
+import { RemoveModDialog } from "@/components/dialogs/removemod.dialog";
+import { UpdateModDialog } from "@/components/dialogs/updatemod.dialog";
 import type { Mod } from "@/components/lists/mod.list";
+import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { DialogTrigger } from "@/components/ui/dialog";
 import { Group, GroupSeparator } from "@/components/ui/group";
 import { TooltipTrigger } from "@/components/ui/tooltip";
 import { useAddLatestModVersion } from "@/hooks/use-add-latest-mod-version";
@@ -24,12 +29,6 @@ import { rootAlertDialogHandle, rootDialogHandle, rootTooltipHandle } from "@/ro
 import type { OutputMod } from "@/routes/install-mods/$id";
 import type { Installation } from "@/stores/installations";
 import { useModsFilters } from "@/stores/modsFilters";
-
-import { AddModDialog } from "../dialogs/addmod.dialog";
-import { RemoveModDialog } from "../dialogs/removemod.dialog";
-import { UpdateModDialog } from "../dialogs/updatemod.dialog";
-import { AlertDialogTrigger } from "../ui/alert-dialog";
-import { DialogTrigger } from "../ui/dialog";
 
 export function ModItem({
   mod,
