@@ -27,9 +27,9 @@ export function MenuTrigger({
 export function MenuPopup({
   children,
   className,
-  sideOffset = 4,
+  sideOffset = 0,
   align = "center",
-  alignOffset,
+  alignOffset = 0,
   side = "bottom",
   anchor,
   portalProps,
@@ -52,16 +52,17 @@ export function MenuPopup({
         data-slot="menu-positioner"
         side={side}
         sideOffset={sideOffset}
+        collisionPadding={0}
       >
         <MenuPrimitive.Popup
           className={cn(
-            "relative flex not-[class*='w-']:min-w-32 origin-(--transform-origin) rounded-lg border bg-popover h-(--popup-height,auto) w-(--popup-width,auto) not-dark:bg-clip-padding shadow-lg/5 outline-none before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] before:shadow-[0_1px_--theme(--color-black/4%)] focus:outline-none dark:before:shadow-[0_-1px_--theme(--color-white/6%)] duration-200 data-starting-style:scale-90 data-starting-style:opacity-0 data-ending-style:scale-90 transition-[width,height,opacity,scale] data-ending-style:opacity-0 ease-[cubic-bezier(0.22,1,0.36,1)]",
+            "relative flex not-[class*='w-']:min-w-(--anchor-width) origin-(--transform-origin) border bg-popover h-(--popup-height,auto) w-(--popup-width,auto) not-dark:bg-clip-padding shadow-lg/5 outline-none before:pointer-events-none before:absolute before:inset-0 before:shadow-[0_1px_--theme(--color-black/4%)] focus:outline-none dark:before:shadow-[0_-1px_--theme(--color-white/6%)] duration-200 data-starting-style:scale-90 data-starting-style:opacity-0 data-ending-style:scale-90 transition-[width,height,opacity,scale] data-ending-style:opacity-0 ease-[cubic-bezier(0.22,1,0.36,1)]",
             className,
           )}
           data-slot="menu-popup"
           {...props}
         >
-          <div className="max-h-(--available-height) w-full overflow-y-auto p-1">{children}</div>
+          <div className="max-h-(--available-height) w-full overflow-y-auto">{children}</div>
         </MenuPrimitive.Popup>
       </MenuPrimitive.Positioner>
     </MenuPortal>
@@ -84,7 +85,7 @@ export function MenuItem({
   return (
     <MenuPrimitive.Item
       className={cn(
-        "flex min-h-8 cursor-default select-none items-center gap-2 rounded-sm px-2 py-1 text-base text-foreground outline-none data-disabled:pointer-events-none data-highlighted:bg-accent data-inset:ps-8 data-[variant=destructive]:text-destructive-foreground data-highlighted:text-accent-foreground data-disabled:opacity-64 sm:min-h-7 sm:text-sm [&>svg:not([class*='opacity-'])]:opacity-80 [&>svg:not([class*='size-'])]:size-4.5 sm:[&>svg:not([class*='size-'])]:size-4 [&>svg]:pointer-events-none [&>svg]:-mx-0.5 [&>svg]:shrink-0",
+        "flex min-h-8 cursor-default select-none items-center gap-2 px-2 py-1 text-base text-foreground outline-none data-disabled:pointer-events-none data-highlighted:bg-accent data-inset:ps-8 data-[variant=destructive]:text-destructive-foreground data-highlighted:text-accent-foreground data-disabled:opacity-64 sm:min-h-7 sm:text-sm [&>svg:not([class*='opacity-'])]:opacity-80 [&>svg:not([class*='size-'])]:size-4.5 sm:[&>svg:not([class*='size-'])]:size-4 [&>svg]:pointer-events-none [&>svg]:-mx-0.5 [&>svg]:shrink-0",
         className,
       )}
       data-inset={inset}
@@ -108,7 +109,7 @@ export function MenuCheckboxItem({
     <MenuPrimitive.CheckboxItem
       checked={checked}
       className={cn(
-        "grid min-h-8 in-data-[side=none]:min-w-[calc(var(--anchor-width)+1.25rem)] cursor-default items-center gap-2 rounded-sm py-1 ps-2 text-base text-foreground outline-none data-disabled:pointer-events-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:opacity-64 sm:min-h-7 sm:text-sm [&_svg:not([class*='size-'])]:size-4.5 sm:[&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        "grid min-h-8 in-data-[side=none]:min-w-[calc(var(--anchor-width)+1.25rem)] cursor-default items-center gap-2 py-1 ps-2 text-base text-foreground outline-none data-disabled:pointer-events-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:opacity-64 sm:min-h-7 sm:text-sm [&_svg:not([class*='size-'])]:size-4.5 sm:[&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
         variant === "switch" ? "grid-cols-[1fr_auto] gap-4 pe-1.5" : "grid-cols-[.75rem_1fr] pe-4",
         className,
       )}
