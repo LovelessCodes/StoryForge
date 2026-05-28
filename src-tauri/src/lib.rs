@@ -64,6 +64,10 @@ pub fn run() {
                 .inner_size(800.0, 600.0);
 
             let window = win_builder.build().unwrap();
+            #[cfg(target_os = "windows")]
+            {
+                window.set_decorations(false);
+            }
 
             // set background color only when building for macOS
             #[cfg(target_os = "macos")]
