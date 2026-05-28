@@ -83,7 +83,7 @@ export function InstallationCard({
             <TooltipTrigger
               render={
                 <Button
-                  className="text-muted-foreground hover:text-foreground h-8 w-8"
+                  className="text-muted-foreground hover:text-foreground h-8 w-8 max-md:hidden"
                   disabled={isInstalling}
                   onClick={() => installVersion(installation.version)}
                   size="icon"
@@ -101,7 +101,7 @@ export function InstallationCard({
         <TooltipTrigger
           render={
             <Button
-              className="text-muted-foreground hover:text-foreground h-8 w-8"
+              className="text-muted-foreground hover:text-foreground h-8 w-8 max-md:hidden"
               onClick={() => onAddMods(installation)}
               size="icon"
               variant="ghost"
@@ -116,7 +116,7 @@ export function InstallationCard({
         <TooltipTrigger
           render={
             <Button
-              className="text-muted-foreground hover:text-foreground h-8 w-8"
+              className="text-muted-foreground hover:text-foreground h-8 w-8 max-md:hidden"
               onClick={() => onEdit(installation)}
               size="icon"
               variant="ghost"
@@ -132,7 +132,7 @@ export function InstallationCard({
           render={
             <Button
               className={cn(
-                "h-8 w-8",
+                "h-8 w-8 max-md:hidden",
                 installation.favorite
                   ? "text-warning"
                   : "hover:text-foreground text-muted-foreground",
