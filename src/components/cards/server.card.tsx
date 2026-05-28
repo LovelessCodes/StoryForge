@@ -99,7 +99,7 @@ export function ServerCard({ server, onConnect, onUnfavorite, onEdit }: ServerCa
         <TooltipTrigger
           render={
             <Button
-              className="text-muted-foreground hover:text-foreground h-8 w-8"
+              className="text-muted-foreground hover:text-foreground h-8 w-8 max-md:hidden"
               onClick={() => onEdit(server)}
               size="icon"
               variant="ghost"
@@ -115,7 +115,7 @@ export function ServerCard({ server, onConnect, onUnfavorite, onEdit }: ServerCa
           render={
             <Button
               className={cn(
-                "h-8 w-8",
+                "h-8 w-8 max-md:hidden",
                 server.favorite ? "text-warning" : "hover:text-foreground text-muted-foreground",
               )}
               onClick={() => onUnfavorite(server)}
