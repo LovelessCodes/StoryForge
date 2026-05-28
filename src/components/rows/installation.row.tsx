@@ -137,9 +137,6 @@ export function InstallationRow({ installation }: InstallationRowProps) {
                 router.navigate({
                   params: { id: installation.id.toString() },
                   to: "/install-mods/$id",
-                  viewTransition: {
-                    types: ["warp"],
-                  },
                 })
               }
               size="icon"
@@ -160,9 +157,6 @@ export function InstallationRow({ installation }: InstallationRowProps) {
                 router.navigate({
                   params: { id: installation.id.toString() },
                   to: "/mod-configs/$id",
-                  viewTransition: {
-                    types: ["warp"],
-                  },
                 })
               }
               size="icon"
