@@ -93,7 +93,6 @@ function Dashboard() {
                           router.navigate({
                             params: { id: i.id.toString() },
                             to: "/install-mods/$id",
-                            viewTransition: { types: ["warp"] },
                           })
                         }
                         onEdit={(i) =>
