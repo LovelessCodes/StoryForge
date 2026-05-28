@@ -1,10 +1,9 @@
 import { AnimatePresence } from "motion/react";
 
+import { MotionWorldContextMenu } from "@/components/context-menus/world.context-menu";
 import { WorldItem } from "@/components/items/world.item";
 import type { World } from "@/lib/types";
 import { itemVariants } from "@/lib/utils";
-
-import { MotionWorldContextMenu } from "../context-menus/world.context-menu";
 
 export function WorldList({ worlds }: { worlds: World[] }) {
   return (
