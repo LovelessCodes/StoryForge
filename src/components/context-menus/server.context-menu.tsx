@@ -12,6 +12,9 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 
+import { DeleteServerDialog } from "@/components/dialogs/deleteserver.dialog";
+import { EditServerDialog } from "@/components/dialogs/editserver.dialog";
+import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -20,6 +23,7 @@ import {
   ContextMenuLabel,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { DialogTrigger } from "@/components/ui/dialog";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
@@ -28,11 +32,6 @@ import { cn } from "@/lib/utils";
 import { rootAlertDialogHandle, rootDialogHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
 import { type Server, useServerStore } from "@/stores/servers";
-
-import { DeleteServerDialog } from "../dialogs/deleteserver.dialog";
-import { EditServerDialog } from "../dialogs/editserver.dialog";
-import { AlertDialogTrigger } from "../ui/alert-dialog";
-import { DialogTrigger } from "../ui/dialog";
 
 export const ServerContextMenu = ({
   server,
