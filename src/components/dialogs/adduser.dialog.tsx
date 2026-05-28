@@ -7,7 +7,8 @@ import { useId } from "react";
 import { toast } from "sonner";
 import z from "zod";
 
-import { EmailInput, PasswordInput } from "@/components/inputs";
+import { EmailInput } from "@/components/inputs/email.input";
+import { PasswordInput } from "@/components/inputs/password.input";
 import { Button } from "@/components/ui/button";
 import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -43,11 +44,11 @@ const signInSchema = z.object({
     .max(6, { message: "TOTP code must be 6 digits long" }),
 });
 
-export function AddUserDialog() {
+export function AddUserDialog({ email }: { email?: string }) {
   const id = useId();
   const form = useForm({
     defaultValues: {
-      email: "",
+      email: email ?? "",
       password: "",
       prelogintoken: "",
       totpcode: "",
