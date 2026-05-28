@@ -5,13 +5,20 @@
   "permissions": [
     "zustand:default",
     "core:default",
+    "core:window:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-close",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-minimize",
+    "core:window:allow-internal-toggle-maximize",
     "os:default",
     "process:default",
     "updater:default",
     "opener:default",
     "dialog:default",
     "clipboard-manager:default",
-    "clipboard-manager:allow-write-text"
+    "clipboard-manager:allow-write-text",
+    "deep-link:default"
   ],
   "windows": ["main"]
 }
