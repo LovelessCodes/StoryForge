@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { PasswordInput } from "@/components/inputs";
+import { PasswordInput } from "@/components/inputs/password.input";
 import {
   AlertDialogDescription,
   AlertDialogFooter,
