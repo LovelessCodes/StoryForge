@@ -1,14 +1,13 @@
 import { MapIcon } from "lucide-react";
 
+import { ViewMapDialog } from "@/components/dialogs/viewmap.dialog";
 import { Button } from "@/components/ui/button";
+import { DialogTrigger } from "@/components/ui/dialog";
 import { Group } from "@/components/ui/group";
 import { TooltipTrigger } from "@/components/ui/tooltip";
 import type { MapEntry } from "@/hooks/use-world-map";
 import { rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
-
-import { ViewMapDialog } from "../dialogs/viewmap.dialog";
-import { DialogTrigger } from "../ui/dialog";
 
 export function MapItem({ map }: { map: MapEntry }) {
   const { installations } = useInstallations();
