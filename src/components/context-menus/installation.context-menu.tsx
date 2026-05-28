@@ -2,6 +2,7 @@ import type { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context
 import { useNavigate } from "@tanstack/react-router";
 import {
   DownloadCloudIcon,
+  FileTextIcon,
   FileUpIcon,
   FolderOpenIcon,
   FolderPenIcon,
@@ -13,6 +14,10 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 
+import { DeleteInstallationDialog } from "@/components/dialogs/deleteinstallation.dialog";
+import { EditInstallationDialog } from "@/components/dialogs/editinstallation.dialog";
+import { ViewLogsDialog } from "@/components/dialogs/viewlogs.dialog";
+import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -21,6 +26,7 @@ import {
   ContextMenuLabel,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { DialogTrigger } from "@/components/ui/dialog";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
@@ -28,11 +34,6 @@ import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import { cn, exportInstallation } from "@/lib/utils";
 import { rootAlertDialogHandle, rootDialogHandle } from "@/routes/__root";
 import { type Installation, useInstallations } from "@/stores/installations";
-
-import { DeleteInstallationDialog } from "../dialogs/deleteinstallation.dialog";
-import { EditInstallationDialog } from "../dialogs/editinstallation.dialog";
-import { AlertDialogTrigger } from "../ui/alert-dialog";
-import { DialogTrigger } from "../ui/dialog";
 
 export const InstallationContextMenu = ({
   installation,
@@ -120,6 +121,24 @@ export const InstallationContextMenu = ({
           >
             Open Folder
             <FolderOpenIcon className="inline-block h-4 w-4" />
+          </ContextMenuItem>
+          <ContextMenuItem
+            className="flex w-full items-center justify-between gap-4"
+            nativeButton
+            render={
+              <DialogTrigger
+                handle={rootDialogHandle}
+                payload={() => (
+                  <ViewLogsDialog
+                    installationName={installation.name}
+                    installationPath={installation.path}
+                  />
+                )}
+              />
+            }
+          >
+            View Logs
+            <FileTextIcon className="inline-block h-4 w-4" />
           </ContextMenuItem>
           <ContextMenuItem
             className="flex items-center justify-between gap-4"
