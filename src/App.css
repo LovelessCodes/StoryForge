@@ -12,6 +12,7 @@
 
   color: #26211c;
   background-color: #faf7f2;
+  overflow: hidden;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -252,41 +253,6 @@
   }
   html {
     @apply font-mono font-sans;
-  }
-}
-
-@keyframes warp-out {
-  from {
-    opacity: 1;
-    filter: blur(0) brightness(1);
-    transform: scale(1) rotate(0deg);
-  }
-  to {
-    opacity: 0;
-    filter: blur(15px) brightness(1.8);
-    transform: scale(1.1) rotate(90deg);
-  }
-}
-
-@keyframes warp-in {
-  from {
-    opacity: 0;
-    scale: 0.9;
-  }
-  to {
-    opacity: 1;
-    scale: 1;
-  }
-}
-
-/* Warp/Rotate Transition */
-html:active-view-transition-type(warp) {
-  &::view-transition-old {
-    animation: 400ms ease-out both warp-out;
-  }
-
-  &::view-transition-new {
-    animation: 400ms ease-out both warp-in;
   }
 }
 
