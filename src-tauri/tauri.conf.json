@@ -4,14 +4,8 @@
     "security": {
       "csp": null
     },
-    "windows": [
-      {
-        "decorations": false,
-        "height": 600,
-        "title": "Story Forge",
-        "width": 800
-      }
-    ]
+    "windows": [],
+    "macOSPrivateApi": true
   },
   "build": {
     "beforeBuildCommand": "bun run build",
@@ -83,6 +77,11 @@
         "https://github.com/lovelesscodes/storyforge/releases/latest/download/latest.json"
       ],
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDhGMEI3NzE4QkNBOTUxNTUKUldSVlVhbThHSGNMais2dzluVDdrQTJ1WWg5M3laWnlYVlNuZ09lMGluU1h1L0RRVnNvTjBhM08K"
+    },
+    "deep-link": {
+      "desktop": {
+        "schemes": ["storyforge", "sf"]
+      }
     }
   },
   "productName": "Story Forge",
