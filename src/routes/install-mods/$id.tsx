@@ -245,6 +245,9 @@ function RouteComponent() {
       <ScrollArea viewportRef={scrollRef} className="h-full w-full px-4" scrollFade>
         <ModList installation={installation} scrollRef={scrollRef} />
       </ScrollArea>
+      <p className="text-muted-foreground absolute bottom-0 left-4 rounded-sm px-1 py-1 text-xs backdrop-blur-sm">
+        {installation.name}
+      </p>
     </div>
   );
 }
