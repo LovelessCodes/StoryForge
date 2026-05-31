@@ -13,7 +13,7 @@ export function SearchInput({ className, ...rest }: React.InputHTMLAttributes<HT
   });
 
   return (
-    <InputGroup>
+    <InputGroup className="w-fit">
       <InputGroupInput ref={searchRef} id={id} className={className} {...rest} />
       <InputGroupAddon align="inline-end">
         <Kbd>{formatForDisplay("Mod")}</Kbd>
