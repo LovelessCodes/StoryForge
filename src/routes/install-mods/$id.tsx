@@ -99,10 +99,9 @@ function RouteComponent() {
     setAuthor,
     category,
     setCategory,
-    side,
   } = useModsFilters();
 
-  const parentRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="grid h-full w-full grid-rows-[min-content_auto] gap-2">
@@ -230,12 +229,12 @@ function RouteComponent() {
         <TextSwitch
           checked={orderDirection === "descending"}
           onCheckedChange={(checked) => setOrderDirection(checked ? "descending" : "ascending")}
-          textChecked="Asc"
-          textUnchecked="Desc"
+          textChecked="Desc"
+          textUnchecked="Asc"
         />
         <AuthorAutocomplete onChange={(e) => setAuthor(e.target.value)} value={author} />
         <SideToggleGroup />
-        {side === "installed" && modUpdates && instMods && (
+        {modUpdates && instMods && (
           <UpdateAllButton
             installation={installation}
             installedMods={instMods.mods}
@@ -243,8 +242,8 @@ function RouteComponent() {
           />
         )}
       </div>
-      <ScrollArea viewportRef={parentRef} className="h-full w-full px-4" scrollFade>
-        <ModList installation={installation} parentRef={parentRef} />
+      <ScrollArea viewportRef={scrollRef} className="h-full w-full px-4" scrollFade>
+        <ModList installation={installation} scrollRef={scrollRef} />
       </ScrollArea>
     </div>
   );
