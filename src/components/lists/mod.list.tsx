@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { measureElement, useVirtualizer } from "@tanstack/react-virtual";
 import { invoke } from "@tauri-apps/api/core";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 
 import { ModItem } from "@/components/items/mod.item";
 import { useInstalledMods } from "@/hooks/use-installed-mods";
@@ -34,17 +34,17 @@ export type Mod = {
 };
 
 const modsQuery = (params: ModsParams) => ({
-  keepPreviousData: true,
+  placeholderData: keepPreviousData,
   queryFn: () => invoke("fetch_mods", { options: params }) as Promise<Mod[]>,
   queryKey: ["mods", params],
   refetchOnWindowFocus: false,
 });
 
 export function ModList({
-  parentRef,
+  scrollRef,
   installation,
 }: {
-  parentRef: React.RefObject<HTMLDivElement | null>;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
   installation: Installation;
 }) {
   const {
@@ -64,134 +64,117 @@ export function ModList({
     }),
   );
   const { data: instMods } = useInstalledMods(installation.path);
-  const installedMods = instMods?.mods ?? [];
   const { data: modUpdates } = useModUpdates(
     {
       installationId: installation.id,
-      params: installedMods?.map((mod) => `${mod.modid}@${mod.version}`).join(",") ?? "",
+      params: instMods?.mods.map((mod) => `${mod.modid}@${mod.version}`).join(",") ?? "",
     },
     {
-      enabled: !!installedMods.length,
+      enabled: !!instMods?.mods.length,
     },
   );
 
-  // If sortOrder is descending, reverse the modsList
-  const modsList = mods
-    ?.filter((mod) => {
-      if (selectedModTags.length > 0) {
-        return selectedModTags.every((tag) => mod.tags.includes(tag.name));
-      }
-      return true;
-    })
-    ?.filter((mod) => {
-      if (author) {
-        return mod.author.toLowerCase().includes(author.toLowerCase());
-      }
-      return true;
-    })
-    ?.filter((mod) => mod.type === category)
-    ?.filter((mod) =>
-      side !== "installed"
-        ? side === "any"
-          ? true
-          : mod.side === side
-        : installedMods.some(
-            (installedMod) =>
-              installedMod.modid === mod.modid ||
-              mod.modidstrs.includes(installedMod.modid.toString()),
-          ),
-    )
-    .sort((a, b) => {
-      if (side === "installed") {
-        if (orderDirection === "descending") {
+  // Precompute O(1) lookup set for installed mod checks (was O(n·m) in comparator)
+  const installedModIdSet = useMemo(
+    () => new Set(instMods?.mods.flatMap((m) => [m.modid, m.modid.toString()])),
+    [instMods],
+  );
+
+  // Memoize the expensive filter + sort chain so it doesn't re-run on every scroll render
+  const modsList = useMemo(() => {
+    if (!mods) return [];
+    return mods
+      .filter((mod) => {
+        if (selectedModTags.length > 0) {
+          return selectedModTags.every((tag) => mod.tags.includes(tag.name));
+        }
+        return true;
+      })
+      .filter((mod) => {
+        if (author) {
+          return mod.author.toLowerCase().includes(author.toLowerCase());
+        }
+        return true;
+      })
+      .filter((mod) => mod.type === category)
+      .filter((mod) =>
+        side !== "installed"
+          ? side === "any"
+            ? true
+            : mod.side === side
+          : installedModIdSet.has(mod.modid) ||
+            mod.modidstrs.some((id) => installedModIdSet.has(id)),
+      )
+      .sort((a, b) => {
+        if (side === "installed") {
+          const aInstalled =
+            installedModIdSet.has(a.modid) ||
+            (a.urlalias !== null && installedModIdSet.has(a.urlalias)) ||
+            a.modidstrs.some((id) => installedModIdSet.has(Number(id)));
+          const bInstalled =
+            installedModIdSet.has(b.modid) ||
+            (b.urlalias !== null && installedModIdSet.has(b.urlalias)) ||
+            b.modidstrs.some((id) => installedModIdSet.has(Number(id)));
+
+          if (orderDirection === "descending") {
+            return a.side === "both"
+              ? -1
+              : b.side === "both"
+                ? 1
+                : aInstalled
+                  ? -1
+                  : bInstalled
+                    ? 1
+                    : 0;
+          }
           return a.side === "both"
-            ? -1
+            ? 1
             : b.side === "both"
-              ? 1
-              : installedMods.some(
-                    (installedMod) =>
-                      installedMod.modid === a.modid ||
-                      installedMod.modid.toString() === a.urlalias ||
-                      a.modidstrs.includes(installedMod.modid.toString()),
-                  )
-                ? -1
-                : installedMods.some(
-                      (installedMod) =>
-                        installedMod.modid === b.modid ||
-                        installedMod.modid.toString() === b.urlalias ||
-                        b.modidstrs.includes(installedMod.modid.toString()),
-                    )
-                  ? 1
+              ? -1
+              : aInstalled
+                ? 1
+                : bInstalled
+                  ? -1
                   : 0;
         }
-        return a.side === "both"
-          ? 1
-          : b.side === "both"
-            ? -1
-            : installedMods.some(
-                  (installedMod) =>
-                    installedMod.modid === a.modid ||
-                    installedMod.modid.toString() === a.urlalias ||
-                    a.modidstrs.includes(installedMod.modid.toString()),
-                )
-              ? 1
-              : installedMods.some(
-                    (installedMod) =>
-                      installedMod.modid === b.modid ||
-                      installedMod.modid.toString() === b.urlalias ||
-                      b.modidstrs.includes(installedMod.modid.toString()),
-                  )
-                ? -1
-                : 0;
-      }
-      if (sortBy === "name") {
-        if (orderDirection === "descending") {
-          return b.name.localeCompare(a.name);
+        if (sortBy === "name") {
+          return orderDirection === "descending"
+            ? b.name.localeCompare(a.name)
+            : a.name.localeCompare(b.name);
         }
-        return a.name.localeCompare(b.name);
-      }
-      if (sortBy === "updated") {
-        if (orderDirection === "descending") {
-          return new Date(b.lastreleased).getTime() - new Date(a.lastreleased).getTime();
+        if (sortBy === "updated") {
+          return orderDirection === "descending"
+            ? new Date(b.lastreleased).getTime() - new Date(a.lastreleased).getTime()
+            : new Date(a.lastreleased).getTime() - new Date(b.lastreleased).getTime();
         }
-        return new Date(a.lastreleased).getTime() - new Date(b.lastreleased).getTime();
-      }
-      if (sortBy === "downloads") {
-        if (orderDirection === "descending") {
-          return a.downloads - b.downloads;
+        if (sortBy === "downloads") {
+          return orderDirection === "descending"
+            ? a.downloads - b.downloads
+            : b.downloads - a.downloads;
         }
-        return b.downloads - a.downloads;
-      }
-      if (sortBy === "follows") {
-        if (orderDirection === "descending") {
-          return a.follows - b.follows;
+        if (sortBy === "follows") {
+          return orderDirection === "descending" ? a.follows - b.follows : b.follows - a.follows;
         }
-        return b.follows - a.follows;
-      }
-      if (sortBy === "trending") {
-        if (orderDirection === "descending") {
-          return a.trendingpoints - b.trendingpoints;
+        if (sortBy === "trending") {
+          return orderDirection === "descending"
+            ? a.trendingpoints - b.trendingpoints
+            : b.trendingpoints - a.trendingpoints;
         }
-        return b.trendingpoints - a.trendingpoints;
-      }
-      if (sortBy === "comments") {
-        if (orderDirection === "descending") {
-          return a.comments - b.comments;
+        if (sortBy === "comments") {
+          return orderDirection === "descending"
+            ? a.comments - b.comments
+            : b.comments - a.comments;
         }
-        return b.comments - a.comments;
-      }
-      if (orderDirection === "descending") {
-        return 0;
-      }
-      return -1;
-    });
+        return orderDirection === "descending" ? 0 : -1;
+      });
+  }, [mods, selectedModTags, author, category, side, installedModIdSet, sortBy, orderDirection]);
 
   const estimateSize = useCallback(() => 81, []);
 
   const rowVirtualizer = useVirtualizer({
-    count: modsList?.length || 0,
+    count: modsList.length,
     estimateSize,
-    getScrollElement: () => parentRef.current,
+    getScrollElement: () => scrollRef.current,
     measureElement,
     overscan: 5,
   });
@@ -206,29 +189,28 @@ export function ModList({
         height: totalSize,
       }}
     >
-      {modsList &&
-        items.map((item) => {
-          const mod = modsList[item.index];
-          return (
-            <div
-              className="absolute top-0 left-0 flex w-full gap-2 not-last:border-b"
-              data-index={item.index}
-              key={mod.modid}
-              ref={rowVirtualizer.measureElement}
-              style={{
-                transform: `translateY(${item.start}px)`,
-                willChange: "transform",
-              }}
-            >
-              <ModItem
-                installation={installation}
-                installedMods={installedMods}
-                mod={mod}
-                modUpdates={modUpdates}
-              />
-            </div>
-          );
-        })}
+      {items.map((item) => {
+        const mod = modsList[item.index];
+        return (
+          <div
+            className="absolute top-0 left-0 flex w-full gap-2 not-last:border-b"
+            data-index={item.index}
+            key={mod.modid}
+            ref={rowVirtualizer.measureElement}
+            style={{
+              transform: `translateY(${item.start}px)`,
+              willChange: "transform",
+            }}
+          >
+            <ModItem
+              installation={installation}
+              installedMods={instMods?.mods ?? []}
+              mod={mod}
+              modUpdates={modUpdates}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }
