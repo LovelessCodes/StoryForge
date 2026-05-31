@@ -3,6 +3,8 @@ import { appDataDir } from "@tauri-apps/api/path";
 import { createTauriStore } from "@tauri-store/zustand";
 import { create } from "zustand";
 
+import { logToFile } from "@/lib/logger";
+
 export type SetParentConfigProps = {
   deleteCurrentData: boolean;
   moveCurrentData: boolean;
@@ -28,34 +30,52 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
   setInstallationsParent: async (path, config) => {
     const appFolder = await appDataDir();
     const { installationsParent, installationsSubdir } = store.getState();
+    const dest = path ?? appFolder;
+    const src = installationsParent ?? appFolder;
     if (config?.moveCurrentData) {
+      logToFile(
+        "INFO ",
+        `[settings] move_installations: ${src}/${installationsSubdir} -> ${dest}/${installationsSubdir}`,
+      );
       await invoke("move_installations_folder", {
-        destination: path ?? appFolder,
-        source: installationsParent ?? appFolder,
+        destination: dest,
+        source: src,
         subdir: installationsSubdir,
       });
     } else if (config?.deleteCurrentData) {
+      logToFile("INFO ", `[settings] remove_all_installations: ${src}/${installationsSubdir}`);
       await invoke("remove_all_installations", {
-        source: installationsParent ?? appFolder,
+        source: src,
         subdir: installationsSubdir,
       });
+    } else {
+      logToFile("INFO ", `[settings] set_installations_parent: ${dest}`);
     }
     set(() => ({ installationsParent: path }));
   },
   setVersionsParent: async (path, config) => {
     const appFolder = await appDataDir();
     const { versionsParent, versionsSubdir } = store.getState();
+    const dest = path ?? appFolder;
+    const src = versionsParent ?? appFolder;
     if (config?.moveCurrentData) {
+      logToFile(
+        "INFO ",
+        `[settings] move_versions: ${src}/${versionsSubdir} -> ${dest}/${versionsSubdir}`,
+      );
       await invoke("move_versions_folder", {
-        destination: path ?? appFolder,
-        source: versionsParent ?? appFolder,
+        destination: dest,
+        source: src,
         subdir: versionsSubdir,
       });
     } else if (config?.deleteCurrentData) {
+      logToFile("INFO ", `[settings] remove_all_versions: ${src}/${versionsSubdir}`);
       await invoke("remove_all_versions", {
-        source: versionsParent ?? appFolder,
+        source: src,
         subdir: versionsSubdir,
       });
+    } else {
+      logToFile("INFO ", `[settings] set_versions_parent: ${dest}`);
     }
     set(() => ({ versionsParent: path }));
   },
