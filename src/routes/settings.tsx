@@ -23,6 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { TooltipTrigger } from "@/components/ui/tooltip";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { installedVersionsQueryKey } from "@/hooks/use-installed-versions";
+import { logToFile } from "@/lib/logger";
 import { cn } from "@/lib/utils";
 import { useInstallationsStore } from "@/stores/installations";
 import { type SetParentConfigProps, useSettingsStore } from "@/stores/settings";
@@ -242,7 +243,11 @@ function RouteComponent() {
     }
   };
   const handleDialogChoice = async (choice: "keep" | "delete" | "move") => {
-    if (!pendingField) return;
+    if (!pendingField || !pendingPath) return;
+    logToFile(
+      "INFO ",
+      `[settings] Folder change: field=${pendingField} choice=${choice} path=${pendingPath}`,
+    );
     const config =
       choice === "move"
         ? { deleteCurrentData: false, moveCurrentData: true }
