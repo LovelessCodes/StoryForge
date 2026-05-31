@@ -6,7 +6,7 @@ export default function SideToggleGroup() {
 
   return (
     <Tabs onValueChange={setSide} value={side}>
-      <TabsList>
+      <TabsList className="border-input h-9 border shadow-xs/5 outline-none">
         <TabsTab aria-label="Any" value="any">
           Any
         </TabsTab>
