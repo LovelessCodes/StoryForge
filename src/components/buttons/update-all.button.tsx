@@ -104,6 +104,7 @@ export const UpdateAllButton = ({
       disabled={!updates || Object.keys(updates.updates).length === 0 || isPending || removePending}
       onClick={() => updates && handleUpdateAll()}
       variant={wantsToUpdate ? "destructive" : "outline"}
+      size="lg"
     >
       {wantsToUpdate ? "Yes, really" : "Update All"}
     </Button>
