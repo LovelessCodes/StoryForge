@@ -28,8 +28,10 @@ async function saveInstallationToDisk(installation: {
   path: string;
   version: string;
   startParams: string;
+  favorite: boolean;
 }) {
   await invoke("save_installation", {
+    favorite: installation.favorite,
     name: installation.name,
     path: installation.path,
     startParams: installation.startParams,
@@ -138,6 +140,7 @@ export function ImportInstallationDialog() {
         };
         addInstallation(newInstallation);
         await saveInstallationToDisk({
+          favorite: false,
           name: installation.data.name,
           path,
           startParams: "",
