@@ -908,6 +908,11 @@ pub async fn rename_installations_folder(
             message: "Source path has no parent directory".into(),
         })?
         .join(new_name);
+    log_info!(
+        "rename_installations_folder: {:?} -> {:?}",
+        source_path,
+        destination_path
+    );
     move_folder(source_path, destination_path)
 }
 
@@ -917,10 +922,11 @@ pub async fn move_installations_folder(
     destination: String,
     subdir: String,
 ) -> Result<String, UiError> {
-    move_folder(
-        PathBuf::from(source).join(&subdir),
-        PathBuf::from(destination).join(&subdir),
-    )?;
+    let src = PathBuf::from(&source).join(&subdir);
+    let dst = PathBuf::from(&destination).join(&subdir);
+    log_info!("move_installations_folder: {:?} -> {:?}", src, dst);
+    move_folder(src, dst)?;
+    log_info!("move_installations_folder: done");
     Ok("moved".into())
 }
 
@@ -930,6 +936,7 @@ pub async fn remove_all_installations(source: String, subdir: String) -> Result<
     if !source_path.exists() || !source_path.is_dir() {
         return Ok("not_exists".into());
     }
+    log_info!("remove_all_installations: {:?}", source_path);
     remove_dir_all(&source_path).map_err(|e| {
         log_error!("installations: remove_failed: {e}");
         UiError {
