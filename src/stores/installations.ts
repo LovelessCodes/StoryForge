@@ -42,6 +42,7 @@ type InstallationResult = {
   path: string;
   size_bytes: number;
   size_display: string;
+  favorite: boolean;
 };
 
 type InstallationsStore = {
@@ -101,7 +102,7 @@ export const useInstallationsStore = create<InstallationsStore>((set) => ({
             version: r.version,
             startParams: r.startParams ?? "",
             icon: existing?.icon ?? null,
-            favorite: existing?.favorite ?? false,
+            favorite: existing?.favorite ?? r.favorite ?? false,
             sizeBytes: r.size_bytes,
             sizeDisplay: r.size_display,
           };
@@ -136,11 +137,26 @@ export const useInstallationsStore = create<InstallationsStore>((set) => ({
   selectedInstallation: null,
   setSelectedInstallation: (installation) => set({ selectedInstallation: installation }),
   toggleFavorite: (id) =>
-    set((state) => ({
-      installations: state.installations.map((inst) =>
-        inst.id === id ? { ...inst, favorite: !inst.favorite } : inst,
-      ),
-    })),
+    set((state) => {
+      const inst = state.installations.find((i) => i.id === id);
+      if (inst) {
+        const newFavorite = !inst.favorite;
+        // Persist to installation.json
+        invoke("save_installation", {
+          favorite: newFavorite,
+          name: inst.name,
+          path: inst.path,
+          startParams: inst.startParams,
+          version: inst.version,
+        }).catch((e) => console.error("Failed to save favorite:", e));
+        return {
+          installations: state.installations.map((i) =>
+            i.id === id ? { ...i, favorite: newFavorite } : i,
+          ),
+        };
+      }
+      return state;
+    }),
   updateInstallation: (installation, cb) =>
     set((state) => {
       if (
