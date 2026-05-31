@@ -7,7 +7,7 @@ export function ModsButton() {
   const { installation } = useLoaderData({ from: "/install-mods/$id" });
   return (
     <SidebarMenuSubItem>
-      <SidebarMenuSubButton size="sm" isActive>
+      <SidebarMenuSubButton className="truncate" size="sm" isActive>
         <PackagePlusIcon />
         {installation.name}
       </SidebarMenuSubButton>

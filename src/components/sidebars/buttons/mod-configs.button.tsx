@@ -11,7 +11,7 @@ export function ModConfigsButton() {
 
   return (
     <SidebarMenuSubItem>
-      <SidebarMenuSubButton size="sm" isActive>
+      <SidebarMenuSubButton className="truncate" size="sm" isActive>
         <PackageOpenIcon />
         {installation?.name}
       </SidebarMenuSubButton>
