@@ -26,8 +26,10 @@ async function saveInstallationToDisk(installation: {
   path: string;
   version: string;
   startParams: string;
+  favorite: boolean;
 }) {
   await invoke("save_installation", {
+    favorite: installation.favorite,
     name: installation.name,
     path: installation.path,
     startParams: installation.startParams,
@@ -118,6 +120,7 @@ export function AddInstallationDialog({ version }: AddInstallationDialogProps) {
         async (status) => {
           if (status) {
             await saveInstallationToDisk({
+              favorite: value.favorite,
               name: value.name,
               path: value.path,
               startParams: value.startParams,
