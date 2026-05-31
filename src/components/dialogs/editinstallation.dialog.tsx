@@ -13,6 +13,7 @@ import { TooltipTrigger } from "@/components/ui/tooltip";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
+import { logToFile } from "@/lib/logger";
 import { gameVersionsQuery } from "@/lib/queries";
 import { buildInstallationPath, compareSemverDesc, makeStringFolderSafe } from "@/lib/utils";
 import { rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
@@ -82,6 +83,11 @@ export function EditInstallationDialog({ installation }: EditInstallationDialogP
             const safeName = makeStringFolderSafe(value.name);
             const oldSafeName = makeStringFolderSafe(installation.name);
             if (safeName !== oldSafeName) {
+              const src = installationsParent ?? appFolder ?? "";
+              logToFile(
+                "INFO ",
+                `[edit_installation] rename: ${src}/${oldSafeName} -> ${src}/${safeName}`,
+              );
               await invoke("rename_installations_folder", {
                 newName: safeName,
                 source: installationsParent ?? appFolder ?? "",
