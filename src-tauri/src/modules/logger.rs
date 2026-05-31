@@ -50,6 +50,13 @@ pub fn log(level: &str, msg: &str) {
     }
 }
 
+/// Write a message from the frontend to the log file.
+#[tauri::command]
+pub fn log_message(level: String, message: String) -> Result<(), String> {
+    log(&level, &message);
+    Ok(())
+}
+
 /// Read the current log file and return its contents
 #[tauri::command]
 pub fn get_logs(app: tauri::AppHandle) -> Result<String, String> {
