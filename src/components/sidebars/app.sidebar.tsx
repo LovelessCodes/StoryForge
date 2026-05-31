@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useMatches } from "@tanstack/react-router";
 import {
   CheckIcon,
   CircleFadingPlusIcon,
@@ -46,7 +46,10 @@ import { useAccountStore } from "@/stores/accounts";
 import { useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
 
+import { ModsButton } from "./buttons/mods.button";
+
 export function AppSidebar() {
+  const matches = useMatches();
   const { selectedUser, users, removeUser, setSelectedUser } = useAccountStore();
   const { installations } = useInstallations();
   const { data: appVersion } = useAppVersion();
@@ -253,6 +256,7 @@ export function AppSidebar() {
                 {installations.length}
               </SidebarMenuBadge>
               <SidebarMenuSub>
+                {matches.some((m) => m.fullPath.includes("install-mods")) && <ModsButton />}
                 <SidebarMenuSubItem>
                   <SidebarMenuSubButton
                     render={
