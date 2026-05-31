@@ -144,10 +144,11 @@ pub async fn move_versions_folder(
     destination: String,
     subdir: String,
 ) -> Result<String, UiError> {
-    move_folder(
-        PathBuf::from(source).join(&subdir),
-        PathBuf::from(destination).join(&subdir),
-    )?;
+    let src = PathBuf::from(&source).join(&subdir);
+    let dst = PathBuf::from(&destination).join(&subdir);
+    log_info!("move_versions_folder: {:?} -> {:?}", src, dst);
+    move_folder(src, dst)?;
+    log_info!("move_versions_folder: done");
     Ok("moved".into())
 }
 
@@ -159,6 +160,7 @@ pub async fn remove_all_versions(source: String, subdir: String) -> Result<Strin
         return Ok("not_exists".into());
     }
 
+    log_info!("remove_all_versions: {:?}", source_path);
     remove_dir_all(&source_path).map_err(|e| {
         log_error!("remove_all_versions: remove_dir_all failed: {e}");
         UiError {
