@@ -46,6 +46,7 @@ import { useAccountStore } from "@/stores/accounts";
 import { useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
 
+import { ModConfigsButton } from "./buttons/mod-configs.button";
 import { ModsButton } from "./buttons/mods.button";
 
 export function AppSidebar() {
@@ -115,7 +116,7 @@ export function AppSidebar() {
             payload={() => (
               <>
                 {users.map((user) => (
-                  <Group className="w-full rounded-none" key={user.uid}>
+                  <Group className="w-full rounded-none" key={`${user.uid}-${user.email}-user`}>
                     <Button
                       className="flex h-8 flex-1 items-center justify-start gap-2"
                       onClick={() => setSelectedUser(user.uid)}
@@ -257,6 +258,7 @@ export function AppSidebar() {
               </SidebarMenuBadge>
               <SidebarMenuSub>
                 {matches.some((m) => m.fullPath.includes("install-mods")) && <ModsButton />}
+                {matches.some((m) => m.fullPath.includes("mod-configs")) && <ModConfigsButton />}
                 <SidebarMenuSubItem>
                   <SidebarMenuSubButton
                     render={
