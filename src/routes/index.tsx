@@ -53,23 +53,23 @@ function Dashboard() {
         <div className="flex w-full flex-col">
           {installations.length > 0 ? (
             <>
-              <AnimatePresence>
-                <Link to="/installations">
-                  <Button
-                    className="text-muted-foreground hover:text-foreground group relative w-full text-center text-sm"
+              <Link to="/installations">
+                <Button
+                  className="text-muted-foreground hover:text-foreground group relative w-full text-center text-sm"
+                  variant="outline"
+                >
+                  <Badge
+                    className="group-hover:text-foreground text-muted-foreground absolute top-1.5 left-1.5"
                     variant="outline"
                   >
-                    <Badge
-                      className="group-hover:text-foreground text-muted-foreground absolute top-1.5 left-1.5"
-                      variant="outline"
-                    >
-                      {installations.length}
-                    </Badge>
-                    Installations
-                    <FolderIcon className="ml-2 inline size-3" />
-                  </Button>
-                </Link>
-                <ScrollArea className="border-input h-full border-x" scrollFade>
+                    {installations.length}
+                  </Badge>
+                  Installations
+                  <FolderIcon className="ml-2 inline size-3" />
+                </Button>
+              </Link>
+              <ScrollArea className="border-input h-full border-x" scrollFade>
+                <AnimatePresence>
                   {installations.sort(sortInstallations).map((installation, index) => (
                     <MotionInstallationContextMenu
                       animate={{ opacity: 1, y: 0 }}
@@ -105,8 +105,8 @@ function Dashboard() {
                       />
                     </MotionInstallationContextMenu>
                   ))}
-                </ScrollArea>
-              </AnimatePresence>
+                </AnimatePresence>
+              </ScrollArea>
               <Button
                 className="text-muted-foreground w-full text-center text-sm"
                 render={
