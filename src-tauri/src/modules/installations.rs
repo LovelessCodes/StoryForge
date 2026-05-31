@@ -33,6 +33,8 @@ pub struct InstallationInfo {
     pub version: String,
     #[serde(rename = "startParams")]
     pub start_params: String,
+    #[serde(default)]
+    pub favorite: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -45,6 +47,7 @@ pub struct InstallationResult {
     pub path: String,
     pub size_bytes: u64,
     pub size_display: String,
+    pub favorite: bool,
 }
 
 fn format_size(bytes: u64) -> String {
@@ -183,6 +186,7 @@ pub fn find_installation_by_id(
                 name,
                 version: String::new(),
                 start_params: String::new(),
+                favorite: false,
             },
         ));
     }
@@ -225,6 +229,7 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
                                 .as_str()
                                 .unwrap_or("")
                                 .to_string(),
+                            favorite: false,
                         };
                         let _ = write_installation_json(&old_pb, &info);
                     }
@@ -271,12 +276,14 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
                     name: dir_name.clone(),
                     version: String::new(),
                     start_params: String::new(),
+                    favorite: false,
                 })
             } else {
                 let info = InstallationInfo {
                     name: dir_name.clone(),
                     version: String::new(),
                     start_params: String::new(),
+                    favorite: false,
                 };
                 let _ = write_installation_json(&dir, &info);
                 info
@@ -291,6 +298,7 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
                 path: dir.to_string_lossy().to_string(),
                 size_bytes,
                 size_display: format_size(size_bytes),
+                favorite: info.favorite,
             });
         }
     }
@@ -307,13 +315,20 @@ pub fn save_installation(
     name: String,
     version: String,
     start_params: String,
+    favorite: bool,
 ) -> Result<(), UiError> {
-    log_info!("save_installation: path={:?} name={:?}", path, name);
+    log_info!(
+        "save_installation: path={:?} name={:?} favorite={}",
+        path,
+        name,
+        favorite
+    );
     let dir = PathBuf::from(&path);
     let info = InstallationInfo {
         name,
         version,
         start_params,
+        favorite,
     };
     write_installation_json(&dir, &info)
 }
