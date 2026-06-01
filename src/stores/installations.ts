@@ -43,6 +43,8 @@ type InstallationResult = {
   size_bytes: number;
   size_display: string;
   favorite: boolean;
+  last_played: number | null;
+  total_time_played: number;
 };
 
 type InstallationsStore = {
@@ -53,6 +55,7 @@ type InstallationsStore = {
   addInstallation: (installation: Installation, cb?: (status: boolean) => void) => void;
   removeInstallation: (id: number) => void;
   updateLastPlayed: (id: number) => void;
+  updatePlaytime: (id: number, totalTimePlayed: number, lastTimePlayed: number) => void;
   updateInstallation: (installation: Installation, cb?: (status: boolean) => void) => void;
   moveInstallation: (id: number, newIndex: number) => void;
   toggleFavorite: (id: number) => void;
@@ -92,13 +95,16 @@ export const useInstallationsStore = create<InstallationsStore>((set) => ({
         const existingByPath = new Map(state.installations.map((i) => [i.path, i]));
         const installations: Installation[] = results.map((r, idx) => {
           const existing = existingByPath.get(r.path);
+          // Prefer persisted values (from installation.json), fall back to in-memory state
+          const persistedLastPlayed = r.last_played ?? existing?.lastTimePlayed ?? 0;
+          const persistedTotalPlayed = r.total_time_played ?? existing?.totalTimePlayed ?? 0;
           return {
             id: r.id,
             name: r.name,
             index: existing?.index ?? idx,
             path: r.path,
-            lastTimePlayed: existing?.lastTimePlayed ?? 0,
-            totalTimePlayed: existing?.totalTimePlayed ?? 0,
+            lastTimePlayed: Math.max(existing?.lastTimePlayed ?? 0, persistedLastPlayed),
+            totalTimePlayed: Math.max(existing?.totalTimePlayed ?? 0, persistedTotalPlayed),
             version: r.version,
             startParams: r.startParams ?? "",
             icon: existing?.icon ?? null,
@@ -188,6 +194,12 @@ export const useInstallationsStore = create<InstallationsStore>((set) => ({
         inst.id === id ? { ...inst, lastTimePlayed: Date.now() } : inst,
       ),
     })),
+  updatePlaytime: (id, totalTimePlayed, lastTimePlayed) =>
+    set((state) => ({
+      installations: state.installations.map((inst) =>
+        inst.id === id ? { ...inst, totalTimePlayed, lastTimePlayed } : inst,
+      ),
+    })),
   updateParent: (newPath: string) =>
     set((state) => ({
       installations: state.installations.map((inst) => ({
@@ -209,6 +221,7 @@ export const useInstallations = () => {
     setSelectedInstallation,
     toggleFavorite,
     updateLastPlayed,
+    updatePlaytime,
     updateParent,
     removeAll,
   } = useInstallationsStore();
@@ -229,6 +242,7 @@ export const useInstallations = () => {
     toggleFavorite,
     updateInstallation,
     updateLastPlayed,
+    updatePlaytime,
     updateParent,
   };
 };
