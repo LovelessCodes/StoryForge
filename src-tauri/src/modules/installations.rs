@@ -36,6 +36,10 @@ pub struct InstallationInfo {
     pub start_params: String,
     #[serde(default)]
     pub favorite: bool,
+    #[serde(default)]
+    pub last_played: Option<u64>,
+    #[serde(default)]
+    pub total_time_played: u64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -49,6 +53,8 @@ pub struct InstallationResult {
     pub size_bytes: u64,
     pub size_display: String,
     pub favorite: bool,
+    pub last_played: Option<u64>,
+    pub total_time_played: u64,
 }
 
 fn format_size(bytes: u64) -> String {
@@ -188,6 +194,8 @@ pub fn find_installation_by_id(
                 version: String::new(),
                 start_params: String::new(),
                 favorite: false,
+                last_played: None,
+                total_time_played: 0,
             },
         ));
     }
@@ -231,6 +239,8 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
                                 .unwrap_or("")
                                 .to_string(),
                             favorite: false,
+                            last_played: None,
+                            total_time_played: 0,
                         };
                         let _ = write_installation_json(&old_pb, &info);
                     }
@@ -278,6 +288,8 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
                     version: String::new(),
                     start_params: String::new(),
                     favorite: false,
+                    last_played: None,
+                    total_time_played: 0,
                 })
             } else {
                 let info = InstallationInfo {
@@ -285,6 +297,8 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
                     version: String::new(),
                     start_params: String::new(),
                     favorite: false,
+                    last_played: None,
+                    total_time_played: 0,
                 };
                 let _ = write_installation_json(&dir, &info);
                 info
@@ -300,6 +314,8 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
                 size_bytes,
                 size_display: format_size(size_bytes),
                 favorite: info.favorite,
+                last_played: info.last_played,
+                total_time_played: info.total_time_played,
             });
         }
     }
@@ -325,11 +341,17 @@ pub fn save_installation(
         favorite
     );
     let dir = PathBuf::from(&path);
+    // Preserve existing playtime fields if the installation.json already exists
+    let (last_played, total_time_played) = read_installation_json(&dir)
+        .map(|existing| (existing.last_played, existing.total_time_played))
+        .unwrap_or((None, 0));
     let info = InstallationInfo {
         name,
         version,
         start_params,
         favorite,
+        last_played,
+        total_time_played,
     };
     write_installation_json(&dir, &info)
 }
@@ -365,6 +387,8 @@ pub async fn import_installation(
         version,
         start_params,
         favorite: false,
+        last_played: None,
+        total_time_played: 0,
     };
     write_installation_json(&inst_dir, &info)?;
 
@@ -453,6 +477,8 @@ pub async fn import_installation(
         size_bytes,
         size_display: format_size(size_bytes),
         favorite: false,
+        last_played: None,
+        total_time_played: 0,
     };
 
     let _ = app.emit(
@@ -872,6 +898,60 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
             );
         }
     });
+
+    // Wait for game process to exit and track playtime
+    let app_for_exit = app_handle.clone();
+    let installation_dir = pb.clone();
+    let child_start = Instant::now();
+    thread::spawn(move || match child.wait() {
+        Ok(exit_status) => {
+            log_info!("[play_game] process exited with status: {:?}", exit_status);
+            let elapsed = child_start.elapsed().as_secs();
+            log_info!("[play_game] session duration: {}s", elapsed);
+
+            match read_installation_json(&installation_dir) {
+                Ok(mut info) => {
+                    let now_ms = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_millis() as u64;
+                    info.last_played = Some(now_ms);
+                    info.total_time_played += elapsed;
+                    let total = info.total_time_played;
+
+                    match write_installation_json(&installation_dir, &info) {
+                        Ok(()) => {
+                            let _ = app_for_exit.emit(
+                                &format!("game-quit-{}", installation_id),
+                                json!({
+                                    "installationId": installation_id,
+                                    "elapsedSeconds": elapsed,
+                                    "lastPlayed": now_ms,
+                                    "totalTimePlayed": total,
+                                }),
+                            );
+                        }
+                        Err(e) => {
+                            log_error!(
+                                "[play_game] failed to write installation.json: {}",
+                                e.message
+                            );
+                        }
+                    }
+                }
+                Err(e) => {
+                    log_error!(
+                        "[play_game] failed to read installation.json: {}",
+                        e.message
+                    );
+                }
+            }
+        }
+        Err(e) => {
+            log_error!("[play_game] failed to wait for child: {}", e);
+        }
+    });
+
     log_info!(
         "play_game: process spawned for installation {}",
         options.installation_id
