@@ -10,10 +10,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-06-01
+
+### Added
+
+- **Bun & Vite Types**: Added `@types/bun` dependency and bun/vite types to tsconfig for improved type checking.
+- **Installation Name Labels**: Added installation name labels to the mod list for easier identification.
+- **Favorites**: Added a favorite flag to installations with toggle persistence, allowing users to mark and filter favorite installations.
+- **Sidebar Navigation**: Added mod configs and mods buttons to the app sidebar for quicker navigation.
+- **App Logging**: Added a `log_message` Tauri command with a `logToFile` helper on the frontend. Logging now covers installation folder renames/operations, folder changes in settings, parent directory operations, and versions folder operations.
+- **UI Enhancements**: Added a truncate class to sidebar buttons and a `size` prop to the UpdateAllButton.
+- **Query Staleness**: Added `staleTime` configuration to React Query queries.
+
 ### Changed
 
-- Moved away from using Radix UI to Base UI for all components in the UI stack.
-- Revamp on the whole UI after introducing Base UI.
+- **Mod List Performance**: Optimized mod list filtering and sorting for better performance.
+- **Animation Scope**: Moved `AnimatePresence` to wrap `ScrollArea` for smoother list animations.
+- **Tab Styling**: Added border and shadow to the tabs list for visual clarity.
+- **Search Input**: Constrained search input width to fit its content.
+- **Refactor**: Renamed `parentRef` to `scrollRef` and updated related prop names for clarity.
+
+### Fixed
+
+- **Docs**: Fixed macOS notarization instructions and removed a redundant markdown separator.
+
+## [0.8.0] - 2026-03-18
+
+### Added
+
+- **Base UI Migration**: Replaced Radix UI with Base UI across all components. Introduced new component primitives: Accordion, Alert, AlertDialog, Autocomplete, Avatar, Badge, Breadcrumb, Button, Calendar, Checkbox, CheckboxGroup, Collapsible, Combobox, CommandDialog, ContextMenu, Dialog, Drawer, Empty, Field, Fieldset, Form, Frame, Group, Input, InputGroup, Kbd, Label, Menu, Meter, NumberField, OTPField, Pagination, Popover, PreviewCard, Progress, RadioGroup, ScrollArea, Select, Separator, Sheet, Skeleton, Slider, Spinner, Switch, Table, Tabs, Textarea, Toast/Toaster, Toggle, ToggleGroup, Toolbar, and Tooltip.
+- **UI Revamp**: Refactored all dialogs to use unified root dialog handles, replacing the Zustand-based `useDialogStore`. Consolidated tooltip implementation and improved styling, accessibility, and `"use client"` directives across all components.
+- **Better Logging**: Added a logger module using the `log` crate with logging macros (`log_error!`, `log_info!`, etc.). Replaced all `eprintln!` calls with proper logging. Added `get_logs` command and a log viewer to the settings page.
+- **Individual Installation Logs**: Added per-installation log files, a `ViewLogsDialog` component, and a "View Logs" button to installation rows.
+- **Account Persistence**: Added save and load functionality for user accounts. Automatically removes user on auth verification failure.
+- **Server Sniffer**: Added a server sniffer module with a default port of 42420.
+- **Server Maps**: Added standalone map viewing support.
+- **Cancel Download**: Added cancellation support for downloads and extractions.
+- **Update All Mods**: Added a batch "Update All" button for mod updates with loading toast.
+- **Responsive Design**: Added `useMediaQuery` hook for responsive design support.
+- **InputGroup & InputGroupAddon**: New input group component with addon, text, input, and textarea variants.
+- **Version Matching**: Compare major and minor version numbers instead of full version strings for server version matching.
+
+### Fixed
+
+- **Instant Dark Mode**: Fixed `toggleDarkMode` to manage body class for instant theme switching.
+- **Installation Renaming**: Fixed issue where renaming an installation would create an empty folder.
+- **Blank Screen on Linux**: Fixed AppImage blank screen issue on some Linux distros by updating Ubuntu package dependencies.
+- **Map Color Grading**: Fixed pixel color decoding in `pixels_to_png` for maps.
+- **Map Icons**: Fixed map icons path for correct build resolution.
+
+### Changed
+
+- Replaced `useDialogStore` (Zustand-based) with unified root dialog handles across all dialogs.
+- Replaced `@radix-ui` dependencies with Base UI throughout the UI stack.
+- Updated colour scheme and typography across the application.
+- Dashboard layout restructured with a grid layout.
+- Settings page layout and spacing adjusted.
+- Replaced bash version bump script with a TypeScript version.
+
+### Removed
+
+- Removed the Zustand-based `useDialogStore` and related types.
+- Removed `@radix-ui` package dependencies.
 
 ## [0.5.4] - 2025-10-31
 
@@ -257,6 +315,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- Version links for diff and release pages -->
 
+[0.9.1]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.9.1
+[0.8.0]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.8.0
 [0.5.4]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.5.4
 [0.5.3]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.5.3
 [0.5.2]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.5.2
