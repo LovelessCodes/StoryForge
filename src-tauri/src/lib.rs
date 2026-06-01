@@ -126,6 +126,7 @@ pub fn run() {
             mods::get_mod_updates,
             mods::get_installation_mods,
             mods::add_mod_to_installation,
+            mods::download_mod,
             mods::remove_mod_from_installation,
             mods::save_mod_config,
             // Download
@@ -144,6 +145,7 @@ pub fn run() {
             // Installations
             installations::get_all_installations,
             installations::save_installation,
+            installations::import_installation,
             installations::play_game,
             installations::confirm_vintage_story_exe,
             installations::initialize_game,
