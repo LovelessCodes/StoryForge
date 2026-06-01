@@ -86,7 +86,7 @@ export function EditInstallationDialog({ installation }: EditInstallationDialogP
             const oldSafeName = makeStringFolderSafe(installation.name);
             if (safeName !== oldSafeName) {
               const src = installationsParent ?? appFolder ?? "";
-              logToFile(
+              await logToFile(
                 "INFO ",
                 `[edit_installation] rename: ${src}/${oldSafeName} -> ${src}/${safeName}`,
               );
@@ -181,7 +181,7 @@ export function EditInstallationDialog({ installation }: EditInstallationDialogP
                   onKeyUp={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      form.handleSubmit();
+                      void form.handleSubmit();
                     }
                   }}
                   value={field.state.value}
@@ -230,7 +230,7 @@ export function EditInstallationDialog({ installation }: EditInstallationDialogP
                   onKeyUp={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      form.handleSubmit();
+                      void form.handleSubmit();
                     }
                   }}
                   value={field.state.value}
@@ -318,7 +318,7 @@ export function EditInstallationDialog({ installation }: EditInstallationDialogP
                   onKeyUp={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      form.handleSubmit();
+                      void form.handleSubmit();
                     }
                   }}
                   value={field.state.value ?? ""}

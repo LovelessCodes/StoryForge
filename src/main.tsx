@@ -21,10 +21,10 @@ if (dark) {
   document.body.classList.remove("dark");
 }
 
-useServerStore.getState().loadServers();
-useInstallationsStore.getState().loadInstallations();
+await useServerStore.getState().loadServers();
+await useInstallationsStore.getState().loadInstallations();
 
-useAccountStore
+await useAccountStore
   .getState()
   .loadAccounts()
   .then(() => {

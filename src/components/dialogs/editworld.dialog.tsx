@@ -47,8 +47,8 @@ export function EditWorldDialog({ world }: EditWorldDialogProps) {
           ?.id.toString() || "",
       name: world.data.world_name || "",
     },
-    onSubmit: ({ value }) => {
-      updateWorld({
+    onSubmit: async ({ value }) => {
+      await updateWorld({
         identifier: world.data.savegame_identifier,
         installationId: parseInt(value.installationId, 10),
         name: value.name,
@@ -112,7 +112,7 @@ export function EditWorldDialog({ world }: EditWorldDialogProps) {
                   onKeyUp={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      form.handleSubmit();
+                      void form.handleSubmit();
                     }
                   }}
                   value={field.state.value}

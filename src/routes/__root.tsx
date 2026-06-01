@@ -84,7 +84,7 @@ function RootComponent() {
                     id: "updater",
                   });
                   setTimeout(() => {
-                    relaunch();
+                    void relaunch();
                   }, 2500);
                   break;
               }

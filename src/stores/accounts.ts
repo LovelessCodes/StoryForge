@@ -28,7 +28,7 @@ export const useAccountStore = create<AccountStore>((set, get) => ({
         selectedUser: user,
         users: [...state.users, user],
       };
-      get().saveAccounts();
+      void get().saveAccounts();
       return newState;
     }),
   loadAccounts: async () => {
@@ -43,7 +43,7 @@ export const useAccountStore = create<AccountStore>((set, get) => ({
   },
   removeAll: () =>
     set(() => {
-      get().saveAccounts();
+      void get().saveAccounts();
       return { selectedUser: null, users: [] };
     }),
   removeAllExcept: (uid) =>
@@ -57,7 +57,7 @@ export const useAccountStore = create<AccountStore>((set, get) => ({
               : null,
         users: state.users.filter((user) => user.uid === uid),
       };
-      get().saveAccounts();
+      void get().saveAccounts();
       return newState;
     }),
   removeUser: (uid) =>
@@ -71,7 +71,7 @@ export const useAccountStore = create<AccountStore>((set, get) => ({
             : state.selectedUser,
         users: state.users.filter((user) => user.uid !== uid),
       };
-      get().saveAccounts();
+      void get().saveAccounts();
       return newState;
     }),
   saveAccounts: async () => {

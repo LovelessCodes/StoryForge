@@ -23,8 +23,8 @@ export function DeleteServerDialog({ server }: DeleteServerDialogProps) {
         id: `server-remove-${server.id}`,
       });
     },
-    onSuccess: () => {
-      loadServers();
+    onSuccess: async () => {
+      await loadServers();
       rootAlertDialogHandle.close();
     },
   });

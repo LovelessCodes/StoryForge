@@ -36,9 +36,12 @@ export const UpdateAllButton = ({
         params: { modpath: variables.modpath, path: variables.path },
       }),
     onError: (error, variables) => {
-      toast.error(`Error removing ${name} from ${installation.name}: ${error.message}`, {
-        id: `mod-remove-${variables.path}-${variables.modpath}`,
-      });
+      toast.error(
+        `Error removing ${variables.updateMod.filename} from ${installation.name}: ${error.message}`,
+        {
+          id: `mod-remove-${variables.path}-${variables.modpath}`,
+        },
+      );
     },
     onSuccess: async (_d, v) => {
       if (installation) {

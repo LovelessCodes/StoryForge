@@ -205,7 +205,7 @@ export function AddInstallationDialog({ version }: AddInstallationDialogProps) {
                   onKeyUp={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      form.handleSubmit();
+                      void form.handleSubmit();
                     }
                   }}
                   value={field.state.value}
@@ -254,7 +254,7 @@ export function AddInstallationDialog({ version }: AddInstallationDialogProps) {
                   onKeyUp={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      form.handleSubmit();
+                      void form.handleSubmit();
                     }
                   }}
                   value={field.state.value}
@@ -339,7 +339,7 @@ export function AddInstallationDialog({ version }: AddInstallationDialogProps) {
                   onKeyUp={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      form.handleSubmit();
+                      void form.handleSubmit();
                     }
                   }}
                   value={field.state.value}

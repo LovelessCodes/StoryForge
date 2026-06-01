@@ -93,9 +93,9 @@ export function EditServerDialog({ server }: EditServerDialogProps) {
           password: value.password,
           port: value.port?.length ? parseInt(value.port, 10) : null,
         },
-        (status) => {
+        async (status) => {
           if (status) {
-            loadServers();
+            await loadServers();
             rootDialogHandle.close();
           }
         },
@@ -158,7 +158,7 @@ export function EditServerDialog({ server }: EditServerDialogProps) {
                   onKeyUp={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      form.handleSubmit();
+                      void form.handleSubmit();
                     }
                   }}
                   value={field.state.value}
@@ -207,7 +207,7 @@ export function EditServerDialog({ server }: EditServerDialogProps) {
                   onKeyUp={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      form.handleSubmit();
+                      void form.handleSubmit();
                     }
                   }}
                   value={field.state.value}
@@ -255,7 +255,7 @@ export function EditServerDialog({ server }: EditServerDialogProps) {
                     onKeyUp={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
-                        form.handleSubmit();
+                        void form.handleSubmit();
                       }
                     }}
                     value={field.state.value}
@@ -302,7 +302,7 @@ export function EditServerDialog({ server }: EditServerDialogProps) {
                     onKeyUp={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
-                        form.handleSubmit();
+                        void form.handleSubmit();
                       }
                     }}
                     value={field.state.value ?? ""}

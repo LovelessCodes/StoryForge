@@ -244,7 +244,7 @@ function RouteComponent() {
   };
   const handleDialogChoice = async (choice: "keep" | "delete" | "move") => {
     if (!pendingField || !pendingPath) return;
-    logToFile(
+    await logToFile(
       "INFO ",
       `[settings] Folder change: field=${pendingField} choice=${choice} path=${pendingPath}`,
     );

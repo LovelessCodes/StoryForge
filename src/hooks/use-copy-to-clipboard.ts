@@ -12,7 +12,7 @@ function oldSchoolCopy(text: string) {
 export function useCopyToClipboard(): [string | null, (value: string) => void] {
   const [state, setState] = useState<string | null>(null);
 
-  const copyToClipboard = useCallback((value: string) => {
+  const copyToClipboard = useCallback(async (value: string) => {
     const handleCopy = async () => {
       try {
         if (navigator?.clipboard?.writeText) {
@@ -29,7 +29,7 @@ export function useCopyToClipboard(): [string | null, (value: string) => void] {
       }
     };
 
-    handleCopy();
+    await handleCopy();
   }, []);
 
   return [state, copyToClipboard];

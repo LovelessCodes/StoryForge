@@ -105,9 +105,9 @@ export const WorldItem = ({ world }: { world: World }) => {
           render={
             <Button
               disabled={isInstalling}
-              onClick={() => {
+              onClick={async () => {
                 if (version) {
-                  invoke("play_game", {
+                  await invoke("play_game", {
                     options: {
                       installation_id: installation.id,
                       save: world.path.split("/").pop()?.replace(".vcdbs", ""),

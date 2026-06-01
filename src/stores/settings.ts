@@ -33,7 +33,7 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
     const dest = path ?? appFolder;
     const src = installationsParent ?? appFolder;
     if (config?.moveCurrentData) {
-      logToFile(
+      await logToFile(
         "INFO ",
         `[settings] move_installations: ${src}/${installationsSubdir} -> ${dest}/${installationsSubdir}`,
       );
@@ -43,13 +43,16 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
         subdir: installationsSubdir,
       });
     } else if (config?.deleteCurrentData) {
-      logToFile("INFO ", `[settings] remove_all_installations: ${src}/${installationsSubdir}`);
+      await logToFile(
+        "INFO ",
+        `[settings] remove_all_installations: ${src}/${installationsSubdir}`,
+      );
       await invoke("remove_all_installations", {
         source: src,
         subdir: installationsSubdir,
       });
     } else {
-      logToFile("INFO ", `[settings] set_installations_parent: ${dest}`);
+      await logToFile("INFO ", `[settings] set_installations_parent: ${dest}`);
     }
     set(() => ({ installationsParent: path }));
   },
@@ -59,7 +62,7 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
     const dest = path ?? appFolder;
     const src = versionsParent ?? appFolder;
     if (config?.moveCurrentData) {
-      logToFile(
+      await logToFile(
         "INFO ",
         `[settings] move_versions: ${src}/${versionsSubdir} -> ${dest}/${versionsSubdir}`,
       );
@@ -69,13 +72,13 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
         subdir: versionsSubdir,
       });
     } else if (config?.deleteCurrentData) {
-      logToFile("INFO ", `[settings] remove_all_versions: ${src}/${versionsSubdir}`);
+      await logToFile("INFO ", `[settings] remove_all_versions: ${src}/${versionsSubdir}`);
       await invoke("remove_all_versions", {
         source: src,
         subdir: versionsSubdir,
       });
     } else {
-      logToFile("INFO ", `[settings] set_versions_parent: ${dest}`);
+      await logToFile("INFO ", `[settings] set_versions_parent: ${dest}`);
     }
     set(() => ({ versionsParent: path }));
   },

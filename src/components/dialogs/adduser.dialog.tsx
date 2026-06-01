@@ -194,7 +194,7 @@ export function AddUserDialog({ email }: { email?: string }) {
                       onKeyUp={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
-                          form.handleSubmit();
+                          void form.handleSubmit();
                         }
                         if (e.key === "Tab" && !e.shiftKey) {
                           e.preventDefault();
@@ -260,7 +260,7 @@ export function AddUserDialog({ email }: { email?: string }) {
                       onKeyUp={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
-                          form.handleSubmit();
+                          void form.handleSubmit();
                         }
                         if (e.key === "Tab" && e.shiftKey) {
                           e.preventDefault();

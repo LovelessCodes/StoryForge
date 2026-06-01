@@ -83,9 +83,12 @@ export function UpdateModDialog({ mod, installation, versionFrom }: UpdateModDia
     mutationFn: ({ path, modpath }: { path: string; modpath: string }) =>
       invoke("remove_mod_from_installation", { params: { modpath, path } }),
     onError: (error, variables) => {
-      toast.error(`Error removing ${name} from ${installation.name}: ${error.message}`, {
-        id: `mod-remove-${variables.path}-${variables.modpath}`,
-      });
+      toast.error(
+        `Error removing ${variables.modpath} from ${installation.name}: ${error.message}`,
+        {
+          id: `mod-remove-${variables.path}-${variables.modpath}`,
+        },
+      );
     },
     onSuccess: () => {
       addModToInstallation({
