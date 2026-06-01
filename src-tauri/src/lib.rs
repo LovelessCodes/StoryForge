@@ -61,12 +61,13 @@ pub fn run() {
 
             let win_builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
                 .title("Story Forge")
-                .inner_size(800.0, 600.0);
+                .inner_size(800.0, 600.0)
+                .transparent(false);
 
             let window = win_builder.build().unwrap();
             #[cfg(target_os = "windows")]
             {
-                window.set_decorations(false);
+                let _ = window.set_decorations(false);
             }
 
             // set background color only when building for macOS
