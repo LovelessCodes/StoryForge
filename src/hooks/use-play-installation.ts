@@ -11,7 +11,7 @@ export const usePlayInstallation = (
   props?: UseMutationOptions<void, Error, { id: number; save?: string }>,
 ) => {
   const unlistens = useRef<UnlistenFn[]>([]);
-  const { installations, updateLastPlayed } = useInstallations();
+  const { installations, updateLastPlayed, updatePlaytime } = useInstallations();
   return useMutation({
     ...props,
     mutationFn: ({ id, save }) => invoke("play_game", { options: { installation_id: id, save } }),
@@ -41,6 +41,17 @@ export const usePlayInstallation = (
       );
 
       unlistens.current.push(unlistenDotnet);
+
+      // Listen for game quit to track playtime
+      const unlistenQuit = await listen<{
+        installationId: number;
+        elapsedSeconds: number;
+        lastPlayed: number;
+        totalTimePlayed: number;
+      }>(`game-quit-${variable.id}`, (event) => {
+        updatePlaytime(variable.id, event.payload.totalTimePlayed, event.payload.lastPlayed);
+      });
+      unlistens.current.push(unlistenQuit);
 
       const unlistenLaunch = await listen<{
         status: string;
