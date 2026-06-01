@@ -20,6 +20,7 @@ use walkdir::WalkDir;
 use super::auth::SavedAccount;
 use super::dotnet;
 use super::errors::UiError;
+use super::mods;
 use super::utils::{
     installations_folder, installations_subdir, move_folder, versions_folder, versions_subdir,
 };
@@ -331,6 +332,153 @@ pub fn save_installation(
         favorite,
     };
     write_installation_json(&dir, &info)
+}
+
+#[command]
+pub async fn import_installation(
+    app: AppHandle,
+    name: String,
+    version: String,
+    start_params: String,
+    mods: String,
+    emitevent: String,
+) -> Result<InstallationResult, UiError> {
+    log_info!(
+        "import_installation: name={} version={} mods={}",
+        name,
+        version,
+        mods
+    );
+
+    // 1. Create the installation directory
+    let subdir = installations_subdir(app.clone());
+    let installations_dir = installations_folder(app.clone()).join(&subdir);
+    let inst_dir = installations_dir.join(&name);
+    create_dir_all(&inst_dir).map_err(|e| UiError {
+        name: "create_dir_failed".into(),
+        message: format!("Failed to create installation directory: {e}"),
+    })?;
+
+    // 2. Write installation.json
+    let info = InstallationInfo {
+        name: name.clone(),
+        version,
+        start_params,
+        favorite: false,
+    };
+    write_installation_json(&inst_dir, &info)?;
+
+    // 3. Create Mods directory
+    let mods_dir = inst_dir.join("Mods");
+    create_dir_all(&mods_dir).map_err(|e| UiError {
+        name: "create_dir_failed".into(),
+        message: format!("Failed to create Mods directory: {e}"),
+    })?;
+
+    let id = generate_id(&name);
+
+    // 4. Parse mods: "modid@version,modid@version,..."
+    let mod_entries: Vec<(&str, &str)> = mods
+        .split(',')
+        .filter_map(|entry| {
+            let trimmed = entry.trim();
+            if trimmed.is_empty() {
+                return None;
+            }
+            let mut parts = trimmed.splitn(2, '@');
+            let modid = parts.next().unwrap_or("");
+            let version = parts.next().unwrap_or("");
+            if modid.is_empty() || version.is_empty() {
+                None
+            } else {
+                Some((modid, version))
+            }
+        })
+        .collect();
+
+    let total = mod_entries.len();
+    log_info!("import_installation: {} mods to download", total);
+
+    // 5. Download each mod with progress events
+    let mut downloaded: Vec<String> = Vec::new();
+    let mut errors: Vec<String> = Vec::new();
+
+    for (i, (modid, version_str)) in mod_entries.iter().enumerate() {
+        let current = (i + 1) as u32;
+
+        let _ = app.emit(
+            &emitevent,
+            json!({
+                "phase": "downloading",
+                "current": current,
+                "total": total,
+                "modid": modid,
+                "version": version_str,
+            }),
+        );
+
+        match mods::download_mod_file(modid, version_str, &mods_dir).await {
+            Ok(filename) => {
+                log_info!(
+                    "import_installation: [{}/{}] downloaded {}@{}",
+                    current,
+                    total,
+                    modid,
+                    version_str
+                );
+                downloaded.push(filename);
+            }
+            Err(e) => {
+                log_error!(
+                    "import_installation: [{}/{}] failed {}@{}: {}",
+                    current,
+                    total,
+                    modid,
+                    version_str,
+                    e.message
+                );
+                errors.push(format!("{}@{}: {}", modid, version_str, e.message));
+            }
+        }
+    }
+
+    let size_bytes = dir_size(&inst_dir);
+
+    let result = InstallationResult {
+        id,
+        name: name.clone(),
+        version: info.version.clone(),
+        start_params: info.start_params.clone(),
+        path: inst_dir.to_string_lossy().to_string(),
+        size_bytes,
+        size_display: format_size(size_bytes),
+        favorite: false,
+    };
+
+    let _ = app.emit(
+        &emitevent,
+        json!({
+            "phase": "done",
+            "installation": {
+                "id": result.id,
+                "name": result.name,
+                "version": result.version,
+                "path": result.path,
+                "sizeDisplay": result.size_display,
+            },
+            "downloaded": downloaded.len(),
+            "failed": errors.len(),
+            "errors": errors,
+        }),
+    );
+
+    log_info!(
+        "import_installation: done — {} downloaded, {} failed",
+        downloaded.len(),
+        errors.len()
+    );
+
+    Ok(result)
 }
 
 #[command]
