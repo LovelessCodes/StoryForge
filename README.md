@@ -40,7 +40,6 @@
 - **Beautiful UI**: Powered by Vite + React for a snappy, modern interface.
 - **Updater**: Install once, update forever - with the built-in auto updater.
 
-    
 > [!WARNING]
 > **macOS Users:** Story Forge is not notarized yet, so macOS Gatekeeper may block it from launching. After installing, run the following in your terminal to allow the app:
 >
@@ -48,7 +47,7 @@
 > sudo xattr -rd com.apple.quarantine /Applications/Story\ Forge.app
 > ```
 
---- 
+---
 
 ## 🧰 Prerequisites
 
@@ -56,7 +55,7 @@ Set up the following tooling before running Story Forge locally:
 
 - [Bun](https://bun.sh/) (v1.0+)
 - [Rust](https://www.rust-lang.org/tools/install) (v1.70+)
-- [Tauri Prerequisites](https://tauri.app/start/prerequisites/)    
+- [Tauri Prerequisites](https://tauri.app/start/prerequisites/)
 
 ---
 
