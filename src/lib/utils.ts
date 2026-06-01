@@ -136,15 +136,12 @@ export const exportInstallation = async ({ installation }: { installation: Insta
     path: installation.path,
   });
   const data = {
-    mods: installationMods.mods.map((m) => ({
-      id: m.modid,
-      version: m.version,
-    })),
+    mods: installationMods.mods.map((m) => `${m.modid}@${m.version}`).join(","),
     name: installation.name,
     version: installation.version,
   };
   // Copy to clipboard
-  await writeText(JSON.stringify(data, null, 2));
+  await writeText(JSON.stringify(data, null));
   toast.success("Installation copied to clipboard");
 };
 
