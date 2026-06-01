@@ -40,12 +40,15 @@ async function saveInstallationToDisk(installation: {
 }
 
 const installationSchema = z.object({
-  mods: z.array(
-    z.object({
-      id: z.string(),
-      version: z.string(),
-    }),
-  ),
+  mods: z.union([
+    z.array(
+      z.object({
+        id: z.string(),
+        version: z.string(),
+      }),
+    ),
+    z.string(),
+  ]),
   name: z.string().min(2).max(100),
   version: z.string().min(2).max(100),
 });
@@ -148,7 +151,15 @@ export function ImportInstallationDialog() {
         });
         await loadInstallations();
 
-        for (const mod of installation.data.mods) {
+        const mods =
+          typeof installation.data.mods === "object"
+            ? installation.data.mods
+            : installation.data.mods.split(",").map((m) => {
+                const [id, version] = m.split("@");
+                return { id, version };
+              });
+
+        for (const mod of mods) {
           const modInfo = (await invoke("fetch_mod_info", {
             modid: mod.id,
           })) as ModInfo | null;
