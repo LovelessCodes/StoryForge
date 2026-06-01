@@ -67,6 +67,23 @@ pub struct ModRemoveParams {
     pub modpath: String,
 }
 
+#[derive(Debug, Deserialize)]
+struct ModRelease {
+    mainfile: String,
+    modversion: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct ModDetail {
+    releases: Vec<ModRelease>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ModInfoResponse {
+    #[serde(rename = "mod")]
+    mod_: ModDetail,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct FetchModsParams {
     pub versions: Vec<String>,
@@ -262,6 +279,116 @@ pub async fn add_mod_to_installation(path: String, url: String) -> Result<String
         message: format!("Failed to write file: {e}"),
     })?;
     Ok("added".into())
+}
+
+#[command]
+pub async fn download_mod(
+    modid: String,
+    version: String,
+    installation_path: String,
+) -> Result<String, UiError> {
+    let mods_dir = PathBuf::from(&installation_path).join("Mods");
+    download_mod_file(&modid, &version, &mods_dir).await
+}
+
+/// Download a mod by modid + version into a Mods directory.
+/// Returns the saved filename.
+pub async fn download_mod_file(
+    modid: &str,
+    version: &str,
+    mods_dir: &Path,
+) -> Result<String, UiError> {
+    log_info!(
+        "download_mod_file: modid={} version={} dir={:?}",
+        modid,
+        version,
+        mods_dir
+    );
+
+    // 1. Fetch mod info to get the download URL for the given version
+    let url = format!("https://mods.vintagestory.at/api/mod/{}", modid);
+    let res = get(&url)
+        .await
+        .map_err(|e| UiError::from(format!("Request error: {e}")))?;
+
+    if !res.status().is_success() {
+        return Err(UiError {
+            name: "http_error".into(),
+            message: format!("HTTP error: {}", res.status()),
+        });
+    }
+
+    let mod_info: ModInfoResponse = res
+        .json()
+        .await
+        .map_err(|e| UiError::from(format!("JSON error: {e}")))?;
+
+    // 2. Find the release matching the requested version
+    let release = mod_info
+        .mod_
+        .releases
+        .iter()
+        .find(|r| r.modversion == version)
+        .ok_or_else(|| UiError {
+            name: "version_not_found".into(),
+            message: format!("No release found for version {}", version),
+        })?;
+
+    let download_url = &release.mainfile;
+    log_info!("download_mod_file: download_url={}", download_url);
+
+    // 3. Ensure Mods directory exists
+    if !mods_dir.exists() {
+        create_dir_all(mods_dir).map_err(|e| UiError {
+            name: "create_dir_failed".into(),
+            message: format!("Failed to create Mods directory: {e}"),
+        })?;
+    }
+
+    // 4. Download the mod file
+    let response = get(download_url)
+        .await
+        .map_err(|e| UiError::from(format!("Download request error: {e}")))?;
+
+    if !response.status().is_success() {
+        return Err(UiError {
+            name: "http_error".into(),
+            message: format!("Download HTTP error: {}", response.status()),
+        });
+    }
+
+    // Extract filename from URL or Content-Disposition
+    let filename = response
+        .headers()
+        .get(reqwest::header::CONTENT_DISPOSITION)
+        .and_then(|cd| cd.to_str().ok())
+        .and_then(|cd_str| {
+            cd_str.split(';').find_map(|part| {
+                let part = part.trim();
+                part.strip_prefix("filename=").map(|f| f.trim_matches('"'))
+            })
+        })
+        .unwrap_or_else(|| download_url.split('/').next_back().unwrap_or("mod.zip"))
+        .to_string();
+
+    let filepath = mods_dir.join(&filename);
+    let content = response.bytes().await.map_err(|e| UiError {
+        name: "read_response_failed".into(),
+        message: format!("Failed to read response: {e}"),
+    })?;
+
+    let mut file = File::create(&filepath).map_err(|e| UiError {
+        name: "create_file_failed".into(),
+        message: format!("Failed to create file: {e}"),
+    })?;
+
+    file.write_all(&content).map_err(|e| UiError {
+        name: "write_file_failed".into(),
+        message: format!("Failed to write file: {e}"),
+    })?;
+
+    log_info!("download_mod_file: saved to {:?}", filepath);
+    Ok(filename)
 }
 
 #[command]
