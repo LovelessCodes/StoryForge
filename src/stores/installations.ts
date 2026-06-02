@@ -32,6 +32,8 @@ export type Installation = {
   favorite: boolean;
   sizeBytes: number;
   sizeDisplay: string;
+  modpackSlug: string | null;
+  modpackVersion: string | null;
 };
 
 type InstallationResult = {
@@ -45,6 +47,8 @@ type InstallationResult = {
   favorite: boolean;
   last_played: number | null;
   total_time_played: number;
+  modpack_slug: string | null;
+  modpack_version: string | null;
 };
 
 type InstallationsStore = {
@@ -111,6 +115,8 @@ export const useInstallationsStore = create<InstallationsStore>((set) => ({
             favorite: existing?.favorite ?? r.favorite ?? false,
             sizeBytes: r.size_bytes,
             sizeDisplay: r.size_display,
+            modpackSlug: r.modpack_slug ?? existing?.modpackSlug ?? null,
+            modpackVersion: r.modpack_version ?? existing?.modpackVersion ?? null,
           };
         });
         return { installations };
