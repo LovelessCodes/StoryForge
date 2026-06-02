@@ -20,6 +20,7 @@ dependencies = [
  "quick-xml 0.40.1",
  "reqwest",
  "rusqlite",
+ "semver",
  "serde",
  "serde_json",
  "tar",
