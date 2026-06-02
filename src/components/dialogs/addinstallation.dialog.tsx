@@ -116,6 +116,8 @@ export function AddInstallationDialog({ version }: AddInstallationDialogProps) {
           startParams: value.startParams,
           totalTimePlayed: 0,
           version: value.version,
+          modpackSlug: null,
+          modpackVersion: null,
         },
         async (status) => {
           if (status) {
