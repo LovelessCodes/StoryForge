@@ -156,6 +156,7 @@ pub fn run() {
             installations::rename_installations_folder,
             installations::get_installation_logs,
             installations::read_installation_log,
+            installations::zip_modconfig,
             // Servers
             servers::fetch_public_servers,
             servers::fetch_all_servers,
