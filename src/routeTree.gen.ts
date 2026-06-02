@@ -15,7 +15,9 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ServersRouteImport } from './routes/servers'
 import { Route as PublicServersRouteImport } from './routes/public-servers'
 import { Route as NewsRouteImport } from './routes/news'
+import { Route as ModpacksRouteImport } from './routes/modpacks'
 import { Route as InstallationsRouteImport } from './routes/installations'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ModConfigsIdRouteImport } from './routes/mod-configs/$id'
 import { Route as InstallModsIdRouteImport } from './routes/install-mods/$id'
@@ -50,9 +52,19 @@ const NewsRoute = NewsRouteImport.update({
   path: '/news',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ModpacksRoute = ModpacksRouteImport.update({
+  id: '/modpacks',
+  path: '/modpacks',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InstallationsRoute = InstallationsRouteImport.update({
   id: '/installations',
   path: '/installations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -73,7 +85,9 @@ const InstallModsIdRoute = InstallModsIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/installations': typeof InstallationsRoute
+  '/modpacks': typeof ModpacksRoute
   '/news': typeof NewsRoute
   '/public-servers': typeof PublicServersRoute
   '/servers': typeof ServersRoute
@@ -85,7 +99,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/installations': typeof InstallationsRoute
+  '/modpacks': typeof ModpacksRoute
   '/news': typeof NewsRoute
   '/public-servers': typeof PublicServersRoute
   '/servers': typeof ServersRoute
@@ -98,7 +114,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/installations': typeof InstallationsRoute
+  '/modpacks': typeof ModpacksRoute
   '/news': typeof NewsRoute
   '/public-servers': typeof PublicServersRoute
   '/servers': typeof ServersRoute
@@ -112,7 +130,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
     | '/installations'
+    | '/modpacks'
     | '/news'
     | '/public-servers'
     | '/servers'
@@ -124,7 +144,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
     | '/installations'
+    | '/modpacks'
     | '/news'
     | '/public-servers'
     | '/servers'
@@ -136,7 +158,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/auth'
     | '/installations'
+    | '/modpacks'
     | '/news'
     | '/public-servers'
     | '/servers'
@@ -149,7 +173,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
   InstallationsRoute: typeof InstallationsRoute
+  ModpacksRoute: typeof ModpacksRoute
   NewsRoute: typeof NewsRoute
   PublicServersRoute: typeof PublicServersRoute
   ServersRoute: typeof ServersRoute
@@ -204,11 +230,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NewsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/modpacks': {
+      id: '/modpacks'
+      path: '/modpacks'
+      fullPath: '/modpacks'
+      preLoaderRoute: typeof ModpacksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/installations': {
       id: '/installations'
       path: '/installations'
       fullPath: '/installations'
       preLoaderRoute: typeof InstallationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -237,7 +277,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
   InstallationsRoute: InstallationsRoute,
+  ModpacksRoute: ModpacksRoute,
   NewsRoute: NewsRoute,
   PublicServersRoute: PublicServersRoute,
   ServersRoute: ServersRoute,
