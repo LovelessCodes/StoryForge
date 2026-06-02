@@ -23,8 +23,7 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 
-const SIDEBAR_COOKIE_NAME: string = "sidebar_state";
-const SIDEBAR_COOKIE_MAX_AGE: number = 60 * 60 * 24 * 7;
+const SIDEBAR_STORAGE_NAME: string = "sidebar_state";
 const SIDEBAR_WIDTH: string = "12rem";
 const SIDEBAR_WIDTH_MOBILE: string = "18rem";
 const SIDEBAR_WIDTH_ICON: string = "1rem";
@@ -75,7 +74,7 @@ export function useSidebar(): SidebarContextProps {
 }
 
 export function SidebarProvider({
-  defaultOpen = true,
+  defaultOpen = localStorage.getItem(SIDEBAR_STORAGE_NAME) === "true" ? true : false,
   open: openProp,
   onOpenChange: setOpenProp,
   className,
@@ -103,13 +102,8 @@ export function SidebarProvider({
         _setOpen(openState);
       }
 
-      // This sets the cookie to keep the sidebar state.
-      await cookieStore.set({
-        expires: Date.now() + SIDEBAR_COOKIE_MAX_AGE * 1000,
-        name: SIDEBAR_COOKIE_NAME,
-        path: "/",
-        value: String(openState),
-      });
+      // This stores the sidebar state in localStorage for persistence across sessions.
+      localStorage.setItem(SIDEBAR_STORAGE_NAME, String(openState));
     },
     [setOpenProp, open],
   );
