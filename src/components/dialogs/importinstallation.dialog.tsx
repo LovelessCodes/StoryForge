@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Progress, ProgressTrack, ProgressIndicator } from "@/components/ui/progress";
+import { makeStringFolderSafe } from "@/lib/utils";
 import { rootDialogHandle } from "@/routes/__root";
 import { useInstallations, type Installation } from "@/stores/installations";
 
@@ -41,6 +42,8 @@ type BackendInstallationResult = {
   size_bytes: number;
   size_display: string;
   favorite: boolean;
+  modpack_slug: string | null;
+  modpack_version: string | null;
 };
 
 type ImportProgress = {
@@ -64,10 +67,12 @@ export function ImportInstallationDialog() {
       mods: string;
       emitevent: string;
     }) => {
+      const safeName = makeStringFolderSafe(input.name);
       const result = (await invoke("import_installation", {
         emitevent: input.emitevent,
         mods: input.mods,
         name: input.name,
+        safeName,
         startParams: input.startParams,
         version: input.version,
       })) as BackendInstallationResult;
@@ -120,6 +125,8 @@ export function ImportInstallationDialog() {
         startParams: result.startParams,
         totalTimePlayed: 0,
         version: result.version,
+        modpackSlug: result.modpack_slug ?? null,
+        modpackVersion: result.modpack_version ?? null,
       };
 
       addInstallation(installation);
