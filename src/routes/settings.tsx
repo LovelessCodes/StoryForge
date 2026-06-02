@@ -1,9 +1,9 @@
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { FileTextIcon, RefreshCwIcon } from "lucide-react";
+import { FileTextIcon, LogOutIcon, RefreshCwIcon, UserIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import z from "zod";
@@ -16,13 +16,18 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 import { TooltipTrigger } from "@/components/ui/tooltip";
 import { useAppFolder } from "@/hooks/use-app-folder";
+import { useAuthSession } from "@/hooks/use-auth-session";
 import { installedVersionsQueryKey } from "@/hooks/use-installed-versions";
+import { authClient, clearAuthToken } from "@/lib/auth";
 import { logToFile } from "@/lib/logger";
 import { cn } from "@/lib/utils";
 import { useInstallationsStore } from "@/stores/installations";
@@ -287,216 +292,313 @@ function RouteComponent() {
 
   return (
     <ScrollArea className="h-full w-full" scrollFade>
-      <div className="flex flex-col gap-2 px-4 pt-10">
-        <div className="mb-4 flex items-center gap-3">
-          <Checkbox
-            checked={useAppDirectory}
-            id="useAppDirectory"
-            onCheckedChange={(checked) => {
-              const useAppDir = checked === true;
-              setUseAppDirectory(useAppDir);
-              if (
-                useAppDir &&
-                (settingsStore.installationsParent !== null ||
-                  settingsStore.versionsParent !== null)
-              ) {
-                setPendingField("both");
-                setPendingPath(appFolder);
-                setDialogOpen(true);
-              }
-            }}
-          />
-          <Label htmlFor="useAppDirectory">
-            Use App Data Directory for Installations and Versions
-          </Label>
-        </div>
-        <form.Field name="installationsParent">
-          {(field) => (
-            <div className="grid gap-2">
-              <TooltipTrigger
-                render={
-                  <Label
-                    className={cn([
-                      field.state.meta.errors.length
-                        ? "text-destructive"
-                        : useAppDirectory
-                          ? "text-muted-foreground"
-                          : "",
-                      "w-fit",
-                    ])}
-                    htmlFor="installationsParent"
-                  />
-                }
-                handle={rootTooltipHandle}
-                payload={() => (
-                  <>
-                    <p className="text-xs">Defaults to the app data directory</p>
-                    {field.state.meta.errors.length > 0 &&
-                      field.state.meta.errors.map((error, index) => (
-                        <p
-                          className="text-destructive text-xs"
-                          // biome-ignore lint/suspicious/noArrayIndexKey: Needed
-                          key={index}
-                        >
-                          {error?.message}
-                        </p>
-                      ))}
-                  </>
-                )}
-              >
-                Installations Parent Directory
-              </TooltipTrigger>
-              <div className="flex gap-2">
-                <Input
-                  className={field.state.meta.errors.length ? "text-destructive" : ""}
-                  disabled={useAppDirectory || form.state.isSubmitting}
-                  readOnly
-                  value={useAppDirectory ? `${appFolder}` : (field.state.value ?? "")}
-                />
-                <Button
-                  disabled={form.state.isSubmitting || useAppDirectory}
-                  onClick={() => handleBrowse("installationsParent")}
-                  variant="outline"
-                >
-                  Browse
-                </Button>
-              </div>
-            </div>
-          )}
-        </form.Field>
-        <form.Field name="versionsParent">
-          {(field) => (
-            <div className="grid gap-2">
-              <TooltipTrigger
-                render={
-                  <Label
-                    className={cn([
-                      field.state.meta.errors.length
-                        ? "text-destructive"
-                        : useAppDirectory
-                          ? "text-muted-foreground"
-                          : "",
-                      "w-fit",
-                    ])}
-                    htmlFor="versionsParent"
-                  />
-                }
-                handle={rootTooltipHandle}
-                payload={() => (
-                  <>
-                    <p className="text-xs">Defaults to the app data directory</p>
-                    {field.state.meta.errors.length > 0 &&
-                      field.state.meta.errors.map((error, index) => (
-                        <p
-                          className="text-destructive text-xs"
-                          // biome-ignore lint/suspicious/noArrayIndexKey: Needed
-                          key={index}
-                        >
-                          {error?.message}
-                        </p>
-                      ))}
-                  </>
-                )}
-              >
-                Versions Parent Directory
-              </TooltipTrigger>
-              <div className="flex gap-2">
-                <Input
-                  className={field.state.meta.errors.length ? "text-destructive" : ""}
-                  disabled={useAppDirectory || form.state.isSubmitting}
-                  readOnly
-                  value={useAppDirectory ? `${appFolder}` : (field.state.value ?? "")}
-                />
-                <Button
-                  disabled={form.state.isSubmitting || useAppDirectory}
-                  onClick={() => handleBrowse("versionsParent")}
-                  variant="outline"
-                >
-                  Browse
-                </Button>
-              </div>
-            </div>
-          )}
-        </form.Field>
-        <form.Field name="streamMode">
-          {(field) => (
-            <div className="flex items-center gap-3">
+      <Tabs className="pt-4" defaultValue="client">
+        <TabsList className="mx-4 mb-6">
+          <TabsTab value="client">Client</TabsTab>
+          <TabsTab value="account">Account</TabsTab>
+        </TabsList>
+        <TabsPanel value="client">
+          <div className="flex flex-col gap-2 px-4 pb-10">
+            <div className="mb-4 flex items-center gap-3">
               <Checkbox
-                checked={field.state.value}
-                id="streamMode"
+                checked={useAppDirectory}
+                id="useAppDirectory"
                 onCheckedChange={(checked) => {
-                  field.handleChange(checked === true);
+                  const useAppDir = checked === true;
+                  setUseAppDirectory(useAppDir);
+                  if (
+                    useAppDir &&
+                    (settingsStore.installationsParent !== null ||
+                      settingsStore.versionsParent !== null)
+                  ) {
+                    setPendingField("both");
+                    setPendingPath(appFolder);
+                    setDialogOpen(true);
+                  }
                 }}
               />
-              <Label htmlFor="streamMode">Enable Stream Mode</Label>
+              <Label htmlFor="useAppDirectory">
+                Use App Data Directory for Installations and Versions
+              </Label>
             </div>
-          )}
-        </form.Field>
-        <form.Field name="darkMode">
-          {(field) => (
-            <div className="flex items-center gap-3">
-              <Checkbox
-                checked={field.state.value}
-                id="darkMode"
-                onCheckedChange={(checked) => {
-                  field.handleChange(checked === true);
-                }}
-              />
-              <Label htmlFor="darkMode">Enable Dark Mode</Label>
-            </div>
-          )}
-        </form.Field>
-        <form.Subscribe
-          selector={(s) => ({
-            isDefaultValue: s.isDefaultValue,
-            isSubmitting: s.isSubmitting,
-            isTouched: s.isTouched,
-            isValid: s.isValid,
-          })}
-        >
-          {(state) => (
-            <Button
-              disabled={
-                state.isSubmitting || !state.isTouched || !state.isValid || state.isDefaultValue
-              }
-              onClick={() => form.handleSubmit()}
+            <form.Field name="installationsParent">
+              {(field) => (
+                <div className="grid gap-2">
+                  <TooltipTrigger
+                    render={
+                      <Label
+                        className={cn([
+                          field.state.meta.errors.length
+                            ? "text-destructive"
+                            : useAppDirectory
+                              ? "text-muted-foreground"
+                              : "",
+                          "w-fit",
+                        ])}
+                        htmlFor="installationsParent"
+                      />
+                    }
+                    handle={rootTooltipHandle}
+                    payload={() => (
+                      <>
+                        <p className="text-xs">Defaults to the app data directory</p>
+                        {field.state.meta.errors.length > 0 &&
+                          field.state.meta.errors.map((error, index) => (
+                            <p
+                              className="text-destructive text-xs"
+                              // biome-ignore lint/suspicious/noArrayIndexKey: Needed
+                              key={index}
+                            >
+                              {error?.message}
+                            </p>
+                          ))}
+                      </>
+                    )}
+                  >
+                    Installations Parent Directory
+                  </TooltipTrigger>
+                  <div className="flex gap-2">
+                    <Input
+                      className={field.state.meta.errors.length ? "text-destructive" : ""}
+                      disabled={useAppDirectory || form.state.isSubmitting}
+                      readOnly
+                      value={useAppDirectory ? `${appFolder}` : (field.state.value ?? "")}
+                    />
+                    <Button
+                      disabled={form.state.isSubmitting || useAppDirectory}
+                      onClick={() => handleBrowse("installationsParent")}
+                      variant="outline"
+                    >
+                      Browse
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </form.Field>
+            <form.Field name="versionsParent">
+              {(field) => (
+                <div className="grid gap-2">
+                  <TooltipTrigger
+                    render={
+                      <Label
+                        className={cn([
+                          field.state.meta.errors.length
+                            ? "text-destructive"
+                            : useAppDirectory
+                              ? "text-muted-foreground"
+                              : "",
+                          "w-fit",
+                        ])}
+                        htmlFor="versionsParent"
+                      />
+                    }
+                    handle={rootTooltipHandle}
+                    payload={() => (
+                      <>
+                        <p className="text-xs">Defaults to the app data directory</p>
+                        {field.state.meta.errors.length > 0 &&
+                          field.state.meta.errors.map((error, index) => (
+                            <p
+                              className="text-destructive text-xs"
+                              // biome-ignore lint/suspicious/noArrayIndexKey: Needed
+                              key={index}
+                            >
+                              {error?.message}
+                            </p>
+                          ))}
+                      </>
+                    )}
+                  >
+                    Versions Parent Directory
+                  </TooltipTrigger>
+                  <div className="flex gap-2">
+                    <Input
+                      className={field.state.meta.errors.length ? "text-destructive" : ""}
+                      disabled={useAppDirectory || form.state.isSubmitting}
+                      readOnly
+                      value={useAppDirectory ? `${appFolder}` : (field.state.value ?? "")}
+                    />
+                    <Button
+                      disabled={form.state.isSubmitting || useAppDirectory}
+                      onClick={() => handleBrowse("versionsParent")}
+                      variant="outline"
+                    >
+                      Browse
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </form.Field>
+            <form.Field name="streamMode">
+              {(field) => (
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    checked={field.state.value}
+                    id="streamMode"
+                    onCheckedChange={(checked) => {
+                      field.handleChange(checked === true);
+                    }}
+                  />
+                  <Label htmlFor="streamMode">Enable Stream Mode</Label>
+                </div>
+              )}
+            </form.Field>
+            <form.Field name="darkMode">
+              {(field) => (
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    checked={field.state.value}
+                    id="darkMode"
+                    onCheckedChange={(checked) => {
+                      field.handleChange(checked === true);
+                    }}
+                  />
+                  <Label htmlFor="darkMode">Enable Dark Mode</Label>
+                </div>
+              )}
+            </form.Field>
+            <form.Subscribe
+              selector={(s) => ({
+                isDefaultValue: s.isDefaultValue,
+                isSubmitting: s.isSubmitting,
+                isTouched: s.isTouched,
+                isValid: s.isValid,
+              })}
             >
-              Save Changes
-            </Button>
-          )}
-        </form.Subscribe>
-        <section className="border-t px-6 py-6">
-          <LogViewer />
-        </section>
-      </div>
-      <AlertDialog onOpenChange={setDialogOpen} open={dialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>How do you want to handle existing data?</AlertDialogTitle>
-          </AlertDialogHeader>
-          <div className="space-y-2">
-            <Button className="w-full" onClick={() => handleDialogChoice("keep")} variant="outline">
-              Keep current data (do not move or delete)
-            </Button>
-            <Button
-              className="w-full"
-              onClick={() => handleDialogChoice("delete")}
-              variant="destructive"
-            >
-              Delete current data from old location
-            </Button>
-            <Button className="w-full" onClick={() => handleDialogChoice("move")} variant="default">
-              Copy current data to new location
-            </Button>
+              {(state) => (
+                <Button
+                  disabled={
+                    state.isSubmitting || !state.isTouched || !state.isValid || state.isDefaultValue
+                  }
+                  onClick={() => form.handleSubmit()}
+                >
+                  Save Changes
+                </Button>
+              )}
+            </form.Subscribe>
+            <section className="border-t px-6 py-6">
+              <LogViewer />
+            </section>
           </div>
-          <AlertDialogFooter>
-            <Button onClick={() => setDialogOpen(false)} variant="ghost">
-              Cancel
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          <AlertDialog onOpenChange={setDialogOpen} open={dialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>How do you want to handle existing data?</AlertDialogTitle>
+              </AlertDialogHeader>
+              <div className="space-y-2">
+                <Button
+                  className="w-full"
+                  onClick={() => handleDialogChoice("keep")}
+                  variant="outline"
+                >
+                  Keep current data (do not move or delete)
+                </Button>
+                <Button
+                  className="w-full"
+                  onClick={() => handleDialogChoice("delete")}
+                  variant="destructive"
+                >
+                  Delete current data from old location
+                </Button>
+                <Button
+                  className="w-full"
+                  onClick={() => handleDialogChoice("move")}
+                  variant="default"
+                >
+                  Copy current data to new location
+                </Button>
+              </div>
+              <AlertDialogFooter>
+                <Button onClick={() => setDialogOpen(false)} variant="ghost">
+                  Cancel
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </TabsPanel>
+        <TabsPanel value="account">
+          <AccountSettings />
+        </TabsPanel>
+      </Tabs>
     </ScrollArea>
+  );
+}
+
+function AccountSettings() {
+  const { user, isLoading } = useAuthSession();
+
+  const handleSignOut = async () => {
+    try {
+      await authClient.signOut();
+      clearAuthToken();
+      toast.success("Signed out");
+    } catch {
+      toast.error("Failed to sign out");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center px-4 py-12">
+        <p className="text-muted-foreground text-sm">Loading account info...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center gap-4 px-4 py-12">
+        <UserIcon className="text-muted-foreground size-12" />
+        <p className="text-muted-foreground text-sm">You are not signed in.</p>
+        <Link
+          className="text-primary text-sm hover:underline"
+          to="/auth"
+          search={{ mode: "signin" }}
+        >
+          Sign in to your Story Forge account
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-6 px-4 pb-10">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Profile</CardTitle>
+          <CardDescription>Your Story Forge account information</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-1">
+            <Label className="text-muted-foreground text-xs">Name</Label>
+            <p className="text-sm font-medium">{user.name ?? "Not set"}</p>
+          </div>
+          <Separator />
+          <div className="grid gap-1">
+            <Label className="text-muted-foreground text-xs">Email</Label>
+            <p className="text-sm font-medium">{user.email}</p>
+          </div>
+          <Separator />
+          <div className="grid gap-1">
+            <Label className="text-muted-foreground text-xs">User ID</Label>
+            <p className="text-muted-foreground font-mono text-xs">{user.id}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-destructive text-lg">Danger zone</CardTitle>
+          <CardDescription>Sign out of your account on this device</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={handleSignOut} variant="destructive">
+            <LogOutIcon className="mr-2 size-4" />
+            Sign out
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
