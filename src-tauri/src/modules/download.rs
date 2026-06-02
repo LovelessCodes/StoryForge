@@ -16,6 +16,7 @@ use std::{
 use tauri::{command, Emitter, Listener, Runtime};
 
 use super::errors::UiError;
+use super::utils::is_at_least_1_22_3;
 use crate::log_error;
 use crate::log_info;
 
@@ -543,7 +544,16 @@ pub async fn get_download_links() -> Result<Value, UiError> {
 #[command]
 pub async fn get_download_link(version: &str) -> Result<String, UiError> {
     // if platform is macos it should say mac
-    let platform = tauri_plugin_os::platform().replace("macos", "mac");
+    let mut platform = tauri_plugin_os::platform().replace("macos", "mac");
+    let arch = tauri_plugin_os::arch();
+
+    log_info!("platform: {platform}, arch: {arch}");
+
+    // If platform is mac and their arch is arm64, set platform to mac-arm64
+    if is_at_least_1_22_3(version).unwrap_or(false) && platform == "mac" && arch == "aarch64" {
+        platform = "mac_arm64".to_string();
+    }
+
     let url = format!(
         "https://vsapi.betterjs.dev/download/{}/{}/",
         version, platform
