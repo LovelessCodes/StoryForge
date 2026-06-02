@@ -79,6 +79,8 @@ export function EditInstallationDialog({ installation }: EditInstallationDialogP
           startParams: value.startParams,
           totalTimePlayed: installation.totalTimePlayed,
           version: value.version,
+          modpackSlug: installation.modpackSlug,
+          modpackVersion: installation.modpackVersion,
         },
         async (status) => {
           if (status) {
