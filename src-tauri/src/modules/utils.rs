@@ -1,4 +1,5 @@
 use fs_extra::dir::{copy, CopyOptions};
+use semver::Version;
 use std::{
     fs::{remove_dir_all, rename},
     path::PathBuf,
@@ -73,4 +74,10 @@ pub fn move_folder(source_path: PathBuf, destination_path: PathBuf) -> Result<St
     }
 
     Ok("moved".into())
+}
+
+pub fn is_at_least_1_22_3(version: &str) -> Result<bool, semver::Error> {
+    let min = Version::parse("1.22.3")?;
+    let v = Version::parse(version)?;
+    Ok(v >= min)
 }
