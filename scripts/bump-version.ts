@@ -64,26 +64,60 @@ async function confirm(msg: string): Promise<boolean> {
 
 const pkg = readJSON("package.json");
 const current: string = pkg.version;
-const [major, minor, patch] = current.split(".").map(Number);
 
-const bumps = {
-  patch: `${major}.${minor}.${patch + 1}`,
-  minor: `${major}.${minor + 1}.0`,
-  major: `${major + 1}.0.0`,
-};
+// Parse semver: <major>.<minor>.<patch>[-<prePrefix>.<preNum>]
+const preReleaseRe = /^(\d+\.\d+\.\d+)-(.+)\.(\d+)$/;
+const preMatch = current.match(preReleaseRe);
+const baseVersion = preMatch ? preMatch[1] : current;
+const [bMajor, bMinor, bPatch] = baseVersion.split(".").map(Number);
+
+interface BumpOption {
+  label: string;
+  value: string;
+}
+
+const bumps: BumpOption[] = [
+  { label: "patch", value: `${bMajor}.${bMinor}.${bPatch + 1}` },
+  { label: "minor", value: `${bMajor}.${bMinor + 1}.0` },
+  { label: "major", value: `${bMajor + 1}.0.0` },
+];
+
+if (preMatch) {
+  const prePrefix = preMatch[2];
+  const preNum = Number.parseInt(preMatch[3], 10);
+  bumps.push({
+    label: "pre-release bump",
+    value: `${baseVersion}-${prePrefix}.${preNum + 1}`,
+  });
+  bumps.push({ label: "finalize", value: baseVersion });
+} else {
+  // Pre-releases target the next version at each bump level
+  const prBumps: BumpOption[] = bumps.map((b) => ({
+    label: `pre-release (${b.label})`,
+    value: `${b.value}-rc.0`,
+  }));
+  bumps.push(...prBumps);
+}
 
 console.log(`Current version: ${current}`);
 
 const choice = await pick(
-  [`patch  →  ${bumps.patch}`, `minor  →  ${bumps.minor}`, `major  →  ${bumps.major}`],
+  bumps.map((b) => `${b.label.padEnd(22)} →  ${b.value}`),
   "What kind of bump?",
 );
 
-const picked = choice.includes("patch") ? "patch" : choice.includes("minor") ? "minor" : "major";
-const newVersion = bumps[picked];
+// Match by index (not substring — "patch" would match inside "pre-release (patch)")
+const idx = bumps.findIndex((b) => choice.startsWith(b.label.padEnd(22)));
+const picked = bumps[idx >= 0 ? idx : 0];
+const newVersion = picked.value;
+const isPreRelease = picked.label.startsWith("pre-release");
+const isFinalize = picked.label === "finalize";
 
-const ok = await confirm(`\nBump from ${current} to ${newVersion}?`);
-if (!ok) {
+const okMsg = isFinalize
+  ? `\nFinalize ${current} → ${newVersion}?`
+  : `\nBump from ${current} to ${newVersion}?`;
+
+if (!(await confirm(okMsg))) {
   console.log("Canceled.");
   process.exit(0);
 }
@@ -99,13 +133,13 @@ tauriConf.version = newVersion;
 writeJSON("src-tauri/tauri.conf.json", tauriConf);
 console.log(`  tauri.conf.json → ${newVersion}`);
 
-// 3. Cargo.toml — replace version line directly (avoids cargo-edit dependency)
+// 3. Cargo.toml
 const cargoToml = readFileSync(join(ROOT, "src-tauri/Cargo.toml"), "utf-8");
 const updatedToml = cargoToml.replace(/^version\s*=\s*"[^"]*"/m, `version = "${newVersion}"`);
 writeFileSync(join(ROOT, "src-tauri/Cargo.toml"), updatedToml);
 console.log(`  Cargo.toml → ${newVersion}`);
 
-// 4. Cargo.lock — regenerate from src-tauri dir
+// 4. Cargo.lock
 const lockResult = spawnSync("cargo", ["generate-lockfile"], {
   cwd: join(ROOT, "src-tauri"),
   stdio: DRY_RUN ? "ignore" : "inherit",
@@ -120,7 +154,7 @@ if (lockResult.status === 0) {
 sh("bun", ["run", "fmt"]);
 console.log("  formatted");
 
-// 6. Commit & push to release
+// 6. Commit
 git(
   "add",
   "package.json",
@@ -129,12 +163,21 @@ git(
   "src-tauri/Cargo.lock",
 );
 git("commit", "-m", `chore: bump version to ${newVersion}`);
-git("push", "origin", "HEAD:release");
 
-// 7. Tag & push
+// 7. Push & tag
 const tag = `storyforge-v${newVersion}`;
-git("tag", "-a", tag, "-m", `Story Forge v${newVersion}`);
-git("push", "origin", tag);
+if (isPreRelease) {
+  // Pre-release: tag only, don't push commit to release branch
+  git("tag", "-a", tag, "-m", `Story Forge ${newVersion} (pre-release)`);
+  git("push", "origin", tag);
+  console.log("\n  ⚠ Pre-release: tag pushed but commit NOT pushed to release branch.");
+  console.log("    Push manually when ready or use 'finalize' to cut a stable release.");
+} else {
+  // Stable release or finalize: push to release branch + tag
+  git("push", "origin", "HEAD:release");
+  git("tag", "-a", tag, "-m", `Story Forge v${newVersion}`);
+  git("push", "origin", tag);
+}
 
 if (DRY_RUN) {
   console.log("\n🧪 Dry run complete. Files updated on disk but nothing committed or pushed.");
