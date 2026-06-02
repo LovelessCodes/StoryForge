@@ -16,6 +16,7 @@ use std::{
 use tauri::{command, AppHandle, Emitter, Manager};
 use tauri_plugin_zustand::ManagerExt;
 use walkdir::WalkDir;
+use zip::ZipArchive;
 
 use super::auth::SavedAccount;
 use super::dotnet;
@@ -40,6 +41,10 @@ pub struct InstallationInfo {
     pub last_played: Option<u64>,
     #[serde(default)]
     pub total_time_played: u64,
+    #[serde(default)]
+    pub modpack_slug: Option<String>,
+    #[serde(default)]
+    pub modpack_version: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -55,6 +60,8 @@ pub struct InstallationResult {
     pub favorite: bool,
     pub last_played: Option<u64>,
     pub total_time_played: u64,
+    pub modpack_slug: Option<String>,
+    pub modpack_version: Option<String>,
 }
 
 fn format_size(bytes: u64) -> String {
@@ -196,6 +203,8 @@ pub fn find_installation_by_id(
                 favorite: false,
                 last_played: None,
                 total_time_played: 0,
+                modpack_slug: None,
+                modpack_version: None,
             },
         ));
     }
@@ -241,6 +250,8 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
                             favorite: false,
                             last_played: None,
                             total_time_played: 0,
+                            modpack_slug: None,
+                            modpack_version: None,
                         };
                         let _ = write_installation_json(&old_pb, &info);
                     }
@@ -290,6 +301,8 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
                     favorite: false,
                     last_played: None,
                     total_time_played: 0,
+                    modpack_slug: None,
+                    modpack_version: None,
                 })
             } else {
                 let info = InstallationInfo {
@@ -299,6 +312,8 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
                     favorite: false,
                     last_played: None,
                     total_time_played: 0,
+                    modpack_slug: None,
+                    modpack_version: None,
                 };
                 let _ = write_installation_json(&dir, &info);
                 info
@@ -316,6 +331,8 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
                 favorite: info.favorite,
                 last_played: info.last_played,
                 total_time_played: info.total_time_played,
+                modpack_slug: info.modpack_slug,
+                modpack_version: info.modpack_version,
             });
         }
     }
@@ -341,10 +358,18 @@ pub fn save_installation(
         favorite
     );
     let dir = PathBuf::from(&path);
-    // Preserve existing playtime fields if the installation.json already exists
-    let (last_played, total_time_played) = read_installation_json(&dir)
-        .map(|existing| (existing.last_played, existing.total_time_played))
-        .unwrap_or((None, 0));
+    // Preserve existing playtime/modpack fields if the installation.json already exists
+    let (last_played, total_time_played, modpack_slug, modpack_version) =
+        read_installation_json(&dir)
+            .map(|existing| {
+                (
+                    existing.last_played,
+                    existing.total_time_played,
+                    existing.modpack_slug,
+                    existing.modpack_version,
+                )
+            })
+            .unwrap_or((None, 0, None, None));
     let info = InstallationInfo {
         name,
         version,
@@ -352,6 +377,8 @@ pub fn save_installation(
         favorite,
         last_played,
         total_time_played,
+        modpack_slug,
+        modpack_version,
     };
     write_installation_json(&dir, &info)
 }
@@ -360,22 +387,27 @@ pub fn save_installation(
 pub async fn import_installation(
     app: AppHandle,
     name: String,
+    safe_name: String,
     version: String,
     start_params: String,
     mods: String,
     emitevent: String,
+    modpack_slug: Option<String>,
+    modpack_version: Option<String>,
+    mod_config_url: Option<String>,
 ) -> Result<InstallationResult, UiError> {
     log_info!(
-        "import_installation: name={} version={} mods={}",
+        "import_installation: name={} version={} mods={} mod_config_url={:?}",
         name,
         version,
-        mods
+        mods,
+        mod_config_url
     );
 
     // 1. Create the installation directory
     let subdir = installations_subdir(app.clone());
     let installations_dir = installations_folder(app.clone()).join(&subdir);
-    let inst_dir = installations_dir.join(&name);
+    let inst_dir = installations_dir.join(&safe_name);
     create_dir_all(&inst_dir).map_err(|e| UiError {
         name: "create_dir_failed".into(),
         message: format!("Failed to create installation directory: {e}"),
@@ -389,6 +421,8 @@ pub async fn import_installation(
         favorite: false,
         last_played: None,
         total_time_played: 0,
+        modpack_slug: modpack_slug.clone(),
+        modpack_version: modpack_version.clone(),
     };
     write_installation_json(&inst_dir, &info)?;
 
@@ -399,9 +433,100 @@ pub async fn import_installation(
         message: format!("Failed to create Mods directory: {e}"),
     })?;
 
+    // 4. Download and extract ModConfig zip if a URL is provided
+    if let Some(ref config_url) = mod_config_url {
+        if !config_url.is_empty() {
+            log_info!(
+                "import_installation: downloading ModConfig from {}",
+                config_url
+            );
+            let config_zip_path = inst_dir.join("ModConfig.zip");
+            let config_dir = inst_dir.join("ModConfig");
+
+            // Download the zip
+            let client = reqwest::Client::new();
+            let resp = client.get(config_url).send().await.map_err(|e| UiError {
+                name: "modconfig_download_failed".into(),
+                message: format!("Failed to download ModConfig: {e}"),
+            })?;
+
+            if !resp.status().is_success() {
+                return Err(UiError {
+                    name: "modconfig_download_failed".into(),
+                    message: format!("ModConfig download HTTP {}", resp.status()),
+                });
+            }
+
+            let bytes = resp.bytes().await.map_err(|e| UiError {
+                name: "modconfig_download_failed".into(),
+                message: format!("Failed to read ModConfig body: {e}"),
+            })?;
+
+            // Save to temp zip file
+            write(&config_zip_path, &bytes).map_err(|e| UiError {
+                name: "modconfig_write_failed".into(),
+                message: format!("Failed to write ModConfig zip: {e}"),
+            })?;
+
+            // Extract
+            create_dir_all(&config_dir).map_err(|e| UiError {
+                name: "modconfig_extract_failed".into(),
+                message: format!("Failed to create ModConfig directory: {e}"),
+            })?;
+
+            let zip_file = File::open(&config_zip_path).map_err(|e| UiError {
+                name: "modconfig_extract_failed".into(),
+                message: format!("Failed to open ModConfig zip: {e}"),
+            })?;
+
+            let mut archive = ZipArchive::new(zip_file).map_err(|e| UiError {
+                name: "modconfig_extract_failed".into(),
+                message: format!("Failed to read ModConfig zip archive: {e}"),
+            })?;
+
+            for i in 0..archive.len() {
+                let mut entry = archive.by_index(i).map_err(|e| UiError {
+                    name: "modconfig_extract_failed".into(),
+                    message: format!("Failed to read zip entry {i}: {e}"),
+                })?;
+                let out_path = config_dir.join(entry.name());
+
+                if entry.name().ends_with('/') {
+                    create_dir_all(&out_path).map_err(|e| UiError {
+                        name: "modconfig_extract_failed".into(),
+                        message: format!("Failed to create dir in ModConfig: {e}"),
+                    })?;
+                } else {
+                    if let Some(parent) = out_path.parent() {
+                        create_dir_all(parent).map_err(|e| UiError {
+                            name: "modconfig_extract_failed".into(),
+                            message: format!("Failed to create parent dir in ModConfig: {e}"),
+                        })?;
+                    }
+                    let mut out_file = File::create(&out_path).map_err(|e| UiError {
+                        name: "modconfig_extract_failed".into(),
+                        message: format!("Failed to create file in ModConfig: {e}"),
+                    })?;
+                    std::io::copy(&mut entry, &mut out_file).map_err(|e| UiError {
+                        name: "modconfig_extract_failed".into(),
+                        message: format!("Failed to extract file in ModConfig: {e}"),
+                    })?;
+                }
+            }
+
+            // Clean up the zip file
+            let _ = std::fs::remove_file(&config_zip_path);
+
+            log_info!(
+                "import_installation: ModConfig extracted to {:?}",
+                config_dir
+            );
+        }
+    }
+
     let id = generate_id(&name);
 
-    // 4. Parse mods: "modid@version,modid@version,..."
+    // 5. Parse mods: "modid@version,modid@version,..."
     let mod_entries: Vec<(&str, &str)> = mods
         .split(',')
         .filter_map(|entry| {
@@ -423,7 +548,7 @@ pub async fn import_installation(
     let total = mod_entries.len();
     log_info!("import_installation: {} mods to download", total);
 
-    // 5. Download each mod with progress events
+    // 6. Download each mod with progress events
     let mut downloaded: Vec<String> = Vec::new();
     let mut errors: Vec<String> = Vec::new();
 
@@ -479,6 +604,8 @@ pub async fn import_installation(
         favorite: false,
         last_played: None,
         total_time_played: 0,
+        modpack_slug: modpack_slug.clone(),
+        modpack_version: modpack_version.clone(),
     };
 
     let _ = app.emit(
@@ -1243,4 +1370,60 @@ pub fn read_installation_log(log_path: String) -> Result<String, UiError> {
         name: "read_failed".into(),
         message: format!("Failed to read log file: {e}"),
     })
+}
+
+/// Zip up the ModConfig folder from an installation and return the bytes.
+#[command]
+pub fn zip_modconfig(installation_path: String) -> Result<Vec<u8>, UiError> {
+    let modconfig_dir = PathBuf::from(&installation_path).join("ModConfig");
+    if !modconfig_dir.is_dir() {
+        return Err(UiError {
+            name: "not_found".into(),
+            message: format!("ModConfig directory not found: {:?}", modconfig_dir),
+        });
+    }
+
+    let mut buf = Vec::new();
+    {
+        let mut zip_writer = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+        let options = zip::write::SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated);
+
+        for entry in walkdir::WalkDir::new(&modconfig_dir)
+            .into_iter()
+            .filter_map(|e| e.ok())
+        {
+            let path = entry.path();
+            if !path.is_file() {
+                continue;
+            }
+            let relative = path.strip_prefix(&modconfig_dir).map_err(|e| UiError {
+                name: "zip_failed".into(),
+                message: format!("Failed to strip prefix: {e}"),
+            })?;
+            let name = relative.to_string_lossy().to_string();
+
+            zip_writer.start_file(&name, options).map_err(|e| UiError {
+                name: "zip_failed".into(),
+                message: format!("Failed to write zip entry: {e}"),
+            })?;
+
+            let mut file = File::open(path).map_err(|e| UiError {
+                name: "zip_failed".into(),
+                message: format!("Failed to open file for zip: {e}"),
+            })?;
+            std::io::copy(&mut file, &mut zip_writer).map_err(|e| UiError {
+                name: "zip_failed".into(),
+                message: format!("Failed to copy file to zip: {e}"),
+            })?;
+        }
+
+        zip_writer.finish().map_err(|e| UiError {
+            name: "zip_failed".into(),
+            message: format!("Failed to finalize zip: {e}"),
+        })?;
+    }
+
+    log_info!("zip_modconfig: {:?} → {} bytes", modconfig_dir, buf.len());
+    Ok(buf)
 }
