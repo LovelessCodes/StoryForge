@@ -1,5 +1,5 @@
 import { formatDistanceToNow } from "date-fns";
-import { DownloadCloudIcon, PackagePlusIcon, Pencil, Play, Star } from "lucide-react";
+import { BoxIcon, DownloadCloudIcon, PackagePlusIcon, Pencil, Play, Star } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Group } from "@/components/ui/group";
@@ -53,6 +53,13 @@ export function InstallationCard({
           <p className="text-foreground font-mono text-sm">{installation.name}</p>
           {installation.version && (
             <p className="text-muted-foreground font-mono text-xs">v{installation.version}</p>
+          )}
+          {installation.modpackSlug && (
+            <p className="text-muted-foreground/60 flex items-center gap-1 font-mono text-xs">
+              <BoxIcon className="size-3" />
+              {installation.modpackSlug}
+              {installation.modpackVersion && <span>v{installation.modpackVersion}</span>}
+            </p>
           )}
           <p className="text-muted-foreground font-mono text-xs opacity-60">
             {installation.sizeDisplay ?? "..."}
