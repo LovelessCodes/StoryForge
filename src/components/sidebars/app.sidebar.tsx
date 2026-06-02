@@ -12,9 +12,11 @@ import {
   RefreshCcwIcon,
   UserMinus2,
   UserPlus2,
+  ZapIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { AuthStatus } from "@/components/auth/auth-status";
 import { AddUserDialog } from "@/components/dialogs/adduser.dialog";
 import { Logo } from "@/components/logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -39,6 +41,7 @@ import {
 import { TooltipTrigger } from "@/components/ui/tooltip";
 import { useAppVersion } from "@/hooks/use-app-version";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
+import { useModpacks } from "@/hooks/use-modpacks";
 import { useSaves } from "@/hooks/use-saves";
 import { useVerifyAuth } from "@/hooks/use-verify-auth";
 import { rootDialogHandle, rootMenuHandle, rootTooltipHandle } from "@/routes/__root";
@@ -56,6 +59,7 @@ export function AppSidebar() {
   const { data: appVersion } = useAppVersion();
   const { data: saves } = useSaves();
   const { data: installedVersions } = useInstalledVersions();
+  const { data: modpacks } = useModpacks();
   const { servers } = useServerStore();
   const { mutate: verifyAuth } = useVerifyAuth({
     onError: (error, variables) => {
@@ -285,6 +289,22 @@ export function AppSidebar() {
                     activeProps={{
                       "data-active": true,
                     }}
+                    to="/modpacks"
+                  />
+                }
+              >
+                <ZapIcon />
+                Modpacks
+                <SidebarMenuBadge className="text-xs">{modpacks?.totalCount ?? 0}</SidebarMenuBadge>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={
+                  <Link
+                    activeProps={{
+                      "data-active": true,
+                    }}
                     to="/servers"
                   />
                 }
@@ -351,6 +371,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
+        <AuthStatus />
         <Link to="/settings">
           <button
             className="group/button bg-sidebar relative w-full cursor-pointer overflow-hidden p-2 px-6 text-center font-semibold in-data-[state='collapsed']:px-2"
