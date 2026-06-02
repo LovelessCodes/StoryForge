@@ -5,6 +5,7 @@ on:
   push:
     tags:
       - "storyforge-v[0-9]+.[0-9]+.[0-9]+"
+      - "storyforge-v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+"
 
 jobs:
   build-tauri:
@@ -99,5 +100,5 @@ jobs:
           releaseBody: "See the assets to download this version and install."
           releaseDraft: true
           tauriScript: ${{ (matrix.platform == 'ubuntu-24.04' || matrix.platform == 'ubuntu-24.04-arm') && 'cargo tauri' || '' }}
-          prerelease: false
+          prerelease: ${{ contains(github.ref_name, '-rc.') }}
           args: ${{ matrix.args }}
