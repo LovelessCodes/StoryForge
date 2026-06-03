@@ -3,7 +3,6 @@ use serde::Deserialize;
 use serde_json::json;
 use std::{
     fs::create_dir_all,
-    io::Read,
     path::{Path, PathBuf},
 };
 use tauri::{AppHandle, Emitter};
