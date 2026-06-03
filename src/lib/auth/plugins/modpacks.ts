@@ -22,7 +22,7 @@ type CreateModpack = {
   name: string;
   slug: string;
   description: string;
-  imageUrl: string;
+  imageUrl?: string;
 };
 
 type Version = {
