@@ -18,6 +18,7 @@ import type { World } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { rootAlertDialogHandle, rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
+import { useSettingsStore } from "@/stores/settings";
 
 export const WorldItem = ({ world }: { world: World }) => {
   const { installations } = useInstallations();
@@ -107,10 +108,12 @@ export const WorldItem = ({ world }: { world: World }) => {
               disabled={isInstalling}
               onClick={async () => {
                 if (version) {
+                  const { useSystemDotnet } = useSettingsStore.getState();
                   await invoke("play_game", {
                     options: {
                       installation_id: installation.id,
                       save: world.path.split("/").pop()?.replace(".vcdbs", ""),
+                      use_system_dotnet: useSystemDotnet,
                     },
                   });
                   toast.success(`Launching ${installation.name} on ${worldData.world_name}...`);
