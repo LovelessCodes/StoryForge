@@ -21,6 +21,8 @@ type SettingsStore = {
   setVersionsParent: (path: string | null, config?: SetParentConfigProps) => Promise<void>;
   streamMode: boolean;
   toggleStreamMode: () => void;
+  useSystemDotnet: boolean;
+  toggleUseSystemDotnet: () => void;
 };
 
 export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
@@ -83,6 +85,9 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
     set(() => ({ versionsParent: path }));
   },
   streamMode: false,
+  toggleUseSystemDotnet: () => set((state) => ({ useSystemDotnet: !state.useSystemDotnet })),
+  toggleStreamMode: () => set((state) => ({ streamMode: !state.streamMode })),
+  useSystemDotnet: true,
   toggleDarkMode: () =>
     set((state) => {
       if (state.darkMode) {
@@ -92,7 +97,6 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
       }
       return { darkMode: !state.darkMode };
     }),
-  toggleStreamMode: () => set((state) => ({ streamMode: !state.streamMode })),
   versionsParent: null,
   versionsSubdir: "versions",
 }));
