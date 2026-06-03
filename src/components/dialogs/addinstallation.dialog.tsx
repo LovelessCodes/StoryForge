@@ -1,5 +1,5 @@
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import clsx from "clsx";
 import { useId } from "react";
@@ -14,7 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { TooltipTrigger } from "@/components/ui/tooltip";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { useDownloadVersion } from "@/hooks/use-download-version";
-import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
+import {
+  installedVersionsQueryKey,
+  useInstalledVersionNames,
+} from "@/hooks/use-installed-versions";
 import { gameVersionsQuery } from "@/lib/queries";
 import { buildInstallationPath, compareSemverDesc, makeStringFolderSafe } from "@/lib/utils";
 import { rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
@@ -64,6 +67,7 @@ export function AddInstallationDialog({ version }: AddInstallationDialogProps) {
   const { addInstallation, loadInstallations } = useInstallationsStore();
   const installedVersions = useInstalledVersionNames();
   const { mutateAsync: downloadVersion } = useDownloadVersion();
+  const queryClient = useQueryClient();
   const { mutateAsync: initializeGame } = useMutation({
     mutationFn: (path: string) => invoke("initialize_game", { path }) as Promise<string>,
     onError: (error, path) => {
@@ -76,7 +80,8 @@ export function AddInstallationDialog({ version }: AddInstallationDialogProps) {
         id: `initialize-game-${path}`,
       });
     },
-    onSuccess: (_, path) => {
+    onSuccess: async (_, path) => {
+      await queryClient.invalidateQueries({ queryKey: installedVersionsQueryKey() });
       toast.success(`Game initialized`, {
         id: `initialize-game-${path}`,
       });
