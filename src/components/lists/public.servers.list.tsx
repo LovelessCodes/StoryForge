@@ -1,5 +1,4 @@
 import { measureElement, useVirtualizer } from "@tanstack/react-virtual";
-import { semver } from "bun";
 import {
   DownloadCloudIcon,
   FolderPlusIcon,
@@ -20,7 +19,7 @@ import { TooltipTrigger } from "@/components/ui/tooltip";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import type { PublicServer } from "@/hooks/use-public-servers";
-import { stripped } from "@/lib/utils";
+import { compareSemverAsc, compareSemverDesc, stripped } from "@/lib/utils";
 import { rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
 import { useServersFilters } from "@/stores/serversFilters";
@@ -71,9 +70,9 @@ export function PublicServerList({
       }
       if (sortBy === "version") {
         if (orderDirection === "descending") {
-          return semver.order(b.gameVersion, a.gameVersion);
+          return compareSemverDesc(b.gameVersion, a.gameVersion);
         }
-        return semver.order(a.gameVersion, b.gameVersion);
+        return compareSemverAsc(a.gameVersion, b.gameVersion);
       }
       if (sortBy === "whitelist") {
         if (orderDirection === "descending") {
