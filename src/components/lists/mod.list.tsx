@@ -6,6 +6,7 @@ import { useCallback, useMemo } from "react";
 import { ModItem } from "@/components/items/mod.item";
 import { useInstalledMods } from "@/hooks/use-installed-mods";
 import { useModUpdates } from "@/hooks/use-mod-updates";
+import { stripped } from "@/lib/utils";
 import type { Installation } from "@/stores/installations";
 import { useModsFilters } from "@/stores/modsFilters";
 
@@ -139,8 +140,8 @@ export function ModList({
         }
         if (sortBy === "name") {
           return orderDirection === "descending"
-            ? b.name.localeCompare(a.name)
-            : a.name.localeCompare(b.name);
+            ? stripped(b.name).localeCompare(stripped(a.name))
+            : stripped(a.name).localeCompare(stripped(b.name));
         }
         if (sortBy === "updated") {
           return orderDirection === "descending"
