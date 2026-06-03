@@ -66,7 +66,7 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
         {activeServers.length > 0 && (
           <motion.div
             animate={{ opacity: 1, y: 0 }}
-            className="border-destructive bg-destructive/10 text-destructive mb-4 rounded-md border p-3"
+            className="border-destructive bg-destructive/10 text-destructive mb-4 border p-3"
             exit={{ opacity: 0, y: -10 }}
             initial={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
@@ -79,7 +79,7 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
                 {activeServers.map((srv) => (
                   <motion.li
                     animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-2 rounded-sm border pl-2"
+                    className="flex items-center gap-2 border pl-2"
                     exit={{ opacity: 0, x: 20 }}
                     initial={{ opacity: 0, x: -20 }}
                     key={srv.id}
@@ -98,7 +98,7 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
         {Array.isArray(saves) && saves.length > 0 && (
           <motion.div
             animate={{ opacity: 1, y: 0 }}
-            className="border-warning bg-warning/10 text-warning-foreground mb-4 rounded-md border p-3"
+            className="border-warning bg-warning/10 text-warning-foreground mb-4 border p-3"
             exit={{ opacity: 0, y: 10 }}
             initial={{ opacity: 0, y: 10 }}
             transition={{ delay: 0.1, duration: 0.3 }}
@@ -111,7 +111,7 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
                 {saves.map((save) => (
                   <motion.li
                     animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-2 rounded-sm border pl-2"
+                    className="flex items-center gap-2 border pl-2"
                     exit={{ opacity: 0, x: -20 }}
                     initial={{ opacity: 0, x: 20 }}
                     key={save}

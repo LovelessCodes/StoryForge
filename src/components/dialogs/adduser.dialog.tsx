@@ -360,7 +360,7 @@ function Slot(props: SlotProps) {
   return (
     <div
       className={cn(
-        "border-input bg-background text-foreground flex size-9 items-center justify-center rounded-md border font-medium transition-colors",
+        "border-input bg-background text-foreground flex size-9 items-center justify-center border font-medium transition-colors",
         { "border-ring ring-ring/50 z-10 ring-[3px]": props.isActive },
       )}
     >

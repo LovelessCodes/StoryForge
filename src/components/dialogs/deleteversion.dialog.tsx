@@ -54,7 +54,7 @@ export function DeleteVersionDialog({ version }: DeleteVersionDialogProps) {
       </AlertDialogHeader>
       <motion.div
         animate={{ opacity: 1, y: 0 }}
-        className="border-warning bg-warning/10 text-warning-foreground my-4 rounded-md border p-3"
+        className="border-warning bg-warning/10 text-warning-foreground my-4 border p-3"
         exit={{ opacity: 0, y: -10 }}
         initial={{ opacity: 0, y: -10 }}
         transition={{ duration: 0.3 }}

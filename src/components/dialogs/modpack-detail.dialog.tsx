@@ -326,7 +326,7 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
         <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start">
           <img
             alt={modpack.name}
-            className="bg-muted aspect-video w-full shrink-0 rounded-lg object-cover sm:w-48"
+            className="bg-muted aspect-video w-full shrink-0 object-cover sm:w-48"
             src={
               modpack.imageUrl?.length
                 ? modpack.imageUrl
@@ -339,11 +339,7 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
               <DialogDescription className="flex items-center gap-1.5">
                 by{" "}
                 {modpack.owner.image ? (
-                  <img
-                    alt={modpack.owner.name}
-                    className="size-4 rounded-full"
-                    src={modpack.owner.image}
-                  />
+                  <img alt={modpack.owner.name} className="size-4" src={modpack.owner.image} />
                 ) : null}
                 <span>{modpack.owner.name}</span>
               </DialogDescription>
@@ -419,10 +415,7 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
               }
 
               return (
-                <div
-                  className="bg-muted/50 flex flex-col gap-3 rounded-md border px-4 py-3"
-                  key={v.id}
-                >
+                <div className="bg-muted/50 flex flex-col gap-3 border px-4 py-3" key={v.id}>
                   <div className="flex items-center gap-3">
                     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
@@ -570,7 +563,7 @@ function VersionFormRow({
   onToggleUpload: (v: boolean) => void;
 }) {
   return (
-    <div className="bg-muted/50 flex flex-col gap-3 rounded-md border px-4 py-3">
+    <div className="bg-muted/50 flex flex-col gap-3 border px-4 py-3">
       <div className="flex items-center gap-1">
         <span className="text-sm font-semibold">
           {isNew ? "New version" : `Edit v${form.version}`}
