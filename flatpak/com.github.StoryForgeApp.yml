@@ -1,0 +1,47 @@
+app-id: com.github.StoryForgeApp
+runtime: org.gnome.Platform
+runtime-version: '48'
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+  - org.freedesktop.Sdk.Extension.node24
+
+command: /app/StoryForge/StoryForge
+separate-locales: false
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --socket=pulseaudio
+  - --share=network
+  - --device=dri
+  - --talk-name=org.freedesktop.Notifications
+  - --env=XCURSOR_PATH=/run/host/user-share/icons:/run/host/share/icons
+modules:
+  - shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json
+
+  - name: bun
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 bun ${FLATPAK_DEST}/bin/bun
+    sources:
+      - type: archive
+        url: https://github.com/oven-sh/bun/releases/download/bun-v1.3.10/bun-linux-x64.zip
+        sha256: f57bc0187e39623de716ba3a389fda5486b2d7be7131a980ba54dc7b733d2e08
+        strip-components: 1
+
+  - name: StoryForge
+    buildsystem: simple
+    sources:
+      - type: git
+        url: https://github.com/LovelessCodes/StoryForge.git
+        branch: release
+    build-options:
+      append-path: /usr/lib/sdk/node24/bin:/usr/lib/sdk/rust-stable/bin
+      build-args:
+        - --share=network
+    build-commands:
+      # Build StoryForge
+      - bun install
+      - bun tauri build --no-bundle
+      - install -Dm755 -t /app/StoryForge src-tauri/target/release/StoryForge
