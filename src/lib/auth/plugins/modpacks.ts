@@ -1,5 +1,9 @@
 import type { BetterFetchOption } from "@better-fetch/fetch";
 import { BetterAuthClientPlugin } from "better-auth";
+import { useAuthQuery } from "better-auth/client";
+import { atom } from "nanostores";
+
+import { ModpackItem } from "@/hooks/use-modpacks";
 
 type Modpacks = {
   id: string;
@@ -189,4 +193,26 @@ export const modpacksPlugin = () =>
         return res;
       },
     }),
+    getAtoms: ($fetch) => {
+      const $modpacks = atom<boolean>(false);
+      const modpacks = useAuthQuery<{ totalCount: number; modpacks: ModpackItem[] }>(
+        $modpacks,
+        "/modpacks",
+        $fetch,
+        {
+          method: "GET",
+        },
+      );
+      return {
+        $modpacks,
+        modpacks,
+      };
+    },
+    atomListeners: [
+      {
+        matcher: (path) =>
+          path.startsWith("/modpacks") || path.includes("sign-in") || path.includes("sign-out"),
+        signal: "$modpacks",
+      },
+    ],
   }) satisfies BetterAuthClientPlugin;
