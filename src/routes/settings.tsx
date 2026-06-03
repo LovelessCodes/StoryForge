@@ -43,6 +43,7 @@ const settingsSchema = z.object({
   darkMode: z.boolean(),
   installationsParent: z.string().nullable(),
   streamMode: z.boolean(),
+  useSystemDotnet: z.boolean(),
   versionsParent: z.string().nullable(),
 });
 
@@ -186,6 +187,7 @@ function RouteComponent() {
       darkMode: settingsStore.darkMode,
       installationsParent: settingsStore.installationsParent,
       streamMode: settingsStore.streamMode,
+      useSystemDotnet: settingsStore.useSystemDotnet,
       versionsParent: settingsStore.versionsParent,
     },
     onSubmit: async ({ value }) => {
@@ -221,6 +223,9 @@ function RouteComponent() {
       }
       if (value.streamMode !== settingsStore.streamMode) {
         settingsStore.toggleStreamMode();
+      }
+      if (value.useSystemDotnet !== settingsStore.useSystemDotnet) {
+        settingsStore.toggleUseSystemDotnet();
       }
       if (value.darkMode !== settingsStore.darkMode) {
         settingsStore.toggleDarkMode();
@@ -454,6 +459,26 @@ function RouteComponent() {
                     }}
                   />
                   <Label htmlFor="darkMode">Enable Dark Mode</Label>
+                </div>
+              )}
+            </form.Field>
+            <form.Field name="useSystemDotnet">
+              {(field) => (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      checked={field.state.value}
+                      id="useSystemDotnet"
+                      onCheckedChange={(checked) => {
+                        field.handleChange(checked === true);
+                      }}
+                    />
+                    <Label htmlFor="useSystemDotnet">Check for installed .NET on system</Label>
+                  </div>
+                  <p className="text-muted-foreground pl-7 text-xs">
+                    When enabled, the app will try to use your system's .NET runtime before
+                    downloading its own.
+                  </p>
                 </div>
               )}
             </form.Field>
