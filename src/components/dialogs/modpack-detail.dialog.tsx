@@ -16,17 +16,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { DialogClose, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Progress, ProgressIndicator, ProgressTrack } from "@/components/ui/progress";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { useDownloadVersion } from "@/hooks/use-download-version";
@@ -35,9 +26,10 @@ import type { ModpackItem } from "@/hooks/use-modpacks";
 import { authClient } from "@/lib/auth";
 import { buildInstallationPath, makeStringFolderSafe } from "@/lib/utils";
 import { rootAlertDialogHandle, rootDialogHandle } from "@/routes/__root";
-import { type Installation, useInstallations, useInstallationsStore } from "@/stores/installations";
+import { useInstallations, useInstallationsStore } from "@/stores/installations";
 import { useSettingsStore } from "@/stores/settings";
 
+import { CreateModpackVersionDialog } from "./create-modpack-version.dialog";
 import { DeleteModpackVersionDialog } from "./delete-modpack.dialog";
 
 type ImportProgress = {
@@ -46,20 +38,6 @@ type ImportProgress = {
   modid: string;
   version: string;
 };
-
-type VersionForm = {
-  version: string;
-  gameVersion: string;
-  modsString: string;
-  modConfigsUrl: string;
-};
-
-const emptyForm = (): VersionForm => ({
-  gameVersion: "",
-  modConfigsUrl: "",
-  modsString: "",
-  version: "",
-});
 
 export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
   const { appFolder } = useAppFolder();
@@ -84,10 +62,6 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
 
   // Version CRUD state
   const [editingVersionId, setEditingVersionId] = useState<string | null>(null); // null = not editing, "new" = adding
-  const [form, setForm] = useState<VersionForm>(emptyForm());
-  const [submitting, setSubmitting] = useState(false);
-  const [uploadModConfig, setUploadModConfig] = useState(false);
-  const [pickedInstallationId, setPickedInstallationId] = useState<number | null>(null);
 
   // ── Install handlers ──
 
@@ -170,128 +144,9 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
 
   // ── Version CRUD handlers ──
 
-  const startAdd = () => {
-    setEditingVersionId("new");
-    setForm(emptyForm());
-  };
-
-  const startEdit = (v: (typeof sortedVersions)[number]) => {
-    setEditingVersionId(v.id);
-    setForm({
-      gameVersion: v.gameVersion,
-      modConfigsUrl: v.modConfigsUrl,
-      modsString: v.modsString,
-      version: v.version,
-    });
-  };
-
-  const cancelEdit = () => {
-    setEditingVersionId(null);
-    setForm(emptyForm());
-    setUploadModConfig(false);
-    setPickedInstallationId(null);
-  };
-
-  // ── Pick from installation ──
-
-  const handlePickInstallation = async (inst: Installation) => {
-    setPickedInstallationId(inst.id);
-    setForm((f) => ({ ...f, gameVersion: inst.version }));
-    try {
-      const result = (await invoke("get_mods", { path: inst.path })) as {
-        mods: { modid: string; version: string }[];
-      };
-      const modsString = result.mods.map((m) => `${m.modid}@${m.version}`).join(",");
-      setForm((f) => ({ ...f, modsString }));
-    } catch {
-      toast.error("Failed to read installed mods");
-    }
-  };
-
-  // ── Upload ModConfig as zip ──
-
-  const uploadModConfigZip = async () => {
-    if (!pickedInstallationId) return;
-    const inst = installations.find((i) => i.id === pickedInstallationId);
-    if (!inst) return;
-
-    // Get zip bytes from the Rust backend
-    const zipBytes = await invoke<number[]>("zip_modconfig", {
-      installationPath: inst.path,
-    });
-
-    const blob = new Blob([new Uint8Array(zipBytes)], { type: "application/zip" });
-    const data = new FormData();
-    data.append("version", form.version);
-    data.append("modConfig", blob, "ModConfig.zip");
-    return await authClient.uploadModpackVersionConfig(modpack.slug, data);
-  };
-
-  // ── Submit ──
-
-  const submitVersion = async () => {
-    const missing: string[] = [];
-    if (!form.version.trim()) missing.push("Version");
-    if (!form.gameVersion.trim()) missing.push("Game version");
-    if (missing.length > 0) {
-      toast.error(`${missing.join(", ")} required`);
-      return;
-    }
-    setSubmitting(true);
-    let upload: Awaited<ReturnType<typeof uploadModConfigZip>> | undefined;
-    try {
-      // Upload ModConfig zip if requested
-      if (uploadModConfig && pickedInstallationId) {
-        try {
-          upload = await uploadModConfigZip();
-          if (upload?.data?.url) {
-            toast.success("ModConfig uploaded");
-          } else {
-            throw new Error("Upload failed");
-          }
-        } catch {
-          toast.error("Failed to upload ModConfig");
-        }
-      }
-      if (editingVersionId === "new") {
-        await authClient.createModpackVersion(
-          modpack.slug,
-          {
-            gameVersion: form.gameVersion,
-            modConfigsUrl: upload?.data?.url ?? form.modConfigsUrl,
-            modsString: form.modsString,
-            modpack: modpack.slug,
-            version: form.version,
-          },
-          {
-            onSuccess: async () => {
-              toast.success(`Version ${form.version} created`);
-            },
-          },
-        );
-      } else if (editingVersionId) {
-        await authClient.updateModpackVersion(
-          modpack.slug,
-          form.version,
-          {
-            gameVersion: form.gameVersion,
-            modConfigsUrl: upload?.data?.url ?? form.modConfigsUrl,
-            modsString: form.modsString,
-          },
-          {
-            onSuccess: async () => {
-              toast.success(`Version ${form.version} updated`);
-            },
-          },
-        );
-      }
-      cancelEdit();
-    } catch (e) {
-      toast.error(`Failed to save version: ${e as Error}`);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const startAdd = () => setEditingVersionId("new");
+  const startEdit = (v: (typeof sortedVersions)[number]) => setEditingVersionId(v.id);
+  const cancelEdit = () => setEditingVersionId(null);
 
   const handleDelete = (v: (typeof sortedVersions)[number]) => {
     rootAlertDialogHandle.openWithPayload(() => (
@@ -362,18 +217,12 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
             {/* Inline add/edit form */}
             {(editingVersionId === "new" || editingVersionId !== null) &&
               sortedVersions.find((v) => v.id === editingVersionId) === undefined && (
-                <VersionFormRow
-                  form={form}
+                <CreateModpackVersionDialog
                   installations={installations}
-                  isNew={editingVersionId === "new"}
-                  onChange={setForm}
+                  key="new"
+                  modpackSlug={modpack.slug}
                   onCancel={cancelEdit}
-                  onSubmit={submitVersion}
-                  onPickInstallation={handlePickInstallation}
-                  onToggleUpload={setUploadModConfig}
-                  pickedInstallationId={pickedInstallationId}
-                  submitting={submitting}
-                  uploadModConfig={uploadModConfig}
+                  onSuccess={cancelEdit}
                 />
               )}
 
@@ -384,19 +233,18 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
 
               if (isEditing) {
                 return (
-                  <VersionFormRow
-                    form={form}
+                  <CreateModpackVersionDialog
+                    existingVersion={{
+                      gameVersion: v.gameVersion,
+                      modConfigsUrl: v.modConfigsUrl,
+                      modsString: v.modsString,
+                      version: v.version,
+                    }}
                     installations={installations}
-                    isNew={false}
                     key={v.id}
-                    onChange={setForm}
+                    modpackSlug={modpack.slug}
                     onCancel={cancelEdit}
-                    onSubmit={submitVersion}
-                    onPickInstallation={handlePickInstallation}
-                    onToggleUpload={setUploadModConfig}
-                    pickedInstallationId={pickedInstallationId}
-                    submitting={submitting}
-                    uploadModConfig={uploadModConfig}
+                    onSuccess={cancelEdit}
                   />
                 );
               }
@@ -520,134 +368,5 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
         </div>
       </div>
     </>
-  );
-}
-
-/** Inline form for adding or editing a modpack version. */
-function VersionFormRow({
-  form,
-  isNew,
-  onChange,
-  onCancel,
-  onSubmit,
-  submitting,
-  installations,
-  pickedInstallationId,
-  uploadModConfig,
-  onPickInstallation,
-  onToggleUpload,
-}: {
-  form: VersionForm;
-  isNew: boolean;
-  onChange: (f: VersionForm) => void;
-  onCancel: () => void;
-  onSubmit: () => void;
-  submitting: boolean;
-  installations: Installation[];
-  pickedInstallationId: number | null;
-  uploadModConfig: boolean;
-  onPickInstallation: (inst: Installation) => void;
-  onToggleUpload: (v: boolean) => void;
-}) {
-  return (
-    <div className="bg-muted/50 flex flex-col gap-3 border px-4 py-3">
-      <div className="flex items-center gap-1">
-        <span className="text-sm font-semibold">
-          {isNew ? "New version" : `Edit v${form.version}`}
-        </span>
-      </div>
-
-      {/* Pick from installation — new versions only */}
-      {isNew && installations.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          <Label className="text-muted-foreground text-xs">Pick from installation</Label>
-          <Select
-            onValueChange={(v) => {
-              const inst = installations.find((i) => i.id === Number(v));
-              if (inst) onPickInstallation(inst);
-            }}
-            value={pickedInstallationId?.toString() ?? ""}
-          >
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue placeholder="Select an installation…" />
-              {pickedInstallationId
-                ? (installations.find((i) => i.id === pickedInstallationId)?.name ?? "Selected")
-                : null}
-            </SelectTrigger>
-            <SelectContent align="start" alignItemWithTrigger={false}>
-              {installations.map((inst) => (
-                <SelectItem key={inst.id} value={inst.id.toString()}>
-                  {inst.name}{" "}
-                  <span className="text-muted-foreground text-xs">(VS {inst.version})</span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="flex flex-col gap-1.5">
-          <Label className="text-muted-foreground text-xs">Version</Label>
-          <Input
-            className="h-8 text-sm"
-            disabled={!isNew}
-            onChange={(e) => onChange({ ...form, version: e.target.value })}
-            placeholder="1.0.0"
-            value={form.version}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label className="text-muted-foreground text-xs">Game version</Label>
-          <Input
-            className="h-8 text-sm"
-            onChange={(e) => onChange({ ...form, gameVersion: e.target.value })}
-            placeholder="1.20.4"
-            value={form.gameVersion}
-          />
-        </div>
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label className="text-muted-foreground text-xs">Mods string</Label>
-        <Textarea
-          className="font-mono text-xs"
-          onChange={(e) => onChange({ ...form, modsString: e.target.value })}
-          placeholder="modid@version,modid@version,..."
-          rows={3}
-          value={form.modsString}
-        />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label className="text-muted-foreground text-xs">Mod configs URL</Label>
-        <Input
-          className="h-8 text-sm"
-          onChange={(e) => onChange({ ...form, modConfigsUrl: e.target.value })}
-          placeholder="https://..."
-          value={form.modConfigsUrl}
-        />
-      </div>
-
-      {/* Upload ModConfig checkbox — when picking from installation */}
-      {pickedInstallationId && (
-        <label className="flex items-center gap-2 text-xs">
-          <input
-            checked={uploadModConfig}
-            className="size-3.5"
-            onChange={(e) => onToggleUpload(e.target.checked)}
-            type="checkbox"
-          />
-          Upload ModConfig folder from installation
-        </label>
-      )}
-
-      <div className="flex items-center justify-end gap-2">
-        <Button disabled={submitting} onClick={onCancel} size="sm" variant="ghost">
-          Cancel
-        </Button>
-        <Button disabled={submitting} onClick={onSubmit} size="sm">
-          {submitting ? "Saving…" : isNew ? "Create" : "Save"}
-        </Button>
-      </div>
-    </div>
   );
 }
