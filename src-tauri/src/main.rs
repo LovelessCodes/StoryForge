@@ -13,7 +13,7 @@ fn main() {
 
         // Add command line options to override rendering defaults.
         // Testing has shown that DMA Buffering always needs to be disabled. Allow forcing to be disabled.
-        // If more WebkitGTK fixes are desired, this behavior may need to be adjusted.
+        // If more WebkitGTK is ever updated to fix this issue, then this behavior may need to be adjusted.
         let allow_dmabuf_renderer = std::env::args().any(|arg| arg == "--allow-dmabuf-renderer");
         // NV Sync typically needs to be disabled due to incompatibilities with Wayland. It can be forcibly disabled
         // here, if not properly detected.

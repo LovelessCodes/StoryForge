@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 - **Linux & NVidia Rendering Fixes**: Added logic to detect the use of an NVidia GPU on Linux-based systems. If detected, environment variables will be applied to allow the front-end to render properly. If detection is not properly working, the user can add the command line argument `--disable-nv-explicit-sync` to disable
-explicit sync on wayland systems. DMA buffers are forcibly disabled by default, but can be allowed by adding the command line argument: `-allow-dmabuf-renderer`.
+explicit sync on Wayland systems. DMA buffers are forcibly disabled by default, but can be allowed by adding the command line argument: `-allow-dmabuf-renderer`.
 
 ## [0.9.3] - 2026-06-02
 
