@@ -1,4 +1,3 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
@@ -69,7 +68,6 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
   const installedVersions = useInstalledVersionNames();
   const { mutateAsync: downloadVersion } = useDownloadVersion();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { user } = useAuthSession();
   const { installations } = useInstallations();
 
@@ -267,9 +265,6 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
           },
           {
             onSuccess: async () => {
-              await queryClient.invalidateQueries({
-                queryKey: ["modpacks"],
-              });
               toast.success(`Version ${form.version} created`);
             },
           },
@@ -285,9 +280,6 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
           },
           {
             onSuccess: async () => {
-              await queryClient.invalidateQueries({
-                queryKey: ["modpacks"],
-              });
               toast.success(`Version ${form.version} updated`);
             },
           },
@@ -306,11 +298,6 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
       <DeleteModpackVersionDialog
         modpackName={modpack.name}
         modpackSlug={modpack.slug}
-        onDeleted={() =>
-          queryClient.invalidateQueries({
-            queryKey: ["modpacks"],
-          })
-        }
         version={v.version}
       />
     ));

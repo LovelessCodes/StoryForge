@@ -1,5 +1,4 @@
 import { useForm } from "@tanstack/react-form";
-import { useQueryClient } from "@tanstack/react-query";
 import { CheckIcon, LoaderCircleIcon, SparklesIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -44,7 +43,6 @@ const modpackFormSchema = z.object({
 
 export function CreateModpackDialog({ modpack }: CreateModpackDialogProps) {
   const isEdit = !!modpack;
-  const queryClient = useQueryClient();
 
   // Track whether the user has manually edited the slug
   const slugManuallyEdited = useRef(false);
@@ -87,7 +85,6 @@ export function CreateModpackDialog({ modpack }: CreateModpackDialogProps) {
             {
               onSuccess: async () => {
                 toast.success(`Modpack "${value.name}" updated`);
-                await queryClient.invalidateQueries({ queryKey: ["modpacks"] });
                 rootDialogHandle.close();
               },
             },
@@ -103,7 +100,6 @@ export function CreateModpackDialog({ modpack }: CreateModpackDialogProps) {
             {
               onSuccess: async () => {
                 toast.success(`Modpack "${value.name}" created`);
-                await queryClient.invalidateQueries({ queryKey: ["modpacks"] });
                 rootDialogHandle.close();
               },
             },

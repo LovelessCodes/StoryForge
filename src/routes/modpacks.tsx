@@ -1,4 +1,3 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Pencil, PlusIcon, SearchIcon, Trash2Icon } from "lucide-react";
 
@@ -48,7 +47,6 @@ function RouteComponent() {
 
   const { user } = useAuthSession();
 
-  const queryClient = useQueryClient();
   const { data, isPending } = useModpacks();
 
   const modpacks = data?.modpacks ?? [];
@@ -151,11 +149,6 @@ function RouteComponent() {
                 <ModpackCard
                   key={mp.id}
                   modpack={mp}
-                  onDelete={() =>
-                    queryClient.invalidateQueries({
-                      queryKey: ["modpacks"],
-                    })
-                  }
                   onEdit={() =>
                     rootDialogHandle.openWithPayload(() => <CreateModpackDialog modpack={mp} />)
                   }
@@ -177,7 +170,7 @@ function ModpackCard({
   userId,
 }: {
   modpack: ModpackItem;
-  onDelete: () => void;
+  onDelete?: () => void;
   onEdit: () => void;
   userId: string | null;
 }) {

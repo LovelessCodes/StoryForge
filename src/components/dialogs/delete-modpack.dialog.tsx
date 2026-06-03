@@ -20,7 +20,7 @@ import { rootAlertDialogHandle } from "@/routes/__root";
 export type DeleteModpackDialogProps = {
   slug: string;
   name: string;
-  onDeleted: () => void;
+  onDeleted?: () => void;
 };
 
 export function DeleteModpackDialog({ slug, name, onDeleted }: DeleteModpackDialogProps) {
@@ -35,7 +35,7 @@ export function DeleteModpackDialog({ slug, name, onDeleted }: DeleteModpackDial
     try {
       await authClient.deleteModpack(slug);
       toast.success(`Deleted "${name}"`);
-      onDeleted();
+      onDeleted?.();
       rootAlertDialogHandle.close();
     } catch (e) {
       toast.error(`Failed to delete: ${e as Error}`);
@@ -100,7 +100,7 @@ export type DeleteModpackVersionDialogProps = {
   modpackSlug: string;
   modpackName: string;
   version: string;
-  onDeleted: () => void;
+  onDeleted?: () => void;
 };
 
 export function DeleteModpackVersionDialog({
@@ -120,7 +120,7 @@ export function DeleteModpackVersionDialog({
     try {
       await authClient.deleteModpackVersion(modpackSlug, version);
       toast.success(`Deleted version v${version} from ${modpackName}`);
-      onDeleted();
+      onDeleted?.();
       rootAlertDialogHandle.close();
     } catch (e) {
       toast.error(`Failed to delete: ${e as Error}`);
