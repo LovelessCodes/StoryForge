@@ -3,6 +3,7 @@ use serde::Deserialize;
 use serde_json::json;
 use std::{
     fs::create_dir_all,
+    io::Read,
     path::{Path, PathBuf},
 };
 use tauri::{AppHandle, Emitter};
@@ -526,13 +527,18 @@ pub async fn ensure_dotnet(
     app_data_dir: &Path,
     game_version: &str,
     installation_id: u64,
+    use_system_dotnet: bool,
 ) -> Result<PathBuf, UiError> {
     let channel = dotnet_channel(game_version);
 
-    // 1. Try system installation
-    if let Some(root) = find_system_dotnet_root(channel) {
-        log_info!("[dotnet] found system dotnet at {:?}", root);
-        return Ok(root);
+    // 1. Try system installation (if enabled)
+    if use_system_dotnet {
+        if let Some(root) = find_system_dotnet_root(channel) {
+            log_info!("[dotnet] found system dotnet at {:?}", root);
+            return Ok(root);
+        }
+    } else {
+        log_info!("[dotnet] system dotnet check disabled by user setting, using app dotnet");
     }
 
     // 2. Check if we already downloaded it
