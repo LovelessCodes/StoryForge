@@ -79,11 +79,15 @@ export function ModItem({
         },
       );
     },
-    onSuccess: () => {
-      addModToInstallation({
-        path: `${installation?.path}${pathDelimiter}Mods`,
-        url: updateMod?.mainfile || "",
-      });
+    onSuccess: async () => {
+      if (installation) {
+        await queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(installation.id) });
+        await queryClient.invalidateQueries({ queryKey: installedModsQueryKey(installation.path) });
+        addModToInstallation({
+          path: `${installation.path}${pathDelimiter}Mods`,
+          url: updateMod?.mainfile || "",
+        });
+      }
     },
   });
   const { mutate: addModToInstallation, isPending } = useMutation({
@@ -152,7 +156,7 @@ export function ModItem({
         >
           <img
             alt={mod.name}
-            className="h-12 w-12 rounded transition-transform hover:scale-105"
+            className="size-12 rounded transition-transform hover:scale-105"
             loading="lazy"
             src={mod.logo ?? "https://mods.vintagestory.at/web/img/mod-default.png"}
           />
