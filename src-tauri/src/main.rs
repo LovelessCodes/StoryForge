@@ -1,15 +1,13 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-#[cfg(target_os = "linux")]
-use webkit2gtk_nvidia_quirk::{apply_workaround_with_options, ApplyWorkaroundOptions};
-
 fn main() {
     #[cfg(target_os = "linux")]
     {
-        // Apply Linux-specific fixes for rendering the front-end. Systems using an NVidia GPU with the proprietary
+        // Apply Linux-specific fixes for rendering the front-end on NVIDIA cards. Systems using an NVIDIA GPU with the proprietary
         // drivers often encounter rendering issues with WebkitGTK.
         // See: https://github.com/tauri-apps/tauri/issues/9304
+        use webkit2gtk_nvidia_quirk::{apply_workaround_with_options, ApplyWorkaroundOptions};
 
         // Add command line options to override rendering defaults.
         // Testing has shown that DMA Buffering always needs to be disabled. Allow forcing to be disabled.
