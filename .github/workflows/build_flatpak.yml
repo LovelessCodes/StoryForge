@@ -1,7 +1,11 @@
+name: "Build and publish Flatpak"
+
 on:
+  workflow_dispatch:
   push:
-    branches:
-      - feature/flatpak
+    tags:
+      - "storyforge-v[0-9]+.[0-9]+.[0-9]+"
+      - "storyforge-v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+"
 
 jobs:
   build-flatpak:
