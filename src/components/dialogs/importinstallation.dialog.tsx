@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useRef, useState } from "react";
@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Progress, ProgressTrack, ProgressIndicator } from "@/components/ui/progress";
+import { installedVersionsQueryKey } from "@/hooks/use-installed-versions";
 import { makeStringFolderSafe } from "@/lib/utils";
 import { rootDialogHandle } from "@/routes/__root";
 import { useInstallations, type Installation } from "@/stores/installations";
@@ -54,6 +55,7 @@ type ImportProgress = {
 };
 
 export function ImportInstallationDialog() {
+  const queryClient = useQueryClient();
   const [newInstallation, setNewInstallation] = useState<string>("");
   const [progress, setProgress] = useState<ImportProgress | null>(null);
   const { addInstallation, loadInstallations } = useInstallations();
@@ -131,6 +133,7 @@ export function ImportInstallationDialog() {
 
       addInstallation(installation);
       await loadInstallations();
+      await queryClient.invalidateQueries({ queryKey: installedVersionsQueryKey() });
 
       toast.success(`Successfully imported "${result.name}"`, {
         id: "import-installation",
