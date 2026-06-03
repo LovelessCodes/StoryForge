@@ -47,8 +47,8 @@ export function AuthStatus() {
       >
         {/* Rest state: icon + username */}
         <div className="flex items-center justify-center gap-2">
-          <div className="bg-destructive absolute h-2 w-2 opacity-0 transition-all duration-300 group-hover/button:scale-[100.8] group-hover/button:opacity-100" />
-          <DoorClosed className="inline-block h-4 w-4 transition-all duration-300 group-hover/button:translate-x-12 group-hover/button:opacity-0" />
+          <div className="bg-destructive absolute size-2 opacity-0 transition-all duration-300 group-hover/button:scale-[100.8] group-hover/button:opacity-100" />
+          <DoorClosed className="inline-block size-4 transition-all duration-300 group-hover/button:translate-x-12 group-hover/button:opacity-0" />
           <span className="truncate in-data-[state=collapsed]:hidden">{displayName}</span>
         </div>
 
@@ -70,14 +70,14 @@ export function AuthStatus() {
       >
         {/* Rest state: icon + "Sign in" */}
         <div className="flex items-center justify-center gap-2">
-          <div className="absolute h-2 w-2 bg-green-500 opacity-0 transition-all duration-300 group-hover/button:scale-[100.8] group-hover/button:opacity-100" />
+          <div className="absolute size-2 bg-green-500 opacity-0 transition-all duration-300 group-hover/button:scale-[100.8] group-hover/button:opacity-100" />
           <DoorOpen className="inline-block size-4 transition-all duration-300 group-hover/button:translate-x-12 group-hover/button:opacity-0" />
         </div>
 
         {/* Hover state: "Sign in" slides in */}
         <div className="text-primary-foreground absolute top-0 z-10 flex h-full w-full translate-x-12 items-center justify-center gap-2 opacity-0 transition-all duration-300 group-hover/button:-translate-x-5 group-hover/button:opacity-100 in-data-[state=collapsed]:group-hover/button:-translate-x-2">
           <span className="in-data-[state=collapsed]:hidden">Sign in</span>
-          <DoorOpen className="inline-block h-4 w-4" />
+          <DoorOpen className="inline-block size-4" />
         </div>
       </button>
     </Link>
