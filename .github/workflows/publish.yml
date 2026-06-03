@@ -7,6 +7,10 @@ on:
       - "storyforge-v[0-9]+.[0-9]+.[0-9]+"
       - "storyforge-v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-tauri:
     permissions:
@@ -19,9 +23,9 @@ jobs:
             args: "--target aarch64-apple-darwin"
           - platform: "macos-latest" # for Intel based macs.
             args: "--target x86_64-apple-darwin"
-          - platform: "ubuntu-24.04"
+          - platform: "ubuntu-22.04"
             args: ""
-          - platform: "ubuntu-24.04-arm" # Only available in public repos.
+          - platform: "ubuntu-22.04-arm" # Only available in public repos.
             args: ""
           - platform: "windows-latest"
             args: ""
@@ -32,58 +36,51 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-24.04' # This must match the platform value defined above.
+      - name: setup bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+
+      - name: install Rust stable (linux only)
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        if: matrix.platform == 'ubuntu-22.04' || matrix.platform == 'ubuntu-22.04-arm'
+
+      - name: install Rust stable (macos only)
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        if: matrix.platform == 'macos-latest'
+        with:
+          targets: ${{ matrix.args == '--target aarch64-apple-darwin' && 'aarch64-apple-darwin' || 'x86_64-apple-darwin' }}
+
+      - name: install dependencies (linux only)
+        if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libwebkit2gtk-4.1-0=2.44.0-2 \
-            libwebkit2gtk-4.1-dev=2.44.0-2 \
-            libjavascriptcoregtk-4.1-0=2.44.0-2 \
-            libjavascriptcoregtk-4.1-dev=2.44.0-2 \
-            gir1.2-javascriptcoregtk-4.1=2.44.0-2 \
-            gir1.2-webkit2-4.1=2.44.0-2 \
+            libwebkit2gtk-4.1-dev \
+            libjavascriptcoregtk-4.1-dev \
             libappindicator3-dev \
             librsvg2-dev \
             patchelf
 
-      - name: install dependencies (ubuntu-arm only)
-        if: matrix.platform == 'ubuntu-24.04-arm' # This must match the platform value defined above.
+      - name: install dependencies (linux arm only)
+        if: matrix.platform == 'ubuntu-22.04-arm'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libwebkit2gtk-4.1-0=2.44.0-2 \
-            libwebkit2gtk-4.1-dev=2.44.0-2 \
-            libjavascriptcoregtk-4.1-0=2.44.0-2 \
-            libjavascriptcoregtk-4.1-dev=2.44.0-2 \
-            gir1.2-javascriptcoregtk-4.1=2.44.0-2 \
-            gir1.2-webkit2-4.1=2.44.0-2 \
-            libappindicator3-dev \
-            librsvg2-dev \
-            patchelf \
-            pkg-config \
-            xdg-utils
+          libwebkit2gtk-4.1-dev \
+          libjavascriptcoregtk-4.1-dev \
+          libappindicator3-dev \
+          librsvg2-dev \
+          patchelf \
+          pkg-config \
+          xdg-utils
 
-      - name: setup bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
-        with:
-          no-cache: true
-
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
-        with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+      - name: Override tauri-cli with custom AppImage format (Linux)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: cargo install tauri-cli --git https://github.com/tauri-apps/tauri --branch feat/truly-portable-appimage --force
 
       - name: Rust cache
-        if: matrix.platform != 'ubuntu-24.04-arm' # This must match the platform value defined above.
         uses: swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
         with:
           workspaces: "./src-tauri -> target"
-          lookup-only: true
-
-      - name: Override tauri-cli with custom AppImage format (Linux)
-        if: matrix.platform == 'ubuntu-24.04' || matrix.platform == 'ubuntu-24.04-arm'
-        run: cargo install tauri-cli --git https://github.com/tauri-apps/tauri --branch feat/truly-portable-appimage --force
 
       - name: install frontend dependencies
         run: bun install
@@ -97,8 +94,8 @@ jobs:
         with:
           tagName: storyforge-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
           releaseName: "Story Forge v__VERSION__"
-          releaseBody: "See the assets to download this version and install."
+          releaseBody: ${{ contains(github.ref_name, '-rc.') && '⚠️ Release candidate — not recommended for general use.' || 'See the assets to download this version and install.' }}
           releaseDraft: true
-          tauriScript: ${{ (matrix.platform == 'ubuntu-24.04' || matrix.platform == 'ubuntu-24.04-arm') && 'cargo tauri' || '' }}
+          tauriScript: ${{ (matrix.platform == 'ubuntu-22.04') && 'cargo tauri' || '' }}
           prerelease: ${{ contains(github.ref_name, '-rc.') }}
           args: ${{ matrix.args }}

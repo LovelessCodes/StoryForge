@@ -796,7 +796,7 @@ export function WorldMapViewer({
           </div>
         )}
       </div>
-      <div className="bg-background/90 text-muted-foreground pointer-events-none absolute right-1 bottom-1 rounded-md border px-3 py-2 text-xs backdrop-blur-sm">
+      <div className="bg-background/90 text-muted-foreground pointer-events-none absolute right-1 bottom-1 border px-3 py-2 text-xs backdrop-blur-sm">
         <p>🖱️ Drag to pan • 🔍 Scroll to zoom</p>
       </div>
     </Card>

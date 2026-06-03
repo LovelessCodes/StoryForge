@@ -114,13 +114,13 @@ export function AppSidebar() {
         </div>
         {selectedUser ? (
           <MenuTrigger
-            className="w-full justify-start rounded-none ps-1"
+            className="w-full justify-start ps-1"
             render={<Button variant="ghost" />}
             handle={rootMenuHandle}
             payload={() => (
               <>
                 {users.map((user) => (
-                  <Group className="w-full rounded-none" key={`${user.uid}-${user.email}-user`}>
+                  <Group className="w-full" key={`${user.uid}-${user.email}-user`}>
                     <Button
                       className="flex h-8 flex-1 items-center justify-start gap-2"
                       onClick={() => setSelectedUser(user.uid)}
@@ -216,12 +216,12 @@ export function AppSidebar() {
           </MenuTrigger>
         ) : (
           <Button
-            className="w-full justify-between rounded-none"
+            className="w-full justify-between"
             render={<DialogTrigger handle={rootDialogHandle} payload={() => <AddUserDialog />} />}
             variant="ghost"
           >
-            <span className="flex text-xs">Sign in</span>
             <UserPlus2 className="size-4" />
+            <span className="flex text-xs in-data-[state=collapsed]:hidden">Sign in</span>
           </Button>
         )}
       </SidebarHeader>

@@ -5,6 +5,7 @@ import { useRef } from "react";
 import { toast } from "sonner";
 
 import { findInstallationForServer, useInstallations } from "@/stores/installations";
+import { useSettingsStore } from "@/stores/settings";
 
 import { useAddServerToInstallation } from "./use-add-server-to-installation";
 import { useCheckServerInInstallation } from "./use-check-server-in-installation";
@@ -50,11 +51,13 @@ export const useConnectToServer = (
           server: `${name},${ip},${password ? password : ""}`,
         });
       }
+      const { useSystemDotnet } = useSettingsStore.getState();
       await invoke("play_game", {
         options: {
           installation_id: resolvedId,
           password,
           server: ip,
+          use_system_dotnet: useSystemDotnet,
         },
       });
     },

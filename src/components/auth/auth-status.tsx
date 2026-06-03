@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { DoorClosed, DoorOpen } from "lucide-react";
+import { DoorClosed, DoorOpen, Loader } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuthSession } from "@/hooks/use-auth-session";
@@ -28,7 +28,10 @@ export function AuthStatus() {
   if (isLoading) {
     return (
       <div className="bg-sidebar w-full px-6 py-2 text-center">
-        <span className="text-muted-foreground animate-pulse text-xs">Loading…</span>
+        <Loader className="text-muted-foreground inline-block size-4 animate-spin" />
+        <span className="text-muted-foreground animate-pulse text-xs in-data-[state=collapsed]:hidden">
+          Loading…
+        </span>
       </div>
     );
   }
@@ -52,7 +55,7 @@ export function AuthStatus() {
         {/* Hover state: "Sign out" slides in */}
         <div className="text-primary-foreground absolute top-0 z-10 flex h-full w-full translate-x-12 items-center justify-center gap-2 opacity-0 transition-all duration-300 group-hover/button:-translate-x-5 group-hover/button:opacity-100 in-data-[state=collapsed]:group-hover/button:-translate-x-2">
           <span className="in-data-[state=collapsed]:hidden">Sign out</span>
-          <DoorClosed className="inline-block h-4 w-4" />
+          <DoorClosed className="inline-block size-4" />
         </div>
       </button>
     );
@@ -68,7 +71,7 @@ export function AuthStatus() {
         {/* Rest state: icon + "Sign in" */}
         <div className="flex items-center justify-center gap-2">
           <div className="absolute h-2 w-2 bg-green-500 opacity-0 transition-all duration-300 group-hover/button:scale-[100.8] group-hover/button:opacity-100" />
-          <DoorOpen className="inline-block h-4 w-4 transition-all duration-300 group-hover/button:translate-x-12 group-hover/button:opacity-0" />
+          <DoorOpen className="inline-block size-4 transition-all duration-300 group-hover/button:translate-x-12 group-hover/button:opacity-0" />
         </div>
 
         {/* Hover state: "Sign in" slides in */}

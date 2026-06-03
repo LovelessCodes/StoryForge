@@ -22,7 +22,7 @@ export default function SideToggleGroup() {
         <TabsTab aria-label="Installed" value="installed">
           Installed
         </TabsTab>
-        <span className="text-muted-foreground bg-background pointer-events-none absolute start-1 top-0 z-10 block inline-flex -translate-y-1/2 rounded-md px-2 text-xs">
+        <span className="text-muted-foreground bg-background pointer-events-none absolute start-1 top-0 z-10 block inline-flex -translate-y-1/2 px-2 text-xs">
           Side
         </span>
       </TabsList>

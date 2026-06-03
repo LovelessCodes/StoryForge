@@ -19,6 +19,7 @@ import { TooltipTrigger } from "@/components/ui/tooltip";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import type { PublicServer } from "@/hooks/use-public-servers";
+import { compareSemverAsc, compareSemverDesc, stripped } from "@/lib/utils";
 import { rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
 import { useServersFilters } from "@/stores/serversFilters";
@@ -49,9 +50,9 @@ export function PublicServerList({
     .sort((a, b) => {
       if (sortBy === "name") {
         if (orderDirection === "descending") {
-          return b.serverName.localeCompare(a.serverName);
+          return stripped(b.serverName).localeCompare(stripped(a.serverName));
         }
-        return a.serverName.localeCompare(b.serverName);
+        return stripped(a.serverName).localeCompare(stripped(b.serverName));
       }
       if (sortBy === "maxplayers") {
         const bMaxPlayers = Number(b.maxPlayers);
@@ -69,9 +70,9 @@ export function PublicServerList({
       }
       if (sortBy === "version") {
         if (orderDirection === "descending") {
-          return b.gameVersion.localeCompare(a.gameVersion);
+          return compareSemverDesc(b.gameVersion, a.gameVersion);
         }
-        return a.gameVersion.localeCompare(b.gameVersion);
+        return compareSemverAsc(a.gameVersion, b.gameVersion);
       }
       if (sortBy === "whitelist") {
         if (orderDirection === "descending") {

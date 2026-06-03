@@ -130,6 +130,9 @@ console.log(`  package.json → ${newVersion}`);
 // 2. tauri.conf.json
 const tauriConf = readJSON("src-tauri/tauri.conf.json");
 tauriConf.version = newVersion;
+// MSI requires numeric major.minor.patch.build — derive from base semver
+const newBaseVersion = newVersion.replace(/-rc\.\d+$/, "");
+tauriConf.bundle.windows.wix.version = `${newBaseVersion}.0`;
 writeJSON("src-tauri/tauri.conf.json", tauriConf);
 console.log(`  tauri.conf.json → ${newVersion}`);
 

@@ -1,7 +1,5 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Pencil, PlusIcon, SearchIcon, Trash2Icon } from "lucide-react";
-import { useState } from "react";
 
 import { CreateModpackDialog } from "@/components/dialogs/create-modpack.dialog";
 import { DeleteModpackDialog } from "@/components/dialogs/delete-modpack.dialog";
@@ -35,8 +33,6 @@ const SORT_OPTIONS: Record<string, string> = {
   updatedAt: "Last Updated",
 };
 
-const PAGE_SIZE = 12;
-
 function RouteComponent() {
   const {
     searchText,
@@ -51,20 +47,10 @@ function RouteComponent() {
 
   const { user } = useAuthSession();
 
-  const [page, setPage] = useState(0);
-  const queryClient = useQueryClient();
-  const { data, isLoading } = useModpacks({
-    limit: PAGE_SIZE,
-    offset: page * PAGE_SIZE,
-    order: orderDirection === "asc" ? "asc" : "desc",
-    owner: owner || undefined,
-    search: searchText || undefined,
-    sortBy,
-  });
+  const { data, isPending } = useModpacks();
 
-  const modpacks: ModpackItem[] = data?.modpacks ?? [];
+  const modpacks = data?.modpacks ?? [];
   const totalCount = data?.totalCount ?? 0;
-  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   return (
     <div className="flex h-full flex-col">
@@ -74,7 +60,6 @@ function RouteComponent() {
           className="h-9 w-56"
           onChange={(e) => {
             setSearchText(e.target.value);
-            setPage(0);
           }}
           placeholder="Search modpacks..."
           value={searchText}
@@ -88,7 +73,6 @@ function RouteComponent() {
           <Select
             onValueChange={(value) => {
               setSortBy(value as typeof sortBy);
-              setPage(0);
             }}
             value={sortBy}
           >
@@ -117,7 +101,6 @@ function RouteComponent() {
             className="h-9"
             onChange={(e) => {
               setOwner(e.target.value);
-              setPage(0);
             }}
             placeholder="Filter by owner…"
             value={owner}
@@ -146,7 +129,7 @@ function RouteComponent() {
 
       {/* Results */}
       <ScrollArea scrollFade className="px-4 py-4">
-        {isLoading ? (
+        {isPending ? (
           <div className="flex items-center justify-center py-20">
             <p className="text-muted-foreground animate-pulse text-sm">Loading modpacks…</p>
           </div>
@@ -166,11 +149,6 @@ function RouteComponent() {
                 <ModpackCard
                   key={mp.id}
                   modpack={mp}
-                  onDelete={() =>
-                    queryClient.invalidateQueries({
-                      queryKey: ["modpacks"],
-                    })
-                  }
                   onEdit={() =>
                     rootDialogHandle.openWithPayload(() => <CreateModpackDialog modpack={mp} />)
                   }
@@ -178,31 +156,6 @@ function RouteComponent() {
                 />
               ))}
             </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="mt-6 flex items-center justify-center gap-3">
-                <Button
-                  disabled={page === 0}
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  size="sm"
-                  variant="outline"
-                >
-                  Previous
-                </Button>
-                <span className="text-muted-foreground text-xs">
-                  Page {page + 1} of {totalPages}
-                </span>
-                <Button
-                  disabled={page >= totalPages - 1}
-                  onClick={() => setPage((p) => p + 1)}
-                  size="sm"
-                  variant="outline"
-                >
-                  Next
-                </Button>
-              </div>
-            )}
           </>
         )}
       </ScrollArea>
@@ -217,7 +170,7 @@ function ModpackCard({
   userId,
 }: {
   modpack: ModpackItem;
-  onDelete: () => void;
+  onDelete?: () => void;
   onEdit: () => void;
   userId: string | null;
 }) {

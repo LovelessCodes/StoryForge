@@ -10,6 +10,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.3] - 2026-06-02
+
+### Added
+
+- **Playtime Tracking**: Added `last_played` and `total_time_played` fields to installations with persistence to `installation.json`. Tracks session duration and updates playtime on game exit via `game-quit` events.
+- **Installation Import**: New `import_installation` Tauri command that creates installations from a comma-separated mod string (`modid@version,modid@version,…`), downloads mods with progress tracking, and returns installation details and download results.
+- **Mod Download Command**: New `download_mod` Tauri command to fetch mods from the Vintage Story API, match the requested version, and download the mod file to an installation's Mods directory.
+- **Import Progress UI**: Added a progress bar and per-mod status text to the import installation dialog, with error handling and event listener cleanup on completion.
+- **macOS ARM64-Native dotnet Support**: ARM64 runtime detection via Mach-O header inspection on macOS aarch64. System dotnet discovery now identifies ARM64-native dotnet 10 runtimes and skips x64-only installs. Added architecture-specific download URLs and version-specific runtime selection.
+- **macOS ARM64 Downloads**: Platform-specific download links for macOS ARM64 when running on aarch64 and Tauri version is at least 1.22.3.
+- **Semantic Version Comparison**: Added `semver` crate dependency and `is_at_least_1_22_3` utility for comparing Tauri version strings.
+- **Type-Aware Linting**: Enabled `typeAware` option in oxlint configuration and added `oxlint-tsgolint` dependency for improved TypeScript linting.
+
+### Changed
+
+- **Import Dialog Refactor**: Rewrote `ImportInstallationDialog` to use the new single-step `import_installation` backend command with progress tracking, replacing the old multi-step install flow. Removed dependency on `useAddModToInstallation` and `useAppFolder`.
+- **Mod Schema Simplification**: The installation schema now accepts mods as either an array of mod objects or a comma-separated string (`modid@version,…`). Installation data serialization uses the comma-separated format instead of JSON arrays.
+- **Error Messages**: Updated mod removal error toasts in `ModItem` and `UpdateModDialog` to use `modpath` instead of `name` for consistency.
+
+### Fixed
+
+- **Unhandled Promises**: Added `void` to `form.handleSubmit()` calls in `AddInstallationDialog` to satisfy type-aware linting.
+- **Playtime Persistence**: `save_installation` now preserves existing `last_played` and `total_time_played` values when updating an installation, preventing playtime data loss on edits.
+
+## [0.9.2] - 2026-06-01
+
+### Changed
+
+- Enabled window decorations and set transparency for the main window.
+
 ## [0.9.1] - 2026-06-01
 
 ### Added
@@ -315,6 +345,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- Version links for diff and release pages -->
 
+[0.9.3]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.9.3
+[0.9.2]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.9.2
 [0.9.1]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.9.1
 [0.8.0]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.8.0
 [0.5.4]: https://github.com/LovelessCodes/StoryForge/releases/tag/storyforge-v0.5.4

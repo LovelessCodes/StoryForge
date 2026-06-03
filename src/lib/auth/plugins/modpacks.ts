@@ -1,5 +1,9 @@
 import type { BetterFetchOption } from "@better-fetch/fetch";
 import { BetterAuthClientPlugin } from "better-auth";
+import { useAuthQuery } from "better-auth/client";
+import { atom } from "nanostores";
+
+import { ModpackItem } from "@/hooks/use-modpacks";
 
 type Modpacks = {
   id: string;
@@ -14,15 +18,15 @@ type Modpacks = {
     image: string | null;
   };
   modpackVersions: Version[];
-  createdAt: string;
-  updatedAt: string;
+  createdAt: number;
+  updatedAt: number;
 };
 
 type CreateModpack = {
   name: string;
   slug: string;
   description: string;
-  imageUrl: string;
+  imageUrl?: string;
 };
 
 type Version = {
@@ -33,8 +37,8 @@ type Version = {
   modsString: string;
   downloads: number;
   modpack: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: number;
+  updatedAt: number;
 };
 
 type CreateModpackVersion = {
@@ -45,11 +49,12 @@ type CreateModpackVersion = {
   modpack: string;
 };
 
-export const modpacksPlugin = () =>
-  ({
+export const modpacksPlugin = () => {
+  const $modpacks = atom<number>(0);
+  return {
     id: "modpacks-client-plugin",
-    getActions: ($fetch) => ({
-      getModpacks: async (
+    getActions: ($fetch, $store) => ({
+      getModpacks: (
         data?: {
           offset?: number;
           limit?: number;
@@ -59,134 +64,149 @@ export const modpacksPlugin = () =>
           owner?: string;
         },
         fetchOptions?: BetterFetchOption,
-      ) => {
-        const res = await $fetch<{ totalCount: number; modpacks: Modpacks[] }>("/modpacks", {
+      ) =>
+        $fetch<{ totalCount: number; modpacks: Modpacks[] }>("/modpacks", {
           query: data,
           ...fetchOptions,
-        });
-        return res;
-      },
-      createModpack: async (data: CreateModpack, fetchOptions?: BetterFetchOption) => {
-        const res = await $fetch<Modpacks>("/modpacks", {
+        }),
+      createModpack: (data: CreateModpack, fetchOptions?: BetterFetchOption) =>
+        $fetch<Modpacks>("/modpacks", {
           method: "POST",
           body: data,
           ...fetchOptions,
-        });
-        return res;
-      },
-      checkModpackSlugAvailability: async (slug: string, fetchOptions?: BetterFetchOption) => {
-        const res = await $fetch<{
+          onSuccess: (res) => {
+            $modpacks.set(Math.random());
+            $store.notify("$modpacks");
+            void fetchOptions?.onSuccess?.(res);
+          },
+        }),
+      checkModpackSlugAvailability: (slug: string, fetchOptions?: BetterFetchOption) =>
+        $fetch<{
           available: boolean;
           suggestion?: string;
           alternatives?: string[];
         }>(`/modpacks/slug-availability`, {
           query: { slug },
           ...fetchOptions,
-        });
-        return res;
-      },
-      updateModpack: async (
-        slug: string,
-        data: Partial<Modpacks>,
-        fetchOptions?: BetterFetchOption,
-      ) => {
-        const res = await $fetch<Modpacks>(`/modpacks/${slug}`, {
+        }),
+      updateModpack: (slug: string, data: Partial<Modpacks>, fetchOptions?: BetterFetchOption) =>
+        $fetch<Modpacks>(`/modpacks/${slug}`, {
           method: "PUT",
           body: data,
           ...fetchOptions,
-        });
-        return res;
-      },
-      deleteModpack: async (slug: string, fetchOptions?: BetterFetchOption) => {
-        const res = await $fetch<Modpacks>(`/modpacks/${slug}`, {
+          onSuccess: (res) => {
+            $modpacks.set(Math.random());
+            $store.notify("$modpacks");
+            void fetchOptions?.onSuccess?.(res);
+          },
+        }),
+      deleteModpack: (slug: string, fetchOptions?: BetterFetchOption) =>
+        $fetch<Modpacks>(`/modpacks/${slug}`, {
           method: "DELETE",
           ...fetchOptions,
-        });
-        return res;
-      },
-      getModpackBySlug: async (slug: string, fetchOptions?: BetterFetchOption) => {
-        const res = await $fetch<Modpacks>(`/modpacks/${slug}`, {
+          onSuccess: (res) => {
+            $modpacks.set(Math.random());
+            $store.notify("$modpacks");
+            void fetchOptions?.onSuccess?.(res);
+          },
+        }),
+      getModpackBySlug: (slug: string, fetchOptions?: BetterFetchOption) =>
+        $fetch<Modpacks>(`/modpacks/${slug}`, {
           ...fetchOptions,
-        });
-        return res;
-      },
-      getModpackVersions: async (slug: string, fetchOptions?: BetterFetchOption) => {
-        const res = await $fetch<Version[]>(`/modpacks/${slug}/versions`, {
+        }),
+      getModpackVersions: (slug: string, fetchOptions?: BetterFetchOption) =>
+        $fetch<Version[]>(`/modpacks/${slug}/versions`, {
           ...fetchOptions,
-        });
-        return res;
-      },
-      getModpackVersion: async (
-        slug: string,
-        version: string,
-        fetchOptions?: BetterFetchOption,
-      ) => {
-        const res = await $fetch<Version>(`/modpacks/${slug}/versions/${version}`, {
+        }),
+      getModpackVersion: (slug: string, version: string, fetchOptions?: BetterFetchOption) =>
+        $fetch<Version>(`/modpacks/${slug}/versions/${version}`, {
           ...fetchOptions,
-        });
-        return res;
-      },
-      createModpackVersion: async (
+        }),
+      createModpackVersion: (
         slug: string,
         data: CreateModpackVersion,
         fetchOptions?: BetterFetchOption,
-      ) => {
-        const res = await $fetch<Version>(`/modpacks/${slug}/versions`, {
+      ) =>
+        $fetch<Version>(`/modpacks/${slug}/versions`, {
           method: "POST",
           body: data,
           ...fetchOptions,
-        });
-        return res;
-      },
-      updateModpackVersion: async (
+          onSuccess: (res) => {
+            $modpacks.set(Math.random());
+            $store.notify("$modpacks");
+            void fetchOptions?.onSuccess?.(res);
+          },
+        }),
+      updateModpackVersion: (
         slug: string,
         version: string,
         data: Partial<Version>,
         fetchOptions?: BetterFetchOption,
-      ) => {
-        const res = await $fetch<Version>(`/modpacks/${slug}/versions/${version}`, {
+      ) =>
+        $fetch<Version>(`/modpacks/${slug}/versions/${version}`, {
           method: "PUT",
           body: data,
           ...fetchOptions,
-        });
-        return res;
-      },
-      deleteModpackVersion: async (
-        slug: string,
-        version: string,
-        fetchOptions?: BetterFetchOption,
-      ) => {
-        const res = await $fetch<Version>(`/modpacks/${slug}/versions/${version}`, {
+          onSuccess: (res) => {
+            $modpacks.set(Math.random());
+            $store.notify("$modpacks");
+            void fetchOptions?.onSuccess?.(res);
+          },
+        }),
+      deleteModpackVersion: (slug: string, version: string, fetchOptions?: BetterFetchOption) =>
+        $fetch<Version>(`/modpacks/${slug}/versions/${version}`, {
           method: "DELETE",
           ...fetchOptions,
-        });
-        return res;
-      },
-      downloadModpackVersion: async (
-        slug: string,
-        version: string,
-        fetchOptions?: BetterFetchOption,
-      ) => {
-        const res = await $fetch<Version>(`/modpacks/${slug}/versions/${version}/download`, {
+          onSuccess: (res) => {
+            $modpacks.set(Math.random());
+            $store.notify("$modpacks");
+            void fetchOptions?.onSuccess?.(res);
+          },
+        }),
+      downloadModpackVersion: (slug: string, version: string, fetchOptions?: BetterFetchOption) =>
+        $fetch<Version>(`/modpacks/${slug}/versions/${version}/download`, {
           method: "POST",
           ...fetchOptions,
-        });
-        return res;
-      },
-      uploadModpackVersionConfig: async (
+          onSuccess: (res) => {
+            $modpacks.set(Math.random());
+            $store.notify("$modpacks");
+            void fetchOptions?.onSuccess?.(res);
+          },
+        }),
+      uploadModpackVersionConfig: (
         slug: string,
         formData: FormData,
         fetchOptions?: BetterFetchOption,
-      ) => {
-        const res = await $fetch<{
+      ) =>
+        $fetch<{
           url: string;
           key: string;
         }>(`https://vsapi.betterjs.dev/api/modpacks/${slug}/versions/upload`, {
           method: "POST",
           body: formData,
           ...fetchOptions,
-        });
-        return res;
-      },
+        }),
     }),
-  }) satisfies BetterAuthClientPlugin;
+    getAtoms: ($fetch) => {
+      const modpacks = useAuthQuery<{ totalCount: number; modpacks: ModpackItem[] }>(
+        $modpacks,
+        "/modpacks",
+        $fetch,
+        {
+          method: "GET",
+        },
+      );
+      return {
+        $modpacks,
+        modpacks,
+      };
+    },
+    atomListeners: [
+      {
+        matcher: (path) =>
+          path.startsWith("/modpacks") || path === "/sign-in" || path === "/sign-out",
+        signal: "$modpacks",
+      },
+    ],
+  } satisfies BetterAuthClientPlugin;
+};

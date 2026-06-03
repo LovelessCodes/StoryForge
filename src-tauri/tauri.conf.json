@@ -67,6 +67,9 @@
       "webviewInstallMode": {
         "silent": true,
         "type": "embedBootstrapper"
+      },
+      "wix": {
+        "version": "1.0.0.0"
       }
     }
   },
@@ -85,5 +88,5 @@
     }
   },
   "productName": "Story Forge",
-  "version": "1.0.0-rc.1"
+  "version": "1.0.0-rc.7"
 }

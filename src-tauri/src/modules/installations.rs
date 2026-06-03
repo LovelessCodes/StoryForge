@@ -669,6 +669,12 @@ pub struct PlayGameParams {
     pub server: Option<String>,
     pub password: Option<String>,
     pub save: Option<String>,
+    #[serde(default = "default_use_system_dotnet")]
+    pub use_system_dotnet: bool,
+}
+
+fn default_use_system_dotnet() -> bool {
+    true
 }
 
 fn load_selected_account(app: &AppHandle) -> Option<SavedAccount> {
@@ -709,6 +715,7 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
         &app_data,
         &installation.version,
         options.installation_id,
+        options.use_system_dotnet,
     )
     .await?;
     log_info!("[play_game] DOTNET_ROOT={:?}", dotnet_root);

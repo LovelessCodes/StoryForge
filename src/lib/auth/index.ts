@@ -8,6 +8,11 @@ const BEARER_TOKEN_KEY = "sf_bearer_token";
 export const authClient = createAuthClient({
   baseURL: "https://vsapi.betterjs.dev",
   plugins: [modpacksPlugin(), usernameClient()],
+  sessionOptions: {
+    refetchOnWindowFocus: false,
+    refetchWhenOffline: false,
+    refetchInterval: 0,
+  },
   fetchOptions: {
     // Automatically attach Bearer token from localStorage to every request.
     // No cookies needed — works reliably in Tauri's WebView.

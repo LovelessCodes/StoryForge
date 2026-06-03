@@ -46,7 +46,7 @@ export function ProgressTrack({
 }: ProgressPrimitive.Track.Props): React.ReactElement {
   return (
     <ProgressPrimitive.Track
-      className={cn("block h-1.5 w-full overflow-hidden rounded-full bg-input", className)}
+      className={cn("block h-1.5 w-full overflow-hidden bg-input", className)}
       data-slot="progress-track"
       {...props}
     />

@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "StoryForge"
-version = "1.0.0-rc.1"
+version = "1.0.0-rc.7"
 dependencies = [
  "dunce",
  "flate2",
