@@ -90,7 +90,9 @@ export function UpdateModDialog({ mod, installation, versionFrom }: UpdateModDia
         },
       );
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: installedModsQueryKey(installation.path) });
+      await queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(installation.id) });
       addModToInstallation({
         path: `${installation.path}${pathDelimiter}Mods`,
         url: selectedVersion?.mainfile || "",
