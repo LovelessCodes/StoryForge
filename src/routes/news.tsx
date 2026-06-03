@@ -39,7 +39,7 @@ function RouteComponent() {
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+        <Loader2 className="text-muted-foreground size-8 animate-spin" />
       </div>
     );
   }

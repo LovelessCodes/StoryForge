@@ -15,8 +15,8 @@ export function VersionItem({ version }: VersionItemProps) {
   return (
     <div className="hover:bg-muted/50 flex items-center justify-between border p-4 transition-colors">
       <div className="flex items-center gap-3">
-        <div className="bg-primary/10 flex h-10 w-10 items-center justify-center">
-          <Download className="text-primary h-5 w-5" />
+        <div className="bg-primary/10 flex size-10 items-center justify-center">
+          <Download className="text-primary size-5" />
         </div>
         <div className="flex gap-2">
           <Badge className="font-mono" variant="outline">

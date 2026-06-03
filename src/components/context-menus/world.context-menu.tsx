@@ -69,7 +69,7 @@ export const WorldContextMenu = ({
               onClick={() => launchInstallation({ id: installation.id })}
             >
               Launch
-              <PlayIcon className="inline-block h-4 w-4" />
+              <PlayIcon className="inline-block size-4" />
             </ContextMenuItem>
           ) : (
             <ContextMenuItem
@@ -77,7 +77,7 @@ export const WorldContextMenu = ({
               onClick={() => installation && downloadVersion(installation.version)}
             >
               Download {installation?.version}
-              <DownloadCloudIcon className="inline-block h-4 w-4" />
+              <DownloadCloudIcon className="inline-block size-4" />
             </ContextMenuItem>
           )}
           <ContextMenuItem
@@ -92,7 +92,7 @@ export const WorldContextMenu = ({
             }
           >
             View Map
-            <MapIcon className="inline-block h-4 w-4" />
+            <MapIcon className="inline-block size-4" />
           </ContextMenuItem>
           <ContextMenuItem
             className="flex items-center justify-between gap-4"
@@ -105,7 +105,7 @@ export const WorldContextMenu = ({
             }
           >
             Manage Mods
-            <PackageSearchIcon className="inline-block h-4 w-4" />
+            <PackageSearchIcon className="inline-block size-4" />
           </ContextMenuItem>
           <ContextMenuItem
             className="flex items-center justify-between gap-4"
@@ -118,14 +118,14 @@ export const WorldContextMenu = ({
             }
           >
             Configure Mods
-            <PackageOpenIcon className="inline-block h-4 w-4" />
+            <PackageOpenIcon className="inline-block size-4" />
           </ContextMenuItem>
           <ContextMenuItem
             className="flex items-center justify-between gap-4"
             onClick={() => installation && revealInstallationInFolder(installation.path)}
           >
             Open Folder
-            <FolderOpenIcon className="inline-block h-4 w-4" />
+            <FolderOpenIcon className="inline-block size-4" />
           </ContextMenuItem>
           <ContextMenuItem
             className="flex w-full items-center justify-between gap-4"
@@ -138,7 +138,7 @@ export const WorldContextMenu = ({
             }
           >
             Edit
-            <PencilIcon className="inline-block h-4 w-4" />
+            <PencilIcon className="inline-block size-4" />
           </ContextMenuItem>
           <ContextMenuItem
             className="flex w-full items-center justify-between gap-4"
@@ -152,7 +152,7 @@ export const WorldContextMenu = ({
             variant="destructive"
           >
             Delete
-            <FolderXIcon className="inline-block h-4 w-4" />
+            <FolderXIcon className="inline-block size-4" />
           </ContextMenuItem>
         </ContextMenuGroup>
       </ContextMenuContent>

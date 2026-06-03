@@ -55,7 +55,7 @@ export function ViewLogsDialog({
 
       {isLoading ? (
         <div className="flex h-full items-center justify-center gap-2 p-8">
-          <Loader2Icon className="text-muted-foreground h-5 w-5 animate-spin" />
+          <Loader2Icon className="text-muted-foreground size-5 animate-spin" />
           <span className="text-muted-foreground text-sm">Loading logs...</span>
         </div>
       ) : !logs || logs.length === 0 ? (
@@ -93,7 +93,7 @@ export function ViewLogsDialog({
             </div>
           ) : isLoadingContent ? (
             <div className="flex h-full items-center justify-center gap-2 p-8">
-              <Loader2Icon className="text-muted-foreground h-5 w-5 animate-spin" />
+              <Loader2Icon className="text-muted-foreground size-5 animate-spin" />
               <span className="text-muted-foreground text-sm">Loading...</span>
             </div>
           ) : (

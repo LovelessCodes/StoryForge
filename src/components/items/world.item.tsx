@@ -55,7 +55,7 @@ export const WorldItem = ({ world }: { world: World }) => {
               </>
             )}
           >
-            <SproutIcon className="inline h-4 w-4" />
+            <SproutIcon className="inline size-4" />
           </TooltipTrigger>
         </p>
         <p className="text-muted-foreground text-xs">

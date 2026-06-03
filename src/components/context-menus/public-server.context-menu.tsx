@@ -55,7 +55,7 @@ export const PublicServerContextMenu = ({
               }
             >
               Connect
-              <PlugIcon className="inline-block h-4 w-4" />
+              <PlugIcon className="inline-block size-4" />
             </ContextMenuItem>
           ) : installations.find((i) => i.version === server.gameVersion) ? (
             <ContextMenuItem
@@ -63,7 +63,7 @@ export const PublicServerContextMenu = ({
               onClick={() => downloadVersion(server.gameVersion)}
             >
               Download {server.gameVersion}
-              <DownloadCloudIcon className="inline-block h-4 w-4" />
+              <DownloadCloudIcon className="inline-block size-4" />
             </ContextMenuItem>
           ) : (
             <ContextMenuItem
@@ -77,7 +77,7 @@ export const PublicServerContextMenu = ({
               }
             >
               Add Installation
-              <FolderPlusIcon className="inline-block h-4 w-4" />
+              <FolderPlusIcon className="inline-block size-4" />
             </ContextMenuItem>
           )}
         </ContextMenuGroup>

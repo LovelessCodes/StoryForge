@@ -68,7 +68,7 @@ export const InstallationContextMenu = ({
               onClick={() => launchInstallation({ id: installation.id })}
             >
               Launch
-              <PlayIcon className="inline-block h-4 w-4" />
+              <PlayIcon className="inline-block size-4" />
             </ContextMenuItem>
           ) : (
             <ContextMenuItem
@@ -76,7 +76,7 @@ export const InstallationContextMenu = ({
               onClick={() => downloadVersion(installation.version)}
             >
               Download {installation.version}
-              <DownloadCloudIcon className="inline-block h-4 w-4" />
+              <DownloadCloudIcon className="inline-block size-4" />
             </ContextMenuItem>
           )}
           <ContextMenuItem
@@ -86,7 +86,7 @@ export const InstallationContextMenu = ({
             {installation.favorite ? "Unfavorite" : "Favorite"}
             <StarIcon
               className={cn(
-                "inline-block h-4 w-4",
+                "inline-block size-4",
                 installation.favorite && "text-warning fill-warning",
               )}
             />
@@ -101,7 +101,7 @@ export const InstallationContextMenu = ({
             }
           >
             Manage Mods
-            <PackageSearchIcon className="inline-block h-4 w-4" />
+            <PackageSearchIcon className="inline-block size-4" />
           </ContextMenuItem>
           <ContextMenuItem
             className="flex items-center justify-between gap-4"
@@ -113,14 +113,14 @@ export const InstallationContextMenu = ({
             }
           >
             Configure Mods
-            <PackageOpenIcon className="inline-block h-4 w-4" />
+            <PackageOpenIcon className="inline-block size-4" />
           </ContextMenuItem>
           <ContextMenuItem
             className="flex items-center justify-between gap-4"
             onClick={() => revealInstallationInFolder(installation.path)}
           >
             Open Folder
-            <FolderOpenIcon className="inline-block h-4 w-4" />
+            <FolderOpenIcon className="inline-block size-4" />
           </ContextMenuItem>
           <ContextMenuItem
             className="flex w-full items-center justify-between gap-4"
@@ -138,14 +138,14 @@ export const InstallationContextMenu = ({
             }
           >
             View Logs
-            <FileTextIcon className="inline-block h-4 w-4" />
+            <FileTextIcon className="inline-block size-4" />
           </ContextMenuItem>
           <ContextMenuItem
             className="flex items-center justify-between gap-4"
             onClick={() => exportInstallation({ installation })}
           >
             Export
-            <FileUpIcon className="inline-block h-4 w-4" />
+            <FileUpIcon className="inline-block size-4" />
           </ContextMenuItem>
           <ContextMenuItem
             className="flex w-full items-center justify-between gap-4"
@@ -159,7 +159,7 @@ export const InstallationContextMenu = ({
             }
           >
             Edit
-            <FolderPenIcon className="inline-block h-4 w-4" />
+            <FolderPenIcon className="inline-block size-4" />
           </ContextMenuItem>
           <ContextMenuItem
             className="flex w-full items-center justify-between gap-4"
@@ -174,7 +174,7 @@ export const InstallationContextMenu = ({
             }
           >
             Delete
-            <FolderXIcon className="inline-block h-4 w-4" />
+            <FolderXIcon className="inline-block size-4" />
           </ContextMenuItem>
         </ContextMenuGroup>
       </ContextMenuContent>

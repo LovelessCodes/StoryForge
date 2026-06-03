@@ -123,7 +123,7 @@ function Dashboard() {
             </>
           ) : (
             <div className="bg-card flex w-full flex-col gap-6 border p-4 shadow">
-              <FolderHeartIcon className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
+              <FolderHeartIcon className="text-muted-foreground mx-auto mb-4 size-12" />
               <p className="text-muted-foreground">No installations yet</p>
               <Button
                 className="text-muted-foreground w-full text-center text-sm"
@@ -217,7 +217,7 @@ function Dashboard() {
             </>
           ) : (
             <div className="bg-card flex w-full flex-col gap-6 border p-4 shadow">
-              <ServerIcon className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
+              <ServerIcon className="text-muted-foreground mx-auto mb-4 size-12" />
               <p className="text-muted-foreground">No servers yet</p>
               <Button
                 className="text-muted-foreground w-full text-center text-sm"
