@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { AnimatePresence, motion } from "framer-motion";
 import { MapIcon, MapPinXIcon } from "lucide-react";
@@ -22,6 +22,7 @@ export type DeleteInstallationDialogProps = {
 };
 
 export function DeleteInstallationDialog({ installation }: DeleteInstallationDialogProps) {
+  const queryClient = useQueryClient();
   const { removeInstallation } = useInstallations();
   const { servers } = useServerStore();
   const { data: saves } = useSavesFromInstallation(installation.id);
@@ -42,8 +43,10 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
         id: `installation-delete-${variables}`,
       });
     },
-    onSuccess: (data, variables) => {
+    onSuccess: async (data, variables) => {
       if (data === "removed") {
+        await queryClient.invalidateQueries({ queryKey: ["saves"] });
+        await queryClient.invalidateQueries({ queryKey: ["saves", installation.id] });
         removeInstallation(variables);
         toast.success("Installation deleted", {
           id: `installation-delete-${variables}`,
@@ -85,7 +88,7 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
                     key={srv.id}
                     transition={{ duration: 0.2 }}
                   >
-                    <MapPinXIcon className="mr-1 inline h-4 w-4" />
+                    <MapPinXIcon className="mr-1 inline size-4" />
                     {srv.name || `Server #${srv.id}`}
                   </motion.li>
                 ))}
@@ -117,7 +120,7 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
                     key={save}
                     transition={{ duration: 0.2 }}
                   >
-                    <MapIcon className="mr-1 inline h-4 w-4" />
+                    <MapIcon className="mr-1 inline size-4" />
                     {save}
                   </motion.li>
                 ))}
