@@ -1,4 +1,4 @@
-import { type UseMutationOptions, useMutation } from "@tanstack/react-query";
+import { type UseMutationOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
 export type UpdateWorldProps = {
@@ -10,8 +10,10 @@ export type UpdateWorldProps = {
 
 export const useUpdateWorld = (
   props?: UseMutationOptions<unknown, Error, UpdateWorldProps, unknown>,
-) =>
-  useMutation({
+) => {
+  const queryClient = useQueryClient();
+  const { onSuccess, ...restProps } = props ?? {};
+  return useMutation({
     mutationFn: ({ worldPath, name, installationId, identifier }: UpdateWorldProps) =>
       invoke("update_world", {
         identifier,
@@ -19,5 +21,12 @@ export const useUpdateWorld = (
         name,
         worldPath,
       }),
-    ...props,
+    ...restProps,
+    onSuccess: async (...args) => {
+      const { installationId } = args[1];
+      await queryClient.invalidateQueries({ queryKey: ["saves"] });
+      await queryClient.invalidateQueries({ queryKey: ["saves", installationId] });
+      onSuccess?.(...args);
+    },
   });
+};
