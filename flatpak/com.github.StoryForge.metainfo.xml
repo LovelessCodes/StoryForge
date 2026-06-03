@@ -32,15 +32,10 @@
   </screenshots>
 
   <releases>
-    <release version="0.9.3" date="2026-06-02">
+    <!-- Release version to be inserted just before build time -->
+    <release version="FLATPAK_VERSION" date="FLATPAK_DATE">
       <description>
-        <p>Story Forge v0.9.3</p>
-        <ul>
-          <li>This update is a minor quality-of-life update focused on two areas: keeping track of your playtime, and making the app run natively on Apple Silicon Macs (for versions above 1.22.3).</li>
-          <li>Playtime tracking. The app now remembers when you last played each installation and how much total time you've spent. This data sticks around even when you rename or edit an installation, so you won't lose your tracked hours.</li>
-          <li>Native Apple Silicon support. If you're on a Mac with an M1/M2/M3/M4 chip, StoryForge now detects and prefers ARM64-native .NET runtimes for game versions that are above 1.22.3, instead of relying on Rosetta emulation. Combined with proper ARM64 download links, the game launcher is faster and more efficient on modern Macs.</li>
-          <li>Under the hood. We tightened up code quality with smarter TypeScript linting, fixed a few error messages that were showing the wrong information, and added proper semantic version checking so version-specific features only activate when supported.</li>
-        </ul>
+        <p>Story Forge FLATPAK_VERSION</p>
       </description>
     </release>
   </releases>

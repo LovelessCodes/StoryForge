@@ -1,7 +1,7 @@
 on:
   push:
     branches:
-      - release
+      - feature/flatpak
 
 jobs:
   build-flatpak:
@@ -10,10 +10,41 @@ jobs:
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-48
       options: --privileged
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+
+      - name: Read version from package.json
+        id: version
+        run: echo "value=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Update flatpak metainfo version
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          RELEASE=$(echo $VERSION | cut -c 1-)
+          sed -i 's/FLATPAK_VERSION/$RELEASE/g' flatpak/com.github.StoryForge.metainfo.xml
+          sed -i 's/FLATPAK_DATE/$DATE/g' flatpak/com.github.StoryForge.metainfo.xml
+          cat flatpak/com.github.StoryForge.metainfo.xml
+
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
           bundle: com.github.StoryForge.flatpak
           manifest-path: flatpak/com.github.StoryForge.yml
           cache-key: flatpak-builder-${{ github.sha }}
+
+      - name: Upload to GitHub Release
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="storyforge-v${VERSION}"
+          # Verify the release exists
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" ./com.github.StoryForge.flatpak --clobber
+          else
+            echo "::error::Release '${TAG}' not found"
+            exit 1
+          fi
