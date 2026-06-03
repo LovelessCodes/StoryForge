@@ -24,9 +24,11 @@ jobs:
           VERSION: ${{ steps.version.outputs.value }}
         run: |
           DATE=$(date +%Y-%m-%d)
+          echo $DATE
           RELEASE=$(echo $VERSION | cut -c 1-)
-          sed -i 's/FLATPAK_VERSION/$RELEASE/g' flatpak/com.github.StoryForge.metainfo.xml
-          sed -i 's/FLATPAK_DATE/$DATE/g' flatpak/com.github.StoryForge.metainfo.xml
+          echo $RELEASE
+          sed -i "s/FLATPAK_VERSION/${RELEASE}/g" flatpak/com.github.StoryForge.metainfo.xml
+          sed -i "s/FLATPAK_DATE/${DATE}/g" flatpak/com.github.StoryForge.metainfo.xml
           cat flatpak/com.github.StoryForge.metainfo.xml
 
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
