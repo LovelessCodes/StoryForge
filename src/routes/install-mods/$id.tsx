@@ -21,7 +21,7 @@ import {
 import { useInstalledMods } from "@/hooks/use-installed-mods";
 import { useModUpdates } from "@/hooks/use-mod-updates";
 import { gameVersionsQuery, modTagsQuery } from "@/lib/queries";
-import { cn, compareSemverDesc } from "@/lib/utils";
+import { cn, compareSemverDesc, stripped } from "@/lib/utils";
 import { useInstallationsStore } from "@/stores/installations";
 import { type ModsFilters, useModsFilters } from "@/stores/modsFilters";
 
@@ -170,7 +170,7 @@ function RouteComponent() {
           </SelectTrigger>
           <SelectContent align="start" alignItemWithTrigger={false}>
             {modTags
-              ?.sort((a, b) => a.name.localeCompare(b.name))
+              ?.sort((a, b) => stripped(a.name).localeCompare(stripped(b.name)))
               .map((tag) => (
                 <SelectItem
                   key={tag.tagid}
