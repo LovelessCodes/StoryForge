@@ -220,8 +220,8 @@ export function AppSidebar() {
             render={<DialogTrigger handle={rootDialogHandle} payload={() => <AddUserDialog />} />}
             variant="ghost"
           >
-            <span className="flex text-xs">Sign in</span>
             <UserPlus2 className="size-4" />
+            <span className="flex text-xs in-data-[state=collapsed]:hidden">Sign in</span>
           </Button>
         )}
       </SidebarHeader>
