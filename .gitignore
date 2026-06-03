@@ -28,3 +28,4 @@ dist-ssr
 # Flatpak build artifacts
 flatpak/.flatpak-builder
 flatpak/build
+flatpak/repos
