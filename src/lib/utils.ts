@@ -162,3 +162,10 @@ export const itemVariants = {
     y: 0,
   }),
 };
+
+export const stripped = (str: string) =>
+  str
+    .toLowerCase()
+    .replace(/[^\w\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
