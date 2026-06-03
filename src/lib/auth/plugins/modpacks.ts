@@ -18,8 +18,8 @@ type Modpacks = {
     image: string | null;
   };
   modpackVersions: Version[];
-  createdAt: string;
-  updatedAt: string;
+  createdAt: number;
+  updatedAt: number;
 };
 
 type CreateModpack = {
@@ -37,8 +37,8 @@ type Version = {
   modsString: string;
   downloads: number;
   modpack: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: number;
+  updatedAt: number;
 };
 
 type CreateModpackVersion = {
@@ -49,10 +49,11 @@ type CreateModpackVersion = {
   modpack: string;
 };
 
-export const modpacksPlugin = () =>
-  ({
+export const modpacksPlugin = () => {
+  const $modpacks = atom<number>(0);
+  return {
     id: "modpacks-client-plugin",
-    getActions: ($fetch) => ({
+    getActions: ($fetch, $store) => ({
       getModpacks: async (
         data?: {
           offset?: number;
@@ -75,6 +76,11 @@ export const modpacksPlugin = () =>
           method: "POST",
           body: data,
           ...fetchOptions,
+          onSuccess: (res) => {
+            $modpacks.set(Math.random());
+            $store.notify("$modpacks");
+            void fetchOptions?.onSuccess?.(res);
+          },
         });
         return res;
       },
@@ -98,6 +104,11 @@ export const modpacksPlugin = () =>
           method: "PUT",
           body: data,
           ...fetchOptions,
+          onSuccess: (res) => {
+            $modpacks.set(Math.random());
+            $store.notify("$modpacks");
+            void fetchOptions?.onSuccess?.(res);
+          },
         });
         return res;
       },
@@ -105,6 +116,11 @@ export const modpacksPlugin = () =>
         const res = await $fetch<Modpacks>(`/modpacks/${slug}`, {
           method: "DELETE",
           ...fetchOptions,
+          onSuccess: (res) => {
+            $modpacks.set(Math.random());
+            $store.notify("$modpacks");
+            void fetchOptions?.onSuccess?.(res);
+          },
         });
         return res;
       },
@@ -139,6 +155,11 @@ export const modpacksPlugin = () =>
           method: "POST",
           body: data,
           ...fetchOptions,
+          onSuccess: (res) => {
+            $modpacks.set(Math.random());
+            $store.notify("$modpacks");
+            void fetchOptions?.onSuccess?.(res);
+          },
         });
         return res;
       },
@@ -152,6 +173,11 @@ export const modpacksPlugin = () =>
           method: "PUT",
           body: data,
           ...fetchOptions,
+          onSuccess: (res) => {
+            $modpacks.set(Math.random());
+            $store.notify("$modpacks");
+            void fetchOptions?.onSuccess?.(res);
+          },
         });
         return res;
       },
@@ -163,6 +189,11 @@ export const modpacksPlugin = () =>
         const res = await $fetch<Version>(`/modpacks/${slug}/versions/${version}`, {
           method: "DELETE",
           ...fetchOptions,
+          onSuccess: (res) => {
+            $modpacks.set(Math.random());
+            $store.notify("$modpacks");
+            void fetchOptions?.onSuccess?.(res);
+          },
         });
         return res;
       },
@@ -174,6 +205,11 @@ export const modpacksPlugin = () =>
         const res = await $fetch<Version>(`/modpacks/${slug}/versions/${version}/download`, {
           method: "POST",
           ...fetchOptions,
+          onSuccess: (res) => {
+            $modpacks.set(Math.random());
+            $store.notify("$modpacks");
+            void fetchOptions?.onSuccess?.(res);
+          },
         });
         return res;
       },
@@ -194,7 +230,6 @@ export const modpacksPlugin = () =>
       },
     }),
     getAtoms: ($fetch) => {
-      const $modpacks = atom<boolean>(false);
       const modpacks = useAuthQuery<{ totalCount: number; modpacks: ModpackItem[] }>(
         $modpacks,
         "/modpacks",
@@ -210,9 +245,17 @@ export const modpacksPlugin = () =>
     },
     atomListeners: [
       {
-        matcher: (path) =>
-          path.startsWith("/modpacks") || path.includes("sign-in") || path.includes("sign-out"),
+        matcher: (path) => {
+          console.log("matcher", path);
+          return (
+            path.startsWith("/modpacks") ||
+            path === "/modpacks" ||
+            path === "/sign-in" ||
+            path === "/sign-out"
+          );
+        },
         signal: "$modpacks",
       },
     ],
-  }) satisfies BetterAuthClientPlugin;
+  } satisfies BetterAuthClientPlugin;
+};
