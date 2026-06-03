@@ -6,6 +6,7 @@ import { useRef } from "react";
 import { toast } from "sonner";
 
 import { useInstallations } from "@/stores/installations";
+import { useSettingsStore } from "@/stores/settings";
 
 export const usePlayInstallation = (
   props?: UseMutationOptions<void, Error, { id: number; save?: string }>,
@@ -14,7 +15,12 @@ export const usePlayInstallation = (
   const { installations, updateLastPlayed, updatePlaytime } = useInstallations();
   return useMutation({
     ...props,
-    mutationFn: ({ id, save }) => invoke("play_game", { options: { installation_id: id, save } }),
+    mutationFn: ({ id, save }) => {
+      const { useSystemDotnet } = useSettingsStore.getState();
+      return invoke("play_game", {
+        options: { installation_id: id, save, use_system_dotnet: useSystemDotnet },
+      });
+    },
     onError: (error) => {
       toast.error(`Error playing with installation: ${error.message}`);
     },
