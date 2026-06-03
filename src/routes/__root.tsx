@@ -53,6 +53,8 @@ function RootComponent() {
   // Queries
   const { data: update } = useUpdater();
 
+  const relaunchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
   // Effects
   React.useEffect(() => {
     if (update) {
@@ -83,7 +85,7 @@ function RootComponent() {
                     description: "The application will restart now.",
                     id: "updater",
                   });
-                  setTimeout(() => {
+                  relaunchTimeoutRef.current = setTimeout(() => {
                     void relaunch();
                   }, 2500);
                   break;
@@ -100,6 +102,12 @@ function RootComponent() {
         id: "update-available",
       });
     }
+    return () => {
+      if (relaunchTimeoutRef.current) {
+        clearTimeout(relaunchTimeoutRef.current);
+        relaunchTimeoutRef.current = null;
+      }
+    };
   }, [update]);
 
   return (
