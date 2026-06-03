@@ -45,6 +45,10 @@ export const UpdateAllButton = ({
     },
     onSuccess: async (_d, v) => {
       if (installation) {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: installedModsQueryKey(installation.path) }),
+          queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(installation.id) }),
+        ]);
         await addModToInstallation({
           emitevent,
           installation,
