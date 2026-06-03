@@ -1,10 +1,12 @@
-import { type UseMutationOptions, useMutation } from "@tanstack/react-query";
+import { type UseMutationOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
 import { pathDelimiter } from "@/lib/utils";
 import type { Installation } from "@/stores/installations";
 
+import { installedModsQueryKey } from "./use-installed-mods";
 import type { ModUpdate } from "./use-mod-updates";
+import { modUpdatesQueryKey } from "./use-mod-updates";
 
 export const useAddModUpdateToInstallation = (
   props?: UseMutationOptions<
@@ -17,8 +19,10 @@ export const useAddModUpdateToInstallation = (
     }
   >,
 ) => {
+  const queryClient = useQueryClient();
+  const { onSuccess, ...restProps } = props ?? {};
   return useMutation({
-    ...props,
+    ...restProps,
     mutationFn: async ({ installation, mod, emitevent }) =>
       invoke("download_and_maybe_extract", {
         destpath: `${installation.path}${pathDelimiter}Mods`,
@@ -26,5 +30,11 @@ export const useAddModUpdateToInstallation = (
         extract: false,
         url: mod?.mainfile,
       }) as Promise<string>,
+    onSuccess: async (...args) => {
+      const { installation } = args[1];
+      await queryClient.invalidateQueries({ queryKey: installedModsQueryKey(installation.path) });
+      await queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(installation.id) });
+      onSuccess?.(...args);
+    },
   });
 };
