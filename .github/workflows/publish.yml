@@ -9,6 +9,9 @@ on:
 
 jobs:
   build-tauri:
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     permissions:
       contents: write
     strategy:
@@ -32,64 +35,59 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: setup bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+
+      - name: install Rust stable (linux only)
+        uses: dtolnay/rust-toolchain@stable
+        if: matrix.platform == 'ubuntu-22.04' || matrix.platform == 'ubuntu-22.04-arm'
+
+      - name: install Rust stable (macos only)
+        uses: dtolnay/rust-toolchain@stable
+        if: matrix.platform == 'macos-latest'
+        with:
+          targets: ${{ matrix.args == '--target aarch64-apple-darwin' && 'aarch64-apple-darwin' || 'x86_64-apple-darwin' }}
+
       - name: install dependencies (linux only)
         if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
         run: |
           sudo apt-get update
-
           sudo apt-get install -y \
-            build-essential \
-            curl \
-            wget \
-            file \
-            libgtk-3-dev \
-            libxdo-dev \
-            libssl-dev \
+            libwebkit2gtk-4.1-0=2.44.0-2 \
+            libwebkit2gtk-4.1-dev=2.44.0-2 \
+            libjavascriptcoregtk-4.1-0=2.44.0-2 \
+            libjavascriptcoregtk-4.1-dev=2.44.0-2 \
+            gir1.2-javascriptcoregtk-4.1=2.44.0-2 \
+            gir1.2-webkit2-4.1=2.44.0-2 \
             libappindicator3-dev \
             librsvg2-dev \
             patchelf
 
-          mkdir -p /tmp/ubuntu-packages
-          cd /tmp/ubuntu-packages
-          wget https://launchpadlibrarian.net/723972773/libwebkit2gtk-4.1-0_2.44.0-0ubuntu0.22.04.1_amd64.deb
-          wget https://launchpadlibrarian.net/723972761/libwebkit2gtk-4.1-dev_2.44.0-0ubuntu0.22.04.1_amd64.deb
-          wget https://launchpadlibrarian.net/723972770/libjavascriptcoregtk-4.1-0_2.44.0-0ubuntu0.22.04.1_amd64.deb
-          wget https://launchpadlibrarian.net/723972746/libjavascriptcoregtk-4.1-dev_2.44.0-0ubuntu0.22.04.1_amd64.deb
-          wget https://launchpadlibrarian.net/723972735/gir1.2-javascriptcoregtk-4.1_2.44.0-0ubuntu0.22.04.1_amd64.deb
-          wget https://launchpadlibrarian.net/723972739/gir1.2-webkit2-4.1_2.44.0-0ubuntu0.22.04.1_amd64.deb
-          wget https://launchpadlibrarian.net/606433947/libicu70_70.1-2ubuntu1_amd64.deb
-          wget https://launchpadlibrarian.net/606433941/libicu-dev_70.1-2ubuntu1_amd64.deb
-          wget https://launchpadlibrarian.net/606433945/icu-devtools_70.1-2ubuntu1_amd64.deb
-          wget https://launchpadlibrarian.net/595623693/libjpeg8_8c-2ubuntu10_amd64.deb
-          wget https://launchpadlibrarian.net/587202140/libjpeg-turbo8_2.1.2-0ubuntu1_amd64.deb
-          wget https://launchpadlibrarian.net/592959859/xdg-desktop-portal-gtk_1.14.0-1build1_amd64.deb
-          sudo apt-get install -y /tmp/ubuntu-packages/*.deb
-
       - name: install dependencies (linux arm only)
         if: matrix.platform == 'ubuntu-22.04-arm'
         run: |
-          sudo apt-get install -y xdg-utils libayatana-appindicator3-dev
+          sudo apt-get update
+          sudo apt-get install -y \
+          libwebkit2gtk-4.1-0=2.44.0-2 \
+          libwebkit2gtk-4.1-dev=2.44.0-2 \
+          libjavascriptcoregtk-4.1-0=2.44.0-2 \
+          libjavascriptcoregtk-4.1-dev=2.44.0-2 \
+          gir1.2-javascriptcoregtk-4.1=2.44.0-2 \
+          gir1.2-webkit2-4.1=2.44.0-2 \
+          libappindicator3-dev \
+          librsvg2-dev \
+          patchelf \
+          pkg-config \
+          xdg-utils
 
       - name: Override tauri-cli with custom AppImage format (Linux)
         if: matrix.platform == 'ubuntu-22.04'
         run: cargo install tauri-cli --git https://github.com/tauri-apps/tauri --branch feat/truly-portable-appimage --force
 
-      - name: setup bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
-        with:
-          no-cache: true
-
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
-        with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
-
       - name: Rust cache
-        if: matrix.platform != 'ubuntu-24.04-arm' # This must match the platform value defined above.
         uses: swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
         with:
           workspaces: "./src-tauri -> target"
-          lookup-only: true
 
       - name: install frontend dependencies
         run: bun install
@@ -99,12 +97,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          TAURI_BUNDLER_NEW_APPIMAGE_FORMAT: true
+          TAURI_BUNDLER_NEW_APPIMAGE_FORMAT: "true"
         with:
           tagName: storyforge-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
           releaseName: "Story Forge v__VERSION__"
-          releaseBody: "See the assets to download this version and install."
+          releaseBody: ${{ contains(github.ref_name, '-rc.') && '⚠️ Release candidate — not recommended for general use.' || 'See the assets to download this version and install.' }}
           releaseDraft: true
-          tauriScript: ${{ (matrix.platform == 'ubuntu-24.04' || matrix.platform == 'ubuntu-24.04-arm') && 'cargo tauri' || '' }}
+          tauriScript: ${{ (matrix.platform == 'ubuntu-22.04') && 'cargo tauri' || '' }}
           prerelease: ${{ contains(github.ref_name, '-rc.') }}
           args: ${{ matrix.args }}
