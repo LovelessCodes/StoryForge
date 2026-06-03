@@ -96,7 +96,7 @@ export function CreateModpackDialog({ modpack }: CreateModpackDialogProps) {
       return;
     }
     // Image URL policy: must be from moddbcdn.vintagestory.at
-    if (imageUrl.trim() && !imageUrl.startsWith("https://moddbcdn.vintagestory.at/")) {
+    if (imageUrl.trim().length > 0 && !imageUrl.startsWith("https://moddbcdn.vintagestory.at/")) {
       toast.error(
         "Image URLs must be from moddbcdn.vintagestory.at. Upload your image at https://mods.vintagestory.at/edit/mod first.",
       );
