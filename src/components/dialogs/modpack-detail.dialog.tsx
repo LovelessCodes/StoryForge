@@ -51,7 +51,7 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
 
   const isOwner = user?.id === modpack.owner.id;
 
-  const sortedVersions = [...modpack.modpackVersions].sort((a, b) => b.createdAt - a.createdAt);
+  const sortedVersions = modpack.modpackVersions.toSorted((a, b) => b.createdAt - a.createdAt);
 
   // Install flow
   const [installingVersionId, setInstallingVersionId] = useState<string | null>(null);
