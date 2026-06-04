@@ -32,7 +32,7 @@ export const Route = createFileRoute("/news")({
   errorComponent: ErrorComponent,
 });
 
-function RouteComponent() {
+export function RouteComponent() {
   // Queries
   const { data: news, isLoading, error } = useQuery(newsQueryOptions);
 
