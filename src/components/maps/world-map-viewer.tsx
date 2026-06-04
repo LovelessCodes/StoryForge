@@ -778,7 +778,7 @@ export function WorldMapViewer({
               <div className="mt-1">
                 <strong>Prospecting Results:</strong>
                 <ul className="list-inside list-disc">
-                  {prospectingMarker.results.sort(sortByQuality).map((result) => {
+                  {[...prospectingMarker.results].sort(sortByQuality).map((result) => {
                     const stableKey = `${result.ore_code}-${result.readings?.depth ?? 0}-${result.readings?.quality ?? 0}`;
                     return (
                       <li className="flex gap-2 text-xs" key={stableKey}>
