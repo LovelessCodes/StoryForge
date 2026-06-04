@@ -42,13 +42,15 @@ export function ConnectServerDialog({ server }: ConnectServerDialogProps) {
               "Select an installation"}
           </SelectTrigger>
           <SelectContent alignItemWithTrigger={false}>
-            {installations
-              .filter((i) => i.version === server.gameVersion)
-              .map((installation) => (
-                <SelectItem key={installation.id} value={installation.id.toString()}>
-                  {installation.name}
-                </SelectItem>
-              ))}
+            {installations.flatMap((i) =>
+              i.version === server.gameVersion
+                ? [
+                    <SelectItem key={i.id} value={i.id.toString()}>
+                      {i.name}
+                    </SelectItem>,
+                  ]
+                : [],
+            )}
           </SelectContent>
         </Select>
         {server.hasPassword && (
