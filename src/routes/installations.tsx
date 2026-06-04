@@ -21,7 +21,7 @@ export const Route = createFileRoute("/installations")({
   errorComponent: ErrorComponent,
 });
 
-function RouteComponent() {
+export function RouteComponent() {
   // Stores
   const { installations } = useInstallations();
 
