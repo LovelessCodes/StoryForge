@@ -342,9 +342,8 @@ function TOTPComponent({
             onComplete={() => submit()}
             render={({ slots }) => (
               <div className="flex gap-2">
-                {slots.map((slot, idx) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: Not needed currently
-                  <Slot key={idx} {...slot} />
+                {slots.map((slot) => (
+                  <Slot key={slot.char} {...slot} />
                 ))}
               </div>
             )}
