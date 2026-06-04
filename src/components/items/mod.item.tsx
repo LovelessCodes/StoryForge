@@ -7,7 +7,7 @@ import {
   PackagePlusIcon,
   PackageSearchIcon,
 } from "lucide-react";
-import { motion } from "motion/react";
+import * as m from "motion/react-m";
 import { useRef } from "react";
 import { toast } from "sonner";
 
@@ -139,7 +139,7 @@ export function ModItem({
   });
   const { setAuthor } = useModsFilters();
   return (
-    <motion.div
+    <m.div
       animate={{ opacity: 1, y: 0 }}
       className={cn([
         "flex flex-row p-2 justify-between w-full items-center",
@@ -340,6 +340,6 @@ export function ModItem({
             />
           ))}
       </Group>
-    </motion.div>
+    </m.div>
   );
 }
