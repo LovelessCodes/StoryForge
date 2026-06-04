@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
-import { MotionConfig } from "framer-motion";
+import { domAnimation, LazyMotion, MotionConfig } from "motion/react";
 import ReactDOM from "react-dom/client";
 import { toast } from "sonner";
 
@@ -57,10 +57,12 @@ declare module "@tanstack/react-router" {
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <MotionConfig reducedMotion="user">
-    <SidebarProvider>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>
-    </SidebarProvider>
+    <LazyMotion features={domAnimation}>
+      <SidebarProvider>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </SidebarProvider>
+    </LazyMotion>
   </MotionConfig>,
 );
