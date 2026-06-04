@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,11 @@ export function AddModDialog({ modid, installation }: AddModDialogProps) {
     refetchOnWindowFocus: false,
   });
   const listenRef = useRef<UnlistenFn>(null);
-  const [selectedVersion, setSelectedVersion] = useState<Release | null>(null);
+  const [userSelectedVersion, setUserSelectedVersion] = useState<Release | null>(null);
+  const selectedVersion =
+    userSelectedVersion ??
+    modInfo?.mod.releases.find((r) => r.tags.includes(installation.version)) ??
+    null;
   const queryClient = useQueryClient();
   const { mutate: addModToInstallation } = useAddModToInstallation({
     onError: (error, variables) => {
@@ -73,15 +77,6 @@ export function AddModDialog({ modid, installation }: AddModDialogProps) {
     },
   });
 
-  useEffect(() => {
-    if (modInfo && modInfo.mod.releases.length > 0) {
-      const modVersion = modInfo.mod.releases.find((release) =>
-        release.tags.includes(installation.version),
-      );
-      setSelectedVersion(modVersion ? modVersion : null);
-    }
-  }, [modInfo, installation.version]);
-
   return (
     <>
       <DialogClose />
@@ -100,7 +95,7 @@ export function AddModDialog({ modid, installation }: AddModDialogProps) {
         <Select
           onValueChange={(value) => {
             const release = modInfo?.mod.releases.find((r) => r.modversion === value) || null;
-            setSelectedVersion(release);
+            setUserSelectedVersion(release);
           }}
           value={selectedVersion?.modversion || undefined}
         >
