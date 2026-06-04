@@ -413,7 +413,7 @@ export function AddServerDialog({ installation }: AddServerDialogProps) {
             {isTesting ? (
               <>
                 <Loader2Icon className="mr-2 size-4 animate-spin" />
-                Testing...
+                Testing…
               </>
             ) : (
               "Test Server"
@@ -424,7 +424,7 @@ export function AddServerDialog({ installation }: AddServerDialogProps) {
           </Button>
         </div>
         {sniffResult && (
-          <div className="bg-muted flex flex-col space-y-1 rounded border p-3 text-xs">
+          <div className="bg-muted flex flex-col gap-1 rounded border p-3 text-xs">
             {sniffResult.server_game_version && (
               <p>
                 <span className="text-muted-foreground">Server version:</span>{" "}
