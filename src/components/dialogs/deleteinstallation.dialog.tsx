@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { AnimatePresence, motion } from "framer-motion";
 import { MapIcon, MapPinXIcon } from "lucide-react";
+import { AnimatePresence } from "motion/react";
+import * as m from "motion/react-m";
 import { toast } from "sonner";
 
 import {
@@ -67,7 +68,7 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
 
         {/* Warning for active servers */}
         {activeServers.length > 0 && (
-          <motion.div
+          <m.div
             animate={{ opacity: 1, y: 0 }}
             className="border-destructive bg-destructive/10 text-destructive mb-4 border p-3"
             exit={{ opacity: 0, y: -10 }}
@@ -80,7 +81,7 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
             <ul className="mt-2 space-y-1">
               <AnimatePresence>
                 {activeServers.map((srv) => (
-                  <motion.li
+                  <m.li
                     animate={{ opacity: 1, x: 0 }}
                     className="flex items-center gap-2 border pl-2"
                     exit={{ opacity: 0, x: 20 }}
@@ -90,16 +91,16 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
                   >
                     <MapPinXIcon className="mr-1 inline size-4" />
                     {srv.name || `Server #${srv.id}`}
-                  </motion.li>
+                  </m.li>
                 ))}
               </AnimatePresence>
             </ul>
-          </motion.div>
+          </m.div>
         )}
 
         {/* List saves if present */}
         {Array.isArray(saves) && saves.length > 0 && (
-          <motion.div
+          <m.div
             animate={{ opacity: 1, y: 0 }}
             className="border-warning bg-warning/10 text-warning-foreground mb-4 border p-3"
             exit={{ opacity: 0, y: 10 }}
@@ -112,7 +113,7 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
             <ul className="mt-2 space-y-1">
               <AnimatePresence>
                 {saves.map((save) => (
-                  <motion.li
+                  <m.li
                     animate={{ opacity: 1, x: 0 }}
                     className="flex items-center gap-2 border pl-2"
                     exit={{ opacity: 0, x: -20 }}
@@ -122,11 +123,11 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
                   >
                     <MapIcon className="mr-1 inline size-4" />
                     {save}
-                  </motion.li>
+                  </m.li>
                 ))}
               </AnimatePresence>
             </ul>
-          </motion.div>
+          </m.div>
         )}
       </AlertDialogHeader>
       <AlertDialogFooter>
