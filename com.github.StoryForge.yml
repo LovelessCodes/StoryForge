@@ -38,11 +38,11 @@ modules:
         url: https://github.com/LovelessCodes/StoryForge.git
         branch: release
       - type: file
-        path: com.github.StoryForge.desktop
+        path: flatpak/com.github.StoryForge.desktop
       - type: file
         path: com.github.StoryForge.metainfo.xml
       - type: file
-        path: ../src-tauri/icons/icon.png
+        path: src-tauri/icons/icon.png
         dest-filename: com.github.StoryForge.png
     build-options:
       append-path: /usr/lib/sdk/node24/bin:/usr/lib/sdk/rust-stable/bin
