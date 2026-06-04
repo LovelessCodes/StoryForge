@@ -90,14 +90,14 @@ export function RootComponent() {
               <SidebarTrigger />
               {platform() === "macos" && (
                 <>
-                  <div
+                  <button
                     onClick={() => getCurrentWindow().close()}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         void getCurrentWindow().close();
                       }
                     }}
-                    role="button"
+                    type="button"
                     tabIndex={0}
                     className="group/close flex size-3 items-center justify-center rounded-full bg-red-500 text-white transition-colors hover:bg-red-700 dark:bg-red-400 hover:dark:bg-red-600"
                   >
@@ -105,15 +105,15 @@ export function RootComponent() {
                       className="opacity-0 transition-opacity group-hover/close:opacity-100"
                       size={10}
                     />
-                  </div>
-                  <div
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => getCurrentWindow().minimize()}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         void getCurrentWindow().minimize();
                       }
                     }}
-                    role="button"
                     tabIndex={0}
                     className="group/minimize flex size-3 items-center justify-center rounded-full bg-yellow-500 text-white transition-colors hover:bg-yellow-700 dark:bg-yellow-300 hover:dark:bg-yellow-600"
                   >
@@ -121,15 +121,15 @@ export function RootComponent() {
                       className="opacity-0 transition-opacity group-hover/minimize:opacity-100"
                       size={10}
                     />
-                  </div>
-                  <div
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => getCurrentWindow().toggleMaximize()}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         void getCurrentWindow().toggleMaximize();
                       }
                     }}
-                    role="button"
                     tabIndex={0}
                     className="group/maximize flex size-3 items-center justify-center rounded-full bg-green-500 text-white transition-colors hover:bg-green-700 dark:bg-green-500 hover:dark:bg-green-600"
                   >
@@ -137,7 +137,7 @@ export function RootComponent() {
                       className="opacity-0 transition-opacity group-hover/maximize:opacity-100"
                       size={8}
                     />
-                  </div>
+                  </button>
                 </>
               )}
             </div>
