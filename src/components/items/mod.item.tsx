@@ -174,17 +174,11 @@ export function ModItem({
             <p className="text-xs opacity-50">by</p>
             <TooltipTrigger
               render={
-                <span
+                <button
                   aria-label={`Filter by ${mod.author}`}
                   className="cursor-pointer text-xs text-orange-200 opacity-50"
                   onClick={() => setAuthor(mod.author)}
-                  onKeyUp={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      setAuthor(mod.author);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
+                  type="button"
                 />
               }
               handle={rootTooltipHandle}
