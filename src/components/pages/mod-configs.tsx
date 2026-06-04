@@ -2,7 +2,7 @@ import { Editor } from "@monaco-editor/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -152,16 +152,18 @@ export function LiveBlock({
   const [parseError, setParseError] = useState<string | null>(null);
   const [data, setData] = useState<JSONValue>(() => safeInitialParse(code, setParseError));
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const onSaveRef = useRef(onSave);
+  onSaveRef.current = onSave;
 
   // Debounced auto-save
   useEffect(() => {
     if (parseError) return; // don't save invalid
     if (JSON.stringify(data) === JSON.stringify(safeInitialParse(code, setParseError))) return;
     const id = setTimeout(() => {
-      onSave({ file, newCode: JSON.stringify(data, null, 2) });
+      onSaveRef.current({ file, newCode: JSON.stringify(data, null, 2) });
     }, 600);
     return () => clearTimeout(id);
-  }, [data, file, onSave, parseError, code]);
+  }, [data, file, parseError, code]);
 
   function updateAtPath(path: (string | number)[], next: JSONValue) {
     setData((prev) => deepSet(prev, path, next));
