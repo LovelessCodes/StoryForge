@@ -682,9 +682,45 @@ fn load_selected_account(app: &AppHandle) -> Option<SavedAccount> {
     use tauri::Manager;
     let data_dir = app.path().app_data_dir().ok()?;
     let path = data_dir.join("accounts.json");
-    let json = read_to_string(&path).ok()?;
-    let accounts: Vec<SavedAccount> = serde_json::from_str(&json).ok()?;
-    accounts.into_iter().next()
+    log_debug!("[play_game] load_selected_account: looking for {:?}", path);
+    if !path.exists() {
+        log_info!(
+            "[play_game] load_selected_account: accounts.json not found — no account selected"
+        );
+        return None;
+    }
+    let json = match read_to_string(&path) {
+        Ok(s) => s,
+        Err(e) => {
+            log_error!(
+                "[play_game] load_selected_account: failed to read accounts.json: {}",
+                e
+            );
+            return None;
+        }
+    };
+    let accounts: Vec<SavedAccount> = match serde_json::from_str(&json) {
+        Ok(a) => a,
+        Err(e) => {
+            log_error!(
+                "[play_game] load_selected_account: failed to parse accounts.json: {}",
+                e
+            );
+            return None;
+        }
+    };
+    let account = accounts.into_iter().next();
+    match &account {
+        Some(a) => log_info!(
+            "[play_game] load_selected_account: found account playername={:?} uid={}",
+            a.playername,
+            a.uid.as_deref().unwrap_or("<none>")
+        ),
+        None => log_info!(
+            "[play_game] load_selected_account: accounts.json has 0 entries — no account selected"
+        ),
+    }
+    account
 }
 
 #[command]
@@ -759,19 +795,67 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
     let start_params = installation.start_params.as_str();
     let mut found_exe = false;
     let mut combined_path = PathBuf::from("/");
-    for entry in WalkDir::new(&version_path) {
-        let entry = entry.map_err(|e| {
-            log_error!("installations: walkdir error: {e}");
-            UiError::from(format!("walkdir error: {e}"))
-        })?;
-        if entry.file_type().is_file() {
-            let fname = entry.file_name().to_string_lossy();
-            if fname.eq_ignore_ascii_case("vintagestory")
-                || fname.eq_ignore_ascii_case("vintagestory.exe")
-            {
-                found_exe = true;
-                combined_path = entry.path().to_path_buf();
-                break;
+
+    // ── macOS: prefer .app bundles ──
+    // On macOS, Vintage Story may be distributed as a .app bundle alongside
+    // a raw binary. The .app bundle contains Info.plist which is essential for
+    // proper macOS app behavior. We search for .app bundles first.
+    #[cfg(target_os = "macos")]
+    {
+        for entry in WalkDir::new(&version_path).min_depth(3).max_depth(4) {
+            let entry = entry.map_err(|e| {
+                log_error!("installations: walkdir error: {e}");
+                UiError::from(format!("walkdir error: {e}"))
+            })?;
+            if entry.file_type().is_file() {
+                let fname = entry.file_name().to_string_lossy();
+                if fname.eq_ignore_ascii_case("vintagestory")
+                    || fname.eq_ignore_ascii_case("vintagestory.exe")
+                {
+                    // Check if this binary is inside a .app bundle
+                    let p = entry.path();
+                    if p.parent()
+                        .map(|n| n.file_name().map(|f| f == "MacOS"))
+                        .flatten()
+                        == Some(true)
+                        && p.parent()
+                            .and_then(|m| m.parent())
+                            .map(|c| c.file_name().map(|f| f == "Contents"))
+                            .flatten()
+                            == Some(true)
+                    {
+                        let bundle = p.parent().unwrap().parent().unwrap().parent().unwrap();
+                        if bundle.extension().map(|e| e == "app") == Some(true) {
+                            found_exe = true;
+                            combined_path = entry.path().to_path_buf();
+                            log_info!(
+                                "[play_game] macOS: found exe inside .app bundle: {:?}",
+                                combined_path
+                            );
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ── Fallback: search for raw binary (all platforms) ──
+    if !found_exe {
+        for entry in WalkDir::new(&version_path) {
+            let entry = entry.map_err(|e| {
+                log_error!("installations: walkdir error: {e}");
+                UiError::from(format!("walkdir error: {e}"))
+            })?;
+            if entry.file_type().is_file() {
+                let fname = entry.file_name().to_string_lossy();
+                if fname.eq_ignore_ascii_case("vintagestory")
+                    || fname.eq_ignore_ascii_case("vintagestory.exe")
+                {
+                    found_exe = true;
+                    combined_path = entry.path().to_path_buf();
+                    break;
+                }
             }
         }
     }
@@ -788,9 +872,115 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
             message: format!("Launch file not found: {}", combined_path.to_string_lossy()),
         });
     }
+
+    // ── macOS .app bundle detection ──
+    // On macOS, Vintage Story must be launched as a .app bundle so that
+    // Info.plist is read by LaunchServices. New downloads preserve the bundle
+    // (no --strip-components=1). Old downloads need to be restructured.
+    #[cfg(target_os = "macos")]
+    let maybe_app_bundle: Option<std::path::PathBuf> = {
+        // Walk up from the binary to find any .app ancestor
+        let p: &std::path::Path = &combined_path;
+        let mut app_ancestor: Option<&std::path::Path> = None;
+        {
+            let mut ancestor = p.parent();
+            while let Some(dir) = ancestor {
+                if dir.extension().map(|e| e == "app") == Some(true) {
+                    app_ancestor = Some(dir);
+                    break;
+                }
+                ancestor = dir.parent();
+            }
+        }
+        let existing_bundle = app_ancestor.map(|b| b.to_path_buf());
+
+        if existing_bundle.is_some() {
+            log_info!(
+                "[play_game] macOS: using existing .app bundle at {:?}",
+                existing_bundle
+            );
+            existing_bundle
+        } else {
+            // No existing .app bundle. This is an old installation that was
+            // extracted with --strip-components=1, flattening the .app wrapper.
+            // We need to restructure it into a proper .app bundle.
+            let app_bundle = version_path.join("Vintage Story.app");
+
+            if !app_bundle.exists() {
+                log_info!(
+                    "[play_game] macOS: restructuring old installation into {:?}",
+                    app_bundle
+                );
+
+                // Create the .app directory first (rename needs the parent to exist)
+                if let Err(e) = std::fs::create_dir_all(&app_bundle) {
+                    log_error!("[play_game] failed to create .app dir: {}", e);
+                }
+
+                // Move the existing Contents/ directory (if present) into the .app bundle.
+                // This handles Info.plist, Resources/, MacOS/, etc. all at once.
+                if version_path.is_dir() {
+                    // Move each item from old Contents/ into new Contents/
+                    if let Ok(entries) = std::fs::read_dir(&version_path) {
+                        for entry in entries.flatten() {
+                            if entry.path() == app_bundle {
+                                continue;
+                            }
+                            let src = entry.path();
+                            let fname = entry.file_name();
+                            let dst = app_bundle.join(&fname);
+                            log_info!("[play_game] macOS: moving {:?} -> {:?}", src, dst);
+                            if let Err(e) = std::fs::rename(&src, &dst) {
+                                log_error!("[play_game] failed to move {:?}: {}", src, e);
+                            }
+                        }
+                    }
+                }
+
+                // Verify the .app now has a valid Info.plist
+                let plist_in_app = app_bundle.join("Info.plist");
+                if !plist_in_app.exists() {
+                    log_error!(
+                        "[play_game] macOS: WARNING - no Info.plist in .app bundle after restructuring"
+                    );
+                }
+
+                log_info!(
+                    "[play_game] macOS: restructured into .app bundle at {:?}, exe now {:?}",
+                    app_bundle,
+                    combined_path
+                );
+                Some(app_bundle)
+            } else {
+                // .app already exists from a previous restructuring
+                log_info!(
+                    "[play_game] macOS: using previously restructured .app bundle at {:?}",
+                    app_bundle
+                );
+                // Update combined_path to the binary inside the bundle
+                let binary_name = combined_path
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_else(|| "Vintagestory".into());
+                let bundled_exe = app_bundle.join(&binary_name);
+                if bundled_exe.is_file() {
+                    combined_path = bundled_exe;
+                }
+                Some(app_bundle)
+            }
+        }
+    };
+    #[cfg(not(target_os = "macos"))]
+    let maybe_app_bundle: Option<std::path::PathBuf> = None;
+    log_info!("[play_game] attempting to load selected account…");
     let account = load_selected_account(&app);
 
     if let Some(account) = account {
+        log_info!(
+            "[play_game] writing account settings to clientsettings.json — playername={:?} uid={}",
+            account.playername,
+            account.uid.as_deref().unwrap_or("<none>")
+        );
         let settings = json!({
             "stringSettings": {
                 "playeruid": account.uid.as_deref().unwrap_or(""),
@@ -800,8 +990,10 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
             }
         });
         let settings_path = pb.join("clientsettings.json");
+        log_info!("[play_game] clientsettings.json path: {:?}", settings_path);
         // It should create the file if it does not exist, but if it exists it should just overwrite the keys
         if settings_path.exists() {
+            log_info!("[play_game] clientsettings.json exists — merging account keys into existing settings");
             let mut existing_settings = String::new();
             File::open(&settings_path)
                 .and_then(|mut f| f.read_to_string(&mut existing_settings))
@@ -853,6 +1045,7 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
                 }
             })?;
         } else {
+            log_info!("[play_game] clientsettings.json does not exist — creating new with account settings");
             create_dir_all(settings_path.parent().unwrap()).map_err(|e| {
                 log_error!("installations: create_dir_failed: {e}");
                 UiError {
@@ -867,7 +1060,15 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
                     message: format!("Failed to write clientsettings.json: {e}"),
                 }
             })?;
+            log_info!(
+                "[play_game] clientsettings.json created with account settings (playername={:?})",
+                account.playername
+            );
         }
+    } else {
+        log_info!(
+            "[play_game] no selected account — skipping clientsettings.json account injection"
+        );
     }
     // Emit a pre-launch event so the UI can show a loading state
     let _ = app.emit(
@@ -876,60 +1077,134 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
     );
 
     // Build command with piped stdout/stderr so we can inspect output
-    log_info!(
-        "[play_game] spawning: {:?} --dataPath {:?} DOTNET_ROOT={:?}",
-        combined_path,
-        pb,
-        dotnet_root
-    );
-    let mut child = Command::new(&combined_path)
-        .env("DOTNET_ROOT", &dotnet_root)
-        .env("DOTNET_ROLL_FORWARD", "LatestMinor")
-        .env("DOTNET_ROLL_FORWARD_TO_PRERELEASE", "0")
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .args(["--dataPath", &pb.as_path().to_string_lossy()])
-        .args(
-            options
-                .save
-                .as_ref()
-                // Extract the file stem from the save path to use as the output file name. This prevents creating files with double extensions, e.g., "output.mp4.mp4".
-                .map(|s| {
-                    let save_path = Path::new(s);
-                    let file_stem = save_path.file_stem().unwrap_or_default().to_string_lossy();
-                    vec!["-o".to_string(), file_stem.to_string()]
-                })
-                .unwrap_or_default()
-                .into_iter()
-                .collect::<Vec<_>>(),
-        )
-        .args(
-            options
-                .server
-                .as_ref()
-                .map(|s| vec!["--connect", s.as_str()])
-                .unwrap_or_default(),
-        )
-        .args(
-            options
-                .password
-                .as_ref()
-                .map(|p| vec!["--pw", p.as_str()])
-                .unwrap_or_default(),
-        )
-        .args(start_params.split_whitespace().collect::<Vec<&str>>())
-        .spawn()
-        .map_err(|e| {
-            log_error!("installations: launch_failed: {e}");
 
-            UiError {
-                name: "launch_failed".into(),
+    let mut child = if maybe_app_bundle.is_some() {
+        // ── macOS: launch .app bundle via `open` so Info.plist is read ──
+        let app_bundle = maybe_app_bundle.as_ref().unwrap();
+        log_info!(
+            "[play_game] SPAWNING via open: open -W -a {:?} --args --dataPath {:?} DOTNET_ROOT={:?}",
+            app_bundle,
+            pb,
+            dotnet_root
+        );
+        let mut open_args: Vec<String> = vec![
+            "--dataPath".to_string(),
+            pb.as_path().to_string_lossy().to_string(),
+        ];
+        // -o flag for save output
+        if let Some(ref save) = options.save {
+            let save_path = Path::new(save);
+            let file_stem = save_path.file_stem().unwrap_or_default().to_string_lossy();
+            open_args.push("-o".to_string());
+            open_args.push(file_stem.into_owned());
+        }
+        // --connect flag
+        if let Some(ref server) = options.server {
+            open_args.push("--connect".to_string());
+            open_args.push(server.clone());
+        }
+        // --pw flag
+        if let Some(ref password) = options.password {
+            open_args.push("--pw".to_string());
+            open_args.push(password.clone());
+        }
+        // start params
+        open_args.extend(start_params.split_whitespace().map(|s| s.to_string()));
 
-                message: format!("Failed to launch: {e}"),
-            }
-        })?;
+        log_info!("[play_game] open args: {:?}", open_args);
 
-    // Clone data needed inside watcher threads
+        Command::new("open")
+            .env("DOTNET_ROOT", &dotnet_root)
+            .env("DOTNET_ROLL_FORWARD", "LatestMinor")
+            .env("DOTNET_ROLL_FORWARD_TO_PRERELEASE", "0")
+            .arg("-W")
+            .arg("-a")
+            .arg(app_bundle)
+            .arg("--args")
+            .args(&open_args)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| {
+                log_error!("installations: launch_failed: {e}");
+                UiError {
+                    name: "launch_failed".into(),
+                    message: format!("Failed to launch via open: {e}"),
+                }
+            })?
+
+        // DOTNET_ROOT and other env vars are set on the `open` process above.
+        // On modern macOS, LaunchServices forwards env vars to the launched app.
+        // The .app bundle's own Info.plist (now being read!) may also set these.
+    } else {
+        // ── Direct binary launch (non-macOS or raw binary) ──
+        log_info!(
+            "[play_game] SPAWNING direct: {:?} --dataPath {:?} DOTNET_ROOT={:?}",
+            combined_path,
+            pb,
+            dotnet_root
+        );
+        Command::new(&combined_path)
+            .env("DOTNET_ROOT", &dotnet_root)
+            .env("DOTNET_ROLL_FORWARD", "LatestMinor")
+            .env("DOTNET_ROLL_FORWARD_TO_PRERELEASE", "0")
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .args(["--dataPath", &pb.as_path().to_string_lossy()])
+            .args(
+                options
+                    .save
+                    .as_ref()
+                    .map(|s| {
+                        let save_path = Path::new(s);
+                        let file_stem = save_path.file_stem().unwrap_or_default().to_string_lossy();
+                        vec!["-o".to_string(), file_stem.to_string()]
+                    })
+                    .unwrap_or_default()
+                    .into_iter()
+                    .collect::<Vec<_>>(),
+            )
+            .args(
+                options
+                    .server
+                    .as_ref()
+                    .map(|s| vec!["--connect", s.as_str()])
+                    .unwrap_or_default(),
+            )
+            .args(
+                options
+                    .password
+                    .as_ref()
+                    .map(|p| vec!["--pw", p.as_str()])
+                    .unwrap_or_default(),
+            )
+            .args(start_params.split_whitespace().collect::<Vec<&str>>())
+            .spawn()
+            .map_err(|e| {
+                log_error!("installations: launch_failed: {e}");
+                UiError {
+                    name: "launch_failed".into(),
+                    message: format!("Failed to launch: {e}"),
+                }
+            })?
+    };
+
+    // ── macOS .app bundle: emit success immediately ──
+    // When launched via `open`, we can't read the game's stdout (it's detached),
+    // so we emit success right away and skip the version-detection watchers.
+    #[cfg(target_os = "macos")]
+    if maybe_app_bundle.is_some() {
+        let _ = app.emit(
+            &format!("launch-{}", options.installation_id),
+            json!({
+                "status": "success",
+                "installationId": options.installation_id,
+                "version": "launched via .app bundle",
+            }),
+        );
+    }
+
+    // ── stdout/stderr watchers + exit tracking ──
     let app_handle = app.clone();
     let installation_id = options.installation_id;
     let target_prefix = "Client Notification] Game Version:"; // substring we look for
@@ -938,6 +1213,10 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
 
     // Combine stdout & stderr watching: spawn a thread per stream
     // Use an Arc flag to coordinate (optional simplification)
+    // For macOS .app bundles, pre-set to true since we can't read the game's stdout.
+    #[cfg(target_os = "macos")]
+    let found_flag = Arc::new(AtomicBool::new(maybe_app_bundle.is_some()));
+    #[cfg(not(target_os = "macos"))]
     let found_flag = Arc::new(AtomicBool::new(false));
     let found_flag_stdout = found_flag.clone();
     let found_flag_stderr = found_flag.clone();

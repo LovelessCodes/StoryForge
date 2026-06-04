@@ -73,7 +73,7 @@ export function InstallationRow({ installation }: InstallationRowProps) {
             </>
           )}
         >
-          <p className="text-foreground text-sm">{installation.name}</p>
+          <p className="text-foreground text-left text-sm">{installation.name}</p>
           {installation.version && (
             <p className="text-muted-foreground text-left text-xs">v{installation.version}</p>
           )}

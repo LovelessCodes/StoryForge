@@ -55,7 +55,7 @@ function RouteComponent() {
   return (
     <div className="flex h-full flex-col">
       {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-2 px-4 py-3 max-md:pl-8">
+      <div className="flex flex-wrap items-center gap-2 px-2 pt-0.5 pb-2 max-md:pl-8">
         <SearchInput
           className="h-9 w-56"
           onChange={(e) => {
@@ -67,7 +67,7 @@ function RouteComponent() {
 
         {/* Sort by */}
         <div className="group relative">
-          <Label className="bg-background text-muted-foreground pointer-events-none absolute start-1 top-0 z-10 block -translate-y-1/2 px-2 text-xs font-medium">
+          <Label className="bg-background text-muted-foreground pointer-events-none absolute inset-s-1 top-0 z-10 block -translate-y-1/2 px-2 text-xs font-medium">
             Sort by
           </Label>
           <Select

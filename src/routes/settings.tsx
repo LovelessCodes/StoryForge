@@ -297,8 +297,8 @@ function RouteComponent() {
 
   return (
     <ScrollArea className="h-full w-full" scrollFade>
-      <Tabs className="pt-4" defaultValue="client">
-        <TabsList className="mx-4 mb-6">
+      <Tabs className="pt-0.5" defaultValue="client">
+        <TabsList className="mx-2 mb-6">
           <TabsTab value="client">Client</TabsTab>
           <TabsTab value="account">Account</TabsTab>
         </TabsList>

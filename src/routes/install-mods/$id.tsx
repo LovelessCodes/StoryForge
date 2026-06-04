@@ -105,7 +105,7 @@ function RouteComponent() {
 
   return (
     <div className="grid h-full w-full grid-rows-[min-content_auto] gap-2">
-      <div className="flex h-fit flex-wrap items-center gap-2 py-2 pr-2 pl-2 max-md:pl-9">
+      <div className="flex h-fit flex-wrap items-center gap-2 px-2 pt-0.5 pb-2 max-md:pl-9">
         <SearchInput
           className="h-9"
           onChange={(e) => setSearchText(e.target.value)}

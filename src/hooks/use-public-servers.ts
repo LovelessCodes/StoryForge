@@ -1,4 +1,4 @@
-import { type UseQueryOptions, useQuery } from "@tanstack/react-query";
+import { type UseQueryOptions, keepPreviousData, useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
 export type PublicServer = {
@@ -25,14 +25,6 @@ type PublicServersResponse = {
   data: PublicServer[];
 };
 
-export const publicServersQuery = () => ({
-  keepPreviousData: true,
-  queryFn: () => invoke("fetch_public_servers") as Promise<PublicServersResponse>,
-  queryKey: ["publicServers"],
-  refetchOnWindowFocus: false,
-  staleTime: 1000 * 60 * 5, // 5 minutes
-});
-
 export const usePublicServers = (
   props?: Omit<
     UseQueryOptions<PublicServersResponse, Error, PublicServersResponse>,
@@ -40,6 +32,9 @@ export const usePublicServers = (
   >,
 ) =>
   useQuery({
+    queryFn: () => invoke("fetch_public_servers") as Promise<PublicServersResponse>,
+    queryKey: ["publicServers"],
+    staleTime: Infinity,
+    placeholderData: keepPreviousData,
     ...props,
-    ...publicServersQuery(),
   });

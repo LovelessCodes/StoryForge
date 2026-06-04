@@ -1,4 +1,4 @@
-import { type UseQueryOptions, useQuery } from "@tanstack/react-query";
+import { type UseQueryOptions, keepPreviousData, useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
 export type ModUpdatesResponse = {
@@ -33,6 +33,8 @@ export const useModUpdates = (
   return useQuery({
     queryFn: () => invoke("get_mod_updates", { params }) as Promise<ModUpdatesResponse>,
     queryKey: modUpdatesQueryKey(installationId, params),
+    staleTime: Infinity,
+    placeholderData: keepPreviousData,
     ...props,
   });
 };
