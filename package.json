@@ -1,6 +1,6 @@
 {
   "name": "story_forge",
-  "version": "1.0.0-rc.9",
+  "version": "1.0.0-rc.10",
   "private": true,
   "type": "module",
   "scripts": {
