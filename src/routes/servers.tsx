@@ -19,7 +19,7 @@ export const Route = createFileRoute("/servers")({
   errorComponent: ErrorComponent,
 });
 
-function RouteComponent() {
+export function RouteComponent() {
   // Stores
   const { servers } = useServerStore();
 
