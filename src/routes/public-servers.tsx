@@ -27,7 +27,7 @@ const sortOptions: Record<ServersFilters["sortBy"], string> = {
   whitelist: "Whitelist",
 };
 
-function RouteComponent() {
+export function RouteComponent() {
   // Refs
   const parentRef = useRef<HTMLDivElement | null>(null);
 
