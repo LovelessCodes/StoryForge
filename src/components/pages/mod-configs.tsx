@@ -1,8 +1,7 @@
-import { Editor } from "@monaco-editor/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,8 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { modConfigsQueryKey, useModConfigs } from "@/hooks/use-mod-configs";
 import { useInstallations } from "@/stores/installations";
+
+const Editor = lazy(() => import("@monaco-editor/react"));
 
 export function ModConfigsPage() {
   const { id } = useParams({ from: "/mod-configs/$id" });
