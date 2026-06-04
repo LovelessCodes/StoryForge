@@ -11,6 +11,7 @@ import { Toaster, toast } from "sonner";
 import { MaximizeIcon } from "@/components/icons/maximize";
 import { MinimizeIcon } from "@/components/icons/minimize";
 import { XIcon } from "@/components/icons/x";
+import { RootComponents } from "@/components/root-components";
 import { AppSidebar } from "@/components/sidebars/app.sidebar";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
@@ -190,6 +191,7 @@ export function RootComponent() {
           ),
         }}
       />
+      <RootComponents />
       <Toaster richColors theme={darkMode ? "dark" : "light"} />
     </React.Fragment>
   );
