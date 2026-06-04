@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { FileTextIcon, RefreshCwIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 const LOGS_KEY = ["logs"] as const;
 
 export function LogViewer() {
   const ref = useRef<HTMLPreElement>(null);
-  const [autoScroll, setAutoScroll] = useState(true);
+  const autoScrollRef = useRef(true);
 
   const { data: logs, refetch } = useQuery({
     queryFn: () => invoke<string>("get_logs"),
@@ -16,15 +16,15 @@ export function LogViewer() {
   });
 
   useEffect(() => {
-    if (autoScroll && ref.current) {
+    if (autoScrollRef.current && ref.current) {
       ref.current.scrollTop = ref.current.scrollHeight;
     }
-  }, [logs, autoScroll]);
+  }, [logs]);
 
   const handleScroll = () => {
     if (!ref.current) return;
     const { scrollTop, scrollHeight, clientHeight } = ref.current;
-    setAutoScroll(scrollHeight - scrollTop - clientHeight < 40);
+    autoScrollRef.current = scrollHeight - scrollTop - clientHeight < 40;
   };
 
   return (
