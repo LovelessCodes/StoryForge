@@ -1,10 +1,8 @@
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { invoke } from "@tauri-apps/api/core";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 import { open } from "@tauri-apps/plugin-dialog";
-import { FileTextIcon, LogOutIcon, RefreshCwIcon, UserIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import z from "zod";
 
@@ -16,24 +14,22 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 import { TooltipTrigger } from "@/components/ui/tooltip";
 import { useAppFolder } from "@/hooks/use-app-folder";
-import { useAuthSession } from "@/hooks/use-auth-session";
 import { installedVersionsQueryKey } from "@/hooks/use-installed-versions";
-import { authClient, clearAuthToken } from "@/lib/auth";
 import { logToFile } from "@/lib/logger";
 import { cn } from "@/lib/utils";
 import { useInstallationsStore } from "@/stores/installations";
 import { type SetParentConfigProps, useSettingsStore } from "@/stores/settings";
 
 import { rootTooltipHandle } from "./__root";
+import { AccountSettings } from "./account-settings";
+import { LogViewer } from "./log-viewer";
 
 export const Route = createFileRoute("/settings")({
   component: RouteComponent,
@@ -546,134 +542,5 @@ export function RouteComponent() {
         </TabsPanel>
       </Tabs>
     </ScrollArea>
-  );
-}
-
-async function handleAccountSignOut() {
-  try {
-    await authClient.signOut();
-    clearAuthToken();
-    toast.success("Signed out");
-  } catch {
-    toast.error("Failed to sign out");
-  }
-}
-
-export function AccountSettings() {
-  const { user, isLoading } = useAuthSession();
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center px-4 py-12">
-        <p className="text-muted-foreground text-sm">Loading account info…</p>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="flex flex-col items-center gap-4 px-4 py-12">
-        <UserIcon className="text-muted-foreground size-12" />
-        <p className="text-muted-foreground text-sm">You are not signed in.</p>
-        <Link
-          className="text-primary text-sm hover:underline"
-          to="/auth"
-          search={{ mode: "signin" }}
-        >
-          Sign in to your Story Forge account
-        </Link>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-6 px-4 pb-10">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Profile</CardTitle>
-          <CardDescription>Your Story Forge account information</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-1">
-            <Label className="text-muted-foreground text-xs">Name</Label>
-            <p className="text-sm font-medium">{user.name ?? "Not set"}</p>
-          </div>
-          <Separator />
-          <div className="grid gap-1">
-            <Label className="text-muted-foreground text-xs">Email</Label>
-            <p className="text-sm font-medium">{user.email}</p>
-          </div>
-          <Separator />
-          <div className="grid gap-1">
-            <Label className="text-muted-foreground text-xs">User ID</Label>
-            <p className="text-muted-foreground font-mono text-xs">{user.id}</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-destructive text-lg">Danger zone</CardTitle>
-          <CardDescription>Sign out of your account on this device</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button onClick={handleAccountSignOut} variant="destructive">
-            <LogOutIcon className="mr-2 size-4" />
-            Sign out
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-const LOGS_KEY = ["logs"] as const;
-
-export function LogViewer() {
-  const ref = useRef<HTMLPreElement>(null);
-  const [autoScroll, setAutoScroll] = useState(true);
-
-  const { data: logs, refetch } = useQuery({
-    queryFn: () => invoke<string>("get_logs"),
-    queryKey: LOGS_KEY,
-    refetchInterval: 5000,
-  });
-
-  useEffect(() => {
-    if (autoScroll && ref.current) {
-      ref.current.scrollTop = ref.current.scrollHeight;
-    }
-  }, [logs, autoScroll]);
-
-  const handleScroll = () => {
-    if (!ref.current) return;
-    const { scrollTop, scrollHeight, clientHeight } = ref.current;
-    setAutoScroll(scrollHeight - scrollTop - clientHeight < 40);
-  };
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
-          <FileTextIcon className="size-4" />
-          Application Log
-        </h2>
-        <button
-          className="text-muted-foreground hover:text-foreground"
-          onClick={() => refetch()}
-          title="Refresh"
-          type="button"
-        >
-          <RefreshCwIcon className="size-4" />
-        </button>
-      </div>
-      <pre
-        className="bg-muted h-64 overflow-auto rounded border p-3 font-mono text-xs break-all whitespace-pre-wrap"
-        onScroll={handleScroll}
-        ref={ref}
-      >
-        {logs || "No logs yet..."}
-      </pre>
-    </div>
   );
 }
