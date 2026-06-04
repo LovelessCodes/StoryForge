@@ -86,26 +86,23 @@ export function ModList({
     if (!mods) return [];
     return mods
       .filter((mod) => {
-        if (selectedModTags.length > 0) {
-          return selectedModTags.every((tag) => mod.tags.includes(tag.name));
+        if (
+          selectedModTags.length > 0 &&
+          !selectedModTags.every((tag) => mod.tags.includes(tag.name))
+        )
+          return false;
+        if (author && !mod.author.toLowerCase().includes(author.toLowerCase())) return false;
+        if (mod.type !== category) return false;
+        if (side !== "installed") {
+          if (side !== "any" && mod.side !== side) return false;
+        } else if (
+          !installedModIdSet.has(mod.modid) &&
+          !mod.modidstrs.some((id) => installedModIdSet.has(id))
+        ) {
+          return false;
         }
         return true;
       })
-      .filter((mod) => {
-        if (author) {
-          return mod.author.toLowerCase().includes(author.toLowerCase());
-        }
-        return true;
-      })
-      .filter((mod) => mod.type === category)
-      .filter((mod) =>
-        side !== "installed"
-          ? side === "any"
-            ? true
-            : mod.side === side
-          : installedModIdSet.has(mod.modid) ||
-            mod.modidstrs.some((id) => installedModIdSet.has(id)),
-      )
       .sort((a, b) => {
         if (side === "installed") {
           const aInstalled =
