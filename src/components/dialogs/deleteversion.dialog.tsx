@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { motion } from "framer-motion";
+import * as m from "motion/react-m";
 import { toast } from "sonner";
 
 import {
@@ -52,7 +52,7 @@ export function DeleteVersionDialog({ version }: DeleteVersionDialogProps) {
           Forge.
         </AlertDialogDescription>
       </AlertDialogHeader>
-      <motion.div
+      <m.div
         animate={{ opacity: 1, y: 0 }}
         className="border-warning bg-warning/10 text-warning-foreground my-4 border p-3"
         exit={{ opacity: 0, y: -10 }}
@@ -64,7 +64,7 @@ export function DeleteVersionDialog({ version }: DeleteVersionDialogProps) {
         Deleting versions that are currently in use by installations will not harm these
         installations or their servers. However, you will not be able to create new installations
         with this version until you reinstall it.
-      </motion.div>
+      </m.div>
       <AlertDialogFooter>
         <AlertDialogClose disabled={isPending} render={<Button variant="outline" />}>
           Cancel
