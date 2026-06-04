@@ -19,10 +19,10 @@ export const Route = createFileRoute("/versions")({
   errorComponent: ErrorComponent,
 });
 
-function RouteComponent() {
+export function RouteComponent() {
   const { data: versions } = useInstalledVersions();
 
-  const sorted = [...(versions ?? [])].sort((a, b) => compareSemverDesc(a.name, b.name));
+  const sorted = (versions ?? []).toSorted((a, b) => compareSemverDesc(a.name, b.name));
 
   return (
     <div className="grid w-full grid-rows-[min-content_auto] gap-2">
