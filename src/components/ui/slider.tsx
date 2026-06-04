@@ -52,7 +52,7 @@ export function Slider({
               className="border-input has-focus-visible:ring-ring/24 dark:border-background dark:has-focus-visible:ring-ring/48 block size-5 shrink-0 border bg-white shadow-xs/5 transition-[box-shadow,scale] outline-none select-none not-dark:bg-clip-padding before:absolute before:inset-0 before:shadow-[0_1px_--theme(--color-black/4%)] has-focus-visible:ring-[3px] data-dragging:scale-120 sm:size-4 [:has(*:focus-visible),[data-dragging]]:shadow-none"
               data-slot="slider-thumb"
               index={index}
-              key={String(index)}
+              key={index}
             />
           ))}
         </SliderPrimitive.Track>
