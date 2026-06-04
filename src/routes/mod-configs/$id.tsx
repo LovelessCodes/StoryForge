@@ -26,7 +26,7 @@ export const Route = createFileRoute("/mod-configs/$id")({
   errorComponent: ErrorComponent,
 });
 
-function RouteComponent() {
+export function RouteComponent() {
   const { id } = Route.useParams();
   const { installations } = useInstallations();
   const [codeEditor, setCodeEditor] = useState<boolean>(false);
@@ -146,7 +146,7 @@ function getAtPath(current: JSONValue, path: (string | number)[]): JSONValue {
   }, current);
 }
 
-function LiveBlock({
+export function LiveBlock({
   code,
   file,
   onSave,
@@ -415,7 +415,7 @@ function safeInitialParse(raw: string, setErr: (s: string | null) => void): JSON
   }
 }
 
-function CodeBlock({
+export function CodeBlock({
   code,
   file,
   onSave,
