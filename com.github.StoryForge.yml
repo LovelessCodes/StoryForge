@@ -19,7 +19,7 @@ finish-args:
   - --talk-name=org.freedesktop.Notifications
   - --env=XCURSOR_PATH=/run/host/user-share/icons:/run/host/share/icons
 modules:
-  - shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json
+  - flatpak/shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json
 
   - name: bun
     buildsystem: simple
