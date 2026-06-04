@@ -49,14 +49,14 @@ export function ViewLogsDialog({
     <>
       <DialogClose />
       <DialogHeader className="shrink-0 border-b px-6 pt-6 pb-4">
-        <DialogTitle>{installationName} — Logs</DialogTitle>
+        <DialogTitle>{installationName}: Logs</DialogTitle>
         <DialogDescription>View the game's log files for this installation</DialogDescription>
       </DialogHeader>
 
       {isLoading ? (
         <div className="flex h-full items-center justify-center gap-2 p-8">
           <Loader2Icon className="text-muted-foreground size-5 animate-spin" />
-          <span className="text-muted-foreground text-sm">Loading logs...</span>
+          <span className="text-muted-foreground text-sm">Loading logs…</span>
         </div>
       ) : !logs || logs.length === 0 ? (
         <div className="flex h-full items-center justify-center p-8">
@@ -94,7 +94,7 @@ export function ViewLogsDialog({
           ) : isLoadingContent ? (
             <div className="flex h-full items-center justify-center gap-2 p-8">
               <Loader2Icon className="text-muted-foreground size-5 animate-spin" />
-              <span className="text-muted-foreground text-sm">Loading...</span>
+              <span className="text-muted-foreground text-sm">Loading…</span>
             </div>
           ) : (
             <pre className="p-4 font-mono text-xs break-all whitespace-pre-wrap">
