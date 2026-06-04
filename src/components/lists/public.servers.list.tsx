@@ -37,16 +37,16 @@ export function PublicServerList({
   const { searchText, selectedGameVersions, sortBy, orderDirection } = useServersFilters();
 
   const filteredServers = publicServers
-    .filter((server) =>
-      searchText.length > 1
-        ? server.serverName.toLowerCase().includes(searchText.toLowerCase()) ||
-          server.gameDescription.toLowerCase().includes(searchText.toLowerCase()) ||
-          server.serverIP.toLowerCase().includes(searchText.toLowerCase())
-        : true,
-    )
-    .filter((server) =>
-      selectedGameVersions.length > 0 ? selectedGameVersions.includes(server.gameVersion) : true,
-    )
+    .filter((server) => {
+      const matchesSearch =
+        searchText.length <= 1 ||
+        server.serverName.toLowerCase().includes(searchText.toLowerCase()) ||
+        server.gameDescription.toLowerCase().includes(searchText.toLowerCase()) ||
+        server.serverIP.toLowerCase().includes(searchText.toLowerCase());
+      const matchesVersion =
+        selectedGameVersions.length === 0 || selectedGameVersions.includes(server.gameVersion);
+      return matchesSearch && matchesVersion;
+    })
     .sort((a, b) => {
       if (sortBy === "name") {
         if (orderDirection === "descending") {
