@@ -39,7 +39,7 @@ jobs:
 
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
-          bundle: com.github.StoryForge-v{{ steps.version.outputs.value }}.flatpak
+          bundle: com.github.StoryForge-v${{ steps.version.outputs.value }}.flatpak
           manifest-path: com.github.StoryForge.yml
           cache-key: flatpak-builder-${{ github.sha }}
 
