@@ -47,7 +47,7 @@ const settingsSchema = z.object({
   versionsParent: z.string().nullable(),
 });
 
-function RouteComponent() {
+export function RouteComponent() {
   const { appFolder } = useAppFolder();
   const queryClient = useQueryClient();
 
@@ -559,7 +559,7 @@ async function handleAccountSignOut() {
   }
 }
 
-function AccountSettings() {
+export function AccountSettings() {
   const { user, isLoading } = useAuthSession();
 
   if (isLoading) {
@@ -629,7 +629,7 @@ function AccountSettings() {
 
 const LOGS_KEY = ["logs"] as const;
 
-function LogViewer() {
+export function LogViewer() {
   const ref = useRef<HTMLPreElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
 
