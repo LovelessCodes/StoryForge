@@ -8,7 +8,7 @@ import {
   PackageSearchIcon,
 } from "lucide-react";
 import * as m from "motion/react-m";
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { toast } from "sonner";
 
 import { AddModDialog } from "@/components/dialogs/addmod.dialog";
@@ -25,6 +25,7 @@ import { rootAlertDialogHandle, rootDialogHandle, rootTooltipHandle } from "@/ha
 import { useAddLatestModVersion } from "@/hooks/use-add-latest-mod-version";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { type ModUpdatesResponse, modUpdatesQueryKey } from "@/hooks/use-mod-updates";
+import { modTagsQuery } from "@/lib/queries";
 import type { ModInfo, ProgressPayload } from "@/lib/types";
 import { cn, compareSemverAsc, pathDelimiter } from "@/lib/utils";
 import type { Installation } from "@/stores/installations";
@@ -64,6 +65,13 @@ export function ModItem({
     refetchOnReconnect: false,
     refetchOnWindowFocus: false,
   });
+  const { data: modTags } = useQuery(modTagsQuery);
+  const tagColorMap = useMemo(() => {
+    if (!modTags) return {} as Record<string, string>;
+    const map: Record<string, string> = {};
+    for (const t of modTags) map[t.name] = t.color;
+    return map;
+  }, [modTags]);
   const { mutate: downloadLatestModVersion, isPending: isDownloading } = useAddLatestModVersion({
     installation,
     mod,
@@ -193,6 +201,26 @@ export function ModItem({
             <span>{mod.follows} follows</span>
             <span>{mod.comments} comments</span>
           </div>
+          {mod.tags.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {mod.tags.map((tagName) => {
+                const color = tagColorMap[tagName];
+                return (
+                  <span
+                    key={tagName}
+                    className="inline-flex items-center rounded px-1.5 py-px text-[10px] leading-relaxed font-medium"
+                    style={{
+                      backgroundColor: color ? `${color}20` : undefined,
+                      border: color ? `1px solid ${color}50` : undefined,
+                      color: color ?? undefined,
+                    }}
+                  >
+                    {tagName}
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
       <Group>
