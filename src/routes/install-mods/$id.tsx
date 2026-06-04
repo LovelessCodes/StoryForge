@@ -64,7 +64,7 @@ export type OutputMod = {
   path: string;
 };
 
-function RouteComponent() {
+export function RouteComponent() {
   const { installation } = Route.useLoaderData();
   const { data: gameVersions } = useQuery(gameVersionsQuery);
   const { data: modTags } = useQuery(modTagsQuery);
