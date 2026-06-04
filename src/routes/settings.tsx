@@ -501,7 +501,7 @@ function RouteComponent() {
                 </Button>
               )}
             </form.Subscribe>
-            <section className="border-t px-6 py-6">
+            <section className="border-t p-6">
               <LogViewer />
             </section>
           </div>
@@ -549,23 +549,23 @@ function RouteComponent() {
   );
 }
 
+async function handleAccountSignOut() {
+  try {
+    await authClient.signOut();
+    clearAuthToken();
+    toast.success("Signed out");
+  } catch {
+    toast.error("Failed to sign out");
+  }
+}
+
 function AccountSettings() {
   const { user, isLoading } = useAuthSession();
-
-  const handleSignOut = async () => {
-    try {
-      await authClient.signOut();
-      clearAuthToken();
-      toast.success("Signed out");
-    } catch {
-      toast.error("Failed to sign out");
-    }
-  };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center px-4 py-12">
-        <p className="text-muted-foreground text-sm">Loading account info...</p>
+        <p className="text-muted-foreground text-sm">Loading account info…</p>
       </div>
     );
   }
@@ -617,7 +617,7 @@ function AccountSettings() {
           <CardDescription>Sign out of your account on this device</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={handleSignOut} variant="destructive">
+          <Button onClick={handleAccountSignOut} variant="destructive">
             <LogOutIcon className="mr-2 size-4" />
             Sign out
           </Button>
