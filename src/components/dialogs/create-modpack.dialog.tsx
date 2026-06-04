@@ -9,9 +9,9 @@ import { DialogClose, DialogHeader, DialogTitle, DialogDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { rootDialogHandle } from "@/handles";
 import type { ModpackItem } from "@/hooks/use-modpacks";
 import { authClient } from "@/lib/auth";
-import { rootDialogHandle } from "@/routes/__root";
 
 function slugify(name: string): string {
   return name

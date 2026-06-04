@@ -21,20 +21,16 @@ export function ViewMapDialog({ world, mapPath: directMapPath, mapName }: ViewMa
   // Use direct map path if provided, otherwise derive from world
   const displayName = mapName ?? worldData?.world_name ?? "Map";
   const players = useMemo(() => {
-    const players: string[] = [];
+    const playerSet = new Set<string>();
     if (mapMarkers && prospectingLogs) {
       for (const marker of mapMarkers.markers) {
-        if (marker.player_uid && !players.includes(marker.player_uid)) {
-          players.push(marker.player_uid);
-        }
+        if (marker.player_uid) playerSet.add(marker.player_uid);
       }
       for (const log of prospectingLogs) {
-        if (log[0] && !players.includes(log[0])) {
-          players.push(log[0]);
-        }
+        if (log[0]) playerSet.add(log[0]);
       }
     }
-    return players;
+    return Array.from(playerSet);
   }, [mapMarkers, prospectingLogs]);
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(
     players.length > 0 ? players[0] : null,

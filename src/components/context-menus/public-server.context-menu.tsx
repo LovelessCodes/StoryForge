@@ -1,6 +1,6 @@
 import type { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu";
 import { DownloadCloudIcon, FolderPlusIcon, PlugIcon } from "lucide-react";
-import { motion } from "motion/react";
+import * as m from "motion/react-m";
 
 import { AddInstallationDialog } from "@/components/dialogs/addinstallation.dialog";
 import { ConnectServerDialog } from "@/components/dialogs/connectserver.dialog";
@@ -14,10 +14,10 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { DialogTrigger } from "@/components/ui/dialog";
+import { rootAlertDialogHandle, rootDialogHandle } from "@/handles";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import type { PublicServer } from "@/hooks/use-public-servers";
-import { rootAlertDialogHandle, rootDialogHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
 
 export const PublicServerContextMenu = ({
@@ -55,7 +55,7 @@ export const PublicServerContextMenu = ({
               }
             >
               Connect
-              <PlugIcon className="inline-block h-4 w-4" />
+              <PlugIcon className="inline-block size-4" />
             </ContextMenuItem>
           ) : installations.find((i) => i.version === server.gameVersion) ? (
             <ContextMenuItem
@@ -63,7 +63,7 @@ export const PublicServerContextMenu = ({
               onClick={() => downloadVersion(server.gameVersion)}
             >
               Download {server.gameVersion}
-              <DownloadCloudIcon className="inline-block h-4 w-4" />
+              <DownloadCloudIcon className="inline-block size-4" />
             </ContextMenuItem>
           ) : (
             <ContextMenuItem
@@ -77,7 +77,7 @@ export const PublicServerContextMenu = ({
               }
             >
               Add Installation
-              <FolderPlusIcon className="inline-block h-4 w-4" />
+              <FolderPlusIcon className="inline-block size-4" />
             </ContextMenuItem>
           )}
         </ContextMenuGroup>
@@ -86,4 +86,4 @@ export const PublicServerContextMenu = ({
   );
 };
 
-export const MotionPublicServerContextMenu = motion.create(PublicServerContextMenu);
+export const MotionPublicServerContextMenu = m.create(PublicServerContextMenu);

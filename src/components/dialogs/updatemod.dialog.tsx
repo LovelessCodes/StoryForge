@@ -1,18 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
+import type { OutputMod } from "@/components/pages/install-mods";
 import { Button } from "@/components/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import { rootDialogHandle } from "@/handles";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import type { ProgressPayload } from "@/lib/types";
 import { pathDelimiter } from "@/lib/utils";
-import { rootDialogHandle } from "@/routes/__root";
-import type { OutputMod } from "@/routes/install-mods/$id";
 import type { Installation } from "@/stores/installations";
 
 type Release = {
@@ -74,13 +74,16 @@ export function UpdateModDialog({ mod, installation, versionFrom }: UpdateModDia
     refetchOnWindowFocus: false,
   });
   const listenRef = useRef<UnlistenFn>(null);
-  const [selectedVersion, setSelectedVersion] = useState<Release | null>(
-    versionFrom ? modInfo?.mod.releases.find((r) => r.modversion === versionFrom) || null : null,
-  );
+  const [userSelectedVersion, setUserSelectedVersion] = useState<Release | null>(null);
+  const selectedVersion =
+    userSelectedVersion ??
+    (versionFrom
+      ? (modInfo?.mod.releases.find((r) => r.modversion === versionFrom) ?? null)
+      : null);
   const queryClient = useQueryClient();
   const emitevent = `mod-download-${mod.modid}-${installation.id}`;
   const { mutate: removeModFromInstallation, isPending: removePending } = useMutation({
-    mutationFn: ({ path, modpath }: { path: string; modpath: string }) =>
+    mutationFn: ({ path, modpath }: { path: string; modpath: string; mainfile: string }) =>
       invoke("remove_mod_from_installation", { params: { modpath, path } }),
     onError: (error, variables) => {
       toast.error(
@@ -90,10 +93,12 @@ export function UpdateModDialog({ mod, installation, versionFrom }: UpdateModDia
         },
       );
     },
-    onSuccess: () => {
+    onSuccess: async (_, variables) => {
+      await queryClient.invalidateQueries({ queryKey: installedModsQueryKey(installation.path) });
+      await queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(installation.id) });
       addModToInstallation({
         path: `${installation.path}${pathDelimiter}Mods`,
-        url: selectedVersion?.mainfile || "",
+        url: variables.mainfile,
       });
     },
   });
@@ -145,13 +150,6 @@ export function UpdateModDialog({ mod, installation, versionFrom }: UpdateModDia
     },
   });
 
-  useEffect(() => {
-    if (modInfo && modInfo.mod.releases.length > 0) {
-      const modVersion = modInfo.mod.releases.find((release) => release.modversion === versionFrom);
-      setSelectedVersion(modVersion ? modVersion : null);
-    }
-  }, [modInfo, versionFrom]);
-
   return (
     <>
       <DialogHeader>
@@ -170,7 +168,7 @@ export function UpdateModDialog({ mod, installation, versionFrom }: UpdateModDia
         <Select
           onValueChange={(value) => {
             const release = modInfo?.mod.releases.find((r) => r.modversion === value) || null;
-            setSelectedVersion(release);
+            setUserSelectedVersion(release);
           }}
           value={selectedVersion?.modversion || undefined}
         >
@@ -223,6 +221,7 @@ export function UpdateModDialog({ mod, installation, versionFrom }: UpdateModDia
           onClick={async () => {
             if (selectedVersion && selectedVersion.modversion !== versionFrom) {
               removeModFromInstallation({
+                mainfile: selectedVersion.mainfile,
                 modpath: mod.path,
                 path: installation.path,
               });

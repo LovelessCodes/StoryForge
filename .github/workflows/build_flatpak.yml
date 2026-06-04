@@ -21,7 +21,7 @@ jobs:
 
       - name: Mark workspace as safe for git
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-  
+
       - name: Read version from package.json
         id: version
         run: echo "value=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
@@ -39,7 +39,7 @@ jobs:
 
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
-          bundle: com.github.StoryForge.flatpak
+          bundle: com.github.StoryForge-v{{ steps.version.outputs.value }}.flatpak
           manifest-path: com.github.StoryForge.yml
           cache-key: flatpak-builder-${{ github.sha }}
 
@@ -49,7 +49,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="storyforge-v${VERSION}"
-          FILE=com.github.StoryForge.flatpak
+          FILE=com.github.StoryForge-v${VERSION}.flatpak
           if [[ "$VERSION" == *-rc* ]]; then
             BODY="⚠️ Release candidate — not recommended for general use."
             PRERELEASE_FLAG="--prerelease"

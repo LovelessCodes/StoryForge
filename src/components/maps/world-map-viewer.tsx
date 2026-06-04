@@ -18,6 +18,12 @@ import type {
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+const sortByQuality = (a: ProspectResult, b: ProspectResult) => {
+  const qualityA = a.readings?.quality ?? 0;
+  const qualityB = b.readings?.quality ?? 0;
+  return qualityB - qualityA;
+};
+
 type WorldMapViewerProps = {
   worldPath?: string;
   mapPath?: string;
@@ -43,14 +49,18 @@ export function WorldMapViewer({
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Hooks must be called unconditionally at the top level
+  const allMapTiles = useAllMapTiles(effectivePath);
+  const allMapTilesByPath = useAllMapTilesByPath(effectivePath);
+  const mapBounds = useMapBounds(effectivePath);
+  const mapBoundsByPath = useMapBoundsByPath(effectivePath);
+
   const {
     data: tiles,
     isLoading: tilesLoading,
     error: tilesError,
-  } = isDirectPath ? useAllMapTilesByPath(effectivePath) : useAllMapTiles(effectivePath);
-  const { data: bounds, isLoading: boundsLoading } = isDirectPath
-    ? useMapBoundsByPath(effectivePath)
-    : useMapBounds(effectivePath);
+  } = isDirectPath ? allMapTilesByPath : allMapTiles;
+  const { data: bounds, isLoading: boundsLoading } = isDirectPath ? mapBoundsByPath : mapBounds;
 
   // Viewport state (x, y = top-left corner in world coords, zoom = scale factor)
   const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 0.5 });
@@ -64,14 +74,15 @@ export function WorldMapViewer({
   // LOD (level-of-detail) cache: Map<level, { groupSize, tiles: Map<"x,y", HTMLCanvasElement> }>
   const lodCacheRef = useRef<
     Map<number, { groupSize: number; tiles: Map<string, HTMLCanvasElement> }>
-  >(new Map());
+  >(null!);
+  if (lodCacheRef.current === null) lodCacheRef.current = new Map();
 
   // rAF throttle flags
   const rafPendingRef = useRef(false);
 
   // Pan state
   const [isPanning, setIsPanning] = useState(false);
-  const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
+  const lastMousePosRef = useRef({ x: 0, y: 0 });
 
   // Cursor coordinates state
   const [cursorCoords, setCursorCoords] = useState<{
@@ -85,20 +96,17 @@ export function WorldMapViewer({
   // Currently hovered prospecting marker
   const [prospectingMarker, setProspectingMarker] = useState<ProspectingMarker | null>(null);
 
-  const sortByQuality = (a: ProspectResult, b: ProspectResult) => {
-    const qualityA = a.readings?.quality ?? 0;
-    const qualityB = b.readings?.quality ?? 0;
-    return qualityB - qualityA;
-  };
+  // Cache loaded images (ref — only read in draw callbacks, not JSX)
+  const imageCacheRef = useRef<Map<string, HTMLImageElement>>(null!);
+  if (imageCacheRef.current === null) imageCacheRef.current = new Map();
+  const [imageVersion, setImageVersion] = useState(0);
 
-  // Cache loaded images
-  const [imageCache, setImageCache] = useState<Map<string, HTMLImageElement>>(new Map());
+  // Cache for marker icons (ref — only read in draw callbacks, not JSX)
+  const iconCacheRef = useRef<Map<string, HTMLImageElement>>(null!);
+  if (iconCacheRef.current === null) iconCacheRef.current = new Map();
 
-  // Cache for marker icons
-  const [iconCache, setIconCache] = useState<Map<string, HTMLImageElement>>(new Map());
-
-  // Track container size for re-rendering on resize
-  const [containerSize, setContainerSize] = useState({ height: 0, width: 0 });
+  // Track container size (ref — triggers redraw directly from ResizeObserver)
+  const containerSizeRef = useRef({ height: 0, width: 0 });
 
   // Pre-calculate spawn offset (Vintage Story worlds spawn around block coordinate 512000)
   const SPAWN_COORDINATE = 512000;
@@ -111,13 +119,16 @@ export function WorldMapViewer({
     : 0;
 
   // Observe container resize to trigger re-render
+  // Uses a ref to always call the latest scheduleRedraw
+  const scheduleRedrawRef = useRef<() => void>(undefined);
   useEffect(() => {
     if (!containerRef.current) return;
 
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
-        setContainerSize({ height, width });
+        containerSizeRef.current = { height, width };
+        scheduleRedrawRef.current?.();
       }
     });
 
@@ -156,15 +167,17 @@ export function WorldMapViewer({
     if (!tiles) return;
     for (const tile of tiles) {
       const key = `${tile.x},${tile.y}`;
-      if (!imageCache.has(key)) {
+      if (!imageCacheRef.current.has(key)) {
         const img = new Image();
         img.src = imageDataToDataUrl(tile.image_data);
         img.onload = () => {
-          setImageCache((prev) => new Map(prev).set(key, img));
+          imageCacheRef.current.set(key, img);
+          setImageVersion((v) => v + 1);
+          scheduleRedrawRef.current?.();
         };
       }
     }
-  }, [tiles, imageCache]);
+  }, [tiles]);
 
   // Cache minX/minY/tileSize once when tiles & images ready
   useEffect(() => {
@@ -183,7 +196,7 @@ export function WorldMapViewer({
     if (!tiles || tiles.length === 0) return;
     if (!tileSizeRef.current || minXRef.current === null || minYRef.current === null) return;
     // Wait until imageCache size matches tiles length (all loaded)
-    if (imageCache.size !== tiles.length) return;
+    if (imageCacheRef.current.size !== tiles.length) return;
     const existingLevels = lodCacheRef.current;
     const levels = [
       { groupSize: 2, level: 1 },
@@ -212,7 +225,7 @@ export function WorldMapViewer({
             for (let dy = 0; dy < groupSize; dy++) {
               const sx = groupX + dx;
               const sy = groupY + dy;
-              const img = imageCache.get(`${sx},${sy}`);
+              const img = imageCacheRef.current.get(`${sx},${sy}`);
               if (!img) continue;
               // Remember axis swap: vertical = x index (tile.x), horizontal = y index (tile.y)
               // In composite we keep same orientation: rows by dx, cols by dy
@@ -233,30 +246,33 @@ export function WorldMapViewer({
       }
       existingLevels.set(level, { groupSize, tiles: compositeMap });
     }
-  }, [tiles, imageCache]);
+  }, [tiles, imageVersion]);
 
   // Load and cache marker icons
   useEffect(() => {
     if (!mapMarkers?.markers) return;
 
-    const uniqueIcons = new Set(mapMarkers.markers.map((marker) => marker.icon).filter(Boolean));
+    const uniqueIcons = new Set(
+      mapMarkers.markers.flatMap((marker) => (marker.icon ? [marker.icon] : [])),
+    );
 
     for (const iconName of uniqueIcons) {
-      if (!iconCache.has(iconName)) {
+      if (!iconCacheRef.current.has(iconName)) {
         const img = new Image();
         // Try to load the icon from assets
         // Using relative path that Vite will resolve
         img.src = `/map-icons/${iconName}.svg`;
         img.onload = () => {
-          setIconCache((prev) => new Map(prev).set(iconName, img));
+          iconCacheRef.current.set(iconName, img);
+          scheduleRedrawRef.current?.();
         };
         img.onerror = () => {
           // Icon not found - mark as missing so we don't try again
-          setIconCache((prev) => new Map(prev).set(iconName, new Image()));
+          iconCacheRef.current.set(iconName, new Image());
         };
       }
     }
-  }, [mapMarkers, iconCache]);
+  }, [mapMarkers]);
 
   // Choose LOD level based on zoom
   const chooseLodLevel = useCallback((zoom: number) => {
@@ -285,15 +301,14 @@ export function WorldMapViewer({
     const level = chooseLodLevel(viewportRef.current.zoom);
     if (level === 0) {
       for (const tile of tiles) {
-        const img = imageCache.get(`${tile.x},${tile.y}`);
+        const img = imageCacheRef.current.get(`${tile.x},${tile.y}`);
         if (!img || !img.complete) continue;
         const normalizedX = tile.x - minX;
         const normalizedY = tile.y - minY;
-        const screenX =
-          (normalizedY * tileSize - viewportRef.current.x * tileSize) * viewportRef.current.zoom;
-        const screenY =
-          (normalizedX * tileSize - viewportRef.current.y * tileSize) * viewportRef.current.zoom;
-        const screenSize = tileSize * viewportRef.current.zoom;
+        const zoom = viewportRef.current.zoom;
+        const screenX = (normalizedY * tileSize - viewportRef.current.x * tileSize) * zoom;
+        const screenY = (normalizedX * tileSize - viewportRef.current.y * tileSize) * zoom;
+        const screenSize = tileSize * zoom;
         if (
           screenX + screenSize > 0 &&
           screenX < canvas.width &&
@@ -313,11 +328,11 @@ export function WorldMapViewer({
           const gy = parseInt(gyStr, 10);
           const normalizedX = gx - minX;
           const normalizedY = gy - minY;
-          const screenX =
-            (normalizedY * tileSize - viewportRef.current.x * tileSize) * viewportRef.current.zoom;
-          const screenY =
-            (normalizedX * tileSize - viewportRef.current.y * tileSize) * viewportRef.current.zoom;
-          const screenSize = tileSize * viewportRef.current.zoom * lod.groupSize;
+
+          const zoom = viewportRef.current.zoom;
+          const screenX = (normalizedY * tileSize - viewportRef.current.x * tileSize) * zoom;
+          const screenY = (normalizedX * tileSize - viewportRef.current.y * tileSize) * zoom;
+          const screenSize = tileSize * zoom * lod.groupSize;
           if (
             screenX + screenSize > 0 &&
             screenX < canvas.width &&
@@ -339,7 +354,7 @@ export function WorldMapViewer({
         20,
       );
     }
-  }, [tiles, imageCache, bounds, chooseLodLevel]);
+  }, [tiles, bounds, chooseLodLevel]);
 
   // Draw overlay (markers, prospecting, cursor tooltip background not included)
   const drawOverlay = useCallback(() => {
@@ -381,7 +396,7 @@ export function WorldMapViewer({
         ) {
           const baseSize = 16;
           const iconSize = Math.max(12, Math.min(32, baseSize * viewportRef.current.zoom));
-          const icon = marker.icon ? iconCache.get(marker.icon) : null;
+          const icon = marker.icon ? iconCacheRef.current.get(marker.icon) : null;
           let drawnSize = iconSize;
           if (icon?.complete && icon.naturalWidth > 0) {
             ctx.save();
@@ -471,7 +486,7 @@ export function WorldMapViewer({
         }
       }
     }
-  }, [mapMarkers, prospectingLogs, iconCache, selectedPlayer, showProspect, tiles]);
+  }, [mapMarkers, prospectingLogs, selectedPlayer, showProspect, tiles]);
 
   // Schedule redraw (throttled)
   const scheduleRedraw = useCallback(() => {
@@ -484,12 +499,15 @@ export function WorldMapViewer({
     });
   }, [drawBase, drawOverlay]);
 
+  // Keep scheduleRedrawRef current for the ResizeObserver callback
+  scheduleRedrawRef.current = scheduleRedraw;
+
   // Redraw when dependencies change
   // Redraw on essential viewport/data changes (intentionally excluding image/icon caches to reduce churn)
   // biome-ignore lint/correctness/useExhaustiveDependencies: Needed
   useEffect(() => {
     scheduleRedraw();
-  }, [viewport, tiles, mapMarkers, prospectingLogs, showProspect, containerSize, scheduleRedraw]);
+  }, [viewport, tiles, mapMarkers, prospectingLogs, showProspect, scheduleRedraw]);
 
   // Helper function to convert marker position to screen coordinates
   const markerToScreen = useCallback(
@@ -544,7 +562,7 @@ export function WorldMapViewer({
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button === 0) {
       setIsPanning(true);
-      setLastMousePos({ x: e.clientX, y: e.clientY });
+      lastMousePosRef.current = { x: e.clientX, y: e.clientY };
     }
   }, []);
 
@@ -630,8 +648,8 @@ export function WorldMapViewer({
 
       // Handle panning
       if (isPanning) {
-        const dx = e.clientX - lastMousePos.x;
-        const dy = e.clientY - lastMousePos.y;
+        const dx = e.clientX - lastMousePosRef.current.x;
+        const dy = e.clientY - lastMousePosRef.current.y;
         const prev = viewportRef.current;
         const updated = {
           ...prev,
@@ -649,12 +667,11 @@ export function WorldMapViewer({
             drawOverlay();
           });
         }
-        setLastMousePos({ x: e.clientX, y: e.clientY });
+        lastMousePosRef.current = { x: e.clientX, y: e.clientY };
       }
     },
     [
       isPanning,
-      lastMousePos,
       tiles,
       bounds,
       mapMarkers,
@@ -680,10 +697,10 @@ export function WorldMapViewer({
 
   if (tilesLoading || boundsLoading) {
     return (
-      <Card className="flex h-full min-h-[400px] items-center justify-center">
+      <Card className="flex h-full min-h-100 items-center justify-center">
         <div className="flex flex-col items-center gap-2">
-          <Loader2Icon className="text-muted-foreground h-8 w-8 animate-spin" />
-          <p className="text-muted-foreground text-sm">Loading map...</p>
+          <Loader2Icon className="text-muted-foreground size-8 animate-spin" />
+          <p className="text-muted-foreground text-sm">Loading map…</p>
         </div>
       </Card>
     );
@@ -691,9 +708,9 @@ export function WorldMapViewer({
 
   if (tilesError) {
     return (
-      <Card className="flex h-full min-h-[400px] items-center justify-center">
+      <Card className="flex h-full min-h-100 items-center justify-center">
         <div className="flex flex-col items-center gap-2 p-4 text-center">
-          <MapIcon className="text-muted-foreground h-12 w-12 opacity-50" />
+          <MapIcon className="text-muted-foreground size-12 opacity-50" />
           <p className="text-muted-foreground text-sm">
             {tilesError.message.includes("maps_not_found")
               ? "No map data available yet. Explore the world in-game to generate the map!"
@@ -706,9 +723,9 @@ export function WorldMapViewer({
 
   if (!tiles || tiles.length === 0) {
     return (
-      <Card className="flex h-full min-h-[400px] items-center justify-center">
+      <Card className="flex h-full min-h-100 items-center justify-center">
         <div className="flex flex-col items-center gap-2 p-4 text-center">
-          <MapIcon className="text-muted-foreground h-12 w-12 opacity-50" />
+          <MapIcon className="text-muted-foreground size-12 opacity-50" />
           <p className="text-muted-foreground text-sm">
             No map tiles found. Explore the world in-game to generate the map!
           </p>
@@ -718,7 +735,7 @@ export function WorldMapViewer({
   }
 
   return (
-    <Card className="relative h-full min-h-[400px] overflow-hidden">
+    <Card className="relative h-full min-h-100 overflow-hidden">
       <div
         className="h-full w-full"
         ref={containerRef}
@@ -763,7 +780,7 @@ export function WorldMapViewer({
               <div className="mt-1">
                 <strong>Prospecting Results:</strong>
                 <ul className="list-inside list-disc">
-                  {prospectingMarker.results.sort(sortByQuality).map((result) => {
+                  {prospectingMarker.results.toSorted(sortByQuality).map((result) => {
                     const stableKey = `${result.ore_code}-${result.readings?.depth ?? 0}-${result.readings?.quality ?? 0}`;
                     return (
                       <li className="flex gap-2 text-xs" key={stableKey}>

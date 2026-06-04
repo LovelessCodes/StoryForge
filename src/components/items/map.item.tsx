@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { Group } from "@/components/ui/group";
 import { TooltipTrigger } from "@/components/ui/tooltip";
+import { rootDialogHandle, rootTooltipHandle } from "@/handles";
 import type { MapEntry } from "@/hooks/use-world-map";
-import { rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
 
 export function MapItem({ map }: { map: MapEntry }) {

@@ -16,11 +16,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { TooltipTrigger } from "@/components/ui/tooltip";
+import { rootDialogHandle, rootTooltipHandle } from "@/handles";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import type { PublicServer } from "@/hooks/use-public-servers";
 import { compareSemverAsc, compareSemverDesc, stripped } from "@/lib/utils";
-import { rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
 import { useServersFilters } from "@/stores/serversFilters";
 
@@ -37,16 +37,16 @@ export function PublicServerList({
   const { searchText, selectedGameVersions, sortBy, orderDirection } = useServersFilters();
 
   const filteredServers = publicServers
-    .filter((server) =>
-      searchText.length > 1
-        ? server.serverName.toLowerCase().includes(searchText.toLowerCase()) ||
-          server.gameDescription.toLowerCase().includes(searchText.toLowerCase()) ||
-          server.serverIP.toLowerCase().includes(searchText.toLowerCase())
-        : true,
-    )
-    .filter((server) =>
-      selectedGameVersions.length > 0 ? selectedGameVersions.includes(server.gameVersion) : true,
-    )
+    .filter((server) => {
+      const matchesSearch =
+        searchText.length <= 1 ||
+        server.serverName.toLowerCase().includes(searchText.toLowerCase()) ||
+        server.gameDescription.toLowerCase().includes(searchText.toLowerCase()) ||
+        server.serverIP.toLowerCase().includes(searchText.toLowerCase());
+      const matchesVersion =
+        selectedGameVersions.length === 0 || selectedGameVersions.includes(server.gameVersion);
+      return matchesSearch && matchesVersion;
+    })
     .sort((a, b) => {
       if (sortBy === "name") {
         if (orderDirection === "descending") {
@@ -118,7 +118,6 @@ export function PublicServerList({
               ref={rowVirtualizer.measureElement}
               style={{
                 transform: `translateY(${item.start}px)`,
-                willChange: "transform",
               }}
             >
               <MotionPublicServerContextMenu

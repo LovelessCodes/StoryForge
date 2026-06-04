@@ -4,10 +4,10 @@ import { BoxIcon, DownloadCloudIcon, PackagePlusIcon, Pencil, Play, Star } from 
 import { Button } from "@/components/ui/button";
 import { Group } from "@/components/ui/group";
 import { TooltipTrigger } from "@/components/ui/tooltip";
+import { rootTooltipHandle } from "@/handles";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { cn } from "@/lib/utils";
-import { rootTooltipHandle } from "@/routes/__root";
 import type { Installation } from "@/stores/installations";
 
 interface InstallationCardProps {
@@ -32,7 +32,7 @@ export function InstallationCard({
     <>
       <div className="flex items-center gap-3">
         <div
-          className={`h-2 w-2 rounded-full ${
+          className={`size-2 rounded-full ${
             versions.includes(installation.version) ? "bg-success" : "bg-muted-foreground/40"
           }`}
         />
@@ -72,12 +72,12 @@ export function InstallationCard({
             <TooltipTrigger
               render={
                 <Button
-                  className="text-muted-foreground hover:text-foreground h-8 w-8"
+                  className="text-muted-foreground hover:text-foreground size-8"
                   onClick={() => onPlay(installation)}
                   size="icon"
                   variant="ghost"
                 >
-                  <Play className="h-4 w-4" />
+                  <Play className="size-4" />
                   <span className="sr-only">Play {installation.name}</span>
                 </Button>
               }
@@ -90,13 +90,13 @@ export function InstallationCard({
             <TooltipTrigger
               render={
                 <Button
-                  className="text-muted-foreground hover:text-foreground h-8 w-8 max-md:hidden"
+                  className="text-muted-foreground hover:text-foreground size-8 max-md:hidden"
                   disabled={isInstalling}
                   onClick={() => installVersion(installation.version)}
                   size="icon"
                   variant="ghost"
                 >
-                  <DownloadCloudIcon className="h-4 w-4" />
+                  <DownloadCloudIcon className="size-4" />
                   <span className="sr-only">Download version {installation.version}</span>
                 </Button>
               }
@@ -108,12 +108,12 @@ export function InstallationCard({
         <TooltipTrigger
           render={
             <Button
-              className="text-muted-foreground hover:text-foreground h-8 w-8 max-md:hidden"
+              className="text-muted-foreground hover:text-foreground size-8 max-md:hidden"
               onClick={() => onAddMods(installation)}
               size="icon"
               variant="ghost"
             >
-              <PackagePlusIcon className="h-4 w-4" />
+              <PackagePlusIcon className="size-4" />
               <span className="sr-only">Add mods to {installation.name}</span>
             </Button>
           }
@@ -123,12 +123,12 @@ export function InstallationCard({
         <TooltipTrigger
           render={
             <Button
-              className="text-muted-foreground hover:text-foreground h-8 w-8 max-md:hidden"
+              className="text-muted-foreground hover:text-foreground size-8 max-md:hidden"
               onClick={() => onEdit(installation)}
               size="icon"
               variant="ghost"
             >
-              <Pencil className="h-4 w-4" />
+              <Pencil className="size-4" />
               <span className="sr-only">Edit {installation.name}</span>
             </Button>
           }
@@ -139,7 +139,7 @@ export function InstallationCard({
           render={
             <Button
               className={cn(
-                "h-8 w-8 max-md:hidden",
+                "size-8 max-md:hidden",
                 installation.favorite
                   ? "text-warning"
                   : "hover:text-foreground text-muted-foreground",
@@ -148,7 +148,7 @@ export function InstallationCard({
               size="icon"
               variant="ghost"
             >
-              <Star className={cn("h-4 w-4", installation.favorite && "fill-warning")} />
+              <Star className={cn("size-4", installation.favorite && "fill-warning")} />
               <span className="sr-only">
                 {installation.favorite ? "Unfavorite" : "Favorite"} {installation.name}
               </span>

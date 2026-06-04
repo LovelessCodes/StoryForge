@@ -126,7 +126,7 @@ export const useServerStore = create<ServerStore>()((set) => ({
 export const useServers = () => {
   const { servers, loadServers, ...rest } = useServerStore();
   return {
-    servers: [...servers].sort((a, b) => a.index - b.index),
+    servers: servers.toSorted((a, b) => a.index - b.index),
     loadServers,
     ...rest,
   };

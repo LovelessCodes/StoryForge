@@ -1,7 +1,8 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { AnimatePresence, motion } from "framer-motion";
 import { MapIcon, MapPinXIcon } from "lucide-react";
+import { AnimatePresence } from "motion/react";
+import * as m from "motion/react-m";
 import { toast } from "sonner";
 
 import {
@@ -12,8 +13,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { rootAlertDialogHandle } from "@/handles";
 import { useSavesFromInstallation } from "@/hooks/use-saves";
-import { rootAlertDialogHandle } from "@/routes/__root";
 import { type Installation, useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
 
@@ -22,6 +23,7 @@ export type DeleteInstallationDialogProps = {
 };
 
 export function DeleteInstallationDialog({ installation }: DeleteInstallationDialogProps) {
+  const queryClient = useQueryClient();
   const { removeInstallation } = useInstallations();
   const { servers } = useServerStore();
   const { data: saves } = useSavesFromInstallation(installation.id);
@@ -42,8 +44,10 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
         id: `installation-delete-${variables}`,
       });
     },
-    onSuccess: (data, variables) => {
+    onSuccess: async (data, variables) => {
       if (data === "removed") {
+        await queryClient.invalidateQueries({ queryKey: ["saves"] });
+        await queryClient.invalidateQueries({ queryKey: ["saves", installation.id] });
         removeInstallation(variables);
         toast.success("Installation deleted", {
           id: `installation-delete-${variables}`,
@@ -64,7 +68,7 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
 
         {/* Warning for active servers */}
         {activeServers.length > 0 && (
-          <motion.div
+          <m.div
             animate={{ opacity: 1, y: 0 }}
             className="border-destructive bg-destructive/10 text-destructive mb-4 border p-3"
             exit={{ opacity: 0, y: -10 }}
@@ -77,7 +81,7 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
             <ul className="mt-2 space-y-1">
               <AnimatePresence>
                 {activeServers.map((srv) => (
-                  <motion.li
+                  <m.li
                     animate={{ opacity: 1, x: 0 }}
                     className="flex items-center gap-2 border pl-2"
                     exit={{ opacity: 0, x: 20 }}
@@ -85,18 +89,18 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
                     key={srv.id}
                     transition={{ duration: 0.2 }}
                   >
-                    <MapPinXIcon className="mr-1 inline h-4 w-4" />
+                    <MapPinXIcon className="mr-1 inline size-4" />
                     {srv.name || `Server #${srv.id}`}
-                  </motion.li>
+                  </m.li>
                 ))}
               </AnimatePresence>
             </ul>
-          </motion.div>
+          </m.div>
         )}
 
         {/* List saves if present */}
         {Array.isArray(saves) && saves.length > 0 && (
-          <motion.div
+          <m.div
             animate={{ opacity: 1, y: 0 }}
             className="border-warning bg-warning/10 text-warning-foreground mb-4 border p-3"
             exit={{ opacity: 0, y: 10 }}
@@ -109,7 +113,7 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
             <ul className="mt-2 space-y-1">
               <AnimatePresence>
                 {saves.map((save) => (
-                  <motion.li
+                  <m.li
                     animate={{ opacity: 1, x: 0 }}
                     className="flex items-center gap-2 border pl-2"
                     exit={{ opacity: 0, x: -20 }}
@@ -117,13 +121,13 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
                     key={save}
                     transition={{ duration: 0.2 }}
                   >
-                    <MapIcon className="mr-1 inline h-4 w-4" />
+                    <MapIcon className="mr-1 inline size-4" />
                     {save}
-                  </motion.li>
+                  </m.li>
                 ))}
               </AnimatePresence>
             </ul>
-          </motion.div>
+          </m.div>
         )}
       </AlertDialogHeader>
       <AlertDialogFooter>

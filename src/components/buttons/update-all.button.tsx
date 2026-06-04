@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import type { OutputMod } from "@/components/pages/install-mods";
 import { Button } from "@/components/ui/button";
 import { useAddModUpdateToInstallation } from "@/hooks/use-add-mod-update-to-installation";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
@@ -11,7 +12,6 @@ import {
   type ModUpdatesResponse,
   modUpdatesQueryKey,
 } from "@/hooks/use-mod-updates";
-import type { OutputMod } from "@/routes/install-mods/$id";
 import type { Installation } from "@/stores/installations";
 
 export const UpdateAllButton = ({
@@ -45,6 +45,10 @@ export const UpdateAllButton = ({
     },
     onSuccess: async (_d, v) => {
       if (installation) {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: installedModsQueryKey(installation.path) }),
+          queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(installation.id) }),
+        ]);
         await addModToInstallation({
           emitevent,
           installation,
@@ -68,30 +72,36 @@ export const UpdateAllButton = ({
       toast.loading("Downloading mod updates...", {
         id: `mod-updates-${installation.id}`,
       });
-      for (const [modid, updateMod] of Object.entries(updates.updates)) {
-        const isInstalled = installedMods?.find(
-          (instMod) =>
-            instMod.modid === Number(modid) || instMod.modid.toString() === updateMod.modidstr,
-        );
-        if (!isInstalled) continue;
-        toast.loading(`Updating ${isInstalled.name}...`, {
-          id: `mod-updates-${installation.id}`,
-        });
-        await removeModFromInstallation({
-          modpath: isInstalled.path,
-          path: installation.path,
-          updateMod: {
-            ...updateMod,
-            modid: modid,
-          },
-        });
+      // Build a lookup Map to avoid O(n*m) find() inside the loop
+      const installedModsByModId = new Map<string | number, (typeof installedMods)[number]>();
+      for (const m of installedMods ?? []) {
+        installedModsByModId.set(m.modid, m);
+        installedModsByModId.set(m.modid.toString(), m);
       }
-      await queryClient.invalidateQueries({
-        queryKey: installedModsQueryKey(installation.path),
-      });
-      await queryClient.invalidateQueries({
-        queryKey: modUpdatesQueryKey(installation.id),
-      });
+      await Promise.all([
+        ...Object.entries(updates.updates).map(async ([modid, updateMod]) => {
+          const isInstalled =
+            installedModsByModId.get(Number(modid)) ?? installedModsByModId.get(updateMod.modidstr);
+          if (!isInstalled) return;
+          toast.loading(`Updating ${isInstalled.name}...`, {
+            id: `mod-updates-${installation.id}`,
+          });
+          await removeModFromInstallation({
+            modpath: isInstalled.path,
+            path: installation.path,
+            updateMod: {
+              ...updateMod,
+              modid: modid,
+            },
+          });
+        }),
+        queryClient.invalidateQueries({
+          queryKey: installedModsQueryKey(installation.path),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: modUpdatesQueryKey(installation.id),
+        }),
+      ]);
       toast.success(`All mod updates completed for ${installation.name}.`, {
         id: `mod-updates-${installation.id}`,
       });

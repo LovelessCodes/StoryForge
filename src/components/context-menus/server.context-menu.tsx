@@ -10,7 +10,7 @@ import {
   StarIcon,
   TrashIcon,
 } from "lucide-react";
-import { motion } from "motion/react";
+import * as m from "motion/react-m";
 
 import { DeleteServerDialog } from "@/components/dialogs/deleteserver.dialog";
 import { EditServerDialog } from "@/components/dialogs/editserver.dialog";
@@ -24,12 +24,12 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { DialogTrigger } from "@/components/ui/dialog";
+import { rootAlertDialogHandle, rootDialogHandle } from "@/handles";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import { cn } from "@/lib/utils";
-import { rootAlertDialogHandle, rootDialogHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
 import { type Server, useServerStore } from "@/stores/servers";
 
@@ -68,7 +68,7 @@ export const ServerContextMenu = ({
               onClick={() => connectToServer(server)}
             >
               Connect
-              <PlugIcon className="inline-block h-4 w-4" />
+              <PlugIcon className="inline-block size-4" />
             </ContextMenuItem>
           ) : (
             <ContextMenuItem
@@ -76,7 +76,7 @@ export const ServerContextMenu = ({
               onClick={() => installation && downloadVersion(installation.version)}
             >
               Download {installation?.version}
-              <DownloadCloudIcon className="inline-block h-4 w-4" />
+              <DownloadCloudIcon className="inline-block size-4" />
             </ContextMenuItem>
           )}
           <ContextMenuItem
@@ -85,7 +85,7 @@ export const ServerContextMenu = ({
           >
             {server.favorite ? "Unfavorite" : "Favorite"}
             <StarIcon
-              className={cn("inline-block h-4 w-4", server.favorite && "text-warning fill-warning")}
+              className={cn("inline-block size-4", server.favorite && "text-warning fill-warning")}
             />
           </ContextMenuItem>
           <ContextMenuItem
@@ -99,7 +99,7 @@ export const ServerContextMenu = ({
             }
           >
             Manage Mods
-            <PackageSearchIcon className="inline-block h-4 w-4" />
+            <PackageSearchIcon className="inline-block size-4" />
           </ContextMenuItem>
           <ContextMenuItem
             className="flex items-center justify-between gap-4"
@@ -112,14 +112,14 @@ export const ServerContextMenu = ({
             }
           >
             Configure Mods
-            <PackageOpenIcon className="inline-block h-4 w-4" />
+            <PackageOpenIcon className="inline-block size-4" />
           </ContextMenuItem>
           <ContextMenuItem
             className="flex items-center justify-between gap-4"
             onClick={() => installation && revealInstallationInFolder(installation.path)}
           >
             Open Installation Folder
-            <FolderOpenIcon className="inline-block h-4 w-4" />
+            <FolderOpenIcon className="inline-block size-4" />
           </ContextMenuItem>
           <ContextMenuItem
             className="flex w-full items-center justify-between gap-4"
@@ -132,7 +132,7 @@ export const ServerContextMenu = ({
             }
           >
             Edit
-            <PenIcon className="inline-block h-4 w-4" />
+            <PenIcon className="inline-block size-4" />
           </ContextMenuItem>
           <ContextMenuItem
             className="flex w-full items-center justify-between gap-4"
@@ -146,7 +146,7 @@ export const ServerContextMenu = ({
             variant="destructive"
           >
             Delete
-            <TrashIcon className="inline-block h-4 w-4" />
+            <TrashIcon className="inline-block size-4" />
           </ContextMenuItem>
         </ContextMenuGroup>
       </ContextMenuContent>
@@ -154,4 +154,4 @@ export const ServerContextMenu = ({
   );
 };
 
-export const MotionServerContextMenu = motion.create(ServerContextMenu);
+export const MotionServerContextMenu = m.create(ServerContextMenu);

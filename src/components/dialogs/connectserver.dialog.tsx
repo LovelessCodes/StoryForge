@@ -9,9 +9,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import { rootAlertDialogHandle } from "@/handles";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
 import type { PublicServer } from "@/hooks/use-public-servers";
-import { rootAlertDialogHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
 
 export type ConnectServerDialogProps = {
@@ -42,13 +42,15 @@ export function ConnectServerDialog({ server }: ConnectServerDialogProps) {
               "Select an installation"}
           </SelectTrigger>
           <SelectContent alignItemWithTrigger={false}>
-            {installations
-              .filter((i) => i.version === server.gameVersion)
-              .map((installation) => (
-                <SelectItem key={installation.id} value={installation.id.toString()}>
-                  {installation.name}
-                </SelectItem>
-              ))}
+            {installations.flatMap((i) =>
+              i.version === server.gameVersion
+                ? [
+                    <SelectItem key={i.id} value={i.id.toString()}>
+                      {i.name}
+                    </SelectItem>,
+                  ]
+                : [],
+            )}
           </SelectContent>
         </Select>
         {server.hasPassword && (

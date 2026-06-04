@@ -7,7 +7,7 @@ import {
   PackagePlusIcon,
   PackageSearchIcon,
 } from "lucide-react";
-import { motion } from "motion/react";
+import * as m from "motion/react-m";
 import { useRef } from "react";
 import { toast } from "sonner";
 
@@ -15,18 +15,18 @@ import { AddModDialog } from "@/components/dialogs/addmod.dialog";
 import { RemoveModDialog } from "@/components/dialogs/removemod.dialog";
 import { UpdateModDialog } from "@/components/dialogs/updatemod.dialog";
 import type { Mod } from "@/components/lists/mod.list";
+import type { OutputMod } from "@/components/pages/install-mods";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { Group, GroupSeparator } from "@/components/ui/group";
 import { TooltipTrigger } from "@/components/ui/tooltip";
+import { rootAlertDialogHandle, rootDialogHandle, rootTooltipHandle } from "@/handles";
 import { useAddLatestModVersion } from "@/hooks/use-add-latest-mod-version";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { type ModUpdatesResponse, modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import type { ModInfo, ProgressPayload } from "@/lib/types";
 import { cn, compareSemverAsc, pathDelimiter } from "@/lib/utils";
-import { rootAlertDialogHandle, rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
-import type { OutputMod } from "@/routes/install-mods/$id";
 import type { Installation } from "@/stores/installations";
 import { useModsFilters } from "@/stores/modsFilters";
 
@@ -79,11 +79,15 @@ export function ModItem({
         },
       );
     },
-    onSuccess: () => {
-      addModToInstallation({
-        path: `${installation?.path}${pathDelimiter}Mods`,
-        url: updateMod?.mainfile || "",
-      });
+    onSuccess: async () => {
+      if (installation) {
+        await queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(installation.id) });
+        await queryClient.invalidateQueries({ queryKey: installedModsQueryKey(installation.path) });
+        addModToInstallation({
+          path: `${installation.path}${pathDelimiter}Mods`,
+          url: updateMod?.mainfile || "",
+        });
+      }
     },
   });
   const { mutate: addModToInstallation, isPending } = useMutation({
@@ -135,11 +139,11 @@ export function ModItem({
   });
   const { setAuthor } = useModsFilters();
   return (
-    <motion.div
+    <m.div
       animate={{ opacity: 1, y: 0 }}
       className={cn([
         "flex flex-row p-2 justify-between w-full items-center",
-        installedMod && "bg-gradient-to-r from-success/20 to-transparent",
+        installedMod && "bg-linear-to-r from-success/20 to-transparent",
       ])}
       exit={{ opacity: 0, y: 12 }}
       initial={{ opacity: 0, y: 12 }}
@@ -152,7 +156,7 @@ export function ModItem({
         >
           <img
             alt={mod.name}
-            className="h-12 w-12 rounded transition-transform hover:scale-105"
+            className="size-12 rounded transition-transform hover:scale-105"
             loading="lazy"
             src={mod.logo ?? "https://mods.vintagestory.at/web/img/mod-default.png"}
           />
@@ -170,15 +174,11 @@ export function ModItem({
             <p className="text-xs opacity-50">by</p>
             <TooltipTrigger
               render={
-                // biome-ignore lint/a11y/noStaticElementInteractions: Not really relevant
-                <span
+                <button
+                  aria-label={`Filter by ${mod.author}`}
                   className="cursor-pointer text-xs text-orange-200 opacity-50"
                   onClick={() => setAuthor(mod.author)}
-                  onKeyUp={(e) => {
-                    if (e.key === "Enter") {
-                      setAuthor(mod.author);
-                    }
-                  }}
+                  type="button"
                 />
               }
               handle={rootTooltipHandle}
@@ -340,6 +340,6 @@ export function ModItem({
             />
           ))}
       </Group>
-    </motion.div>
+    </m.div>
   );
 }

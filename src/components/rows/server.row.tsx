@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { Group, GroupSeparator } from "@/components/ui/group";
 import { TooltipTrigger } from "@/components/ui/tooltip";
+import { rootAlertDialogHandle, rootDialogHandle, rootTooltipHandle } from "@/handles";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { cn } from "@/lib/utils";
-import { rootAlertDialogHandle, rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
 import { findInstallationForServer, useInstallations } from "@/stores/installations";
 import { type Server, useServerStore } from "@/stores/servers";
 import { useSettingsStore } from "@/stores/settings";
@@ -37,7 +37,7 @@ export function ServerRow({ server }: ServerRowProps) {
   const { mutate: installVersion, isPending: isInstalling } = useDownloadVersion();
 
   return (
-    <div className="flex items-center gap-2 px-2 py-2">
+    <div className="flex items-center gap-2 p-2">
       <div className="flex flex-1 flex-col">
         <p className="text-sm">{server.name}</p>
         <p className="text-muted-foreground text-xs">

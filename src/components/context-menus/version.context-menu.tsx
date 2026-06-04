@@ -1,6 +1,6 @@
 import type { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu";
 import { FolderOpenIcon, TrashIcon } from "lucide-react";
-import { motion } from "motion/react";
+import * as m from "motion/react-m";
 
 import { DeleteVersionDialog } from "@/components/dialogs/deleteversion.dialog";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -12,10 +12,10 @@ import {
   ContextMenuLabel,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { rootAlertDialogHandle } from "@/handles";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import { pathDelimiter } from "@/lib/utils";
-import { rootAlertDialogHandle } from "@/routes/__root";
 import { useSettingsStore } from "@/stores/settings";
 
 export const VersionContextMenu = ({
@@ -49,7 +49,7 @@ export const VersionContextMenu = ({
             }
           >
             Open Folder
-            <FolderOpenIcon className="inline-block h-4 w-4" />
+            <FolderOpenIcon className="inline-block size-4" />
           </ContextMenuItem>
           <ContextMenuItem
             className="flex w-full items-center justify-between gap-4"
@@ -63,7 +63,7 @@ export const VersionContextMenu = ({
             variant="destructive"
           >
             Delete
-            <TrashIcon className="inline-block h-4 w-4" />
+            <TrashIcon className="inline-block size-4" />
           </ContextMenuItem>
         </ContextMenuGroup>
       </ContextMenuContent>
@@ -71,4 +71,4 @@ export const VersionContextMenu = ({
   );
 };
 
-export const MotionVersionContextMenu = motion.create(VersionContextMenu);
+export const MotionVersionContextMenu = m.create(VersionContextMenu);

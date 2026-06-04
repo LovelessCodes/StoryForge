@@ -188,6 +188,7 @@ export const modpacksPlugin = () => {
         }),
     }),
     getAtoms: ($fetch) => {
+      // react-doctor-disable-next-line react-doctor/rules-of-hooks
       const modpacks = useAuthQuery<{ totalCount: number; modpacks: ModpackItem[] }>(
         $modpacks,
         "/modpacks",

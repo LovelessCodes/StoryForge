@@ -8,8 +8,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { rootAlertDialogHandle } from "@/handles";
 import { useRemoveServerFromInstallation } from "@/hooks/use-remove-server-from-installation";
-import { rootAlertDialogHandle } from "@/routes/__root";
 import { type Server, useServerStore } from "@/stores/servers";
 
 export type DeleteServerDialogProps = {

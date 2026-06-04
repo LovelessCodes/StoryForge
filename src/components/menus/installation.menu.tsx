@@ -18,12 +18,12 @@ import { ViewLogsDialog } from "@/components/dialogs/viewlogs.dialog";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { MenuGroup, MenuItem } from "@/components/ui/menu";
+import { rootAlertDialogHandle, rootDialogHandle } from "@/handles";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import { cn, exportInstallation } from "@/lib/utils";
-import { rootAlertDialogHandle, rootDialogHandle } from "@/routes/__root";
 import { type Installation, useInstallations } from "@/stores/installations";
 
 export const InstallationMenu = ({ installation }: { installation: Installation }) => {
@@ -48,7 +48,7 @@ export const InstallationMenu = ({ installation }: { installation: Installation 
           onClick={() => launchInstallation({ id: installation.id })}
         >
           Launch
-          <PlayIcon className="inline-block h-4 w-4" />
+          <PlayIcon className="inline-block size-4" />
         </MenuItem>
       ) : (
         <MenuItem
@@ -56,7 +56,7 @@ export const InstallationMenu = ({ installation }: { installation: Installation 
           onClick={() => downloadVersion(installation.version)}
         >
           Download {installation.version}
-          <DownloadCloudIcon className="inline-block h-4 w-4" />
+          <DownloadCloudIcon className="inline-block size-4" />
         </MenuItem>
       )}
       <MenuItem
@@ -66,7 +66,7 @@ export const InstallationMenu = ({ installation }: { installation: Installation 
         {installation.favorite ? "Unfavorite" : "Favorite"}
         <StarIcon
           className={cn(
-            "inline-block h-4 w-4",
+            "inline-block size-4",
             installation.favorite && "text-warning fill-warning",
           )}
         />
@@ -81,7 +81,7 @@ export const InstallationMenu = ({ installation }: { installation: Installation 
         }
       >
         Manage Mods
-        <PackageSearchIcon className="inline-block h-4 w-4" />
+        <PackageSearchIcon className="inline-block size-4" />
       </MenuItem>
       <MenuItem
         className="flex items-center justify-between gap-4"
@@ -93,14 +93,14 @@ export const InstallationMenu = ({ installation }: { installation: Installation 
         }
       >
         Configure Mods
-        <PackageOpenIcon className="inline-block h-4 w-4" />
+        <PackageOpenIcon className="inline-block size-4" />
       </MenuItem>
       <MenuItem
         className="flex items-center justify-between gap-4"
         onClick={() => revealInstallationInFolder(installation.path)}
       >
         Open Folder
-        <FolderOpenIcon className="inline-block h-4 w-4" />
+        <FolderOpenIcon className="inline-block size-4" />
       </MenuItem>
       <MenuItem
         className="flex w-full items-center justify-between gap-4"
@@ -118,14 +118,14 @@ export const InstallationMenu = ({ installation }: { installation: Installation 
         }
       >
         View Logs
-        <FileTextIcon className="inline-block h-4 w-4" />
+        <FileTextIcon className="inline-block size-4" />
       </MenuItem>
       <MenuItem
         className="flex items-center justify-between gap-4"
         onClick={() => exportInstallation({ installation })}
       >
         Export
-        <FileUpIcon className="inline-block h-4 w-4" />
+        <FileUpIcon className="inline-block size-4" />
       </MenuItem>
       <MenuItem
         className="flex w-full items-center justify-between gap-4"
@@ -139,7 +139,7 @@ export const InstallationMenu = ({ installation }: { installation: Installation 
         }
       >
         Edit
-        <FolderPenIcon className="inline-block h-4 w-4" />
+        <FolderPenIcon className="inline-block size-4" />
       </MenuItem>
       <MenuItem
         className="flex w-full items-center justify-between gap-4"
@@ -154,7 +154,7 @@ export const InstallationMenu = ({ installation }: { installation: Installation 
         }
       >
         Delete
-        <FolderXIcon className="inline-block h-4 w-4" />
+        <FolderXIcon className="inline-block size-4" />
       </MenuItem>
     </MenuGroup>
   );

@@ -5,11 +5,11 @@ import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Group, GroupSeparator } from "@/components/ui/group";
 import { TooltipTrigger } from "@/components/ui/tooltip";
+import { rootAlertDialogHandle, rootTooltipHandle } from "@/handles";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import type { InstalledVersion } from "@/hooks/use-installed-versions";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import { pathDelimiter } from "@/lib/utils";
-import { rootAlertDialogHandle, rootTooltipHandle } from "@/routes/__root";
 import { useSettingsStore } from "@/stores/settings";
 
 export function VersionRow({ version }: { version: InstalledVersion }) {
