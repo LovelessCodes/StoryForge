@@ -26,7 +26,7 @@ import { useAddLatestModVersion } from "@/hooks/use-add-latest-mod-version";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { type ModUpdatesResponse, modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import { modTagsQuery } from "@/lib/queries";
-import type { ModInfo, ProgressPayload } from "@/lib/types";
+import type { ModInfo, ModTag, ProgressPayload } from "@/lib/types";
 import { cn, compareSemverAsc, pathDelimiter } from "@/lib/utils";
 import type { Installation } from "@/stores/installations";
 import { useModsFilters } from "@/stores/modsFilters";
@@ -65,6 +65,7 @@ export function ModItem({
     refetchOnReconnect: false,
     refetchOnWindowFocus: false,
   });
+  const { addModTag, removeModTag, selectedModTags, setAuthor } = useModsFilters();
   const { data: modTags } = useQuery(modTagsQuery);
   const tagColorMap = useMemo(() => {
     if (!modTags) return {} as Record<string, string>;
@@ -72,6 +73,17 @@ export function ModItem({
     for (const t of modTags) map[t.name] = t.color;
     return map;
   }, [modTags]);
+  /** Lookup table from tag name → full ModTag (for the filter toggle) */
+  const tagByName = useMemo(() => {
+    if (!modTags) return {} as Record<string, ModTag>;
+    const map: Record<string, ModTag> = {};
+    for (const t of modTags) map[t.name] = t;
+    return map;
+  }, [modTags]);
+  const selectedTagNames = useMemo(
+    () => new Set(selectedModTags.map((t) => t.name)),
+    [selectedModTags],
+  );
   const { mutate: downloadLatestModVersion, isPending: isDownloading } = useAddLatestModVersion({
     installation,
     mod,
@@ -145,7 +157,6 @@ export function ModItem({
       });
     },
   });
-  const { setAuthor } = useModsFilters();
   return (
     <m.div
       animate={{ opacity: 1, y: 0 }}
@@ -204,19 +215,33 @@ export function ModItem({
           {mod.tags.length > 0 && (
             <div className="mt-1.5 flex flex-wrap gap-1">
               {mod.tags.map((tagName) => {
+                const tag = tagByName[tagName];
                 const color = tagColorMap[tagName];
+                const isActive = selectedTagNames.has(tagName);
                 return (
-                  <span
+                  <button
                     key={tagName}
-                    className="inline-flex items-center rounded px-1.5 py-px text-[10px] leading-relaxed font-medium"
+                    className={cn(
+                      "inline-flex cursor-pointer items-center rounded px-1.5 py-px text-[10px] leading-relaxed font-medium transition-opacity hover:opacity-80",
+                      isActive && "ring-1 ring-primary",
+                    )}
+                    onClick={() => {
+                      if (!tag) return;
+                      if (isActive) {
+                        removeModTag(tag);
+                      } else {
+                        addModTag(tag);
+                      }
+                    }}
                     style={{
                       backgroundColor: color ? `${color}20` : undefined,
                       border: color ? `1px solid ${color}50` : undefined,
                       color: color ?? undefined,
                     }}
+                    type="button"
                   >
                     {tagName}
-                  </span>
+                  </button>
                 );
               })}
             </div>
