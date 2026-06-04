@@ -682,9 +682,45 @@ fn load_selected_account(app: &AppHandle) -> Option<SavedAccount> {
     use tauri::Manager;
     let data_dir = app.path().app_data_dir().ok()?;
     let path = data_dir.join("accounts.json");
-    let json = read_to_string(&path).ok()?;
-    let accounts: Vec<SavedAccount> = serde_json::from_str(&json).ok()?;
-    accounts.into_iter().next()
+    log_debug!("[play_game] load_selected_account: looking for {:?}", path);
+    if !path.exists() {
+        log_info!(
+            "[play_game] load_selected_account: accounts.json not found — no account selected"
+        );
+        return None;
+    }
+    let json = match read_to_string(&path) {
+        Ok(s) => s,
+        Err(e) => {
+            log_error!(
+                "[play_game] load_selected_account: failed to read accounts.json: {}",
+                e
+            );
+            return None;
+        }
+    };
+    let accounts: Vec<SavedAccount> = match serde_json::from_str(&json) {
+        Ok(a) => a,
+        Err(e) => {
+            log_error!(
+                "[play_game] load_selected_account: failed to parse accounts.json: {}",
+                e
+            );
+            return None;
+        }
+    };
+    let account = accounts.into_iter().next();
+    match &account {
+        Some(a) => log_info!(
+            "[play_game] load_selected_account: found account playername={:?} uid={}",
+            a.playername,
+            a.uid.as_deref().unwrap_or("<none>")
+        ),
+        None => log_info!(
+            "[play_game] load_selected_account: accounts.json has 0 entries — no account selected"
+        ),
+    }
+    account
 }
 
 #[command]
@@ -936,9 +972,15 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
     };
     #[cfg(not(target_os = "macos"))]
     let maybe_app_bundle: Option<std::path::PathBuf> = None;
+    log_info!("[play_game] attempting to load selected account…");
     let account = load_selected_account(&app);
 
     if let Some(account) = account {
+        log_info!(
+            "[play_game] writing account settings to clientsettings.json — playername={:?} uid={}",
+            account.playername,
+            account.uid.as_deref().unwrap_or("<none>")
+        );
         let settings = json!({
             "stringSettings": {
                 "playeruid": account.uid.as_deref().unwrap_or(""),
@@ -948,8 +990,10 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
             }
         });
         let settings_path = pb.join("clientsettings.json");
+        log_info!("[play_game] clientsettings.json path: {:?}", settings_path);
         // It should create the file if it does not exist, but if it exists it should just overwrite the keys
         if settings_path.exists() {
+            log_info!("[play_game] clientsettings.json exists — merging account keys into existing settings");
             let mut existing_settings = String::new();
             File::open(&settings_path)
                 .and_then(|mut f| f.read_to_string(&mut existing_settings))
@@ -1001,6 +1045,7 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
                 }
             })?;
         } else {
+            log_info!("[play_game] clientsettings.json does not exist — creating new with account settings");
             create_dir_all(settings_path.parent().unwrap()).map_err(|e| {
                 log_error!("installations: create_dir_failed: {e}");
                 UiError {
@@ -1015,7 +1060,15 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
                     message: format!("Failed to write clientsettings.json: {e}"),
                 }
             })?;
+            log_info!(
+                "[play_game] clientsettings.json created with account settings (playername={:?})",
+                account.playername
+            );
         }
+    } else {
+        log_info!(
+            "[play_game] no selected account — skipping clientsettings.json account injection"
+        );
     }
     // Emit a pre-launch event so the UI can show a loading state
     let _ = app.emit(

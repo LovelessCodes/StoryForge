@@ -1,4 +1,4 @@
-import { type UseQueryOptions, useQuery } from "@tanstack/react-query";
+import { type UseQueryOptions, keepPreviousData, useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
 import type { OutputMod } from "@/routes/install-mods/$id";
@@ -21,6 +21,8 @@ export const useInstalledMods = (
         mods: OutputMod[];
       }>,
     queryKey: installedModsQueryKey(installationPath),
+    staleTime: Infinity,
+    placeholderData: keepPreviousData,
     ...props,
   });
 };

@@ -1,4 +1,4 @@
-import { type UseQueryOptions, useQuery } from "@tanstack/react-query";
+import { type UseQueryOptions, keepPreviousData, useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
 import type { MapBounds, MapDatabaseInfo, MapTile } from "@/lib/types";
@@ -24,6 +24,8 @@ export const useMapDatabaseInspection = (
     enabled: !!worldPath,
     queryFn: () => invoke<MapDatabaseInfo>("inspect_map_database", { worldPath }),
     queryKey: worldMapKeys.inspection(worldPath),
+    staleTime: Infinity,
+    placeholderData: keepPreviousData,
     ...options,
   });
 
@@ -35,6 +37,8 @@ export const useMapBounds = (
     enabled: !!worldPath,
     queryFn: () => invoke<MapBounds>("get_map_bounds", { worldPath }),
     queryKey: worldMapKeys.bounds(worldPath),
+    staleTime: Infinity,
+    placeholderData: keepPreviousData,
     ...options,
   });
 
@@ -47,6 +51,8 @@ export const useMapTile = (
     enabled: !!worldPath && position !== undefined,
     queryFn: () => invoke<MapTile>("get_map_tile", { position, worldPath }),
     queryKey: worldMapKeys.tile(worldPath, position),
+    staleTime: Infinity,
+    placeholderData: keepPreviousData,
     ...options,
   });
 
@@ -58,7 +64,8 @@ export const useAllMapTiles = (
     enabled: !!worldPath,
     queryFn: () => invoke<MapTile[]>("get_all_map_tiles", { worldPath }),
     queryKey: worldMapKeys.allTiles(worldPath),
-    staleTime: 1000 * 60 * 5,
+    staleTime: Infinity,
+    placeholderData: keepPreviousData,
     ...options,
   });
 

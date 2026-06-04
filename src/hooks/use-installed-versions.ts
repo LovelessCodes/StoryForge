@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { useMemo } from "react";
 
@@ -12,9 +12,10 @@ export type InstalledVersion = {
 
 export const useInstalledVersions = () => {
   return useQuery({
-    initialData: [] as InstalledVersion[],
     queryFn: () => invoke<InstalledVersion[]>("get_installed_versions"),
     queryKey: installedVersionsQueryKey(),
+    staleTime: Infinity,
+    placeholderData: keepPreviousData,
   });
 };
 

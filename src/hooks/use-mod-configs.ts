@@ -1,4 +1,4 @@
-import { type UseQueryOptions, useQuery } from "@tanstack/react-query";
+import { type UseQueryOptions, keepPreviousData, useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
 export const modConfigsQueryKey = (installationId: number) => ["mod-configs", installationId];
@@ -20,5 +20,7 @@ export const useModConfigs = (
         { filename: string; content: string }[]
       >,
     queryKey: modConfigsQueryKey(installationId),
+    staleTime: Infinity,
+    placeholderData: keepPreviousData,
     ...props,
   });
