@@ -27,9 +27,9 @@ import { cn } from "@/lib/utils";
 import { useInstallationsStore } from "@/stores/installations";
 import { type SetParentConfigProps, useSettingsStore } from "@/stores/settings";
 
+import { AccountSettings } from "../components/account-settings";
+import { LogViewer } from "../components/log-viewer";
 import { rootTooltipHandle } from "./__root";
-import { AccountSettings } from "./account-settings";
-import { LogViewer } from "./log-viewer";
 
 export const Route = createFileRoute("/settings")({
   component: RouteComponent,
