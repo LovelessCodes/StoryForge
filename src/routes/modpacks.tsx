@@ -33,7 +33,7 @@ const SORT_OPTIONS: Record<string, string> = {
   updatedAt: "Last Updated",
 };
 
-function RouteComponent() {
+export function RouteComponent() {
   const {
     searchText,
     setSearchText,
@@ -163,7 +163,7 @@ function RouteComponent() {
   );
 }
 
-function ModpackCard({
+export function ModpackCard({
   modpack,
   onDelete,
   onEdit,
