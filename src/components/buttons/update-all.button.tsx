@@ -78,28 +78,30 @@ export const UpdateAllButton = ({
         installedModsByModId.set(m.modid, m);
         installedModsByModId.set(m.modid.toString(), m);
       }
-      for (const [modid, updateMod] of Object.entries(updates.updates)) {
-        const isInstalled =
-          installedModsByModId.get(Number(modid)) ?? installedModsByModId.get(updateMod.modidstr);
-        if (!isInstalled) continue;
-        toast.loading(`Updating ${isInstalled.name}...`, {
-          id: `mod-updates-${installation.id}`,
-        });
-        await removeModFromInstallation({
-          modpath: isInstalled.path,
-          path: installation.path,
-          updateMod: {
-            ...updateMod,
-            modid: modid,
-          },
-        });
-      }
-      await queryClient.invalidateQueries({
-        queryKey: installedModsQueryKey(installation.path),
-      });
-      await queryClient.invalidateQueries({
-        queryKey: modUpdatesQueryKey(installation.id),
-      });
+      await Promise.all([
+        ...Object.entries(updates.updates).map(async ([modid, updateMod]) => {
+          const isInstalled =
+            installedModsByModId.get(Number(modid)) ?? installedModsByModId.get(updateMod.modidstr);
+          if (!isInstalled) return;
+          toast.loading(`Updating ${isInstalled.name}...`, {
+            id: `mod-updates-${installation.id}`,
+          });
+          await removeModFromInstallation({
+            modpath: isInstalled.path,
+            path: installation.path,
+            updateMod: {
+              ...updateMod,
+              modid: modid,
+            },
+          });
+        }),
+        queryClient.invalidateQueries({
+          queryKey: installedModsQueryKey(installation.path),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: modUpdatesQueryKey(installation.id),
+        }),
+      ]);
       toast.success(`All mod updates completed for ${installation.name}.`, {
         id: `mod-updates-${installation.id}`,
       });
