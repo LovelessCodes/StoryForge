@@ -10,7 +10,7 @@ import {
   PencilIcon,
   PlayIcon,
 } from "lucide-react";
-import { motion } from "motion/react";
+import * as m from "motion/react-m";
 
 import { DeleteWorldDialog } from "@/components/dialogs/deleteworld.dialog";
 import { EditWorldDialog } from "@/components/dialogs/editworld.dialog";
@@ -160,4 +160,4 @@ export const WorldContextMenu = ({
   );
 };
 
-export const MotionWorldContextMenu = motion.create(WorldContextMenu);
+export const MotionWorldContextMenu = m.create(WorldContextMenu);

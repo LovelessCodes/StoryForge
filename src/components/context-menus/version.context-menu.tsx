@@ -1,6 +1,6 @@
 import type { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu";
 import { FolderOpenIcon, TrashIcon } from "lucide-react";
-import { motion } from "motion/react";
+import * as m from "motion/react-m";
 
 import { DeleteVersionDialog } from "@/components/dialogs/deleteversion.dialog";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -71,4 +71,4 @@ export const VersionContextMenu = ({
   );
 };
 
-export const MotionVersionContextMenu = motion.create(VersionContextMenu);
+export const MotionVersionContextMenu = m.create(VersionContextMenu);

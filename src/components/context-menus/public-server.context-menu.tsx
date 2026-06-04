@@ -1,6 +1,6 @@
 import type { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu";
 import { DownloadCloudIcon, FolderPlusIcon, PlugIcon } from "lucide-react";
-import { motion } from "motion/react";
+import * as m from "motion/react-m";
 
 import { AddInstallationDialog } from "@/components/dialogs/addinstallation.dialog";
 import { ConnectServerDialog } from "@/components/dialogs/connectserver.dialog";
@@ -86,4 +86,4 @@ export const PublicServerContextMenu = ({
   );
 };
 
-export const MotionPublicServerContextMenu = motion.create(PublicServerContextMenu);
+export const MotionPublicServerContextMenu = m.create(PublicServerContextMenu);

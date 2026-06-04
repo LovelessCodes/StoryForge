@@ -10,7 +10,7 @@ import {
   StarIcon,
   TrashIcon,
 } from "lucide-react";
-import { motion } from "motion/react";
+import * as m from "motion/react-m";
 
 import { DeleteServerDialog } from "@/components/dialogs/deleteserver.dialog";
 import { EditServerDialog } from "@/components/dialogs/editserver.dialog";
@@ -154,4 +154,4 @@ export const ServerContextMenu = ({
   );
 };
 
-export const MotionServerContextMenu = motion.create(ServerContextMenu);
+export const MotionServerContextMenu = m.create(ServerContextMenu);
