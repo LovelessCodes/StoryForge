@@ -128,7 +128,7 @@ function RouteComponent() {
       <Separator />
 
       {/* Results */}
-      <ScrollArea scrollFade className="px-4 py-4">
+      <ScrollArea scrollFade className="p-4">
         {isPending ? (
           <div className="flex items-center justify-center py-20">
             <p className="text-muted-foreground animate-pulse text-sm">Loading modpacks…</p>
@@ -239,7 +239,12 @@ function ModpackCard({
               {modpack.name}{" "}
               {modpack.modpackVersions.length ? (
                 <span className="text-muted-foreground text-xs">
-                  v{modpack.modpackVersions.sort((a, b) => b.createdAt - a.createdAt)[0]?.version}
+                  v
+                  {
+                    modpack.modpackVersions.reduce((max, v) =>
+                      v.createdAt > max.createdAt ? v : max,
+                    )?.version
+                  }
                 </span>
               ) : (
                 <span className="text-muted-foreground text-xs">Draft</span>
