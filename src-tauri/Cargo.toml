@@ -1,6 +1,6 @@
 [package]
 name = "StoryForge"
-version = "1.0.0-rc.7"
+version = "1.0.0-rc.8"
 description = "Launcher for Vintage Story"
 authors = ["lovelesscodes"]
 edition = "2021"
@@ -51,15 +51,10 @@ reqwest = { version = "0.13", default-features = false, features = [
   "query",
   "form",
 ] }
-tokio = { version = "1", default-features = false, features = [
-  "rt-multi-thread",
-  "macros",
-] }
+tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "macros"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-quick-xml = { version = "0.40", default-features = false, features = [
-  "serialize",
-] }
+quick-xml = { version = "0.40", default-features = false, features = ["serialize"] }
 which = "8"
 zip = { version = "8", default-features = false, features = ["deflate"] }
 futures-util = "0.3"
