@@ -117,6 +117,35 @@ function isObject(val: JSONValue): val is JSONObject {
   return typeof val === "object" && val !== null && !Array.isArray(val);
 }
 
+function pathKey(path: (string | number)[]) {
+  return path.join(".");
+}
+
+function deepSet(current: JSONValue, path: (string | number)[], next: JSONValue): JSONValue {
+  if (path.length === 0) return next;
+  const [head, ...rest] = path;
+  if (Array.isArray(current)) {
+    const clone = [...current];
+    const idx = head as number;
+    clone[idx] = deepSet(clone[idx], rest, next);
+    return clone;
+  } else if (isObject(current)) {
+    return {
+      ...current,
+      [head]: deepSet((current as JSONObject)[head as string] as JSONValue, rest, next),
+    };
+  }
+  return current;
+}
+
+function getAtPath(current: JSONValue, path: (string | number)[]): JSONValue {
+  return path.reduce<JSONValue>((acc, key) => {
+    if (Array.isArray(acc)) return acc[key as number];
+    if (isObject(acc)) return acc[key as string];
+    return acc;
+  }, current);
+}
+
 function LiveBlock({
   code,
   file,
@@ -140,29 +169,8 @@ function LiveBlock({
     return () => clearTimeout(id);
   }, [data, file, onSave, parseError, code]);
 
-  function pathKey(path: (string | number)[]) {
-    return path.join(".");
-  }
-
   function updateAtPath(path: (string | number)[], next: JSONValue) {
     setData((prev) => deepSet(prev, path, next));
-  }
-
-  function deepSet(current: JSONValue, path: (string | number)[], next: JSONValue): JSONValue {
-    if (path.length === 0) return next;
-    const [head, ...rest] = path;
-    if (Array.isArray(current)) {
-      const clone = [...current];
-      const idx = head as number;
-      clone[idx] = deepSet(clone[idx], rest, next);
-      return clone;
-    } else if (isObject(current)) {
-      return {
-        ...current,
-        [head]: deepSet((current as JSONObject)[head as string] as JSONValue, rest, next),
-      };
-    }
-    return current; // should not happen for valid paths
   }
 
   function handlePrimitiveChange(path: (string | number)[], raw: string, original: JSONValue) {
@@ -198,14 +206,6 @@ function LiveBlock({
       const nextArr = arr.filter((_, i) => i !== index) as JSONArray;
       return deepSet(prev, path, nextArr);
     });
-  }
-
-  function getAtPath(current: JSONValue, path: (string | number)[]): JSONValue {
-    return path.reduce<JSONValue>((acc, key) => {
-      if (Array.isArray(acc)) return acc[key as number];
-      if (isObject(acc)) return acc[key as string];
-      return acc;
-    }, current);
   }
 
   function toggleCollapse(path: (string | number)[]) {
@@ -424,7 +424,7 @@ function CodeBlock({
   file: string;
   onSave: (params: { file: string; newCode: string }) => void;
 }) {
-  const [editableCode, setEditableCode] = useState(JSON.stringify(code, null, 2));
+  const [editableCode, setEditableCode] = useState(() => JSON.stringify(code, null, 2));
   const canSave = useMemo(
     () => editableCode !== JSON.stringify(code, null, 2),
     [editableCode, code],
