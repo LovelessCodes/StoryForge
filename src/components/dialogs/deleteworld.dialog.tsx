@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { addSeconds, formatDistance, formatDistanceToNow } from "date-fns";
-import { motion } from "framer-motion";
+import * as m from "motion/react-m";
 import { useId, useState } from "react";
 import { toast } from "sonner";
 
@@ -61,7 +61,7 @@ export function DeleteWorldDialog({ world }: DeleteWorldDialogProps) {
           <span className="text-destructive">{world.data.world_name}</span> from Story Forge.
         </AlertDialogDescription>
       </AlertDialogHeader>
-      <motion.div
+      <m.div
         animate={{ opacity: 1, y: 0 }}
         className="border-warning bg-warning/10 text-warning-foreground my-4 flex flex-col border p-3"
         exit={{ opacity: 0, y: -10 }}
@@ -117,7 +117,7 @@ export function DeleteWorldDialog({ world }: DeleteWorldDialogProps) {
             Last saved in version: <b>{world.data.last_saved_game_version}</b>
           </li>
         </ul>
-      </motion.div>
+      </m.div>
       {/* Add a checkbox asking if they're absolutely sure */}
       <div className="flex items-center">
         <Checkbox
