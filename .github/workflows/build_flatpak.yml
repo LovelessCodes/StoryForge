@@ -1,0 +1,70 @@
+name: "Build and publish Flatpak"
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "storyforge-v[0-9]+.[0-9]+.[0-9]+"
+      - "storyforge-v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+"
+
+jobs:
+  build-flatpak:
+    name: Build Flatpak
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-48
+      options: --privileged
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+
+      - name: Mark workspace as safe for git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+  
+      - name: Read version from package.json
+        id: version
+        run: echo "value=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Update flatpak metainfo version
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          echo $DATE
+          RELEASE=$(echo $VERSION | cut -c 1-)
+          echo $RELEASE
+          sed -i "s/FLATPAK_VERSION/${RELEASE}/g" com.github.StoryForge.metainfo.xml
+          sed -i "s/FLATPAK_DATE/${DATE}/g" com.github.StoryForge.metainfo.xml
+
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: com.github.StoryForge.flatpak
+          manifest-path: com.github.StoryForge.yml
+          cache-key: flatpak-builder-${{ github.sha }}
+
+      - name: Upload to GitHub Release
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="storyforge-v${VERSION}"
+          FILE=com.github.StoryForge.flatpak
+          if [[ "$VERSION" == *-rc* ]]; then
+            BODY="⚠️ Release candidate — not recommended for general use."
+            PRERELEASE_FLAG="--prerelease"
+          else
+            BODY="See the assets to download this version and install."
+            PRERELEASE_FLAG=""
+          fi
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release ${TAG} doesn't exist. Creating draft..."
+            gh release create "$TAG" "$FILE" \
+              --title "$TAG" \
+              --notes "$BODY" \
+              --draft \
+              $PRERELEASE_FLAG
+          else
+            echo "Release ${TAG} exists. Uploading asset..."
+            gh release upload "$TAG" "$FILE" --clobber
+          fi

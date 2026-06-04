@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 
 /src-tauri/gen/schemas
+
+# Flatpak build artifacts
+flatpak/.flatpak-builder
+flatpak/build
+flatpak/repos
