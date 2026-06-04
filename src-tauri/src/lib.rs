@@ -33,6 +33,13 @@ macro_rules! log_error {
 
 use tauri::Manager;
 
+/// Returns `true` if the application is running inside a Flatpak sandbox.
+/// Flatpak manages updates via Flathub; our bundled updater must be disabled.
+#[tauri::command]
+fn is_flatpak_cmd() -> bool {
+    std::env::var("FLATPAK_ID").is_ok()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     #[cfg(target_os = "linux")]
@@ -44,13 +51,25 @@ pub fn run() {
         }
     }
 
-    tauri::Builder::default()
+    let is_flatpak = std::env::var("FLATPAK_ID").is_ok();
+    if is_flatpak {
+        eprintln!("[StoryForge] Running inside Flatpak — auto-update disabled");
+    }
+
+    let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init());
+
+    // Flatpak manages updates through its own mechanism (Flathub) —
+    // registering the updater plugin would be pointless and could cause errors.
+    if !is_flatpak {
+        builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+    }
+
+    builder = builder
         .plugin(tauri_plugin_os::init())
         .setup(|app| {
             let app_handle = app.handle();
@@ -191,6 +210,7 @@ pub fn run() {
         })
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
+            is_flatpak_cmd,
             // Authorization
             auth::login,
             auth::verify,
@@ -260,7 +280,9 @@ pub fn run() {
             maps::get_map_tile,
             maps::get_all_map_tiles,
             maps::get_all_map_tiles_by_path,
-        ])
+        ]);
+
+    builder
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
