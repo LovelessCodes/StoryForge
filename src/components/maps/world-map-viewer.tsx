@@ -74,7 +74,8 @@ export function WorldMapViewer({
   // LOD (level-of-detail) cache: Map<level, { groupSize, tiles: Map<"x,y", HTMLCanvasElement> }>
   const lodCacheRef = useRef<
     Map<number, { groupSize: number; tiles: Map<string, HTMLCanvasElement> }>
-  >(new Map());
+  >(null!);
+  if (lodCacheRef.current === null) lodCacheRef.current = new Map();
 
   // rAF throttle flags
   const rafPendingRef = useRef(false);
@@ -96,11 +97,13 @@ export function WorldMapViewer({
   const [prospectingMarker, setProspectingMarker] = useState<ProspectingMarker | null>(null);
 
   // Cache loaded images (ref — only read in draw callbacks, not JSX)
-  const imageCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
+  const imageCacheRef = useRef<Map<string, HTMLImageElement>>(null!);
+  if (imageCacheRef.current === null) imageCacheRef.current = new Map();
   const [imageVersion, setImageVersion] = useState(0);
 
   // Cache for marker icons (ref — only read in draw callbacks, not JSX)
-  const iconCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
+  const iconCacheRef = useRef<Map<string, HTMLImageElement>>(null!);
+  if (iconCacheRef.current === null) iconCacheRef.current = new Map();
 
   // Track container size (ref — triggers redraw directly from ResizeObserver)
   const containerSizeRef = useRef({ height: 0, width: 0 });
@@ -302,11 +305,10 @@ export function WorldMapViewer({
         if (!img || !img.complete) continue;
         const normalizedX = tile.x - minX;
         const normalizedY = tile.y - minY;
-        const screenX =
-          (normalizedY * tileSize - viewportRef.current.x * tileSize) * viewportRef.current.zoom;
-        const screenY =
-          (normalizedX * tileSize - viewportRef.current.y * tileSize) * viewportRef.current.zoom;
-        const screenSize = tileSize * viewportRef.current.zoom;
+        const zoom = viewportRef.current.zoom;
+        const screenX = (normalizedY * tileSize - viewportRef.current.x * tileSize) * zoom;
+        const screenY = (normalizedX * tileSize - viewportRef.current.y * tileSize) * zoom;
+        const screenSize = tileSize * zoom;
         if (
           screenX + screenSize > 0 &&
           screenX < canvas.width &&
@@ -326,11 +328,11 @@ export function WorldMapViewer({
           const gy = parseInt(gyStr, 10);
           const normalizedX = gx - minX;
           const normalizedY = gy - minY;
-          const screenX =
-            (normalizedY * tileSize - viewportRef.current.x * tileSize) * viewportRef.current.zoom;
-          const screenY =
-            (normalizedX * tileSize - viewportRef.current.y * tileSize) * viewportRef.current.zoom;
-          const screenSize = tileSize * viewportRef.current.zoom * lod.groupSize;
+
+          const zoom = viewportRef.current.zoom;
+          const screenX = (normalizedY * tileSize - viewportRef.current.x * tileSize) * zoom;
+          const screenY = (normalizedX * tileSize - viewportRef.current.y * tileSize) * zoom;
+          const screenSize = tileSize * zoom * lod.groupSize;
           if (
             screenX + screenSize > 0 &&
             screenX < canvas.width &&
@@ -778,7 +780,7 @@ export function WorldMapViewer({
               <div className="mt-1">
                 <strong>Prospecting Results:</strong>
                 <ul className="list-inside list-disc">
-                  {[...prospectingMarker.results].sort(sortByQuality).map((result) => {
+                  {prospectingMarker.results.toSorted(sortByQuality).map((result) => {
                     const stableKey = `${result.ore_code}-${result.readings?.depth ?? 0}-${result.readings?.quality ?? 0}`;
                     return (
                       <li className="flex gap-2 text-xs" key={stableKey}>
