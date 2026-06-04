@@ -31,14 +31,13 @@ jobs:
           echo $DATE
           RELEASE=$(echo $VERSION | cut -c 1-)
           echo $RELEASE
-          sed -i "s/FLATPAK_VERSION/${RELEASE}/g" flatpak/com.github.StoryForge.metainfo.xml
-          sed -i "s/FLATPAK_DATE/${DATE}/g" flatpak/com.github.StoryForge.metainfo.xml
-          cat flatpak/com.github.StoryForge.metainfo.xml
+          sed -i "s/FLATPAK_VERSION/${RELEASE}/g" com.github.StoryForge.metainfo.xml
+          sed -i "s/FLATPAK_DATE/${DATE}/g" com.github.StoryForge.metainfo.xml
 
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
           bundle: com.github.StoryForge.flatpak
-          manifest-path: flatpak/com.github.StoryForge.yml
+          manifest-path: com.github.StoryForge.yml
           cache-key: flatpak-builder-${{ github.sha }}
 
       - name: Upload to GitHub Release
@@ -47,10 +46,22 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="storyforge-v${VERSION}"
-          # Verify the release exists
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" ./com.github.StoryForge.flatpak --clobber
+          FILE=com.github.StoryForge.flatpak
+          if [[ "$VERSION" == *-rc* ]]; then
+            BODY="⚠️ Release candidate — not recommended for general use."
+            PRERELEASE_FLAG="--prerelease"
           else
-            echo "::error::Release '${TAG}' not found"
-            exit 1
+            BODY="See the assets to download this version and install."
+            PRERELEASE_FLAG=""
+          fi
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release ${TAG} doesn't exist. Creating draft..."
+            gh release create "$TAG" "$FILE" \
+              --title "$TAG" \
+              --notes "$BODY" \
+              --draft \
+              $PRERELEASE_FLAG
+          else
+            echo "Release ${TAG} exists. Uploading asset..."
+            gh release upload "$TAG" "$FILE" --clobber
           fi
