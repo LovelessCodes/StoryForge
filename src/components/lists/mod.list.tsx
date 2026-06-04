@@ -200,7 +200,6 @@ export function ModList({
             ref={rowVirtualizer.measureElement}
             style={{
               transform: `translateY(${item.start}px)`,
-              willChange: "transform",
             }}
           >
             <ModItem
