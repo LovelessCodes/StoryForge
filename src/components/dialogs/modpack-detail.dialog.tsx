@@ -18,6 +18,7 @@ import { DialogClose, DialogDescription, DialogHeader, DialogTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Progress, ProgressIndicator, ProgressTrack } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { rootAlertDialogHandle, rootDialogHandle } from "@/handles";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { useDownloadVersion } from "@/hooks/use-download-version";
@@ -25,7 +26,6 @@ import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import type { ModpackItem } from "@/hooks/use-modpacks";
 import { authClient } from "@/lib/auth";
 import { buildInstallationPath, makeStringFolderSafe } from "@/lib/utils";
-import { rootAlertDialogHandle, rootDialogHandle } from "@/routes/__root";
 import { useInstallations, useInstallationsStore } from "@/stores/installations";
 import { useSettingsStore } from "@/stores/settings";
 

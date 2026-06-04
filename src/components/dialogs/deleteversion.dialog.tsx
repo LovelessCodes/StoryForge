@@ -11,8 +11,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { rootAlertDialogHandle } from "@/handles";
 import { installedVersionsQueryKey } from "@/hooks/use-installed-versions";
-import { rootAlertDialogHandle } from "@/routes/__root";
 
 export type DeleteVersionDialogProps = {
   version: string;

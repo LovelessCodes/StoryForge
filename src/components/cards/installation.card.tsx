@@ -4,10 +4,10 @@ import { BoxIcon, DownloadCloudIcon, PackagePlusIcon, Pencil, Play, Star } from 
 import { Button } from "@/components/ui/button";
 import { Group } from "@/components/ui/group";
 import { TooltipTrigger } from "@/components/ui/tooltip";
+import { rootTooltipHandle } from "@/handles";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { cn } from "@/lib/utils";
-import { rootTooltipHandle } from "@/routes/__root";
 import type { Installation } from "@/stores/installations";
 
 interface InstallationCardProps {

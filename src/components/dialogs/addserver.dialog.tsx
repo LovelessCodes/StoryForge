@@ -14,8 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { TooltipTrigger } from "@/components/ui/tooltip";
+import { rootDialogHandle, rootTooltipHandle } from "@/handles";
 import { useAddServerToInstallation } from "@/hooks/use-add-server-to-installation";
-import { rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
 import { type Installation, useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
 

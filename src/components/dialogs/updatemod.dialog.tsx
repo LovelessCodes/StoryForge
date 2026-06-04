@@ -4,15 +4,15 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import type { OutputMod } from "@/components/pages/install-mods";
 import { Button } from "@/components/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import { rootDialogHandle } from "@/handles";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import type { ProgressPayload } from "@/lib/types";
 import { pathDelimiter } from "@/lib/utils";
-import { rootDialogHandle } from "@/routes/__root";
-import type { OutputMod } from "@/routes/install-mods/$id";
 import type { Installation } from "@/stores/installations";
 
 type Release = {

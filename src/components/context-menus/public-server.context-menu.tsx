@@ -14,10 +14,10 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { DialogTrigger } from "@/components/ui/dialog";
+import { rootAlertDialogHandle, rootDialogHandle } from "@/handles";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import type { PublicServer } from "@/hooks/use-public-servers";
-import { rootAlertDialogHandle, rootDialogHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
 
 export const PublicServerContextMenu = ({

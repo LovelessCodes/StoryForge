@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { TooltipTrigger } from "@/components/ui/tooltip";
+import { rootDialogHandle, rootTooltipHandle } from "@/handles";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import {
@@ -20,7 +21,6 @@ import {
 } from "@/hooks/use-installed-versions";
 import { gameVersionsQuery } from "@/lib/queries";
 import { buildInstallationPath, compareSemverDesc, makeStringFolderSafe } from "@/lib/utils";
-import { rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
 import { useInstallationsStore } from "@/stores/installations";
 import { useSettingsStore } from "@/stores/settings";
 

@@ -12,8 +12,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { rootAlertDialogHandle } from "@/handles";
 import { useSavesFromInstallation } from "@/hooks/use-saves";
-import { rootAlertDialogHandle } from "@/routes/__root";
 import { type Installation, useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
 

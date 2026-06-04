@@ -9,9 +9,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import { rootAlertDialogHandle } from "@/handles";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
 import type { PublicServer } from "@/hooks/use-public-servers";
-import { rootAlertDialogHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
 
 export type ConnectServerDialogProps = {

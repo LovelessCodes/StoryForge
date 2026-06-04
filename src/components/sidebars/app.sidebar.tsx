@@ -39,12 +39,12 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import { TooltipTrigger } from "@/components/ui/tooltip";
+import { rootDialogHandle, rootMenuHandle, rootTooltipHandle } from "@/handles";
 import { useAppVersion } from "@/hooks/use-app-version";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { useModpacks } from "@/hooks/use-modpacks";
 import { useSaves } from "@/hooks/use-saves";
 import { useVerifyAuth } from "@/hooks/use-verify-auth";
-import { rootDialogHandle, rootMenuHandle, rootTooltipHandle } from "@/routes/__root";
 import { useAccountStore } from "@/stores/accounts";
 import { useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";

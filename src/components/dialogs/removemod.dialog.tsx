@@ -10,8 +10,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { rootAlertDialogHandle } from "@/handles";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
-import { rootAlertDialogHandle } from "@/routes/__root";
 import type { Installation } from "@/stores/installations";
 
 export type RemoveModDialogProps = {

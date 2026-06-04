@@ -11,12 +11,12 @@ import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { Group, GroupSeparator } from "@/components/ui/group";
 import { TooltipTrigger } from "@/components/ui/tooltip";
+import { rootAlertDialogHandle, rootDialogHandle, rootTooltipHandle } from "@/handles";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import type { World } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { rootAlertDialogHandle, rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
 import { useSettingsStore } from "@/stores/settings";
 

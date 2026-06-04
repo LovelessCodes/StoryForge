@@ -12,10 +12,10 @@ import {
   ContextMenuLabel,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { rootAlertDialogHandle } from "@/handles";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import { pathDelimiter } from "@/lib/utils";
-import { rootAlertDialogHandle } from "@/routes/__root";
 import { useSettingsStore } from "@/stores/settings";
 
 export const VersionContextMenu = ({

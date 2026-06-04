@@ -5,7 +5,7 @@ import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TooltipTrigger } from "@/components/ui/tooltip";
-import { rootAlertDialogHandle, rootTooltipHandle } from "@/routes/__root";
+import { rootAlertDialogHandle, rootTooltipHandle } from "@/handles";
 
 interface VersionItemProps {
   version: string;

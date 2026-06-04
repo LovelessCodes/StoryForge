@@ -10,9 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { TooltipTrigger } from "@/components/ui/tooltip";
+import { rootDialogHandle, rootTooltipHandle } from "@/handles";
 import { useUpdateWorld } from "@/hooks/use-update-world";
 import type { World } from "@/lib/types";
-import { rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
 import { useInstallations } from "@/stores/installations";
 
 export type EditWorldDialogProps = {

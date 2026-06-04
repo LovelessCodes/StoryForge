@@ -13,8 +13,8 @@ import { Button } from "@/components/ui/button";
 import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { TooltipTrigger } from "@/components/ui/tooltip";
+import { rootDialogHandle, rootTooltipHandle } from "@/handles";
 import { cn } from "@/lib/utils";
-import { rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
 import { useAccountStore } from "@/stores/accounts";
 
 type SignInResponse = {

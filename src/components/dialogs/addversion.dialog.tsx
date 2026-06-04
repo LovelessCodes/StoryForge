@@ -9,11 +9,11 @@ import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/di
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { TooltipTrigger } from "@/components/ui/tooltip";
+import { rootTooltipHandle } from "@/handles";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { gameVersionsQuery } from "@/lib/queries";
 import { compareSemverDesc } from "@/lib/utils";
-import { rootTooltipHandle } from "@/routes/__root";
 
 export const versionSchema = z.object({
   version: z.string().min(1),

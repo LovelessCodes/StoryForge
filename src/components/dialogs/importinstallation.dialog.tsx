@@ -14,9 +14,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Progress, ProgressTrack, ProgressIndicator } from "@/components/ui/progress";
+import { rootDialogHandle } from "@/handles";
 import { installedVersionsQueryKey } from "@/hooks/use-installed-versions";
 import { makeStringFolderSafe } from "@/lib/utils";
-import { rootDialogHandle } from "@/routes/__root";
 import { useInstallations, type Installation } from "@/stores/installations";
 
 const installationSchema = z.object({

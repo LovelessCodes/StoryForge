@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { rootAlertDialogHandle } from "@/handles";
 import type { World } from "@/lib/types";
-import { rootAlertDialogHandle } from "@/routes/__root";
 
 export type DeleteWorldDialogProps = {
   world: World;

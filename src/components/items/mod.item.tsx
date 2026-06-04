@@ -15,18 +15,18 @@ import { AddModDialog } from "@/components/dialogs/addmod.dialog";
 import { RemoveModDialog } from "@/components/dialogs/removemod.dialog";
 import { UpdateModDialog } from "@/components/dialogs/updatemod.dialog";
 import type { Mod } from "@/components/lists/mod.list";
+import type { OutputMod } from "@/components/pages/install-mods";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { Group, GroupSeparator } from "@/components/ui/group";
 import { TooltipTrigger } from "@/components/ui/tooltip";
+import { rootAlertDialogHandle, rootDialogHandle, rootTooltipHandle } from "@/handles";
 import { useAddLatestModVersion } from "@/hooks/use-add-latest-mod-version";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { type ModUpdatesResponse, modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import type { ModInfo, ProgressPayload } from "@/lib/types";
 import { cn, compareSemverAsc, pathDelimiter } from "@/lib/utils";
-import { rootAlertDialogHandle, rootDialogHandle, rootTooltipHandle } from "@/routes/__root";
-import type { OutputMod } from "@/routes/install-mods/$id";
 import type { Installation } from "@/stores/installations";
 import { useModsFilters } from "@/stores/modsFilters";
 
@@ -143,7 +143,7 @@ export function ModItem({
       animate={{ opacity: 1, y: 0 }}
       className={cn([
         "flex flex-row p-2 justify-between w-full items-center",
-        installedMod && "bg-gradient-to-r from-success/20 to-transparent",
+        installedMod && "bg-linear-to-r from-success/20 to-transparent",
       ])}
       exit={{ opacity: 0, y: 12 }}
       initial={{ opacity: 0, y: 12 }}

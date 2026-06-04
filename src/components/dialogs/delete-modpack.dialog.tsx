@@ -13,9 +13,9 @@ import { Button } from "@/components/ui/button";
 import { Group, GroupSeparator } from "@/components/ui/group";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { rootAlertDialogHandle } from "@/handles";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { authClient } from "@/lib/auth";
-import { rootAlertDialogHandle } from "@/routes/__root";
 
 export type DeleteModpackDialogProps = {
   slug: string;

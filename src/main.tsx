@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 import { AddUserDialog } from "./components/dialogs/adduser.dialog";
 import { SidebarProvider } from "./components/ui/sidebar";
-import { rootDialogHandle } from "./routes/__root";
+import { rootDialogHandle } from "./handles";
 import { routeTree } from "./routeTree.gen";
 import { useAccountStore } from "./stores/accounts";
 import { useInstallationsStore } from "./stores/installations";
