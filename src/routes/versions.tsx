@@ -41,7 +41,7 @@ function RouteComponent() {
           {sorted.map((version, index) => (
             <MotionVersionContextMenu
               animate="show"
-              className="flex items-center gap-2 px-2 py-2 not-last:border-b"
+              className="flex items-center gap-2 p-2 not-last:border-b"
               custom={index}
               exit="exit"
               initial="hidden"
