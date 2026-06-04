@@ -12,7 +12,7 @@ import {
   PlayIcon,
   StarIcon,
 } from "lucide-react";
-import { motion } from "motion/react";
+import * as m from "motion/react-m";
 
 import { DeleteInstallationDialog } from "@/components/dialogs/deleteinstallation.dialog";
 import { EditInstallationDialog } from "@/components/dialogs/editinstallation.dialog";
@@ -182,4 +182,4 @@ export const InstallationContextMenu = ({
   );
 };
 
-export const MotionInstallationContextMenu = motion.create(InstallationContextMenu);
+export const MotionInstallationContextMenu = m.create(InstallationContextMenu);
