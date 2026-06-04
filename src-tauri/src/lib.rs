@@ -7,21 +7,27 @@ use tauri::{WebviewUrl, WebviewWindowBuilder};
 #[macro_export]
 macro_rules! log_info {
     ($($arg:tt)*) => {{
-        $crate::modules::logger::log("INFO ", &format!($($arg)*));
+        let msg = format!($($arg)*);
+        eprintln!("[StoryForge INFO] {msg}");
+        $crate::modules::logger::log("INFO ", &msg);
     }};
 }
 
 #[macro_export]
 macro_rules! log_debug {
     ($($arg:tt)*) => {{
-        $crate::modules::logger::log("DEBUG", &format!($($arg)*));
+        let msg = format!($($arg)*);
+        eprintln!("[StoryForge DEBUG] {msg}");
+        $crate::modules::logger::log("DEBUG", &msg);
     }};
 }
 
 #[macro_export]
 macro_rules! log_error {
     ($($arg:tt)*) => {{
-        $crate::modules::logger::log("ERROR", &format!($($arg)*));
+        let msg = format!($($arg)*);
+        eprintln!("[StoryForge ERROR] {msg}");
+        $crate::modules::logger::log("ERROR", &msg);
     }};
 }
 
@@ -29,6 +35,15 @@ use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(target_os = "linux")]
+    {
+        // Apply a workaround to fix common rendering issues for NVIDIA GPUs running on Linux under Wayland.
+        // See: https://github.com/tauri-apps/tauri/issues/9304
+        if std::env::var("WEBKIT_DISABLE_DMABUF_RENDERER").is_err() {
+            std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+        }
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -44,10 +59,41 @@ pub fn run() {
             if let Ok(data_dir) = app_handle.path().app_data_dir() {
                 modules::logger::init(&data_dir);
                 log_info!("App started, data dir: {:?}", data_dir);
+                // Also print to stderr so it's visible even if logger itself fails
+                eprintln!("[StoryForge] App started, data dir: {:?}", data_dir);
+            } else {
+                eprintln!("[StoryForge] FATAL: Failed to resolve app_data_dir");
+                panic!("Failed to resolve app_data_dir");
             }
 
-            let store_path = app.path().app_data_dir().unwrap().join("store");
-            std::fs::create_dir_all(&store_path).unwrap();
+            // ── Step 1: Create store directory ──
+            log_info!("Setup step 1: creating store directory...");
+            eprintln!("[StoryForge] Setup step 1: creating store directory...");
+            let store_path = match app.path().app_data_dir() {
+                Ok(dir) => dir.join("store"),
+                Err(e) => {
+                    log_error!("Failed to get app_data_dir for store: {}", e);
+                    eprintln!(
+                        "[StoryForge] FATAL: Failed to get app_data_dir for store: {}",
+                        e
+                    );
+                    panic!("Failed to get app_data_dir for store: {}", e);
+                }
+            };
+            if let Err(e) = std::fs::create_dir_all(&store_path) {
+                log_error!("Failed to create store directory {:?}: {}", store_path, e);
+                eprintln!(
+                    "[StoryForge] FATAL: Failed to create store directory {:?}: {}",
+                    store_path, e
+                );
+                panic!("Failed to create store directory: {}", e);
+            }
+            log_info!("Setup step 1 done: store dir created at {:?}", store_path);
+            eprintln!("[StoryForge] Setup step 1 done.");
+
+            // ── Step 2: Init zustand plugin ──
+            log_info!("Setup step 2: initializing zustand plugin...");
+            eprintln!("[StoryForge] Setup step 2: initializing zustand plugin...");
             app_handle
                 .plugin(
                     tauri_plugin_zustand::Builder::new()
@@ -56,21 +102,51 @@ pub fn run() {
                 )
                 .map_err(|e| {
                     log_error!("Failed to initialize zustand plugin: {}", e);
+                    eprintln!(
+                        "[StoryForge] FATAL: Failed to initialize zustand plugin: {}",
+                        e
+                    );
                     e
                 })?;
+            log_info!("Setup step 2 done: zustand plugin initialized");
+            eprintln!("[StoryForge] Setup step 2 done.");
+
+            // ── Step 3: Build main window ──
+            log_info!("Setup step 3: building main window...");
+            eprintln!("[StoryForge] Setup step 3: building main window...");
 
             let win_builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
                 .title("Story Forge")
                 .inner_size(800.0, 600.0)
                 .transparent(false);
 
-            let window = win_builder.build().unwrap();
+            let window = match win_builder.build() {
+                Ok(w) => {
+                    log_info!("Setup step 3 done: window created");
+                    eprintln!("[StoryForge] Setup step 3 done: window created");
+                    w
+                }
+                Err(e) => {
+                    log_error!("Failed to build main window: {}", e);
+                    eprintln!("[StoryForge] FATAL: Failed to build main window: {}", e);
+                    panic!("Failed to build main window: {}", e);
+                }
+            };
+
+            // ── Step 4: Platform-specific window config ──
+            log_info!(
+                "Setup step 4: platform-specific window config (OS: {})",
+                std::env::consts::OS
+            );
+            eprintln!(
+                "[StoryForge] Setup step 4: platform-specific window config (OS: {})",
+                std::env::consts::OS
+            );
+
             #[cfg(target_os = "windows")]
             {
                 let _ = window.set_decorations(false);
             }
-
-            // set background color only when building for macOS
             #[cfg(target_os = "macos")]
             {
                 use objc2::rc::Retained;
@@ -105,6 +181,12 @@ pub fn run() {
                     ns_window.setBackgroundColor(Some(&bg_color));
                 }
             }
+            log_info!("Setup step 4 done: platform-specific config applied");
+            eprintln!("[StoryForge] Setup step 4 done.");
+
+            // ── Step 5: Setup complete ──
+            log_info!("Setup complete – app is running");
+            eprintln!("[StoryForge] Setup complete – app is running");
             Ok(())
         })
         .plugin(tauri_plugin_window_state::Builder::default().build())
