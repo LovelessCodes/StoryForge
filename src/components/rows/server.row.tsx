@@ -37,7 +37,7 @@ export function ServerRow({ server }: ServerRowProps) {
   const { mutate: installVersion, isPending: isInstalling } = useDownloadVersion();
 
   return (
-    <div className="flex items-center gap-2 px-2 py-2">
+    <div className="flex items-center gap-2 p-2">
       <div className="flex flex-1 flex-col">
         <p className="text-sm">{server.name}</p>
         <p className="text-muted-foreground text-xs">
