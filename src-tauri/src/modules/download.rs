@@ -368,6 +368,13 @@ pub async fn download_and_maybe_extract<R: Runtime>(
                 UiError::from(format!("create dir error: {e}"))
             })?;
             let destpath_str = destpath.to_str().unwrap();
+
+            // On macOS, Vintage Story is distributed as a .app bundle inside the tar.
+            // We must NOT strip components — doing so destroys the .app wrapper,
+            // and without it, macOS won't read Info.plist when launching.
+            #[cfg(target_os = "macos")]
+            let args = vec!["-xvf", filepath.to_str().unwrap(), "-C", destpath_str];
+            #[cfg(not(target_os = "macos"))]
             let mut args = vec![
                 "--strip-components=1",
                 "-xvf",
@@ -375,13 +382,6 @@ pub async fn download_and_maybe_extract<R: Runtime>(
                 "-C",
                 destpath_str,
             ];
-            if cfg!(target_os = "macos") {
-                if let Some(sp) = zipsubfolderprefix.as_deref() {
-                    if !sp.trim_matches('/').to_string().is_empty() {
-                        args.push(sp);
-                    }
-                }
-            }
 
             app.emit(
                 &emitevent,
@@ -492,7 +492,17 @@ fn should_extract(entry_name: &str, prefix: &str) -> bool {
     } else {
         // Normalize to forward slashes
         let n = entry_name.replace('\\', "/");
-        n.starts_with(prefix)
+        // On macOS, prefix is "*.app/" — match any <name>.app/ directory, not a literal "*"
+        if prefix == "*.app/" {
+            // Match if the first path component ends with ".app"
+            if let Some(slash) = n.find('/') {
+                n[..slash].ends_with(".app")
+            } else {
+                n.ends_with(".app")
+            }
+        } else {
+            n.starts_with(prefix)
+        }
     }
 }
 
