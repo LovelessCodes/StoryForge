@@ -103,7 +103,7 @@ export function DeleteWorldDialog({ world }: DeleteWorldDialogProps) {
           </li>
           <li>
             Last session:{" "}
-            <b>
+            <b suppressHydrationWarning>
               {formatDistance(new Date(), addSeconds(new Date(), world.data.total_seconds_played))}
             </b>
           </li>
