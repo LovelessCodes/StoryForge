@@ -46,7 +46,7 @@ export const rootMenuHandle = MenuCreateHandle<React.ComponentType>();
 export const rootCommandHandle = CommandCreateHandle<React.ComponentType>();
 export const rootAlertDialogHandle = AlertDialogCreateHandle<React.ComponentType>();
 
-function RootComponent() {
+export function RootComponent() {
   // Stores
   const { darkMode } = useSettingsStore();
 
