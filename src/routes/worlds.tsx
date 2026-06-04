@@ -17,7 +17,7 @@ export const Route = createFileRoute("/worlds")({
   errorComponent: ErrorComponent,
 });
 
-function RouteComponent() {
+export function RouteComponent() {
   const [searchText, setSearchText] = useState("");
   const [selectedInstallationId, setSelectedInstallationId] = useState<number | null>(null);
 
