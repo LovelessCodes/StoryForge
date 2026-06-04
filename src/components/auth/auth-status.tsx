@@ -12,18 +12,18 @@ import { authClient, clearAuthToken } from "@/lib/auth";
  * Signed in:     red  background, DoorClosed (door out), shows username,
  *                 hover reveals "Sign out", click signs out.
  */
+async function handleSignOut() {
+  try {
+    await authClient.signOut();
+    clearAuthToken();
+    toast.success("Signed out");
+  } catch {
+    toast.error("Failed to sign out");
+  }
+}
+
 export function AuthStatus() {
   const { user, isLoading } = useAuthSession();
-
-  const handleSignOut = async () => {
-    try {
-      await authClient.signOut();
-      clearAuthToken();
-      toast.success("Signed out");
-    } catch {
-      toast.error("Failed to sign out");
-    }
-  };
 
   if (isLoading) {
     return (
