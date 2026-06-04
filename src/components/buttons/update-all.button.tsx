@@ -72,11 +72,15 @@ export const UpdateAllButton = ({
       toast.loading("Downloading mod updates...", {
         id: `mod-updates-${installation.id}`,
       });
+      // Build a lookup Map to avoid O(n*m) find() inside the loop
+      const installedModsByModId = new Map<string | number, (typeof installedMods)[number]>();
+      for (const m of installedMods ?? []) {
+        installedModsByModId.set(m.modid, m);
+        installedModsByModId.set(m.modid.toString(), m);
+      }
       for (const [modid, updateMod] of Object.entries(updates.updates)) {
-        const isInstalled = installedMods?.find(
-          (instMod) =>
-            instMod.modid === Number(modid) || instMod.modid.toString() === updateMod.modidstr,
-        );
+        const isInstalled =
+          installedModsByModId.get(Number(modid)) ?? installedModsByModId.get(updateMod.modidstr);
         if (!isInstalled) continue;
         toast.loading(`Updating ${isInstalled.name}...`, {
           id: `mod-updates-${installation.id}`,
