@@ -95,7 +95,7 @@ export function AppSidebar() {
   return (
     <>
       <SidebarHeader>
-        <div className="flex min-w-0 items-center gap-2 px-2 py-2 select-none">
+        <div className="flex min-w-0 items-center gap-2 p-2 select-none">
           <Logo className="size-6" monoChrome />
           <p
             data-tauri-drag-region
