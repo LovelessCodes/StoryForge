@@ -1,4 +1,4 @@
-import Editor from "@monaco-editor/react";
+import { Editor } from "@monaco-editor/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
