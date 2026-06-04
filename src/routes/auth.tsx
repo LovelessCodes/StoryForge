@@ -22,7 +22,7 @@ export const Route = createFileRoute("/auth")({
   validateSearch: searchSchema,
 });
 
-function RouteComponent() {
+export function RouteComponent() {
   const { mode, redirect } = useSearch({ from: "/auth" });
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
