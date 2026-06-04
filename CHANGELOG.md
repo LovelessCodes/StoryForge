@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
 - **Linux & NVidia Rendering Fixes**: Added logic to disable the DMA Buffer by default, which has been known to cause issues with the front-end on Linux systems with NVIDIA cards running under the Wayland compositor. This sets the `WEBKIT_DISABLE_DMABUF_RENDERER` environment variable to `1`, by default. It can be overridden by running the application with the environment variable defined as follows: `WEBKIT_DISABLE_DMABUF_RENDERER=0`.
 
 ## [0.9.3] - 2026-06-02
