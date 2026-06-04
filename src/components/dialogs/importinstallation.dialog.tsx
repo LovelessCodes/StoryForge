@@ -180,6 +180,7 @@ export function ImportInstallationDialog() {
         </DialogDescription>
       </DialogHeader>
       <textarea
+        aria-label="Installation JSON"
         className="h-48 w-full resize-none rounded border p-2"
         disabled={isPending}
         onChange={(e) => setNewInstallation(e.target.value)}
