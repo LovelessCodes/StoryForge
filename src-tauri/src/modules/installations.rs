@@ -722,7 +722,11 @@ fn load_selected_account(app: &AppHandle) -> Option<SavedAccount> {
             return None;
         }
     };
-    let account = accounts.into_iter().next();
+    let account = accounts
+        .iter()
+        .find(|a| a.selected)
+        .or_else(|| accounts.first())
+        .cloned();
     match &account {
         Some(a) => log_info!(
             "[play_game] load_selected_account: found account playername={:?} uid={}",
