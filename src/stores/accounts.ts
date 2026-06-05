@@ -22,15 +22,13 @@ type AccountStore = {
 };
 
 export const useAccountStore = create<AccountStore>((set, get) => ({
-  addUser: (user) =>
-    set((state) => {
-      const newState = {
-        selectedUser: user,
-        users: [...state.users, user],
-      };
-      void get().saveAccounts();
-      return newState;
-    }),
+  addUser: (user) => {
+    set((state) => ({
+      selectedUser: user,
+      users: [...state.users, user],
+    }));
+    void get().saveAccounts();
+  },
   loadAccounts: async () => {
     try {
       const saved = await invoke<User[]>("load_accounts");
@@ -41,39 +39,34 @@ export const useAccountStore = create<AccountStore>((set, get) => ({
       console.error("Failed to load accounts:", e);
     }
   },
-  removeAll: () =>
-    set(() => {
-      void get().saveAccounts();
-      return { selectedUser: null, users: [] };
-    }),
-  removeAllExcept: (uid) =>
-    set((state) => {
-      const newState = {
-        selectedUser:
-          state.selectedUser?.uid === uid
-            ? state.selectedUser
-            : state.users.filter((user) => user.uid !== uid).length > 0
-              ? state.users[0]
-              : null,
-        users: state.users.filter((user) => user.uid === uid),
-      };
-      void get().saveAccounts();
-      return newState;
-    }),
-  removeUser: (uid) =>
-    set((state) => {
-      const newState = {
-        selectedUser:
-          state.selectedUser?.uid === uid
-            ? state.users.filter((user) => user.uid !== uid).length > 0
-              ? state.users[0]
-              : null
-            : state.selectedUser,
-        users: state.users.filter((user) => user.uid !== uid),
-      };
-      void get().saveAccounts();
-      return newState;
-    }),
+  removeAll: () => {
+    set({ selectedUser: null, users: [] });
+    void get().saveAccounts();
+  },
+  removeAllExcept: (uid) => {
+    set((state) => ({
+      selectedUser:
+        state.selectedUser?.uid === uid
+          ? state.selectedUser
+          : state.users.filter((user) => user.uid !== uid).length > 0
+            ? state.users[0]
+            : null,
+      users: state.users.filter((user) => user.uid === uid),
+    }));
+    void get().saveAccounts();
+  },
+  removeUser: (uid) => {
+    set((state) => ({
+      selectedUser:
+        state.selectedUser?.uid === uid
+          ? state.users.filter((user) => user.uid !== uid).length > 0
+            ? state.users[0]
+            : null
+          : state.selectedUser,
+      users: state.users.filter((user) => user.uid !== uid),
+    }));
+    void get().saveAccounts();
+  },
   saveAccounts: async () => {
     try {
       await invoke("save_accounts", { accounts: get().users });
