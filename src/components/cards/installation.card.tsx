@@ -31,11 +31,19 @@ export function InstallationCard({
   return (
     <>
       <div className="flex items-center gap-3">
-        <div
-          className={`size-2 rounded-full ${
-            versions.includes(installation.version) ? "bg-success" : "bg-muted-foreground/40"
-          }`}
-        />
+        {installation.icon ? (
+          <img
+            alt={installation.name}
+            className="size-6 shrink-0 object-contain"
+            src={`/installation-icons/${installation.icon}`}
+          />
+        ) : (
+          <div
+            className={`size-2 shrink-0 rounded-full ${
+              versions.includes(installation.version) ? "bg-success" : "bg-muted-foreground/40"
+            }`}
+          />
+        )}
         <TooltipTrigger
           className="flex flex-col justify-start text-left"
           handle={rootTooltipHandle}
