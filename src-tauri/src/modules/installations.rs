@@ -38,6 +38,8 @@ pub struct InstallationInfo {
     #[serde(default)]
     pub favorite: bool,
     #[serde(default)]
+    pub icon: Option<String>,
+    #[serde(default)]
     pub last_played: Option<u64>,
     #[serde(default)]
     pub total_time_played: u64,
@@ -58,6 +60,7 @@ pub struct InstallationResult {
     pub size_bytes: u64,
     pub size_display: String,
     pub favorite: bool,
+    pub icon: Option<String>,
     pub last_played: Option<u64>,
     pub total_time_played: u64,
     pub modpack_slug: Option<String>,
@@ -201,6 +204,7 @@ pub fn find_installation_by_id(
                 version: String::new(),
                 start_params: String::new(),
                 favorite: false,
+                icon: None,
                 last_played: None,
                 total_time_played: 0,
                 modpack_slug: None,
@@ -248,6 +252,7 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
                                 .unwrap_or("")
                                 .to_string(),
                             favorite: false,
+                            icon: None,
                             last_played: None,
                             total_time_played: 0,
                             modpack_slug: None,
@@ -299,6 +304,7 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
                     version: String::new(),
                     start_params: String::new(),
                     favorite: false,
+                    icon: None,
                     last_played: None,
                     total_time_played: 0,
                     modpack_slug: None,
@@ -310,6 +316,7 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
                     version: String::new(),
                     start_params: String::new(),
                     favorite: false,
+                    icon: None,
                     last_played: None,
                     total_time_played: 0,
                     modpack_slug: None,
@@ -329,6 +336,7 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
                 size_bytes,
                 size_display: format_size(size_bytes),
                 favorite: info.favorite,
+                icon: info.icon.clone(),
                 last_played: info.last_played,
                 total_time_played: info.total_time_played,
                 modpack_slug: info.modpack_slug,
@@ -350,12 +358,14 @@ pub fn save_installation(
     version: String,
     start_params: String,
     favorite: bool,
+    icon: Option<String>,
 ) -> Result<(), UiError> {
     log_info!(
-        "save_installation: path={:?} name={:?} favorite={}",
+        "save_installation: path={:?} name={:?} favorite={} icon={:?}",
         path,
         name,
-        favorite
+        favorite,
+        icon
     );
     let dir = PathBuf::from(&path);
     // Preserve existing playtime/modpack fields if the installation.json already exists
@@ -375,6 +385,7 @@ pub fn save_installation(
         version,
         start_params,
         favorite,
+        icon,
         last_played,
         total_time_played,
         modpack_slug,
@@ -419,6 +430,7 @@ pub async fn import_installation(
         version,
         start_params,
         favorite: false,
+        icon: None,
         last_played: None,
         total_time_played: 0,
         modpack_slug: modpack_slug.clone(),
@@ -602,6 +614,7 @@ pub async fn import_installation(
         size_bytes,
         size_display: format_size(size_bytes),
         favorite: false,
+        icon: None,
         last_played: None,
         total_time_played: 0,
         modpack_slug: modpack_slug.clone(),
