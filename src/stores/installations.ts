@@ -45,6 +45,7 @@ type InstallationResult = {
   size_bytes: number;
   size_display: string;
   favorite: boolean;
+  icon: string | null;
   last_played: number | null;
   total_time_played: number;
   modpack_slug: string | null;
@@ -111,7 +112,7 @@ export const useInstallationsStore = create<InstallationsStore>((set) => ({
             totalTimePlayed: Math.max(existing?.totalTimePlayed ?? 0, persistedTotalPlayed),
             version: r.version,
             startParams: r.startParams ?? "",
-            icon: existing?.icon ?? null,
+            icon: r.icon ?? existing?.icon ?? null,
             favorite: existing?.favorite ?? r.favorite ?? false,
             sizeBytes: r.size_bytes,
             sizeDisplay: r.size_display,
@@ -156,6 +157,7 @@ export const useInstallationsStore = create<InstallationsStore>((set) => ({
         // Persist to installation.json
         invoke("save_installation", {
           favorite: newFavorite,
+          icon: inst.icon,
           name: inst.name,
           path: inst.path,
           startParams: inst.startParams,
