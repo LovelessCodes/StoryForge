@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import clsx from "clsx";
 import { useId } from "react";
 
+import { InstallationIconPicker } from "@/components/pickers/installation-icon.picker";
 import { Button } from "@/components/ui/button";
 import { DialogClose, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -28,9 +29,11 @@ async function saveInstallationToDisk(installation: {
   version: string;
   startParams: string;
   favorite: boolean;
+  icon: string | null;
 }) {
   await invoke("save_installation", {
     favorite: installation.favorite,
+    icon: installation.icon,
     name: installation.name,
     path: installation.path,
     startParams: installation.startParams,
@@ -100,6 +103,7 @@ export function EditInstallationDialog({ installation }: EditInstallationDialogP
             }
             await saveInstallationToDisk({
               favorite: value.favorite,
+              icon: value.icon || null,
               name: value.name,
               path: value.path,
               startParams: value.startParams,
@@ -297,7 +301,7 @@ export function EditInstallationDialog({ installation }: EditInstallationDialogP
                   handle={rootTooltipHandle}
                   payload={() => (
                     <>
-                      <p className="text-xs">Enter installation icon</p>
+                      <p className="text-xs">Pick an icon</p>
                       {field.state.meta.errors.length > 0 &&
                         field.state.meta.errors.map((error, index) => (
                           <p
@@ -314,16 +318,9 @@ export function EditInstallationDialog({ installation }: EditInstallationDialogP
                   Icon
                   <span className="text-muted-foreground text-xs">(optional)</span>
                 </TooltipTrigger>
-                <Input
-                  className={field.state.meta.errors.length ? "text-destructive" : ""}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onKeyUp={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void form.handleSubmit();
-                    }
-                  }}
-                  value={field.state.value ?? ""}
+                <InstallationIconPicker
+                  onChange={(icon) => field.handleChange(icon ?? "")}
+                  value={field.state.value || null}
                 />
               </div>
             )}
