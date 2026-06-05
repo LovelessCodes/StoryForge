@@ -165,6 +165,8 @@ pub struct SavedAccount {
     pub playername: Option<String>,
     pub sessionkey: Option<String>,
     pub sessionsignature: Option<String>,
+    #[serde(default)]
+    pub selected: bool,
 }
 
 #[command]

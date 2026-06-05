@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 
 const SIDEBAR_STORAGE_NAME: string = "sidebar_state";
 const SIDEBAR_WIDTH: string = "12rem";
-const SIDEBAR_WIDTH_MOBILE: string = "18rem";
+const SIDEBAR_WIDTH_MOBILE: string = "12rem";
 const SIDEBAR_WIDTH_ICON: string = "1rem";
 const SIDEBAR_KEYBOARD_SHORTCUT: string = "b";
 
@@ -199,7 +199,13 @@ export function Sidebar({
   if (isMobile) {
     return (
       <Sheet onOpenChange={setOpenMobile} open={openMobile} {...props}>
-        <SidebarTrigger className="absolute top-1 left-1 z-10" size="icon-xs" />
+        <SidebarTrigger
+          className={cn(
+            "absolute top-1 left-1 z-10",
+            ["macos", "windows"].includes(platform()) ? "rounded-tl-md" : "",
+          )}
+          size="icon-xs"
+        />
         <SheetPopup
           className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
           data-mobile="true"
@@ -333,10 +339,7 @@ export function SidebarInset({
     <main
       className={cn(
         "relative flex w-full flex-1 flex-col bg-background",
-        "md:peer-data-[variant=inset]:my-2 md:peer-data-[variant=inset]:mr-2 md:peer-data-[variant=inset]:ms-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm/5",
-        ["windows", "macos"].includes(platform())
-          ? "md:peer-data-[variant=inset]:mt-8"
-          : "md:peer-data-[variant=inset]:mt-2",
+        "md:peer-data-[variant=inset]:my-2 md:peer-data-[variant=inset]:mr-2 md:peer-data-[variant=inset]:ms-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm/5 md:peer-data-[variant=inset]:mt-8",
         className,
       )}
       data-slot="sidebar-inset"

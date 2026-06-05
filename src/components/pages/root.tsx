@@ -16,6 +16,7 @@ import { AppSidebar } from "@/components/sidebars/app.sidebar";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { useUpdater } from "@/hooks/use-updater";
+import { cn } from "@/lib/utils";
 import { useSettingsStore } from "@/stores/settings";
 
 export function RootComponent() {
@@ -85,88 +86,91 @@ export function RootComponent() {
   return (
     <React.Fragment>
       <Sidebar variant="inset" collapsible="icon">
-        {["macos", "windows"].includes(platform()) && (
-          <div className="flex w-screen justify-between" data-tauri-drag-region>
-            <div className="flex items-center gap-2 p-1" data-tauri-drag-region>
-              <SidebarTrigger />
-              {platform() === "macos" && (
-                <>
-                  <button
-                    onClick={() => getCurrentWindow().close()}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        void getCurrentWindow().close();
-                      }
-                    }}
-                    type="button"
-                    tabIndex={0}
-                    className="group/close flex size-3 items-center justify-center rounded-full bg-red-500 text-white transition-colors hover:bg-red-700 dark:bg-red-400 hover:dark:bg-red-600"
-                  >
-                    <XIcon
-                      className="opacity-0 transition-opacity group-hover/close:opacity-100"
-                      size={10}
-                    />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => getCurrentWindow().minimize()}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        void getCurrentWindow().minimize();
-                      }
-                    }}
-                    tabIndex={0}
-                    className="group/minimize flex size-3 items-center justify-center rounded-full bg-yellow-500 text-white transition-colors hover:bg-yellow-700 dark:bg-yellow-300 hover:dark:bg-yellow-600"
-                  >
-                    <MinimizeIcon
-                      className="opacity-0 transition-opacity group-hover/minimize:opacity-100"
-                      size={10}
-                    />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => getCurrentWindow().toggleMaximize()}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        void getCurrentWindow().toggleMaximize();
-                      }
-                    }}
-                    tabIndex={0}
-                    className="group/maximize flex size-3 items-center justify-center rounded-full bg-green-500 text-white transition-colors hover:bg-green-700 dark:bg-green-500 hover:dark:bg-green-600"
-                  >
-                    <MaximizeIcon
-                      className="opacity-0 transition-opacity group-hover/maximize:opacity-100"
-                      size={8}
-                    />
-                  </button>
-                </>
+        <div className="flex w-screen justify-between" data-tauri-drag-region>
+          <div className="flex min-h-8 items-center gap-2 p-1 max-md:pl-2" data-tauri-drag-region>
+            <SidebarTrigger
+              className={cn(
+                "max-md:hidden",
+                ["macos", "windows"].includes(platform()) ? "rounded-tl-md" : "",
               )}
-            </div>
-            <div className="flex w-full items-center justify-end gap-2 px-3" data-tauri-drag-region>
-              {platform() === "windows" && (
-                <>
-                  <Button
-                    onClick={() => getCurrentWindow().minimize()}
-                    size="icon-sm"
-                    variant="ghost"
-                  >
-                    <MinimizeIcon className="hover:text-warning transition-colors" size={16} />
-                  </Button>
-                  <Button
-                    onClick={() => getCurrentWindow().toggleMaximize()}
-                    size="icon-sm"
-                    variant="ghost"
-                  >
-                    <MaximizeIcon className="hover:text-success transition-colors" size={16} />
-                  </Button>
-                  <Button onClick={() => getCurrentWindow().close()} size="icon-sm" variant="ghost">
-                    <XIcon className="hover:text-destructive transition-colors" size={16} />
-                  </Button>
-                </>
-              )}
-            </div>
+            />
+            {platform() === "macos" && (
+              <>
+                <button
+                  onClick={() => getCurrentWindow().close()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      void getCurrentWindow().close();
+                    }
+                  }}
+                  type="button"
+                  tabIndex={0}
+                  className="group/close flex size-3 items-center justify-center rounded-full bg-red-500 text-white transition-colors hover:bg-red-700 dark:bg-red-400 hover:dark:bg-red-600"
+                >
+                  <XIcon
+                    className="opacity-0 transition-opacity group-hover/close:opacity-100"
+                    size={10}
+                  />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => getCurrentWindow().minimize()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      void getCurrentWindow().minimize();
+                    }
+                  }}
+                  tabIndex={0}
+                  className="group/minimize flex size-3 items-center justify-center rounded-full bg-yellow-500 text-white transition-colors hover:bg-yellow-700 dark:bg-yellow-300 hover:dark:bg-yellow-600"
+                >
+                  <MinimizeIcon
+                    className="opacity-0 transition-opacity group-hover/minimize:opacity-100"
+                    size={10}
+                  />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => getCurrentWindow().toggleMaximize()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      void getCurrentWindow().toggleMaximize();
+                    }
+                  }}
+                  tabIndex={0}
+                  className="group/maximize flex size-3 items-center justify-center rounded-full bg-green-500 text-white transition-colors hover:bg-green-700 dark:bg-green-500 hover:dark:bg-green-600"
+                >
+                  <MaximizeIcon
+                    className="opacity-0 transition-opacity group-hover/maximize:opacity-100"
+                    size={8}
+                  />
+                </button>
+              </>
+            )}
           </div>
-        )}
+          <div className="flex w-full items-center justify-end gap-2 px-3" data-tauri-drag-region>
+            {platform() === "windows" && (
+              <>
+                <Button
+                  onClick={() => getCurrentWindow().minimize()}
+                  size="icon-sm"
+                  variant="ghost"
+                >
+                  <MinimizeIcon className="hover:text-warning transition-colors" size={16} />
+                </Button>
+                <Button
+                  onClick={() => getCurrentWindow().toggleMaximize()}
+                  size="icon-sm"
+                  variant="ghost"
+                >
+                  <MaximizeIcon className="hover:text-success transition-colors" size={16} />
+                </Button>
+                <Button onClick={() => getCurrentWindow().close()} size="icon-sm" variant="ghost">
+                  <XIcon className="hover:text-destructive transition-colors" size={16} />
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
         <AppSidebar />
       </Sidebar>
       <SidebarInset>
