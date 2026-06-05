@@ -59,6 +59,17 @@ export function InstallationRow({ installation }: InstallationRowProps) {
   return (
     <>
       <div className="flex flex-1 items-center gap-3">
+        {installation.icon ? (
+          <img
+            alt={installation.name}
+            className="size-8 shrink-0 object-contain"
+            src={`/installation-icons/${installation.icon}`}
+          />
+        ) : (
+          <div className="bg-muted/50 flex size-8 shrink-0 items-center justify-center rounded">
+            <PackageSearchIcon aria-hidden="true" className="text-muted-foreground/40 size-4" />
+          </div>
+        )}
         <TooltipTrigger
           className="flex flex-col justify-start"
           handle={rootTooltipHandle}
