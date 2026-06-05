@@ -7,6 +7,7 @@ export type User = {
   playername: string | undefined;
   sessionkey: string | undefined;
   sessionsignature: string | undefined;
+  selected: boolean;
 };
 
 type AccountStore = {
@@ -14,7 +15,7 @@ type AccountStore = {
   users: User[];
   loadAccounts: () => Promise<void>;
   saveAccounts: () => Promise<void>;
-  addUser: (user: User) => void;
+  addUser: (user: Omit<User, "selected">) => void;
   removeUser: (uid: string | undefined) => void;
   removeAllExcept: (uid: string | undefined) => void;
   removeAll: () => void;
@@ -23,9 +24,10 @@ type AccountStore = {
 
 export const useAccountStore = create<AccountStore>((set, get) => ({
   addUser: (user) => {
+    const newUser: User = { ...user, selected: true };
     set((state) => ({
-      selectedUser: user,
-      users: [...state.users, user],
+      selectedUser: newUser,
+      users: [...state.users.map((u) => ({ ...u, selected: false })), newUser],
     }));
     void get().saveAccounts();
   },
@@ -33,7 +35,8 @@ export const useAccountStore = create<AccountStore>((set, get) => ({
     try {
       const saved = await invoke<User[]>("load_accounts");
       if (saved.length > 0) {
-        set({ users: saved, selectedUser: saved[0] });
+        const selected = saved.find((u) => u.selected) ?? saved[0];
+        set({ users: saved, selectedUser: selected });
       }
     } catch (e) {
       console.error("Failed to load accounts:", e);
@@ -69,15 +72,22 @@ export const useAccountStore = create<AccountStore>((set, get) => ({
   },
   saveAccounts: async () => {
     try {
-      await invoke("save_accounts", { accounts: get().users });
+      const { users, selectedUser } = get();
+      const accounts = users.map((u) => ({
+        ...u,
+        selected: selectedUser?.uid === u.uid,
+      }));
+      await invoke("save_accounts", { accounts });
     } catch (e) {
       console.error("Failed to save accounts:", e);
     }
   },
   selectedUser: null,
-  setSelectedUser: (uid) =>
+  setSelectedUser: (uid) => {
     set((state) => ({
       selectedUser: state.users.find((u) => u.uid === uid) || state.selectedUser,
-    })),
+    }));
+    void get().saveAccounts();
+  },
   users: [],
 }));
