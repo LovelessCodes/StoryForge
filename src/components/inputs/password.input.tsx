@@ -1,7 +1,6 @@
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { useId, useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 
 type PasswordInputProps = {
@@ -28,10 +27,8 @@ export function PasswordInput({ className, ...rest }: PasswordInputProps) {
         onChange={rest.onChange}
         className={computedClassName}
       />
-      <InputGroupAddon align="inline-end">
-        <Button variant="ghost" onClick={toggleVisibility}>
-          {visible ? <EyeIcon size={16} /> : <EyeOffIcon size={16} />}
-        </Button>
+      <InputGroupAddon align="inline-end" onClick={toggleVisibility} className="cursor-pointer">
+        {visible ? <EyeIcon size={12} /> : <EyeOffIcon size={12} />}
       </InputGroupAddon>
     </InputGroup>
   );
