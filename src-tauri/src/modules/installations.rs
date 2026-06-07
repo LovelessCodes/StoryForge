@@ -992,77 +992,26 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
     log_info!("[play_game] attempting to load selected account…");
     let account = load_selected_account(&app);
 
-    if let Some(account) = account {
-        log_info!(
-            "[play_game] writing account settings to clientsettings.json — playername={:?} uid={}",
-            account.playername,
-            account.uid.as_deref().unwrap_or("<none>")
-        );
-        let settings = json!({
-            "stringSettings": {
-                "playeruid": account.uid.as_deref().unwrap_or(""),
-                "sessionkey": account.sessionkey.as_deref().unwrap_or(""),
-                "sessionsignature": account.sessionsignature.as_deref().unwrap_or(""),
-                "playername": account.playername.as_deref().unwrap_or(""),
-            }
-        });
+    // ── clientsettings.json: always write modPaths, optionally merge account keys ──
+    {
         let settings_path = pb.join("clientsettings.json");
         log_info!("[play_game] clientsettings.json path: {:?}", settings_path);
-        // It should create the file if it does not exist, but if it exists it should just overwrite the keys
-        if settings_path.exists() {
-            log_info!("[play_game] clientsettings.json exists — merging account keys into existing settings");
-            let mut existing_settings = String::new();
+
+        let mut settings_json: Value = if settings_path.exists() {
+            log_info!("[play_game] reading existing clientsettings.json");
+            let mut existing = String::new();
             File::open(&settings_path)
-                .and_then(|mut f| f.read_to_string(&mut existing_settings))
+                .and_then(|mut f| f.read_to_string(&mut existing))
                 .map_err(|e| {
                     log_error!("installations: read_failed: {e}");
-
                     UiError {
                         name: "read_failed".into(),
-
-                        message: format!("Failed to read existing clientsettings.json: {e}"),
+                        message: format!("Failed to read clientsettings.json: {e}"),
                     }
                 })?;
-            let mut existing_json: Value = from_str(&existing_settings).unwrap_or(json!({}));
-            if let Some(obj) = existing_json.as_object_mut() {
-                if let Some(string_settings) = obj
-                    .get_mut("stringSettings")
-                    .and_then(|v| v.as_object_mut())
-                {
-                    for (k, v) in settings["stringSettings"].as_object().unwrap() {
-                        string_settings.insert(k.clone(), v.clone());
-                    }
-                } else {
-                    obj.insert("stringSettings".into(), settings["stringSettings"].clone());
-                }
-                let mods_path = pb.join("Mods").to_string_lossy().into_owned();
-                if let Some(string_list_settings) = obj
-                    .get_mut("stringListSettings")
-                    .and_then(|v| v.as_object_mut())
-                {
-                    if let Some(mod_paths) = string_list_settings
-                        .get_mut("modPaths")
-                        .and_then(|v| v.as_array_mut())
-                    {
-                        *mod_paths = vec![json!(mods_path), json!("Mods")];
-                    } else {
-                        string_list_settings.insert("modPaths".into(), json!([mods_path, "Mods"]));
-                    }
-                } else {
-                    obj.insert(
-                        "stringListSettings".into(),
-                        json!({ "modPaths": [mods_path, "Mods"] }),
-                    );
-                }
-            }
-            write(&settings_path, to_string_pretty(&existing_json).unwrap()).map_err(|e| {
-                UiError {
-                    name: "write_failed".into(),
-                    message: format!("Failed to write clientsettings.json: {e}"),
-                }
-            })?;
+            from_str(&existing).unwrap_or(json!({}))
         } else {
-            log_info!("[play_game] clientsettings.json does not exist — creating new with account settings");
+            log_info!("[play_game] clientsettings.json does not exist — creating new");
             create_dir_all(settings_path.parent().unwrap()).map_err(|e| {
                 log_error!("installations: create_dir_failed: {e}");
                 UiError {
@@ -1070,22 +1019,78 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
                     message: format!("Failed to create directory for clientsettings.json: {e}"),
                 }
             })?;
-            write(&settings_path, to_string_pretty(&settings).unwrap()).map_err(|e| {
-                log_error!("installations: write_failed: {e}");
-                UiError {
-                    name: "write_failed".into(),
-                    message: format!("Failed to write clientsettings.json: {e}"),
-                }
-            })?;
+            json!({})
+        };
+
+        if let Some(obj) = settings_json.as_object_mut() {
+            // Always set modPaths so Vintage Story picks up the Mods directory
+            let mods_path = pb.join("Mods").to_string_lossy().into_owned();
             log_info!(
-                "[play_game] clientsettings.json created with account settings (playername={:?})",
-                account.playername
+                "[play_game] setting modPaths in stringListSettings to [\"{}\", \"Mods\"]",
+                mods_path
             );
+            if let Some(string_list_settings) = obj
+                .get_mut("stringListSettings")
+                .and_then(|v| v.as_object_mut())
+            {
+                if let Some(mod_paths) = string_list_settings
+                    .get_mut("modPaths")
+                    .and_then(|v| v.as_array_mut())
+                {
+                    *mod_paths = vec![json!(mods_path), json!("Mods")];
+                    log_info!("[play_game] updated existing modPaths");
+                } else {
+                    string_list_settings.insert("modPaths".into(), json!([mods_path, "Mods"]));
+                    log_info!("[play_game] inserted modPaths into existing stringListSettings");
+                }
+            } else {
+                obj.insert(
+                    "stringListSettings".into(),
+                    json!({ "modPaths": [mods_path, "Mods"] }),
+                );
+                log_info!("[play_game] created stringListSettings with modPaths");
+            }
+
+            // If an account is selected, merge its credentials into stringSettings
+            if let Some(ref account) = account {
+                log_info!(
+                    "[play_game] merging account settings — playername={:?} uid={}",
+                    account.playername,
+                    account.uid.as_deref().unwrap_or("<none>")
+                );
+                let account_settings = json!({
+                    "playeruid": account.uid.as_deref().unwrap_or(""),
+                    "sessionkey": account.sessionkey.as_deref().unwrap_or(""),
+                    "sessionsignature": account.sessionsignature.as_deref().unwrap_or(""),
+                    "playername": account.playername.as_deref().unwrap_or(""),
+                });
+                if let Some(string_settings) = obj
+                    .get_mut("stringSettings")
+                    .and_then(|v| v.as_object_mut())
+                {
+                    for (k, v) in account_settings.as_object().unwrap() {
+                        string_settings.insert(k.clone(), v.clone());
+                    }
+                    log_info!("[play_game] merged account keys into existing stringSettings");
+                } else {
+                    obj.insert("stringSettings".into(), account_settings);
+                    log_info!("[play_game] inserted new stringSettings with account keys");
+                }
+            } else {
+                log_info!(
+                    "[play_game] no selected account — writing modPaths only (no account injection)"
+                );
+            }
         }
-    } else {
-        log_info!(
-            "[play_game] no selected account — skipping clientsettings.json account injection"
-        );
+
+        write(&settings_path, to_string_pretty(&settings_json).unwrap()).map_err(|e| {
+            log_error!("installations: write_failed: {e}");
+            UiError {
+                name: "write_failed".into(),
+                message: format!("Failed to write clientsettings.json: {e}"),
+            }
+        })?;
+        log_info!("[play_game] clientsettings.json written successfully");
     }
     // Emit a pre-launch event so the UI can show a loading state
     let _ = app.emit(
