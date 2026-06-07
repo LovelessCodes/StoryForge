@@ -11,7 +11,7 @@ import { rootDialogHandle } from "@/handles";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { compareSemverDesc, itemVariants } from "@/lib/utils";
 
-export function RouteComponent() {
+export function VersionsPage() {
   const { data: versions } = useInstalledVersions();
 
   const sorted = (versions ?? []).toSorted((a, b) => compareSemverDesc(a.name, b.name));
