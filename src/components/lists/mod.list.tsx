@@ -167,7 +167,7 @@ export function ModList({
       });
   }, [mods, selectedModTags, author, category, side, installedModIdSet, sortBy, orderDirection]);
 
-  const estimateSize = useCallback(() => 81, []);
+  const estimateSize = useCallback(() => 100, []);
 
   const rowVirtualizer = useVirtualizer({
     count: modsList.length,
