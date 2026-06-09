@@ -37,7 +37,7 @@ jobs:
           sed -i "s/FLATPAK_VERSION/${RELEASE}/g" io.github.LovelessCodes.StoryForge.metainfo.xml
           sed -i "s/FLATPAK_DATE/${DATE}/g" io.github.LovelessCodes.StoryForge.metainfo.xml
 
-      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@401fe28a8384095fc1531b9d320b292f0ee45adb
         with:
           bundle: io.github.LovelessCodes.StoryForge-v${{ steps.version.outputs.value }}.flatpak
           manifest-path: io.github.LovelessCodes.StoryForge.yml
