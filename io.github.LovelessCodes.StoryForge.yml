@@ -3,7 +3,7 @@ runtime: org.gnome.Platform
 runtime-version: "50"
 sdk: org.gnome.Sdk
 sdk-extensions:
-  - org.gnome.Sdk.Extension.rust-stable
+  - org.freedesktop.Sdk.Extension.rust-stable
 
 command: /app/StoryForge/StoryForge
 finish-args:
