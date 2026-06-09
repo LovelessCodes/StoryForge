@@ -1,20 +1,17 @@
 app-id: io.github.LovelessCodes.StoryForge
 runtime: org.gnome.Platform
-runtime-version: "48"
+runtime-version: "50"
 sdk: org.gnome.Sdk
 sdk-extensions:
-  - org.freedesktop.Sdk.Extension.rust-stable
-  - org.freedesktop.Sdk.Extension.node24
+  - org.gnome.Sdk.Extension.rust-stable
 
 command: /app/StoryForge/StoryForge
 finish-args:
   - --share=ipc
   - --socket=x11
   - --socket=wayland
-  - --socket=pulseaudio
   - --share=network
   - --device=dri
-  - --talk-name=org.freedesktop.Notifications
   - --env=XCURSOR_PATH=/run/host/user-share/icons:/run/host/share/icons
 modules:
   - flatpak/shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json
@@ -43,7 +40,7 @@ modules:
         path: src-tauri/icons/icon.png
         dest-filename: io.github.LovelessCodes.StoryForge.png
     build-options:
-      append-path: /usr/lib/sdk/node24/bin:/usr/lib/sdk/rust-stable/bin
+      append-path: /usr/lib/sdk/rust-stable/bin
       build-args:
         - --share=network
     build-commands:
