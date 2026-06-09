@@ -1,0 +1,64 @@
+app-id: io.github.LovelessCodes.StoryForge
+runtime: org.gnome.Platform
+runtime-version: "48"
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+  - org.freedesktop.Sdk.Extension.node24
+
+command: /app/StoryForge/StoryForge
+finish-args:
+  - --share=ipc
+  - --socket=x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --share=network
+  - --device=dri
+  - --talk-name=org.freedesktop.Notifications
+  - --env=XCURSOR_PATH=/run/host/user-share/icons:/run/host/share/icons
+modules:
+  - flatpak/shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json
+
+  - name: bun
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 bun ${FLATPAK_DEST}/bin/bun
+    sources:
+      - type: archive
+        url: https://github.com/oven-sh/bun/releases/download/bun-v1.3.10/bun-linux-x64.zip
+        sha256: f57bc0187e39623de716ba3a389fda5486b2d7be7131a980ba54dc7b733d2e08
+        strip-components: 1
+
+  - name: StoryForge
+    buildsystem: simple
+    sources:
+      - type: git
+        url: https://github.com/LovelessCodes/StoryForge.git
+        branch: release
+      - type: file
+        path: flatpak/io.github.LovelessCodes.StoryForge.desktop
+      - type: file
+        path: io.github.LovelessCodes.StoryForge.metainfo.xml
+      - type: file
+        path: src-tauri/icons/icon.png
+        dest-filename: io.github.LovelessCodes.StoryForge.png
+    build-options:
+      append-path: /usr/lib/sdk/node24/bin:/usr/lib/sdk/rust-stable/bin
+      build-args:
+        - --share=network
+    build-commands:
+      # Substitute version & date in metainfo
+      - export VERSION=$(git -C ./*StoryForge* describe --tags --abbrev=0 2>/dev/null || echo "1.0.0")
+      - export DATE=$(date -u +%Y-%m-%d)
+      - sed -i "s|FLATPAK_VERSION|$VERSION|g; s|FLATPAK_DATE|$DATE|g" io.github.LovelessCodes.StoryForge.metainfo.xml
+      # Build StoryForge
+      - bun install
+      - bun tauri build --no-bundle
+      # Install executable
+      - install -Dm755 -t /app/StoryForge src-tauri/target/release/StoryForge
+      # Install icon
+      - install -Dm644 -t /app/share/icons/hicolor/512x512/apps io.github.LovelessCodes.StoryForge.png
+      # Install desktop file
+      - desktop-file-install --dir=/app/share/applications io.github.LovelessCodes.StoryForge.desktop
+      # Install metainfo file
+      - install -Dm644 -t /app/share/metainfo io.github.LovelessCodes.StoryForge.metainfo.xml

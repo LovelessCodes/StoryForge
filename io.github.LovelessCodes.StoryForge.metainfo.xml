@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.LovelessCodes.StoryForge</id>
+
+  <name>StoryForge</name>
+  <icon type="stock">io.github.LovelessCodes.StoryForge</icon>
+  <summary>Story Forge is a modern desktop app for Vintage Story players, designed to make switching between game versions, modpacks, servers, and accounts effortlessly</summary>
+
+  <metadata_license>MIT</metadata_license>
+  <project_license>AGPL-3.0-or-later</project_license>
+
+  <developer id="io.github.LovelessCodes">
+    <name>LovelessCodes</name>
+  </developer>
+
+  <url type="bugtracker">https://github.com/LovelessCodes/StoryForge/issues</url>
+  <url type="homepage">https://getstoryforge.app/</url>
+  <url type="faq">https://getstoryforge.app/#/faq</url>
+  <url type="contribute">https://github.com/LovelessCodes/StoryForge</url>
+  <url type="vcs-browser">https://github.com/LovelessCodes/StoryForge</url>
+
+  <description>
+    <p>
+      The ultimate launcher for Vintage Story. Experience seamless gameplay with our feature-rich, community-driven launcher designed for the modern adventurer.
+    </p>
+    <ul>
+      <li>Switch between game versions, modpacks, and servers effortlessly</li>
+      <li>Browse and add mods to installations</li>
+      <li>Browse and install modpacks from the community</li>
+    </ul>
+  </description>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#F5D3C4</color>
+    <color type="primary" scheme_preference="dark">#461901</color>
+  </branding>
+
+  <content_rating type="oars-1.1" />
+
+  <launchable type="desktop-id">io.github.LovelessCodes.StoryForge.desktop</launchable>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://github.com/LovelessCodes/StoryForge/blob/23724a2897f2828d60359fa5c746278d3636e739/screenshots/Overview.png?raw=true</image>
+    </screenshot>
+    <screenshot>
+      <image>https://github.com/LovelessCodes/StoryForge/blob/23724a2897f2828d60359fa5c746278d3636e739/screenshots/Mod_Browser.png?raw=true</image>
+    </screenshot>
+    <screenshot>
+      <image>https://github.com/LovelessCodes/StoryForge/blob/23724a2897f2828d60359fa5c746278d3636e739/screenshots/Servers.png?raw=true</image>
+    </screenshot>
+  </screenshots>
+
+  <requires>
+    <control>keyboard</control>
+    <control>pointing</control>
+    <display_length compare="ge">768</display_length>
+  </requires>
+
+  <releases>
+    <!-- Release version to be inserted just before build time -->
+    <release version="FLATPAK_VERSION" date="FLATPAK_DATE">
+      <description>
+        <p>Story Forge FLATPAK_VERSION</p>
+      </description>
+    </release>
+  </releases>
+</component>
