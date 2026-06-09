@@ -14,7 +14,7 @@ finish-args:
   - --device=dri
   - --env=XCURSOR_PATH=/run/host/user-share/icons:/run/host/share/icons
 modules:
-  - flatpak/shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json
+  - shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json
 
   - name: bun
     buildsystem: simple
@@ -33,7 +33,7 @@ modules:
         url: https://github.com/LovelessCodes/StoryForge.git
         branch: release
       - type: file
-        path: flatpak/io.github.LovelessCodes.StoryForge.desktop
+        path: io.github.LovelessCodes.StoryForge.desktop
       - type: file
         path: io.github.LovelessCodes.StoryForge.metainfo.xml
       - type: file
