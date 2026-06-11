@@ -169,3 +169,14 @@ export const stripped = (str: string) =>
     .replace(/[^\w\s]/g, "")
     .replace(/\s+/g, " ")
     .trim();
+
+/** Simple 32-bit hash of a string, returned as base-36. */
+export function hashPath(path: string): string {
+  let hash = 0;
+  for (let i = 0; i < path.length; i++) {
+    const char = path.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash).toString(36);
+}
