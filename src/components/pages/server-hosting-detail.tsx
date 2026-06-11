@@ -4,6 +4,7 @@ import clsx from "clsx";
 import DOMPurify from "dompurify";
 import {
   ArrowLeftIcon,
+  PackageIcon,
   PlayIcon,
   RotateCcwIcon,
   SquareIcon,
@@ -325,7 +326,7 @@ function ServerHostingSettings({
 }
 
 export function ServerHostingDetailPage() {
-  const { id } = useParams({ from: "/server-hosting/$id" });
+  const { id } = useParams({ from: "/server-hosting/$id/" });
   const router = useRouter();
   const instanceId = Number(id);
 
@@ -433,6 +434,15 @@ export function ServerHostingDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() =>
+              void router.navigate({ to: "/server-hosting/$id/mods", params: { id: id } })
+            }
+          >
+            <PackageIcon className="size-3" /> Mods
+          </Button>
           {isRunning ? (
             <Button size="sm" variant="outline" onClick={() => void stopServer(instanceId)}>
               <SquareIcon className="size-3" /> Stop
