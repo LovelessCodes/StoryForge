@@ -297,6 +297,7 @@ pub fn run() {
             server_hosting::lookup_player_uid,
             server_hosting::lookup_player_name,
             server_hosting::set_whitelist_mode,
+            server_hosting::get_server_data_dir_size,
             // Maps
             maps::get_all_maps,
             maps::inspect_map_database,
