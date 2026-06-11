@@ -6,14 +6,17 @@ import {
   EarthIcon,
   FolderIcon,
   GlobeIcon,
+  HardDriveIcon,
   HomeIcon,
   MapPinIcon,
   NewspaperIcon,
+  PackageIcon,
   RefreshCcwIcon,
   UserMinus2,
   UserPlus2,
   ZapIcon,
 } from "lucide-react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 
 import { AuthStatus } from "@/components/auth/auth-status";
@@ -47,6 +50,7 @@ import { useSaves } from "@/hooks/use-saves";
 import { useVerifyAuth } from "@/hooks/use-verify-auth";
 import { useAccountStore } from "@/stores/accounts";
 import { useInstallations } from "@/stores/installations";
+import { useServerHostingStore } from "@/stores/server-hosting";
 import { useServerStore } from "@/stores/servers";
 
 import { ModConfigsButton } from "./buttons/mod-configs.button";
@@ -56,11 +60,17 @@ export function AppSidebar() {
   const matches = useMatches();
   const { selectedUser, users, removeUser, setSelectedUser } = useAccountStore();
   const { installations } = useInstallations();
+  const { instances: hostedInstances, loadInstances } = useServerHostingStore();
   const { data: appVersion } = useAppVersion();
   const { data: saves } = useSaves();
   const { data: installedVersions } = useInstalledVersions();
   const { data: modpacks } = useModpacks();
   const { servers } = useServerStore();
+
+  useEffect(() => {
+    void loadInstances();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const { mutate: verifyAuth } = useVerifyAuth({
     onError: (error, variables) => {
       removeUser(variables.uid);
@@ -289,6 +299,21 @@ export function AppSidebar() {
                     activeProps={{
                       "data-active": true,
                     }}
+                    to="/mods"
+                  />
+                }
+              >
+                <PackageIcon />
+                Mods
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={
+                  <Link
+                    activeProps={{
+                      "data-active": true,
+                    }}
                     to="/modpacks"
                   />
                 }
@@ -316,6 +341,25 @@ export function AppSidebar() {
                 {servers.length}
               </SidebarMenuBadge>
               <SidebarMenuSub>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton
+                    render={
+                      <Link
+                        activeProps={{
+                          "data-active": true,
+                        }}
+                        to="/server-hosting"
+                      />
+                    }
+                    size="sm"
+                  >
+                    <HardDriveIcon />
+                    Hosting
+                    <SidebarMenuBadge className="text-xs">
+                      {hostedInstances.length}
+                    </SidebarMenuBadge>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
                 <SidebarMenuSubItem>
                   <SidebarMenuSubButton
                     render={
