@@ -1,7 +1,7 @@
 import { useParams, useRouter } from "@tanstack/react-router";
 import { listen } from "@tauri-apps/api/event";
 import clsx from "clsx";
-import DOMPurify from "dompurify";
+import insane from "insane";
 import {
   ArrowLeftIcon,
   PackageIcon,
@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMountEffect } from "@/hooks/use-mount-effect";
+import { useServerDataDirSize } from "@/hooks/use-server-data-dir-size";
 import { useServerHostingStore, type ServerRuntimeStatus } from "@/stores/server-hosting";
 
 import { Group } from "../ui/group";
@@ -102,9 +103,8 @@ function ServerHostingConsole({ instanceId }: { instanceId: number }) {
               <span
                 className={`break-all whitespace-pre-wrap ${logColor(entry.line)}`}
                 dangerouslySetInnerHTML={{
-                  __html: DOMPurify.sanitize(entry.line, {
-                    ALLOWED_TAGS: ["i", "b", "code", "em", "strong", "u", "span", "br"],
-                    ALLOWED_ATTR: ["style"],
+                  __html: insane(entry.line, {
+                    allowedTags: ["i", "b", "code", "em", "strong", "u", "span", "br"],
                   }),
                 }}
               />
@@ -348,6 +348,8 @@ export function ServerHostingDetailPage() {
     exit_code: null,
   };
 
+  const { data: dirSize } = useServerDataDirSize(instanceId);
+
   useMountEffect(() => {
     void loadInstances();
   });
@@ -432,6 +434,7 @@ export function ServerHostingDetailPage() {
               <span className="text-muted-foreground font-mono">
                 {instance.bind_ip}:{instance.port}
               </span>
+              {dirSize && <span className="text-muted-foreground/60">{dirSize.size_display}</span>}
             </p>
           </div>
         </div>
