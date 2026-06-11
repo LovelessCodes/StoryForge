@@ -424,7 +424,7 @@ export function AddServerDialog({ installation }: AddServerDialogProps) {
           </Button>
         </div>
         {sniffResult && (
-          <div className="bg-muted flex flex-col gap-1 rounded border p-3 text-xs">
+          <div className="bg-muted flex flex-col gap-1 border p-3 text-xs">
             {sniffResult.server_game_version && (
               <p>
                 <span className="text-muted-foreground">Server version:</span>{" "}
