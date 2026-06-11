@@ -4,7 +4,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
-import type { OutputMod } from "@/components/pages/install-mods";
+import type { OutputMod } from "@/components/pages/mods-browser";
 import { Button } from "@/components/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";

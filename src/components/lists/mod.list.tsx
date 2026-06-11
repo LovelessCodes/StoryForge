@@ -33,7 +33,7 @@ export type ModFilterState = {
   category: "mod" | "externaltool" | "other";
 };
 
-import type { OutputMod } from "@/components/pages/install-mods";
+import type { OutputMod } from "@/components/pages/mods-browser";
 import type { ModUpdatesResponse } from "@/hooks/use-mod-updates";
 import type { ModTag } from "@/lib/types";
 

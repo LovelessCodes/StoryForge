@@ -147,7 +147,7 @@ export function InstallationRow({ installation }: InstallationRowProps) {
               onClick={() =>
                 router.navigate({
                   params: { id: installation.id.toString() },
-                  to: "/install-mods/$id",
+                  to: "/installations/$id/mods",
                 })
               }
               size="icon"

@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import type { OutputMod } from "@/components/pages/install-mods";
+import type { OutputMod } from "@/components/pages/mods-browser";
 import { Button } from "@/components/ui/button";
 import { useAddModUpdateToInstallation } from "@/hooks/use-add-mod-update-to-installation";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";

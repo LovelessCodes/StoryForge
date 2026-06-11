@@ -81,7 +81,7 @@ export function DashboardPage() {
                         onAddMods={(i) =>
                           router.navigate({
                             params: { id: i.id.toString() },
-                            to: "/install-mods/$id",
+                            to: "/installations/$id/mods",
                           })
                         }
                         onEdit={(i) =>

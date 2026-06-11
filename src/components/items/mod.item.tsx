@@ -16,7 +16,7 @@ import { RemoveModDialog } from "@/components/dialogs/removemod.dialog";
 import { StandaloneInstallPickerDialog } from "@/components/dialogs/standalone-install-picker.dialog";
 import { UpdateModDialog } from "@/components/dialogs/updatemod.dialog";
 import type { Mod } from "@/components/lists/mod.list";
-import type { OutputMod } from "@/components/pages/install-mods";
+import type { OutputMod } from "@/components/pages/mods-browser";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
