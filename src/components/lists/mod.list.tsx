@@ -1,19 +1,7 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { measureElement, useVirtualizer } from "@tanstack/react-virtual";
-import { invoke } from "@tauri-apps/api/core";
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 
 import { ModItem } from "@/components/items/mod.item";
-import { useInstalledMods } from "@/hooks/use-installed-mods";
-import { useModUpdates } from "@/hooks/use-mod-updates";
-import { stripped } from "@/lib/utils";
-import type { Installation } from "@/stores/installations";
-import { useModsFilters } from "@/stores/modsFilters";
-
-type ModsParams = {
-  versions: string[];
-  search: string;
-};
 
 export type Mod = {
   modid: number;
@@ -34,143 +22,48 @@ export type Mod = {
   lastreleased: string;
 };
 
-const modsQuery = (params: ModsParams) => ({
-  placeholderData: keepPreviousData,
-  queryFn: () => invoke("fetch_mods", { options: params }) as Promise<Mod[]>,
-  queryKey: ["mods", params],
-  refetchOnWindowFocus: false,
-});
+export type ModFilterState = {
+  searchText: string;
+  selectedModTags: { tagid: number; name: string; color: string }[];
+  selectedGameVersions: string[];
+  sortBy: "created" | "name" | "trending" | "downloads" | "follows" | "comments" | "updated";
+  orderDirection: "ascending" | "descending";
+  author: string;
+  side: "any" | "client" | "server" | "both" | "installed";
+  category: "mod" | "externaltool" | "other";
+};
+
+import type { OutputMod } from "@/components/pages/mods-browser";
+import type { ModUpdatesResponse } from "@/hooks/use-mod-updates";
+import type { ModTag } from "@/lib/types";
 
 export function ModList({
   scrollRef,
-  installation,
+  modsDirectory,
+  mods,
+  installedMods,
+  modUpdates,
+  tagColorMap,
+  tagByName,
+  selectedTagNames,
+  onTagClick,
+  onAuthorClick,
 }: {
   scrollRef: React.RefObject<HTMLDivElement | null>;
-  installation: Installation;
+  modsDirectory?: string;
+  mods: Mod[];
+  installedMods: OutputMod[];
+  modUpdates: ModUpdatesResponse | undefined;
+  tagColorMap: Record<string, string>;
+  tagByName: Record<string, ModTag>;
+  selectedTagNames: Set<string>;
+  onTagClick: (tag: ModTag, isActive: boolean) => void;
+  onAuthorClick: (author: string) => void;
 }) {
-  const {
-    searchText,
-    selectedModTags,
-    selectedGameVersions,
-    sortBy,
-    orderDirection,
-    author,
-    side,
-    category,
-  } = useModsFilters();
-  const { data: mods } = useQuery(
-    modsQuery({
-      search: searchText,
-      versions: selectedGameVersions.map((version) => version),
-    }),
-  );
-  const { data: instMods } = useInstalledMods(installation.path);
-  const { data: modUpdates } = useModUpdates(
-    {
-      installationId: installation.id,
-      params: instMods?.mods.map((mod) => `${mod.modid}@${mod.version}`).join(",") ?? "",
-    },
-    {
-      enabled: !!instMods?.mods.length,
-    },
-  );
-
-  // Precompute O(1) lookup set for installed mod checks (was O(n·m) in comparator)
-  const installedModIdSet = useMemo(
-    () => new Set(instMods?.mods.flatMap((m) => [m.modid, m.modid.toString()])),
-    [instMods],
-  );
-
-  // Memoize the expensive filter + sort chain so it doesn't re-run on every scroll render
-  const modsList = useMemo(() => {
-    if (!mods) return [];
-    return mods
-      .filter((mod) => {
-        if (
-          selectedModTags.length > 0 &&
-          !selectedModTags.every((tag) => mod.tags.includes(tag.name))
-        )
-          return false;
-        if (author && !mod.author.toLowerCase().includes(author.toLowerCase())) return false;
-        if (mod.type !== category) return false;
-        if (side !== "installed") {
-          if (side !== "any" && mod.side !== side) return false;
-        } else if (
-          !installedModIdSet.has(mod.modid) &&
-          !mod.modidstrs.some((id) => installedModIdSet.has(id))
-        ) {
-          return false;
-        }
-        return true;
-      })
-      .sort((a, b) => {
-        if (side === "installed") {
-          const aInstalled =
-            installedModIdSet.has(a.modid) ||
-            (a.urlalias !== null && installedModIdSet.has(a.urlalias)) ||
-            a.modidstrs.some((id) => installedModIdSet.has(Number(id)));
-          const bInstalled =
-            installedModIdSet.has(b.modid) ||
-            (b.urlalias !== null && installedModIdSet.has(b.urlalias)) ||
-            b.modidstrs.some((id) => installedModIdSet.has(Number(id)));
-
-          if (orderDirection === "descending") {
-            return a.side === "both"
-              ? -1
-              : b.side === "both"
-                ? 1
-                : aInstalled
-                  ? -1
-                  : bInstalled
-                    ? 1
-                    : 0;
-          }
-          return a.side === "both"
-            ? 1
-            : b.side === "both"
-              ? -1
-              : aInstalled
-                ? 1
-                : bInstalled
-                  ? -1
-                  : 0;
-        }
-        if (sortBy === "name") {
-          return orderDirection === "descending"
-            ? stripped(b.name).localeCompare(stripped(a.name))
-            : stripped(a.name).localeCompare(stripped(b.name));
-        }
-        if (sortBy === "updated") {
-          return orderDirection === "descending"
-            ? new Date(b.lastreleased).getTime() - new Date(a.lastreleased).getTime()
-            : new Date(a.lastreleased).getTime() - new Date(b.lastreleased).getTime();
-        }
-        if (sortBy === "downloads") {
-          return orderDirection === "descending"
-            ? a.downloads - b.downloads
-            : b.downloads - a.downloads;
-        }
-        if (sortBy === "follows") {
-          return orderDirection === "descending" ? a.follows - b.follows : b.follows - a.follows;
-        }
-        if (sortBy === "trending") {
-          return orderDirection === "descending"
-            ? a.trendingpoints - b.trendingpoints
-            : b.trendingpoints - a.trendingpoints;
-        }
-        if (sortBy === "comments") {
-          return orderDirection === "descending"
-            ? a.comments - b.comments
-            : b.comments - a.comments;
-        }
-        return orderDirection === "descending" ? 0 : -1;
-      });
-  }, [mods, selectedModTags, author, category, side, installedModIdSet, sortBy, orderDirection]);
-
   const estimateSize = useCallback(() => 100, []);
 
   const rowVirtualizer = useVirtualizer({
-    count: modsList.length,
+    count: mods.length,
     estimateSize,
     getScrollElement: () => scrollRef.current,
     measureElement,
@@ -188,7 +81,7 @@ export function ModList({
       }}
     >
       {items.map((item) => {
-        const mod = modsList[item.index];
+        const mod = mods[item.index];
         return (
           <div
             className="absolute top-0 left-0 flex w-full gap-2 not-last:border-b"
@@ -200,10 +93,15 @@ export function ModList({
             }}
           >
             <ModItem
-              installation={installation}
-              installedMods={instMods?.mods ?? []}
+              modsDirectory={modsDirectory}
+              installedMods={installedMods}
               mod={mod}
               modUpdates={modUpdates}
+              tagColorMap={tagColorMap}
+              tagByName={tagByName}
+              selectedTagNames={selectedTagNames}
+              onTagClick={onTagClick}
+              onAuthorClick={onAuthorClick}
             />
           </div>
         );

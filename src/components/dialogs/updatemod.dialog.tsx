@@ -4,7 +4,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
-import type { OutputMod } from "@/components/pages/install-mods";
+import type { OutputMod } from "@/components/pages/mods-browser";
 import { Button } from "@/components/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
@@ -12,8 +12,7 @@ import { rootDialogHandle } from "@/handles";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import type { ProgressPayload } from "@/lib/types";
-import { pathDelimiter } from "@/lib/utils";
-import type { Installation } from "@/stores/installations";
+import { hashPath, pathDelimiter } from "@/lib/utils";
 
 type Release = {
   releaseid: number;
@@ -62,11 +61,11 @@ type ModInfo = {
 
 export type UpdateModDialogProps = {
   mod: OutputMod;
-  installation: Installation;
+  modsDirectory: string;
   versionFrom: string;
 };
 
-export function UpdateModDialog({ mod, installation, versionFrom }: UpdateModDialogProps) {
+export function UpdateModDialog({ mod, modsDirectory, versionFrom }: UpdateModDialogProps) {
   const { data: modInfo } = useQuery({
     queryFn: () => invoke("fetch_mod_info", { modid: mod.modid }) as Promise<ModInfo>,
     queryKey: ["modInfo", mod.modid],
@@ -81,23 +80,23 @@ export function UpdateModDialog({ mod, installation, versionFrom }: UpdateModDia
       ? (modInfo?.mod.releases.find((r) => r.modversion === versionFrom) ?? null)
       : null);
   const queryClient = useQueryClient();
-  const emitevent = `mod-download-${mod.modid}-${installation.id}`;
+  const pathHash = hashPath(modsDirectory);
+  const emitevent = `mod-download-${mod.modid}-${pathHash}`;
+  const label = modsDirectory.split(/[/\\]/).pop() || modsDirectory;
+
   const { mutate: removeModFromInstallation, isPending: removePending } = useMutation({
     mutationFn: ({ path, modpath }: { path: string; modpath: string; mainfile: string }) =>
       invoke("remove_mod_from_installation", { params: { modpath, path } }),
     onError: (error, variables) => {
-      toast.error(
-        `Error removing ${variables.modpath} from ${installation.name}: ${error.message}`,
-        {
-          id: `mod-remove-${variables.path}-${variables.modpath}`,
-        },
-      );
+      toast.error(`Error removing ${variables.modpath} from ${label}: ${error.message}`, {
+        id: `mod-remove-${variables.path}-${variables.modpath}`,
+      });
     },
     onSuccess: async (_, variables) => {
-      await queryClient.invalidateQueries({ queryKey: installedModsQueryKey(installation.path) });
-      await queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(installation.id) });
+      await queryClient.invalidateQueries({ queryKey: installedModsQueryKey(modsDirectory) });
+      await queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(modsDirectory) });
       addModToInstallation({
-        path: `${installation.path}${pathDelimiter}Mods`,
+        path: `${modsDirectory}${pathDelimiter}Mods`,
         url: variables.mainfile,
       });
     },
@@ -112,39 +111,38 @@ export function UpdateModDialog({ mod, installation, versionFrom }: UpdateModDia
       }) as Promise<string>,
     onError: (error) => {
       toast.error(
-        `Error ${selectedVersion && selectedVersion.modversion > versionFrom ? "upgrading" : "downgrading"} ${modInfo?.mod.name} to ${installation.name}: ${error.message}`,
-        { id: `add-mod-${modInfo?.mod.modid}-${installation.id}` },
+        `Error ${selectedVersion && selectedVersion.modversion > versionFrom ? "upgrading" : "downgrading"} ${modInfo?.mod.name} to ${label}: ${error.message}`,
+        { id: `add-mod-${modInfo?.mod.modid}-${pathHash}` },
       );
       listenRef.current?.();
     },
     onMutate: async () => {
       toast.loading(
-        `${selectedVersion && selectedVersion.modversion > versionFrom ? "Upgrading" : "Downgrading"} ${modInfo?.mod.name} to ${installation.name}...`,
+        `${selectedVersion && selectedVersion.modversion > versionFrom ? "Upgrading" : "Downgrading"} ${modInfo?.mod.name} to ${label}...`,
         {
-          id: `add-mod-${modInfo?.mod.modid}-${installation.id}`,
+          id: `add-mod-${modInfo?.mod.modid}-${pathHash}`,
         },
       );
       listenRef.current = await listen<ProgressPayload>(emitevent, (event) => {
         const { phase, percent } = event.payload;
         if (phase === "download") {
-          toast.loading(
-            `Downloading ${modInfo?.mod.name} to ${installation.name}... ${percent?.toFixed(0)}%`,
-            { id: `add-mod-${modInfo?.mod.modid}-${installation.id}` },
-          );
+          toast.loading(`Downloading ${modInfo?.mod.name} to ${label}... ${percent?.toFixed(0)}%`, {
+            id: `add-mod-${modInfo?.mod.modid}-${pathHash}`,
+          });
         }
       });
     },
     onSuccess: async () => {
       listenRef.current?.();
       toast.success(
-        `Successfully ${selectedVersion && selectedVersion.modversion > versionFrom ? "updated" : "downgraded"} ${modInfo?.mod.name} to ${installation.name}`,
-        { id: `add-mod-${modInfo?.mod.modid}-${installation.id}` },
+        `Successfully ${selectedVersion && selectedVersion.modversion > versionFrom ? "updated" : "downgraded"} ${modInfo?.mod.name} to ${label}`,
+        { id: `add-mod-${modInfo?.mod.modid}-${pathHash}` },
       );
       await queryClient.invalidateQueries({
-        queryKey: installedModsQueryKey(installation.path),
+        queryKey: installedModsQueryKey(modsDirectory),
       });
       await queryClient.invalidateQueries({
-        queryKey: modUpdatesQueryKey(installation.id),
+        queryKey: modUpdatesQueryKey(modsDirectory),
       });
       rootDialogHandle.close();
     },
@@ -156,12 +154,12 @@ export function UpdateModDialog({ mod, installation, versionFrom }: UpdateModDia
         <h3 className="text-lg leading-6 font-medium">
           {selectedVersion && selectedVersion?.modversion >= versionFrom ? "Update" : "Downgrade"}{" "}
           <span className="text-warning-foreground">{modInfo?.mod.name}</span> in{" "}
-          <span className="text-blue-200">{installation.name}</span>
+          <span className="text-blue-200">{label}</span>
         </h3>
       </DialogHeader>
       <DialogDescription>
         Select the version of <span className="text-warning-foreground">{modInfo?.mod.name}</span>{" "}
-        you want to change to, in <span className="text-blue-200">{installation.name}</span>.
+        you want to change to, in <span className="text-blue-200">{label}</span>.
       </DialogDescription>
       {/* We need a select, incase the installation version is not compatible */}
       <div className="mt-2 w-full overflow-hidden">
@@ -223,7 +221,7 @@ export function UpdateModDialog({ mod, installation, versionFrom }: UpdateModDia
               removeModFromInstallation({
                 mainfile: selectedVersion.mainfile,
                 modpath: mod.path,
-                path: installation.path,
+                path: modsDirectory,
               });
             }
           }}

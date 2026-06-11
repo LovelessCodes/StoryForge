@@ -94,7 +94,7 @@ export const ServerContextMenu = ({
               installation &&
               navigate({
                 params: { id: installation?.id.toString() },
-                to: "/install-mods/$id",
+                to: "/installations/$id/mods",
               })
             }
           >

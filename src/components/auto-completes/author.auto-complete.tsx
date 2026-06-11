@@ -11,16 +11,21 @@ import {
   AutocompleteList,
   AutocompletePopup,
 } from "@/components/ui/auto-complete";
-import { useModsFilters } from "@/stores/modsFilters";
 
-export const AuthorAutocomplete = (props: React.InputHTMLAttributes<HTMLInputElement>) => {
+export const AuthorAutocomplete = ({
+  searchText,
+  selectedGameVersions,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & {
+  searchText: string;
+  selectedGameVersions: string[];
+}) => {
   const { contains } = AutocompletePrimitive.useFilter({
     sensitivity: "base",
     usage: "search",
   });
   const [internalValue, setInternalValue] = useState("");
   const actualValue = props.value || internalValue;
-  const { searchText, selectedGameVersions } = useModsFilters();
   const scrollElementRef = useRef<HTMLDivElement>(null);
 
   const handleValueChange = (value: string) => {

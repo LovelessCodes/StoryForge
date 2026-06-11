@@ -6,21 +6,23 @@ import { toast } from "sonner";
 
 import type { Mod } from "@/components/lists/mod.list";
 import type { ModInfo, ProgressPayload } from "@/lib/types";
-import type { Installation } from "@/stores/installations";
+import { hashPath, pathDelimiter } from "@/lib/utils";
 
 import { installedModsQueryKey } from "./use-installed-mods";
 import { modUpdatesQueryKey } from "./use-mod-updates";
 
 export const useAddLatestModVersion = ({
   mod,
-  installation,
+  modsDirectory,
 }: {
   mod: Mod;
-  installation: Installation | null;
+  modsDirectory?: string;
 }) => {
-  const emitevent = `mod-download-${mod.modid}-${installation?.id}`;
+  const pathHash = modsDirectory ? hashPath(modsDirectory) : "standalone";
+  const emitevent = `mod-download-${mod.modid}-${pathHash}`;
   const queryClient = useQueryClient();
   const listenRef = useRef<UnlistenFn>(null);
+
   return useMutation({
     mutationFn: async ({ path }: { path: string }) => {
       const modInfo = (await invoke("fetch_mod_info", {
@@ -35,43 +37,46 @@ export const useAddLatestModVersion = ({
       return { modInfo };
     },
     onError: (error, _, result) => {
-      toast.error(
-        `Error downloading ${result?.modInfo?.mod.name} to ${installation?.name}: ${error.message}`,
-        { id: `add-mod-${result?.modInfo?.mod.modid}-${installation?.id}` },
-      );
+      const label = modsDirectory
+        ? modsDirectory.split(pathDelimiter).pop() || modsDirectory
+        : "Mods";
+      toast.error(`Error downloading ${result?.modInfo?.mod.name} to ${label}: ${error.message}`, {
+        id: `add-mod-${result?.modInfo?.mod.modid}-${pathHash}`,
+      });
       listenRef.current?.();
     },
     onMutate: async () => {
       const modInfo = (await invoke("fetch_mod_info", {
         modid: mod.modid.toString(),
       })) as ModInfo;
-      toast.loading(`Downloading ${modInfo?.mod.name} to ${installation?.name}...`, {
-        id: `add-mod-${modInfo?.mod.modid}-${installation?.id}`,
+      const label = modsDirectory
+        ? modsDirectory.split(pathDelimiter).pop() || modsDirectory
+        : "Mods";
+      toast.loading(`Downloading ${modInfo?.mod.name} to ${label}...`, {
+        id: `add-mod-${modInfo?.mod.modid}-${pathHash}`,
       });
       listenRef.current = await listen<ProgressPayload>(emitevent, (event) => {
         const { phase, percent } = event.payload;
         if (phase === "download") {
-          toast.loading(
-            `Downloading ${modInfo?.mod.name} to ${installation?.name}... ${percent?.toFixed(0)}%`,
-            { id: `add-mod-${modInfo?.mod.modid}-${installation?.id}` },
-          );
+          toast.loading(`Downloading ${modInfo?.mod.name} to ${label}... ${percent?.toFixed(0)}%`, {
+            id: `add-mod-${modInfo?.mod.modid}-${pathHash}`,
+          });
         }
       });
-      return {
-        modInfo,
-      };
+      return { modInfo };
     },
     onSuccess: async (_, __, { modInfo }) => {
-      if (installation === null) return;
+      if (!modsDirectory) return;
       listenRef.current?.();
-      toast.success(`Successfully downloaded ${modInfo?.mod.name} to ${installation.name}`, {
-        id: `add-mod-${modInfo?.mod.modid}-${installation.id}`,
+      const label = modsDirectory.split(pathDelimiter).pop() || modsDirectory;
+      toast.success(`Successfully downloaded ${modInfo?.mod.name} to ${label}`, {
+        id: `add-mod-${modInfo?.mod.modid}-${pathHash}`,
       });
       await queryClient.invalidateQueries({
-        queryKey: modUpdatesQueryKey(installation.id),
+        queryKey: modUpdatesQueryKey(modsDirectory),
       });
       await queryClient.invalidateQueries({
-        queryKey: installedModsQueryKey(installation.path),
+        queryKey: installedModsQueryKey(modsDirectory),
       });
     },
   });

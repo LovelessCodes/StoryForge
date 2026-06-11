@@ -1,6 +1,9 @@
 mod modules;
-use modules::{auth, download, installations, maps, mods, news, saves, servers, sniffer, versions};
-use tauri::{WebviewUrl, WebviewWindowBuilder};
+use modules::{
+    auth, download, installations, maps, mods, news, saves, server_hosting, servers, sniffer,
+    versions,
+};
+use tauri::{RunEvent, WebviewUrl, WebviewWindowBuilder};
 
 // ── Logging macros (crate root so accessible everywhere) ──
 
@@ -272,6 +275,29 @@ pub fn run() {
             saves::get_all_saves,
             saves::update_world,
             saves::remove_world,
+            // Server Hosting
+            server_hosting::create_hosted_server,
+            server_hosting::get_all_hosted_servers,
+            server_hosting::update_hosted_server,
+            server_hosting::delete_hosted_server,
+            server_hosting::start_hosted_server,
+            server_hosting::stop_hosted_server,
+            server_hosting::restart_hosted_server,
+            server_hosting::send_server_command,
+            server_hosting::get_server_status,
+            server_hosting::get_server_logs,
+            server_hosting::read_server_config,
+            server_hosting::write_server_config,
+            server_hosting::get_default_server_config,
+            server_hosting::check_port_available,
+            server_hosting::get_whitelist,
+            server_hosting::add_to_whitelist,
+            server_hosting::remove_from_whitelist,
+            server_hosting::bulk_import_whitelist,
+            server_hosting::lookup_player_uid,
+            server_hosting::lookup_player_name,
+            server_hosting::set_whitelist_mode,
+            server_hosting::get_server_data_dir_size,
             // Maps
             maps::get_all_maps,
             maps::inspect_map_database,
@@ -282,7 +308,13 @@ pub fn run() {
             maps::get_all_map_tiles_by_path,
         ]);
 
-    builder
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+    let app = builder
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    app.run(|_app_handle, event| {
+        if let RunEvent::Exit = event {
+            server_hosting::kill_all_running_servers();
+        }
+    });
 }

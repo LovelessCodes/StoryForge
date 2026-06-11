@@ -12,14 +12,14 @@ import { useAddModToInstallation } from "@/hooks/use-add-mod-to-installation";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import type { ModInfo, ProgressPayload, Release } from "@/lib/types";
-import type { Installation } from "@/stores/installations";
+import { hashPath } from "@/lib/utils";
 
 export type AddModDialogProps = {
   modid: number;
-  installation: Installation;
+  modsDirectory: string;
 };
 
-export function AddModDialog({ modid, installation }: AddModDialogProps) {
+export function AddModDialog({ modid, modsDirectory }: AddModDialogProps) {
   const { data: modInfo } = useQuery({
     queryFn: () => invoke("fetch_mod_info", { modid: modid.toString() }) as Promise<ModInfo>,
     queryKey: ["modInfo", modid],
@@ -28,32 +28,29 @@ export function AddModDialog({ modid, installation }: AddModDialogProps) {
   });
   const listenRef = useRef<UnlistenFn>(null);
   const [userSelectedVersion, setUserSelectedVersion] = useState<Release | null>(null);
-  const selectedVersion =
-    userSelectedVersion ??
-    modInfo?.mod.releases.find((r) => r.tags.includes(installation.version)) ??
-    null;
+  const selectedVersion = userSelectedVersion ?? modInfo?.mod.releases[0] ?? null;
   const queryClient = useQueryClient();
+  const pathHash = hashPath(modsDirectory);
   const { mutate: addModToInstallation } = useAddModToInstallation({
     onError: (error, variables) => {
-      toast.error(
-        `Error adding ${variables.mod.mod.name} to ${variables.installation.name}: ${error.message}`,
-        {
-          id: `add-mod-${variables.mod.mod.modid}-${variables.installation.id}`,
-        },
-      );
+      const label = modsDirectory.split(/[/\\]/).pop() || modsDirectory;
+      toast.error(`Error adding ${variables.mod.mod.name} to ${label}: ${error.message}`, {
+        id: `add-mod-${variables.mod.mod.modid}-${pathHash}`,
+      });
       listenRef.current?.();
     },
     onMutate: async (variables) => {
-      toast.loading(`Adding ${variables.mod.mod.name} to ${variables.installation.name}...`, {
-        id: `add-mod-${variables.mod.mod.modid}-${variables.installation.id}`,
+      const label = modsDirectory.split(/[/\\]/).pop() || modsDirectory;
+      toast.loading(`Adding ${variables.mod.mod.name} to ${label}...`, {
+        id: `add-mod-${variables.mod.mod.modid}-${pathHash}`,
       });
       listenRef.current = await listen<ProgressPayload>(variables.emitevent, (event) => {
         const { phase, percent } = event.payload;
         if (phase === "download") {
           toast.loading(
-            `Downloading ${variables.mod.mod.name} to ${variables.installation.name}... ${percent?.toFixed(0)}%`,
+            `Downloading ${variables.mod.mod.name} to ${label}... ${percent?.toFixed(0)}%`,
             {
-              id: `add-mod-${variables.mod.mod.modid}-${variables.installation.id}`,
+              id: `add-mod-${variables.mod.mod.modid}-${pathHash}`,
             },
           );
         }
@@ -61,17 +58,15 @@ export function AddModDialog({ modid, installation }: AddModDialogProps) {
     },
     onSuccess: async (_, variables) => {
       listenRef.current?.();
-      toast.success(
-        `Successfully added ${variables.mod.mod.name} to ${variables.installation.name}`,
-        {
-          id: `add-mod-${variables.mod.mod.modid}-${variables.installation.id}`,
-        },
-      );
-      await queryClient.invalidateQueries({
-        queryKey: installedModsQueryKey(variables.installation.path),
+      const label = modsDirectory.split(/[/\\]/).pop() || modsDirectory;
+      toast.success(`Successfully added ${variables.mod.mod.name} to ${label}`, {
+        id: `add-mod-${variables.mod.mod.modid}-${pathHash}`,
       });
       await queryClient.invalidateQueries({
-        queryKey: modUpdatesQueryKey(variables.installation.id),
+        queryKey: installedModsQueryKey(variables.modsDirectory),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: modUpdatesQueryKey(variables.modsDirectory),
       });
       rootDialogHandle.close();
     },
@@ -83,12 +78,16 @@ export function AddModDialog({ modid, installation }: AddModDialogProps) {
       <DialogHeader>
         <h3 className="text-lg leading-6 font-medium">
           Add <span className="text-warning-foreground">{modInfo?.mod.name}</span> to{" "}
-          <span className="text-blue-200">{installation.name}</span>
+          <span className="text-blue-200">
+            {modsDirectory.split(/[/\\]/).pop() || modsDirectory}
+          </span>
         </h3>
       </DialogHeader>
       <DialogDescription>
         Select the version of <span className="text-warning-foreground">{modInfo?.mod.name}</span>{" "}
-        you want to add to <span className="text-blue-200">{installation.name}</span>.
+        you want to add to{" "}
+        <span className="text-blue-200">{modsDirectory.split(/[/\\]/).pop() || modsDirectory}</span>
+        .
       </DialogDescription>
       {/* We need a select, incase the installation version is not compatible */}
       <div className="mt-2 w-full overflow-hidden">
@@ -143,8 +142,8 @@ export function AddModDialog({ modid, installation }: AddModDialogProps) {
           onClick={async () => {
             if (selectedVersion && modInfo) {
               addModToInstallation({
-                emitevent: `mod-download-${modid}-${installation.id}`,
-                installation: installation,
+                emitevent: `mod-download-${modid}-${pathHash}`,
+                modsDirectory,
                 mod: modInfo,
                 version: selectedVersion.modversion,
               });
