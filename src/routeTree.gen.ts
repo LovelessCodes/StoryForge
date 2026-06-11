@@ -21,9 +21,10 @@ import { Route as InstallationsRouteImport } from './routes/installations'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ServerHostingIndexRouteImport } from './routes/server-hosting/index'
-import { Route as ServerHostingIdRouteImport } from './routes/server-hosting/$id'
 import { Route as ModConfigsIdRouteImport } from './routes/mod-configs/$id'
 import { Route as InstallModsIdRouteImport } from './routes/install-mods/$id'
+import { Route as ServerHostingIdIndexRouteImport } from './routes/server-hosting/$id/index'
+import { Route as ServerHostingIdModsRouteImport } from './routes/server-hosting/$id/mods'
 
 const WorldsRoute = WorldsRouteImport.update({
   id: '/worlds',
@@ -85,11 +86,6 @@ const ServerHostingIndexRoute = ServerHostingIndexRouteImport.update({
   path: '/server-hosting/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ServerHostingIdRoute = ServerHostingIdRouteImport.update({
-  id: '/server-hosting/$id',
-  path: '/server-hosting/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ModConfigsIdRoute = ModConfigsIdRouteImport.update({
   id: '/mod-configs/$id',
   path: '/mod-configs/$id',
@@ -98,6 +94,16 @@ const ModConfigsIdRoute = ModConfigsIdRouteImport.update({
 const InstallModsIdRoute = InstallModsIdRouteImport.update({
   id: '/install-mods/$id',
   path: '/install-mods/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServerHostingIdIndexRoute = ServerHostingIdIndexRouteImport.update({
+  id: '/server-hosting/$id/',
+  path: '/server-hosting/$id/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServerHostingIdModsRoute = ServerHostingIdModsRouteImport.update({
+  id: '/server-hosting/$id/mods',
+  path: '/server-hosting/$id/mods',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -115,8 +121,9 @@ export interface FileRoutesByFullPath {
   '/worlds': typeof WorldsRoute
   '/install-mods/$id': typeof InstallModsIdRoute
   '/mod-configs/$id': typeof ModConfigsIdRoute
-  '/server-hosting/$id': typeof ServerHostingIdRoute
   '/server-hosting/': typeof ServerHostingIndexRoute
+  '/server-hosting/$id/mods': typeof ServerHostingIdModsRoute
+  '/server-hosting/$id/': typeof ServerHostingIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -132,8 +139,9 @@ export interface FileRoutesByTo {
   '/worlds': typeof WorldsRoute
   '/install-mods/$id': typeof InstallModsIdRoute
   '/mod-configs/$id': typeof ModConfigsIdRoute
-  '/server-hosting/$id': typeof ServerHostingIdRoute
   '/server-hosting': typeof ServerHostingIndexRoute
+  '/server-hosting/$id/mods': typeof ServerHostingIdModsRoute
+  '/server-hosting/$id': typeof ServerHostingIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -150,8 +158,9 @@ export interface FileRoutesById {
   '/worlds': typeof WorldsRoute
   '/install-mods/$id': typeof InstallModsIdRoute
   '/mod-configs/$id': typeof ModConfigsIdRoute
-  '/server-hosting/$id': typeof ServerHostingIdRoute
   '/server-hosting/': typeof ServerHostingIndexRoute
+  '/server-hosting/$id/mods': typeof ServerHostingIdModsRoute
+  '/server-hosting/$id/': typeof ServerHostingIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -169,8 +178,9 @@ export interface FileRouteTypes {
     | '/worlds'
     | '/install-mods/$id'
     | '/mod-configs/$id'
-    | '/server-hosting/$id'
     | '/server-hosting/'
+    | '/server-hosting/$id/mods'
+    | '/server-hosting/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -186,8 +196,9 @@ export interface FileRouteTypes {
     | '/worlds'
     | '/install-mods/$id'
     | '/mod-configs/$id'
-    | '/server-hosting/$id'
     | '/server-hosting'
+    | '/server-hosting/$id/mods'
+    | '/server-hosting/$id'
   id:
     | '__root__'
     | '/'
@@ -203,8 +214,9 @@ export interface FileRouteTypes {
     | '/worlds'
     | '/install-mods/$id'
     | '/mod-configs/$id'
-    | '/server-hosting/$id'
     | '/server-hosting/'
+    | '/server-hosting/$id/mods'
+    | '/server-hosting/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -221,8 +233,9 @@ export interface RootRouteChildren {
   WorldsRoute: typeof WorldsRoute
   InstallModsIdRoute: typeof InstallModsIdRoute
   ModConfigsIdRoute: typeof ModConfigsIdRoute
-  ServerHostingIdRoute: typeof ServerHostingIdRoute
   ServerHostingIndexRoute: typeof ServerHostingIndexRoute
+  ServerHostingIdModsRoute: typeof ServerHostingIdModsRoute
+  ServerHostingIdIndexRoute: typeof ServerHostingIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -311,13 +324,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServerHostingIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/server-hosting/$id': {
-      id: '/server-hosting/$id'
-      path: '/server-hosting/$id'
-      fullPath: '/server-hosting/$id'
-      preLoaderRoute: typeof ServerHostingIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/mod-configs/$id': {
       id: '/mod-configs/$id'
       path: '/mod-configs/$id'
@@ -330,6 +336,20 @@ declare module '@tanstack/react-router' {
       path: '/install-mods/$id'
       fullPath: '/install-mods/$id'
       preLoaderRoute: typeof InstallModsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/server-hosting/$id/': {
+      id: '/server-hosting/$id/'
+      path: '/server-hosting/$id'
+      fullPath: '/server-hosting/$id/'
+      preLoaderRoute: typeof ServerHostingIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/server-hosting/$id/mods': {
+      id: '/server-hosting/$id/mods'
+      path: '/server-hosting/$id/mods'
+      fullPath: '/server-hosting/$id/mods'
+      preLoaderRoute: typeof ServerHostingIdModsRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -349,8 +369,9 @@ const rootRouteChildren: RootRouteChildren = {
   WorldsRoute: WorldsRoute,
   InstallModsIdRoute: InstallModsIdRoute,
   ModConfigsIdRoute: ModConfigsIdRoute,
-  ServerHostingIdRoute: ServerHostingIdRoute,
   ServerHostingIndexRoute: ServerHostingIndexRoute,
+  ServerHostingIdModsRoute: ServerHostingIdModsRoute,
+  ServerHostingIdIndexRoute: ServerHostingIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
