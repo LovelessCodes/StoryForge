@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Group, GroupSeparator } from "@/components/ui/group";
 import { TooltipTrigger } from "@/components/ui/tooltip";
 import { rootTooltipHandle } from "@/handles";
+import { useServerDataDirSize } from "@/hooks/use-server-data-dir-size";
 import { cn, itemVariants } from "@/lib/utils";
 import { useServerHostingStore, type HostedServerInstance } from "@/stores/server-hosting";
 
@@ -41,6 +42,8 @@ const statusLabels: Record<string, string> = {
 export function ServerInstanceRow({ instance, index, className }: Props) {
   const router = useRouter();
   const { runtimeStatuses, startServer, stopServer, restartServer } = useServerHostingStore();
+
+  const { data: dirSize } = useServerDataDirSize(instance.id);
 
   const status = runtimeStatuses[instance.id] ?? {
     status: "stopped",
@@ -72,11 +75,17 @@ export function ServerInstanceRow({ instance, index, className }: Props) {
       variants={itemVariants}
     >
       <div className="flex flex-1 items-center gap-3">
-        <CircleIcon className={cn("size-4 shrink-0", statusColor)} fill="currentColor" />
+        <CircleIcon className={cn("size-2 shrink-0", statusColor)} fill="currentColor" />
         <div className="flex flex-col justify-start">
-          <p className="text-foreground text-left text-sm">{instance.name}</p>
+          <p className="text-foreground text-left text-sm">
+            {instance.name}{" "}
+            <span className="text-muted-foreground text-xs">
+              — {instance.bind_ip}:{instance.port}
+            </span>
+          </p>
           <p className="text-muted-foreground text-left text-xs">
-            v{instance.version} — {instance.bind_ip}:{instance.port}
+            v{instance.version}{" "}
+            {dirSize && <span className="text-muted-foreground/60">{dirSize.size_display}</span>}
           </p>
           <p className={cn("text-left text-xs", statusColor)}>
             {statusLabels[status.status] ?? status.status}
