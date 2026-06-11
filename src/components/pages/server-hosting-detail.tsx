@@ -404,9 +404,9 @@ export function ServerHostingDetailPage() {
     )[status.status] ?? "text-muted-foreground";
 
   return (
-    <div className="flex h-full flex-col gap-4 p-6">
+    <div className="flex h-full flex-col gap-4 pt-2">
       {/* Header */}
-      <div className="flex shrink-0 items-center justify-between">
+      <div className="flex shrink-0 items-center justify-between px-2">
         <div className="flex items-center gap-4">
           <Button
             onClick={() => void router.navigate({ to: "/server-hosting" })}
@@ -416,12 +416,14 @@ export function ServerHostingDetailPage() {
             <ArrowLeftIcon className="size-4" />
           </Button>
           <div>
-            <h1 className="text-xl font-bold">{instance.name}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold">{instance.name}</h1>
+              {status.pid && <span className="text-muted-foreground">PID {status.pid}</span>}
+            </div>
             <p className="flex items-center gap-2 text-sm">
               <span className={clsx("flex items-center gap-1", statusColor)}>
                 ● {status.status.charAt(0).toUpperCase() + status.status.slice(1)}
               </span>
-              {status.pid && <span className="text-muted-foreground">PID {status.pid}</span>}
               {isRunning && status.uptime != null && (
                 <span className="text-muted-foreground">
                   up {Math.floor(status.uptime / 3600)}h {Math.floor((status.uptime % 3600) / 60)}m
@@ -436,12 +438,13 @@ export function ServerHostingDetailPage() {
         <div className="flex gap-2">
           <Button
             size="sm"
-            variant="outline"
+            variant="ghost"
             onClick={() =>
               void router.navigate({ to: "/server-hosting/$id/mods", params: { id: id } })
             }
+            className="text-muted-foreground hover:text-foreground mr-2 shrink-0"
           >
-            <PackageIcon className="size-3" /> Mods
+            <PackageIcon className="mr-1 size-3" /> Mods
           </Button>
           {isRunning ? (
             <Button size="sm" variant="outline" onClick={() => void stopServer(instanceId)}>
@@ -470,24 +473,26 @@ export function ServerHostingDetailPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="console" className="flex min-h-0 flex-1 flex-col">
-        <TabsList className="shrink-0">
-          <TabsTrigger value="console">
-            <TerminalIcon className="mr-1 size-3" /> Console
-          </TabsTrigger>
-          <TabsTrigger value="config">serverconfig.json</TabsTrigger>
-          <TabsTrigger value="whitelist">Whitelist</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-        </TabsList>
+        <div className="flex shrink-0 items-center border-b">
+          <TabsList className="flex-1 border-0">
+            <TabsTrigger value="console">
+              <TerminalIcon className="mr-1 size-3" /> Console
+            </TabsTrigger>
+            <TabsTrigger value="config">Config</TabsTrigger>
+            <TabsTrigger value="whitelist">Whitelist</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent className="mt-4 min-h-0 flex-1" value="console">
           <ServerHostingConsole instanceId={instanceId} />
         </TabsContent>
-        <TabsContent className="mt-4 min-h-0 flex-1" value="config">
+        <TabsContent className="mt-4 min-h-0 flex-1 px-2" value="config">
           <ServerHostingConfig instanceId={instanceId} />
         </TabsContent>
-        <TabsContent className="mt-4 min-h-0 flex-1" value="whitelist">
+        <TabsContent className="mt-4 min-h-0 flex-1 px-2" value="whitelist">
           <ServerHostingWhitelist instanceId={instanceId} />
         </TabsContent>
-        <TabsContent className="mt-4 min-h-0 flex-1" value="settings">
+        <TabsContent className="mt-4 min-h-0 flex-1 px-2" value="settings">
           <ServerHostingSettings instanceId={instanceId} canDelete={status.status === "stopped"} />
         </TabsContent>
       </Tabs>
