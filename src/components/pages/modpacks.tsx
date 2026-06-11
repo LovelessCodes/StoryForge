@@ -45,7 +45,7 @@ export function ModpacksPage() {
   const totalCount = data?.totalCount ?? 0;
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex size-full flex-col">
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-2 px-2 pt-0.5 pb-2 max-md:pl-8">
         <SearchInput

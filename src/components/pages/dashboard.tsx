@@ -36,7 +36,7 @@ export function DashboardPage() {
   const { mutate: playWithInstallation } = usePlayInstallation();
 
   return (
-    <main className="h-full space-y-8 px-2 pt-1 pb-2 max-md:pt-8">
+    <main className="size-full space-y-8 px-2 pt-1 pb-2 max-md:pt-8">
       <section className="flex h-full gap-6">
         {/* Installations */}
         <div className="flex w-full flex-col">

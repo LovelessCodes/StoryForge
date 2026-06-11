@@ -286,7 +286,7 @@ export function SettingsPage() {
   };
 
   return (
-    <ScrollArea className="h-full w-full" scrollFade>
+    <ScrollArea scrollFade>
       <Tabs className="pt-0.5" defaultValue="client">
         <TabsList className="mx-2 mb-6">
           <TabsTab value="client">Client</TabsTab>

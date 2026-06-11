@@ -48,7 +48,7 @@ export function WorldsPage() {
   });
 
   return (
-    <div className="grid h-full w-full grid-rows-[min-content_auto] gap-2">
+    <div className="grid size-full grid-rows-[min-content_auto] gap-2">
       <div className="flex h-fit flex-wrap items-center gap-2 pt-0.5 pr-2 pl-2 max-md:pl-9">
         <SearchInput
           onChange={(e) => setSearchText(e.target.value)}
