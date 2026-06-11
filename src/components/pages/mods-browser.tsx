@@ -359,7 +359,12 @@ export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
           textChecked="Desc"
           textUnchecked="Asc"
         />
-        <AuthorAutocomplete onChange={(e) => setAuthor(e.target.value)} value={author} />
+        <AuthorAutocomplete
+          onChange={(e) => setAuthor(e.target.value)}
+          value={author}
+          searchText={searchText}
+          selectedGameVersions={selectedGameVersions}
+        />
         {/* Only show SideToggleGroup with "Installed" tab when we have a modsDirectory */}
         {showInstalledTab && (
           <SideToggleGroup side={side} onSideChange={(v) => setSide(v as Side)} />
