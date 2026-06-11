@@ -8,11 +8,12 @@ import {
   PackageSearchIcon,
 } from "lucide-react";
 import * as m from "motion/react-m";
-import { useMemo, useRef } from "react";
+import { useRef } from "react";
 import { toast } from "sonner";
 
 import { AddModDialog } from "@/components/dialogs/addmod.dialog";
 import { RemoveModDialog } from "@/components/dialogs/removemod.dialog";
+import { StandaloneInstallPickerDialog } from "@/components/dialogs/standalone-install-picker.dialog";
 import { UpdateModDialog } from "@/components/dialogs/updatemod.dialog";
 import type { Mod } from "@/components/lists/mod.list";
 import type { OutputMod } from "@/components/pages/install-mods";
@@ -25,26 +26,35 @@ import { rootAlertDialogHandle, rootDialogHandle, rootTooltipHandle } from "@/ha
 import { useAddLatestModVersion } from "@/hooks/use-add-latest-mod-version";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { type ModUpdatesResponse, modUpdatesQueryKey } from "@/hooks/use-mod-updates";
-import { modTagsQuery } from "@/lib/queries";
 import type { ModInfo, ModTag, ProgressPayload } from "@/lib/types";
-import { cn, compareSemverAsc, pathDelimiter } from "@/lib/utils";
-import type { Installation } from "@/stores/installations";
-import { useModsFilters } from "@/stores/modsFilters";
+import { cn, compareSemverAsc, hashPath, pathDelimiter } from "@/lib/utils";
 
 export function ModItem({
   mod,
   installedMods,
   modUpdates,
-  installation,
+  modsDirectory,
+  tagColorMap,
+  tagByName,
+  selectedTagNames,
+  onTagClick,
+  onAuthorClick,
 }: {
   mod: Mod;
   installedMods: OutputMod[];
   modUpdates: ModUpdatesResponse | undefined;
-  installation: Installation | null;
+  modsDirectory?: string;
+  tagColorMap: Record<string, string>;
+  tagByName: Record<string, ModTag>;
+  selectedTagNames: Set<string>;
+  onTagClick: (tag: ModTag, isActive: boolean) => void;
+  onAuthorClick: (author: string) => void;
 }) {
   const queryClient = useQueryClient();
   const listenRef = useRef<UnlistenFn>(null);
-  const emitevent = `mod-download-${mod.modid}-${installation?.id}`;
+  const pathHash = modsDirectory ? hashPath(modsDirectory) : "standalone";
+  const emitevent = `mod-download-${mod.modid}-${pathHash}`;
+
   const installedMod = installedMods.find(
     (i) => i.modid === mod.modid || mod.modidstrs.includes(i.modid.toString()),
   );
@@ -53,6 +63,7 @@ export function ModItem({
     modUpdates?.updates[mod.modid.toString()] ??
     modUpdates?.updates[mod.assetid.toString()] ??
     modUpdates?.updates[mod.urlalias ?? ""];
+
   const { data: modInfo } = useQuery({
     enabled: !!updateMod,
     queryFn: () =>
@@ -65,51 +76,35 @@ export function ModItem({
     refetchOnReconnect: false,
     refetchOnWindowFocus: false,
   });
-  const { addModTag, removeModTag, selectedModTags, setAuthor } = useModsFilters();
-  const { data: modTags } = useQuery(modTagsQuery);
-  const tagColorMap = useMemo(() => {
-    if (!modTags) return {} as Record<string, string>;
-    const map: Record<string, string> = {};
-    for (const t of modTags) map[t.name] = t.color;
-    return map;
-  }, [modTags]);
-  /** Lookup table from tag name → full ModTag (for the filter toggle) */
-  const tagByName = useMemo(() => {
-    if (!modTags) return {} as Record<string, ModTag>;
-    const map: Record<string, ModTag> = {};
-    for (const t of modTags) map[t.name] = t;
-    return map;
-  }, [modTags]);
-  const selectedTagNames = useMemo(
-    () => new Set(selectedModTags.map((t) => t.name)),
-    [selectedModTags],
-  );
+
   const { mutate: downloadLatestModVersion, isPending: isDownloading } = useAddLatestModVersion({
-    installation,
+    modsDirectory,
     mod,
   });
+
   const { mutate: removeModFromInstallation, isPending: removePending } = useMutation({
     mutationFn: ({ path, modpath }: { path: string; modpath: string }) =>
       invoke("remove_mod_from_installation", { params: { modpath, path } }),
     onError: (error, variables) => {
-      toast.error(
-        `Error removing ${variables.modpath} from ${installation?.name}: ${error.message}`,
-        {
-          id: `mod-remove-${variables.path}-${variables.modpath}`,
-        },
-      );
+      const label = modsDirectory
+        ? modsDirectory.split(pathDelimiter).pop() || modsDirectory
+        : "destination";
+      toast.error(`Error removing ${variables.modpath} from ${label}: ${error.message}`, {
+        id: `mod-remove-${variables.path}-${variables.modpath}`,
+      });
     },
     onSuccess: async () => {
-      if (installation) {
-        await queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(installation.id) });
-        await queryClient.invalidateQueries({ queryKey: installedModsQueryKey(installation.path) });
+      if (modsDirectory) {
+        await queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(modsDirectory) });
+        await queryClient.invalidateQueries({ queryKey: installedModsQueryKey(modsDirectory) });
         addModToInstallation({
-          path: `${installation.path}${pathDelimiter}Mods`,
+          path: `${modsDirectory}${pathDelimiter}Mods`,
           url: updateMod?.mainfile || "",
         });
       }
     },
   });
+
   const { mutate: addModToInstallation, isPending } = useMutation({
     mutationFn: ({ path, url }: { path: string; url: string }) =>
       invoke("download_and_maybe_extract", {
@@ -119,50 +114,57 @@ export function ModItem({
         url,
       }) as Promise<string>,
     onError: (error) => {
+      const label = modsDirectory
+        ? modsDirectory.split(pathDelimiter).pop() || modsDirectory
+        : "destination";
       toast.error(
-        `Error ${installedMod && updateMod && updateMod?.modversion > installedMod?.version ? "upgrading" : "downgrading"} ${modInfo?.mod.name} to ${installation?.name}: ${error.message}`,
-        { id: `add-mod-${modInfo?.mod.modid}-${installation?.id}` },
+        `Error ${installedMod && updateMod && updateMod?.modversion > installedMod?.version ? "upgrading" : "downgrading"} ${modInfo?.mod.name} to ${label}: ${error.message}`,
+        { id: `add-mod-${modInfo?.mod.modid}-${pathHash}` },
       );
       listenRef.current?.();
     },
     onMutate: async () => {
+      const label = modsDirectory
+        ? modsDirectory.split(pathDelimiter).pop() || modsDirectory
+        : "destination";
       toast.loading(
-        `${installedMod && updateMod && updateMod.modversion > installedMod.version ? "Upgrading" : "Downgrading"} ${modInfo?.mod.name} to ${installation?.name}...`,
+        `${installedMod && updateMod && updateMod.modversion > installedMod.version ? "Upgrading" : "Downgrading"} ${modInfo?.mod.name} to ${label}...`,
         {
-          id: `add-mod-${modInfo?.mod.modid}-${installation?.id}`,
+          id: `add-mod-${modInfo?.mod.modid}-${pathHash}`,
         },
       );
       listenRef.current = await listen<ProgressPayload>(emitevent, (event) => {
         const { phase, percent } = event.payload;
         if (phase === "download") {
-          toast.loading(
-            `Downloading ${modInfo?.mod.name} to ${installation?.name}... ${percent?.toFixed(0)}%`,
-            { id: `add-mod-${modInfo?.mod.modid}-${installation?.id}` },
-          );
+          toast.loading(`Downloading ${modInfo?.mod.name} to ${label}... ${percent?.toFixed(0)}%`, {
+            id: `add-mod-${modInfo?.mod.modid}-${pathHash}`,
+          });
         }
       });
     },
     onSuccess: async () => {
-      if (installation === null) return;
+      if (!modsDirectory) return;
       listenRef.current?.();
+      const label = modsDirectory.split(pathDelimiter).pop() || modsDirectory;
       toast.success(
-        `Successfully ${installedMod && updateMod && updateMod.modversion > installedMod.version ? "updated" : "downgraded"} ${modInfo?.mod.name} to ${installation.name}`,
-        { id: `add-mod-${modInfo?.mod.modid}-${installation.id}` },
+        `Successfully ${installedMod && updateMod && updateMod.modversion > installedMod.version ? "updated" : "downgraded"} ${modInfo?.mod.name} to ${label}`,
+        { id: `add-mod-${modInfo?.mod.modid}-${pathHash}` },
       );
       await queryClient.invalidateQueries({
-        queryKey: modUpdatesQueryKey(installation.id),
+        queryKey: modUpdatesQueryKey(modsDirectory),
       });
       await queryClient.invalidateQueries({
-        queryKey: installedModsQueryKey(installation.path),
+        queryKey: installedModsQueryKey(modsDirectory),
       });
     },
   });
+
   return (
     <m.div
       animate={{ opacity: 1, y: 0 }}
       className={cn([
         "flex flex-row p-2 justify-between w-full items-center",
-        installedMod && "bg-linear-to-r from-success/20 to-transparent",
+        installedMod && modsDirectory && "bg-linear-to-r from-success/20 to-transparent",
       ])}
       exit={{ opacity: 0, y: 12 }}
       initial={{ opacity: 0, y: 12 }}
@@ -196,7 +198,7 @@ export function ModItem({
                 <button
                   aria-label={`Filter by ${mod.author}`}
                   className="cursor-pointer text-xs text-orange-200 opacity-50"
-                  onClick={() => setAuthor(mod.author)}
+                  onClick={() => onAuthorClick(mod.author)}
                   type="button"
                 />
               }
@@ -227,11 +229,7 @@ export function ModItem({
                     )}
                     onClick={() => {
                       if (!tag) return;
-                      if (isActive) {
-                        removeModTag(tag);
-                      } else {
-                        addModTag(tag);
-                      }
+                      onTagClick(tag, isActive);
                     }}
                     style={{
                       backgroundColor: color ? `${color}20` : undefined,
@@ -250,7 +248,7 @@ export function ModItem({
       </div>
       <Group>
         {updateMod &&
-          installation &&
+          modsDirectory &&
           updateMod &&
           installedMod &&
           compareSemverAsc(updateMod.modversion, installedMod.version) > 0 && (
@@ -263,7 +261,7 @@ export function ModItem({
                     onClick={() =>
                       removeModFromInstallation({
                         modpath: installedMod?.path ?? "",
-                        path: installation.path,
+                        path: modsDirectory,
                       })
                     }
                     size="icon"
@@ -286,31 +284,55 @@ export function ModItem({
               <GroupSeparator />
             </>
           )}
-        {!installedMod && installation && (
+        {!installedMod && (
           <>
-            <TooltipTrigger
-              render={
-                <Button
-                  aria-label="Download Latest Version"
-                  disabled={isDownloading}
-                  onClick={() =>
-                    downloadLatestModVersion({
-                      path: `${installation.path}${pathDelimiter}Mods`,
-                    })
-                  }
-                  size="icon"
-                  variant="outline"
-                >
-                  <DownloadCloudIcon aria-hidden="true" className="opacity-60" size={16} />
-                </Button>
-              }
-              handle={rootTooltipHandle}
-              payload={() => "Install latest version"}
-            />
+            {modsDirectory ? (
+              <TooltipTrigger
+                render={
+                  <Button
+                    aria-label="Download Latest Version"
+                    disabled={isDownloading}
+                    onClick={() =>
+                      downloadLatestModVersion({
+                        path: `${modsDirectory}${pathDelimiter}Mods`,
+                      })
+                    }
+                    size="icon"
+                    variant="outline"
+                  >
+                    <DownloadCloudIcon aria-hidden="true" className="opacity-60" size={16} />
+                  </Button>
+                }
+                handle={rootTooltipHandle}
+                payload={() => "Install latest version"}
+              />
+            ) : (
+              <TooltipTrigger
+                render={
+                  <Button
+                    aria-label="Install to..."
+                    render={
+                      <DialogTrigger
+                        handle={rootDialogHandle}
+                        payload={() => (
+                          <StandaloneInstallPickerDialog modid={mod.modid} mod={mod} />
+                        )}
+                      />
+                    }
+                    size="icon"
+                    variant="outline"
+                  >
+                    <DownloadCloudIcon aria-hidden="true" className="opacity-60" size={16} />
+                  </Button>
+                }
+                handle={rootTooltipHandle}
+                payload={() => "Install to Installation or Hosted Server"}
+              />
+            )}
             <GroupSeparator />
           </>
         )}
-        {installation && installedMod && (
+        {modsDirectory && installedMod && (
           <>
             <TooltipTrigger
               render={
@@ -321,7 +343,7 @@ export function ModItem({
                       handle={rootDialogHandle}
                       payload={() => (
                         <UpdateModDialog
-                          installation={installation}
+                          modsDirectory={modsDirectory}
                           mod={installedMod}
                           versionFrom={installedMod.version}
                         />
@@ -340,8 +362,8 @@ export function ModItem({
             <GroupSeparator />
           </>
         )}
-        {installation &&
-          (installedMod ? (
+        {modsDirectory ? (
+          installedMod ? (
             <TooltipTrigger
               render={
                 <Button
@@ -351,7 +373,7 @@ export function ModItem({
                       handle={rootAlertDialogHandle}
                       payload={() => (
                         <RemoveModDialog
-                          installation={installation}
+                          modsDirectory={modsDirectory}
                           name={mod.name}
                           path={installedMod.path ?? ""}
                         />
@@ -379,7 +401,9 @@ export function ModItem({
                   render={
                     <DialogTrigger
                       handle={rootDialogHandle}
-                      payload={() => <AddModDialog installation={installation} modid={mod.modid} />}
+                      payload={() => (
+                        <AddModDialog modsDirectory={modsDirectory} modid={mod.modid} />
+                      )}
                     />
                   }
                   size="icon"
@@ -391,7 +415,30 @@ export function ModItem({
               handle={rootTooltipHandle}
               payload={() => "Add Mod"}
             />
-          ))}
+          )
+        ) : (
+          !installedMod && (
+            <TooltipTrigger
+              render={
+                <Button
+                  aria-label="Install Mod"
+                  render={
+                    <DialogTrigger
+                      handle={rootDialogHandle}
+                      payload={() => <StandaloneInstallPickerDialog modid={mod.modid} mod={mod} />}
+                    />
+                  }
+                  size="icon"
+                  variant="outline"
+                >
+                  <PackagePlusIcon aria-hidden="true" className="opacity-60" size={16} />
+                </Button>
+              }
+              handle={rootTooltipHandle}
+              payload={() => "Install to Installation or Hosted Server"}
+            />
+          )
+        )}
       </Group>
     </m.div>
   );
