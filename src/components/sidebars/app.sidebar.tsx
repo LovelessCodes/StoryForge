@@ -271,7 +271,9 @@ export function AppSidebar() {
                 {installations.length}
               </SidebarMenuBadge>
               <SidebarMenuSub>
-                {matches.some((m) => m.fullPath.includes("install-mods")) && <ModsButton />}
+                {matches.some((m) => m.fullPath.includes("installations/$id/mods")) && (
+                  <ModsButton />
+                )}
                 {matches.some((m) => m.fullPath.includes("mod-configs")) && <ModConfigsButton />}
                 <SidebarMenuSubItem>
                   <SidebarMenuSubButton
