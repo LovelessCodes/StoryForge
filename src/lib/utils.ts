@@ -5,7 +5,7 @@ import { type ClassValue, clsx } from "clsx";
 import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
 
-import type { OutputMod } from "@/components/pages/install-mods";
+import type { OutputMod } from "@/components/pages/mods-browser";
 import type { Installation } from "@/stores/installations";
 
 export function cn(...inputs: ClassValue[]) {
