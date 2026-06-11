@@ -89,6 +89,12 @@ pub struct ServerStatusInfo {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct DirSizeInfo {
+    pub size_bytes: u64,
+    pub size_display: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct ServerLogsResponse {
     pub lines: Vec<ServerLogLine>,
     pub next_offset: u64,
@@ -150,7 +156,6 @@ fn slugify(name: &str) -> String {
         .join("-")
 }
 
-#[allow(dead_code)]
 fn format_size(bytes: u64) -> String {
     const KB: u64 = 1024;
     const MB: u64 = KB * 1024;
@@ -166,7 +171,6 @@ fn format_size(bytes: u64) -> String {
     }
 }
 
-#[allow(dead_code)]
 fn dir_size(path: &Path) -> u64 {
     let mut total: u64 = 0;
     if let Ok(entries) = read_dir(path) {
@@ -1812,4 +1816,20 @@ pub fn kill_all_running_servers() {
     }
 
     log_info!("server_hosting: killed {} server(s)", pids.len());
+}
+
+#[command]
+pub async fn get_server_data_dir_size(
+    app: AppHandle,
+    instance_id: u64,
+) -> Result<DirSizeInfo, UiError> {
+    let (_dir, instance) = find_instance(&app, instance_id)?;
+    let data_path = &instance.data_dir;
+    let size_bytes = dir_size(data_path);
+    let size_display = format_size(size_bytes);
+    log_info!("get_server_data_dir_size: id={instance_id} size={size_display}");
+    Ok(DirSizeInfo {
+        size_bytes,
+        size_display,
+    })
 }
