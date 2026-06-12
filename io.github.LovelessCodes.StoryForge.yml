@@ -1,6 +1,6 @@
 app-id: io.github.LovelessCodes.StoryForge
 runtime: org.gnome.Platform
-runtime-version: "50"
+runtime-version: "48"
 sdk: org.gnome.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.rust-stable
@@ -12,7 +12,8 @@ finish-args:
   - --socket=wayland
   - --socket=pulseaudio
   - --share=network
-  - --device=dri
+  - --device=all
+  - --filesystem=xdg-documents
   - --env=XCURSOR_PATH=/run/host/user-share/icons:/run/host/share/icons
 modules:
   - shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json
