@@ -12,37 +12,37 @@ import {
 import { Button } from "@/components/ui/button";
 import { rootAlertDialogHandle } from "@/handles";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
-import type { Installation } from "@/stores/installations";
 
 export type RemoveModDialogProps = {
   name: string;
   path: string;
-  installation: Installation;
+  modsDirectory: string;
 };
 
-export function RemoveModDialog({ name, path, installation }: RemoveModDialogProps) {
+export function RemoveModDialog({ name, path, modsDirectory }: RemoveModDialogProps) {
   const queryClient = useQueryClient();
+  const label = modsDirectory.split(/[/\\]/).pop() || modsDirectory;
   const { mutate: removeModFromInstallation, isPending } = useMutation({
     mutationFn: ({ path, modpath }: { path: string; modpath: string }) =>
       invoke("remove_mod_from_installation", { params: { modpath, path } }),
     onError: (error, variables) => {
-      toast.error(`Error removing ${name} from ${installation.name}: ${error.message}`, {
+      toast.error(`Error removing ${name} from ${label}: ${error.message}`, {
         id: `mod-remove-${variables.path}-${variables.modpath}`,
       });
     },
     onMutate: (variables) => {
-      toast.loading(`Removing ${name} from ${installation.name}...`, {
+      toast.loading(`Removing ${name} from ${label}...`, {
         id: `mod-remove-${variables.path}-${variables.modpath}`,
       });
     },
     onSuccess: async (data, variables) => {
       if (data === "removed") {
-        toast.success(`Removed ${name} from ${installation.name}`, {
+        toast.success(`Removed ${name} from ${label}`, {
           id: `mod-remove-${variables.path}-${variables.modpath}`,
         });
         // Invalidate the mods query to refresh the list
         await queryClient.invalidateQueries({
-          queryKey: installedModsQueryKey(installation.path),
+          queryKey: installedModsQueryKey(modsDirectory),
         });
         rootAlertDialogHandle.close();
       }
@@ -54,12 +54,12 @@ export function RemoveModDialog({ name, path, installation }: RemoveModDialogPro
       <AlertDialogHeader>
         <AlertDialogTitle>
           Are you sure you want to remove <span className="text-warning-foreground">{name}</span>{" "}
-          from <span className="text-blue-200">{installation.name}</span>?
+          from <span className="text-blue-200">{label}</span>?
         </AlertDialogTitle>
         <AlertDialogDescription>
           This action cannot be undone. This will permanently remove{" "}
           <span className="text-warning-foreground">{name}</span> from{" "}
-          <span className="text-blue-200">{installation.name}</span>.
+          <span className="text-blue-200">{label}</span>.
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
@@ -71,7 +71,7 @@ export function RemoveModDialog({ name, path, installation }: RemoveModDialogPro
           onClick={() =>
             removeModFromInstallation({
               modpath: path,
-              path: installation.path,
+              path: modsDirectory,
             })
           }
         >

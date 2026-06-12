@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import type { OutputMod } from "@/components/pages/install-mods";
+import type { OutputMod } from "@/components/pages/mods-browser";
 import { Button } from "@/components/ui/button";
 import { useAddModUpdateToInstallation } from "@/hooks/use-add-mod-update-to-installation";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
@@ -12,20 +12,23 @@ import {
   type ModUpdatesResponse,
   modUpdatesQueryKey,
 } from "@/hooks/use-mod-updates";
-import type { Installation } from "@/stores/installations";
+import { hashPath } from "@/lib/utils";
 
 export const UpdateAllButton = ({
-  installation,
+  modsDirectory,
   updates,
   installedMods,
 }: {
-  installation: Installation;
+  modsDirectory: string;
   updates: ModUpdatesResponse;
   installedMods: OutputMod[];
 }) => {
-  const emitevent = `mod-updates-${installation?.id}-progress`;
+  const pathHash = hashPath(modsDirectory);
+  const emitevent = `mod-updates-${pathHash}-progress`;
+  const label = modsDirectory.split(/[/\\]/).pop() || modsDirectory;
   const queryClient = useQueryClient();
   const [wantsToUpdate, setWantsToUpdate] = useState(false);
+
   const { mutateAsync: removeModFromInstallation, isPending: removePending } = useMutation({
     mutationFn: (variables: {
       path: string;
@@ -37,21 +40,21 @@ export const UpdateAllButton = ({
       }),
     onError: (error, variables) => {
       toast.error(
-        `Error removing ${variables.updateMod.filename} from ${installation.name}: ${error.message}`,
+        `Error removing ${variables.updateMod.filename} from ${label}: ${error.message}`,
         {
           id: `mod-remove-${variables.path}-${variables.modpath}`,
         },
       );
     },
     onSuccess: async (_d, v) => {
-      if (installation) {
+      if (modsDirectory) {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: installedModsQueryKey(installation.path) }),
-          queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(installation.id) }),
+          queryClient.invalidateQueries({ queryKey: installedModsQueryKey(modsDirectory) }),
+          queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(modsDirectory) }),
         ]);
         await addModToInstallation({
           emitevent,
-          installation,
+          modsDirectory,
           mod: v.updateMod,
         });
       }
@@ -60,8 +63,8 @@ export const UpdateAllButton = ({
 
   const { mutateAsync: addModToInstallation, isPending } = useAddModUpdateToInstallation({
     onError: (error, variables) => {
-      toast.error(`Error updating mod in ${variables.installation.name}: ${error.message}`, {
-        id: `mod-update-${variables.installation.id}-${variables.mod.modidstr}`,
+      toast.error(`Error updating mod in ${label}: ${error.message}`, {
+        id: `mod-update-${pathHash}-${variables.mod.modidstr}`,
       });
     },
   });
@@ -70,7 +73,7 @@ export const UpdateAllButton = ({
     if (wantsToUpdate) {
       // Trigger update process for all installed mods with updates
       toast.loading("Downloading mod updates...", {
-        id: `mod-updates-${installation.id}`,
+        id: `mod-updates-${pathHash}`,
       });
       // Build a lookup Map to avoid O(n*m) find() inside the loop
       const installedModsByModId = new Map<string | number, (typeof installedMods)[number]>();
@@ -84,11 +87,11 @@ export const UpdateAllButton = ({
             installedModsByModId.get(Number(modid)) ?? installedModsByModId.get(updateMod.modidstr);
           if (!isInstalled) return;
           toast.loading(`Updating ${isInstalled.name}...`, {
-            id: `mod-updates-${installation.id}`,
+            id: `mod-updates-${pathHash}`,
           });
           await removeModFromInstallation({
             modpath: isInstalled.path,
-            path: installation.path,
+            path: modsDirectory,
             updateMod: {
               ...updateMod,
               modid: modid,
@@ -96,14 +99,14 @@ export const UpdateAllButton = ({
           });
         }),
         queryClient.invalidateQueries({
-          queryKey: installedModsQueryKey(installation.path),
+          queryKey: installedModsQueryKey(modsDirectory),
         }),
         queryClient.invalidateQueries({
-          queryKey: modUpdatesQueryKey(installation.id),
+          queryKey: modUpdatesQueryKey(modsDirectory),
         }),
       ]);
-      toast.success(`All mod updates completed for ${installation.name}.`, {
-        id: `mod-updates-${installation.id}`,
+      toast.success(`All mod updates completed for ${label}.`, {
+        id: `mod-updates-${pathHash}`,
       });
       // Reset the wantsToUpdate state
       setWantsToUpdate(false);

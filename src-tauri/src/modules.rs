@@ -9,6 +9,7 @@ pub mod mods;
 pub mod news;
 pub mod proto;
 pub mod saves;
+pub mod server_hosting;
 pub mod servers;
 pub mod sniffer;
 pub mod utils;

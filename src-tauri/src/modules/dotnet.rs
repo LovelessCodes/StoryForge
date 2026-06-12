@@ -381,9 +381,7 @@ fn runtime_arch(game_version: &str) -> &str {
     arch
 }
 
-fn download_url(version: &str, game_version: &str) -> String {
-    let arch = runtime_arch(game_version);
-
+fn download_url(version: &str, arch: &str) -> String {
     let platform = if cfg!(target_os = "windows") {
         format!("win-{}", arch)
     } else if cfg!(target_os = "macos") {
@@ -410,7 +408,7 @@ async fn download_dotnet_runtime(
     version: &str,
     dest_dir: &Path,
     event_id: u64,
-    game_version: &str,
+    arch: &str,
 ) -> Result<PathBuf, UiError> {
     create_dir_all(dest_dir).map_err(|e| {
         log_error!("dotnet: create_dir_failed: {e}");
@@ -420,7 +418,7 @@ async fn download_dotnet_runtime(
         }
     })?;
 
-    let url = download_url(version, game_version);
+    let url = download_url(version, arch);
     log_debug!("[dotnet] downloading {} ...", url);
 
     let event_name = format!("dotnet-download-{}", event_id);
@@ -583,8 +581,8 @@ pub async fn ensure_dotnet(
     );
     let version = resolve_dotnet_version(channel).await?;
     log_info!("[dotnet] resolved to version {}", version);
-    let root =
-        download_dotnet_runtime(app, &version, &local_dir, installation_id, game_version).await?;
+    let arch = runtime_arch(game_version);
+    let root = download_dotnet_runtime(app, &version, &local_dir, installation_id, arch).await?;
     log_info!("[dotnet] installed to {:?}", root);
     Ok(root)
 }

@@ -1,11 +1,16 @@
 import { Tabs, TabsList, TabsTab } from "@/components/ui/tabs";
-import { useModsFilters } from "@/stores/modsFilters";
 
-export default function SideToggleGroup() {
-  const { side, setSide } = useModsFilters();
-
+export default function SideToggleGroup({
+  side,
+  onSideChange,
+  hideInstalled,
+}: {
+  side: string;
+  onSideChange: (value: string) => void;
+  hideInstalled?: boolean;
+}) {
   return (
-    <Tabs onValueChange={setSide} value={side}>
+    <Tabs onValueChange={onSideChange} value={side}>
       <TabsList className="border-input h-9 border shadow-xs/5 outline-none">
         <TabsTab aria-label="Any" value="any">
           Any
@@ -19,9 +24,11 @@ export default function SideToggleGroup() {
         <TabsTab aria-label="Both" value="both">
           Both
         </TabsTab>
-        <TabsTab aria-label="Installed" value="installed">
-          Installed
-        </TabsTab>
+        {!hideInstalled && (
+          <TabsTab aria-label="Installed" value="installed">
+            Installed
+          </TabsTab>
+        )}
         <span className="text-muted-foreground bg-background pointer-events-none absolute start-1 top-0 z-10 block inline-flex -translate-y-1/2 px-2 text-xs">
           Side
         </span>

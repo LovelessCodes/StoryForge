@@ -1,14 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { InstallModsPage } from "@/components/pages/install-mods";
+import { ModBrowser } from "@/components/pages/mods-browser";
 import { ErrorComponent } from "@/components/ui/error";
 import { useInstallationsStore } from "@/stores/installations";
 
-export const Route = createFileRoute("/install-mods/$id")({
-  component: InstallModsPage,
+export const Route = createFileRoute("/installations/$id/mods")({
+  component: InstallationModsPage,
   errorComponent: ErrorComponent,
   loader: async ({ params }) => {
-    // Find the installation by ID in the store
     const installation = useInstallationsStore
       .getState()
       .installations.find((inst) => inst.id === Number(params.id));
@@ -18,3 +17,8 @@ export const Route = createFileRoute("/install-mods/$id")({
     return { installation };
   },
 });
+
+function InstallationModsPage() {
+  const { installation } = Route.useLoaderData();
+  return <ModBrowser modsDirectory={installation.path} />;
+}

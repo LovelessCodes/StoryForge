@@ -41,7 +41,7 @@ export function PublicServersPage() {
   const { data: gameVersions } = useQuery(gameVersionsQuery);
   const { data: publicServers } = usePublicServers();
   return (
-    <div className="grid h-full w-full grid-rows-[min-content_auto] gap-2">
+    <div className="grid size-full grid-rows-[min-content_auto] gap-2">
       <div className="flex h-fit flex-wrap items-center gap-2 px-2 pt-0.5 pb-2 max-md:pl-9">
         <SearchInput
           onChange={(e) => setSearchText(e.target.value)}
