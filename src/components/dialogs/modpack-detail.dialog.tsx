@@ -4,6 +4,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import {
   BoxIcon,
   CheckIcon,
+  ChevronDownIcon,
   DownloadIcon,
   Pencil,
   PlusIcon,
@@ -14,6 +15,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { DialogClose, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Progress, ProgressIndicator, ProgressTrack } from "@/components/ui/progress";
@@ -29,6 +31,7 @@ import { buildInstallationPath, makeStringFolderSafe } from "@/lib/utils";
 import { useInstallations, useInstallationsStore } from "@/stores/installations";
 import { useSettingsStore } from "@/stores/settings";
 
+import { ModpackModItem } from "../items/modpack-mod-item";
 import { CreateModpackVersionDialog } from "./create-modpack-version.dialog";
 import { DeleteModpackVersionDialog } from "./delete-modpack.dialog";
 
@@ -38,6 +41,16 @@ type ImportProgress = {
   modid: string;
   version: string;
 };
+
+function parseMods(modsString: string): { modid: string; version: string }[] {
+  return modsString
+    .split(",")
+    .map((entry) => {
+      const [modid, version] = entry.trim().split("@");
+      return { modid: modid?.trim() ?? "", version: version?.trim() ?? "" };
+    })
+    .filter((m) => m.modid && m.version);
+}
 
 export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
   const { appFolder } = useAppFolder();
@@ -62,6 +75,9 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
 
   // Version CRUD state
   const [editingVersionId, setEditingVersionId] = useState<string | null>(null); // null = not editing, "new" = adding
+
+  // Mod list expand state
+  const [expandedModsVersionId, setExpandedModsVersionId] = useState<string | null>(null);
 
   // ── Install handlers ──
 
@@ -293,6 +309,35 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
                       </Button>
                     )}
                   </div>
+
+                  {/* Collapsible mod list */}
+                  {v.modsString && (
+                    <Collapsible
+                      onOpenChange={(open) => setExpandedModsVersionId(open ? v.id : null)}
+                      open={expandedModsVersionId === v.id}
+                    >
+                      <CollapsibleTrigger className="text-muted-foreground hover:text-foreground flex cursor-pointer items-center gap-1 text-xs transition-colors">
+                        <ChevronDownIcon className="size-3.5 transition-transform duration-200 data-panel-open:rotate-180" />
+                        <span>
+                          {(() => {
+                            const count = v.modsString.split(",").filter(Boolean).length;
+                            return `${count} mod${count !== 1 ? "s" : ""}`;
+                          })()}
+                        </span>
+                      </CollapsibleTrigger>
+                      <CollapsiblePanel>
+                        <div className="space-y-1 px-2 py-2">
+                          {parseMods(v.modsString).map((mod) => (
+                            <ModpackModItem
+                              key={mod.modid}
+                              modid={mod.modid}
+                              version={mod.version}
+                            />
+                          ))}
+                        </div>
+                      </CollapsiblePanel>
+                    </Collapsible>
+                  )}
 
                   {/* Name prompt — shown only after clicking Install */}
                   {isNaming && (
