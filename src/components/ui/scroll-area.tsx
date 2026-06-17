@@ -15,7 +15,7 @@ export function ScrollArea({
 }: ScrollAreaPrimitive.Root.Props & {
   scrollFade?: boolean;
   scrollbarGutter?: boolean;
-  viewportRef?: React.RefObject<HTMLDivElement | null>;
+  viewportRef?: React.Ref<HTMLDivElement>;
 }): React.ReactElement {
   return (
     <ScrollAreaPrimitive.Root className={cn("size-full min-h-0", className)} {...props}>
