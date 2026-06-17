@@ -7,7 +7,7 @@ import {
   PlugIcon,
   Users2Icon,
 } from "lucide-react";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
 import { MotionPublicServerContextMenu } from "@/components/context-menus/public-server.context-menu";
 import { AddInstallationDialog } from "@/components/dialogs/addinstallation.dialog";
@@ -25,10 +25,10 @@ import { useInstallations } from "@/stores/installations";
 import { useServersFilters } from "@/stores/serversFilters";
 
 export function PublicServerList({
-  parentRef,
+  scrollElement,
   publicServers,
 }: {
-  parentRef: React.RefObject<HTMLDivElement | null>;
+  scrollElement: HTMLDivElement | null;
   publicServers: PublicServer[];
 }) {
   const installedVersions = useInstalledVersionNames();
@@ -91,10 +91,16 @@ export function PublicServerList({
   const rowVirtualizer = useVirtualizer({
     count: filteredServers?.length || 0,
     estimateSize,
-    getScrollElement: () => parentRef.current,
+    getScrollElement: () => scrollElement,
     measureElement,
     overscan: 5,
   });
+
+  useEffect(() => {
+    if (scrollElement) {
+      rowVirtualizer.measure();
+    }
+  }, [scrollElement, rowVirtualizer]);
 
   const items = rowVirtualizer.getVirtualItems();
   const totalSize = rowVirtualizer.getTotalSize();

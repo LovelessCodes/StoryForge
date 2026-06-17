@@ -36,5 +36,6 @@ export const usePublicServers = (
     queryKey: ["publicServers"],
     staleTime: Infinity,
     placeholderData: keepPreviousData,
+    refetchOnWindowFocus: false,
     ...props,
   });

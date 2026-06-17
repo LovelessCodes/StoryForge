@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useRef } from "react";
+import { useCallback, useState } from "react";
 
 import { SearchInput } from "@/components/inputs/search.input";
 import { PublicServerList } from "@/components/lists/public.servers.list";
@@ -21,9 +21,6 @@ const sortOptions: Record<ServersFilters["sortBy"], string> = {
 };
 
 export function PublicServersPage() {
-  // Refs
-  const parentRef = useRef<HTMLDivElement | null>(null);
-
   // Stores
   const {
     searchText,
@@ -36,6 +33,11 @@ export function PublicServersPage() {
     orderDirection,
     setOrderDirection,
   } = useServersFilters();
+
+  const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
+  const scrollAreaViewportRef = useCallback((element: HTMLDivElement | null) => {
+    setScrollElement(element);
+  }, []);
 
   // Queries
   const { data: gameVersions } = useQuery(gameVersionsQuery);
@@ -93,9 +95,9 @@ export function PublicServersPage() {
           textUnchecked="Desc"
         />
       </div>
-      <ScrollArea className="h-full px-4" scrollFade viewportRef={parentRef}>
+      <ScrollArea className="h-full px-4" scrollFade viewportRef={scrollAreaViewportRef}>
         {publicServers && (
-          <PublicServerList parentRef={parentRef} publicServers={publicServers?.data} />
+          <PublicServerList scrollElement={scrollElement} publicServers={publicServers?.data} />
         )}
       </ScrollArea>
     </div>
