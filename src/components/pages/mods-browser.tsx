@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { AuthorAutocomplete } from "@/components/auto-completes/author.auto-complete";
 import { UpdateAllButton } from "@/components/buttons/update-all.button";
@@ -63,6 +63,7 @@ const modsQuery = (params: ModsParams) => ({
   queryFn: () => invoke("fetch_mods", { options: params }) as Promise<Mod[]>,
   queryKey: ["mods", params],
   refetchOnWindowFocus: false,
+  staleTime: Infinity,
 });
 
 export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
@@ -229,7 +230,10 @@ export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
     }
   };
 
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
+  const scrollAreaViewportRef = useCallback((element: HTMLDivElement | null) => {
+    setScrollElement(element);
+  }, []);
 
   const showInstalledTab = !!modsDirectory;
 
@@ -381,10 +385,10 @@ export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
           />
         )}
       </div>
-      <ScrollArea viewportRef={scrollRef} className="h-full w-full px-4" scrollFade>
+      <ScrollArea viewportRef={scrollAreaViewportRef} className="h-full w-full px-4" scrollFade>
         <ModList
           modsDirectory={modsDirectory}
-          scrollRef={scrollRef}
+          scrollElement={scrollElement}
           mods={modsList}
           installedMods={showInstalledTab ? (instMods?.mods ?? []) : []}
           modUpdates={showInstalledTab ? modUpdates : undefined}

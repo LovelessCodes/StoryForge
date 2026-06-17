@@ -1,5 +1,5 @@
 import { measureElement, useVirtualizer } from "@tanstack/react-virtual";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
 import { ModItem } from "@/components/items/mod.item";
 
@@ -38,7 +38,7 @@ import type { ModUpdatesResponse } from "@/hooks/use-mod-updates";
 import type { ModTag } from "@/lib/types";
 
 export function ModList({
-  scrollRef,
+  scrollElement,
   modsDirectory,
   mods,
   installedMods,
@@ -49,7 +49,7 @@ export function ModList({
   onTagClick,
   onAuthorClick,
 }: {
-  scrollRef: React.RefObject<HTMLDivElement | null>;
+  scrollElement: HTMLDivElement | null;
   modsDirectory?: string;
   mods: Mod[];
   installedMods: OutputMod[];
@@ -65,10 +65,16 @@ export function ModList({
   const rowVirtualizer = useVirtualizer({
     count: mods.length,
     estimateSize,
-    getScrollElement: () => scrollRef.current,
+    getScrollElement: () => scrollElement,
     measureElement,
     overscan: 5,
   });
+
+  useEffect(() => {
+    if (scrollElement) {
+      rowVirtualizer.measure();
+    }
+  }, [scrollElement, rowVirtualizer]);
 
   const items = rowVirtualizer.getVirtualItems();
   const totalSize = rowVirtualizer.getTotalSize();
