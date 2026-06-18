@@ -1,45 +1,16 @@
 use serde::Serialize;
 use std::{
     fs::{read_dir, remove_dir_all},
-    path::{Path, PathBuf},
+    path::PathBuf,
+    sync::Arc,
 };
-use tauri::{command, AppHandle};
+use tauri::{command, AppHandle, State};
 
-use crate::modules::utils::move_folder;
+use crate::modules::utils::{dir_size, format_size, move_folder};
 
 use super::errors::UiError;
 use super::utils::{versions_folder, versions_subdir};
 use crate::{log_error, log_info};
-
-fn format_size(bytes: u64) -> String {
-    const KB: u64 = 1024;
-    const MB: u64 = KB * 1024;
-    const GB: u64 = MB * 1024;
-    if bytes >= GB {
-        format!("{:.2} GB", bytes as f64 / GB as f64)
-    } else if bytes >= MB {
-        format!("{:.2} MB", bytes as f64 / MB as f64)
-    } else if bytes >= KB {
-        format!("{:.2} KB", bytes as f64 / KB as f64)
-    } else {
-        format!("{} B", bytes)
-    }
-}
-
-fn dir_size(path: &Path) -> u64 {
-    let mut total: u64 = 0;
-    if let Ok(entries) = read_dir(path) {
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_dir() {
-                total += dir_size(&path);
-            } else if let Ok(meta) = path.metadata() {
-                total += meta.len();
-            }
-        }
-    }
-    total
-}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct VersionInfo {
@@ -114,8 +85,12 @@ pub fn remove_installed_version(version: String, app: AppHandle) -> Result<Strin
 }
 
 #[command]
-pub async fn fetch_versions() -> Result<Vec<String>, UiError> {
-    let res = reqwest::get("https://vsapi.betterjs.dev/versions")
+pub async fn fetch_versions(
+    client: State<'_, Arc<reqwest::Client>>,
+) -> Result<Vec<String>, UiError> {
+    let res = client
+        .get("https://vsapi.betterjs.dev/versions")
+        .send()
         .await
         .map_err(|e| {
             log_error!("fetch_versions: request failed: {e}");
