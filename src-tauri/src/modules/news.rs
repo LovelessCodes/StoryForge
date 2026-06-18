@@ -1,7 +1,8 @@
 use quick_xml::de::from_str;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tauri::command;
+use std::sync::Arc;
+use tauri::{command, State};
 
 use super::errors::UiError;
 
@@ -26,9 +27,13 @@ pub struct Rss {
 }
 
 #[command]
-pub async fn fetch_news() -> Result<serde_json::Value, UiError> {
+pub async fn fetch_news(
+    client: State<'_, Arc<reqwest::Client>>,
+) -> Result<serde_json::Value, UiError> {
     let url = "https://www.vintagestory.at/forums/forum/7-news.xml/";
-    let xml = reqwest::get(url)
+    let xml = client
+        .get(url)
+        .send()
         .await
         .map_err(|e| UiError::from(format!("Request error: {e}")))?
         .text()
