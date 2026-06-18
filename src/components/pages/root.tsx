@@ -1,7 +1,4 @@
-import { TanStackDevtools } from "@tanstack/react-devtools";
-import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { Outlet } from "@tanstack/react-router";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { platform } from "@tauri-apps/plugin-os";
 import { relaunch } from "@tauri-apps/plugin-process";
@@ -15,6 +12,7 @@ import { RootComponents } from "@/components/root-components";
 import { AppSidebar } from "@/components/sidebars/app.sidebar";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { useServerStatusListener } from "@/hooks/queries/server-hosting";
 import { useUpdater } from "@/hooks/use-updater";
 import { cn } from "@/lib/utils";
 import { useSettingsStore } from "@/stores/settings";
@@ -25,6 +23,9 @@ export function RootComponent() {
 
   // Queries
   const { data: update } = useUpdater();
+
+  // Server hosting live status listener
+  useServerStatusListener();
 
   const relaunchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
@@ -176,6 +177,29 @@ export function RootComponent() {
       <SidebarInset>
         <Outlet />
       </SidebarInset>
+      {import.meta.env.DEV && <Devtools />}
+      <RootComponents />
+      <Toaster richColors theme={darkMode ? "dark" : "light"} />
+    </React.Fragment>
+  );
+}
+
+function Devtools() {
+  const TanStackDevtools = React.lazy(() =>
+    import("@tanstack/react-devtools").then((m) => ({ default: m.TanStackDevtools })),
+  );
+  const ReactQueryDevtoolsPanel = React.lazy(() =>
+    import("@tanstack/react-query-devtools").then((m) => ({
+      default: m.ReactQueryDevtoolsPanel,
+    })),
+  );
+  const TanStackRouterDevtoolsPanel = React.lazy(() =>
+    import("@tanstack/react-router-devtools").then((m) => ({
+      default: m.TanStackRouterDevtoolsPanel,
+    })),
+  );
+  return (
+    <React.Suspense>
       <TanStackDevtools
         plugins={[
           {
@@ -195,8 +219,6 @@ export function RootComponent() {
           ),
         }}
       />
-      <RootComponents />
-      <Toaster richColors theme={darkMode ? "dark" : "light"} />
-    </React.Fragment>
+    </React.Suspense>
   );
 }
