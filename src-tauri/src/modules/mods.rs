@@ -1,5 +1,4 @@
 use json5::from_str as json5_from_str;
-use reqwest::{get, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, json, Value};
 use std::{
@@ -7,8 +6,9 @@ use std::{
     io::{Read, Write},
     path::{Path, PathBuf},
     str::FromStr,
+    sync::Arc,
 };
-use tauri::{command, AppHandle};
+use tauri::{command, AppHandle, State};
 use zip::read::ZipArchive;
 
 use super::errors::UiError;
@@ -152,8 +152,12 @@ pub struct ModError {
 }
 
 #[command]
-pub async fn fetch_mod_tags() -> Result<Vec<ModTags>, UiError> {
-    let res = get("https://mods.vintagestory.at/api/tags")
+pub async fn fetch_mod_tags(
+    client: State<'_, Arc<reqwest::Client>>,
+) -> Result<Vec<ModTags>, UiError> {
+    let res = client
+        .get("https://mods.vintagestory.at/api/tags")
+        .send()
         .await
         .map_err(|e| format!("Request error: {e}"))?;
 
@@ -173,10 +177,10 @@ pub async fn fetch_mod_tags() -> Result<Vec<ModTags>, UiError> {
 }
 
 #[command]
-pub async fn fetch_mods(options: FetchModsParams) -> Result<Vec<Mod>, UiError> {
-    // Use the parameters for a GET request with search parameters
-    let client = Client::new();
-
+pub async fn fetch_mods(
+    client: State<'_, Arc<reqwest::Client>>,
+    options: FetchModsParams,
+) -> Result<Vec<Mod>, UiError> {
     let mut params = Vec::new();
     if !options.versions.is_empty() {
         for version in options.versions {
@@ -209,9 +213,14 @@ pub async fn fetch_mods(options: FetchModsParams) -> Result<Vec<Mod>, UiError> {
 }
 
 #[command]
-pub async fn fetch_mod_info(modid: String) -> Result<Value, UiError> {
+pub async fn fetch_mod_info(
+    client: State<'_, Arc<reqwest::Client>>,
+    modid: String,
+) -> Result<Value, UiError> {
     let url = format!("https://mods.vintagestory.at/api/mod/{}", modid);
-    let res = get(&url)
+    let res = client
+        .get(&url)
+        .send()
         .await
         .map_err(|e| UiError::from(format!("Request error: {e}")))?
         .text()
@@ -224,12 +233,17 @@ pub async fn fetch_mod_info(modid: String) -> Result<Value, UiError> {
 }
 
 #[command]
-pub async fn fetch_authors(search: String) -> Result<Value, UiError> {
+pub async fn fetch_authors(
+    client: State<'_, Arc<reqwest::Client>>,
+    search: String,
+) -> Result<Value, UiError> {
     let url = format!(
         "https://mods.vintagestory.at/api/v2/users/by-name/{}?contributors-only=true",
         search
     );
-    let res = get(&url)
+    let res = client
+        .get(&url)
+        .send()
         .await
         .map_err(|e| UiError::from(format!("Request error: {e}")))?
         .text()
@@ -242,9 +256,12 @@ pub async fn fetch_authors(search: String) -> Result<Value, UiError> {
 }
 
 #[command]
-pub async fn add_mod_to_installation(path: String, url: String) -> Result<String, UiError> {
+pub async fn add_mod_to_installation(
+    client: State<'_, Arc<reqwest::Client>>,
+    path: String,
+    url: String,
+) -> Result<String, UiError> {
     log_info!("add_mod_to_installation: {:?}", path);
-    // Download the mod from the url and save it to the Mods directory inside the path
     let pb = PathBuf::from(path).join("Mods");
     if !pb.exists() {
         create_dir_all(&pb).map_err(|e| UiError {
@@ -252,7 +269,9 @@ pub async fn add_mod_to_installation(path: String, url: String) -> Result<String
             message: format!("Failed to create directory: {e}"),
         })?;
     }
-    let response = get(&url)
+    let response = client
+        .get(&url)
+        .send()
         .await
         .map_err(|e| UiError::from(format!("Request error: {e}")))?;
     if !response.status().is_success() {
@@ -283,17 +302,19 @@ pub async fn add_mod_to_installation(path: String, url: String) -> Result<String
 
 #[command]
 pub async fn download_mod(
+    client: State<'_, Arc<reqwest::Client>>,
     modid: String,
     version: String,
     installation_path: String,
 ) -> Result<String, UiError> {
     let mods_dir = PathBuf::from(&installation_path).join("Mods");
-    download_mod_file(&modid, &version, &mods_dir).await
+    download_mod_file(&client, &modid, &version, &mods_dir).await
 }
 
 /// Download a mod by modid + version into a Mods directory.
 /// Returns the saved filename.
 pub async fn download_mod_file(
+    client: &reqwest::Client,
     modid: &str,
     version: &str,
     mods_dir: &Path,
@@ -307,7 +328,9 @@ pub async fn download_mod_file(
 
     // 1. Fetch mod info to get the download URL for the given version
     let url = format!("https://mods.vintagestory.at/api/mod/{}", modid);
-    let res = get(&url)
+    let res = client
+        .get(&url)
+        .send()
         .await
         .map_err(|e| UiError::from(format!("Request error: {e}")))?;
 
@@ -346,7 +369,9 @@ pub async fn download_mod_file(
     }
 
     // 4. Download the mod file
-    let response = get(download_url)
+    let response = client
+        .get(download_url)
+        .send()
         .await
         .map_err(|e| UiError::from(format!("Download request error: {e}")))?;
 
@@ -391,9 +416,133 @@ pub async fn download_mod_file(
     Ok(filename)
 }
 
-#[command]
-pub fn get_mods(path: String) -> Result<ModsResult, UiError> {
-    let mods_path = PathBuf::from(path).join("Mods");
+// ── modinfo.json helpers ──
+
+/// Find a field in a `modinfo.json` value using a case-insensitive key match.
+fn modinfo_field<'v>(value: &'v Value, key: &str) -> Option<&'v Value> {
+    value
+        .as_object()
+        .and_then(|obj| obj.iter().find(|(k, _)| k.eq_ignore_ascii_case(key)))
+        .map(|(_, v)| v)
+}
+
+fn modinfo_string(value: &Value, key: &str) -> Option<String> {
+    modinfo_field(value, key)
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string())
+}
+
+fn modinfo_string_array(value: &Value, key: &str) -> Vec<String> {
+    modinfo_field(value, key)
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn modinfo_modid(value: &Value) -> String {
+    modinfo_field(value, "modid")
+        .map(|v| {
+            if let Some(s) = v.as_str() {
+                s.to_string()
+            } else if let Some(n) = v.as_i64() {
+                n.to_string()
+            } else if let Some(n) = v.as_u64() {
+                n.to_string()
+            } else if let Some(n) = v.as_f64() {
+                if n.fract() == 0.0 {
+                    (n as i64).to_string()
+                } else {
+                    n.to_string()
+                }
+            } else {
+                "0".to_string()
+            }
+        })
+        .unwrap_or_else(|| "0".to_string())
+}
+
+/// Try to read a single `modinfo.json` entry from an already-opened zip archive.
+fn read_modinfo_from_zip(
+    zip_path: &Path,
+    archive: &mut ZipArchive<File>,
+    errors: &mut Vec<ModError>,
+) -> Option<OutputMod> {
+    for i in 0..archive.len() {
+        let mut file_in_zip = match archive.by_index(i) {
+            Ok(f) => f,
+            Err(e) => {
+                errors.push(ModError {
+                    file: zip_path.to_string_lossy().into_owned(),
+                    stage: "read_entry".into(),
+                    message: format!("by_index({}): {}", i, e),
+                });
+                continue;
+            }
+        };
+
+        if file_in_zip.is_dir() {
+            continue;
+        }
+
+        let name_in_zip = file_in_zip.name().to_string();
+        let filename = Path::new(&name_in_zip)
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("");
+        if !filename.eq_ignore_ascii_case("modinfo.json") {
+            continue;
+        }
+
+        let mut contents = String::new();
+        if let Err(e) = file_in_zip.read_to_string(&mut contents) {
+            errors.push(ModError {
+                file: format!("{}::{}", zip_path.to_string_lossy(), name_in_zip),
+                stage: "read_entry".into(),
+                message: e.to_string(),
+            });
+            continue;
+        }
+
+        match json5_from_str::<Value>(&contents) {
+            Ok(json) => {
+                let modid = modinfo_modid(&json);
+                let name = modinfo_string(&json, "name").unwrap_or_else(|| "Unknown Mod".into());
+                let authors = {
+                    let arr = modinfo_string_array(&json, "authors");
+                    if arr.is_empty() {
+                        vec!["Unknown".into()]
+                    } else {
+                        arr
+                    }
+                };
+                let version = modinfo_string(&json, "version").unwrap_or_else(|| "0.0.0".into());
+                return Some(OutputMod {
+                    modid,
+                    name,
+                    authors,
+                    version,
+                    path: zip_path.to_string_lossy().into_owned(),
+                });
+            }
+            Err(e) => {
+                errors.push(ModError {
+                    file: format!("{}::{}", zip_path.to_string_lossy(), name_in_zip),
+                    stage: "parse_json".into(),
+                    message: e.to_string(),
+                });
+            }
+        }
+    }
+
+    None
+}
+
+/// Scan a single `Mods` directory for mod zips.
+pub fn get_mods_in_dir(mods_path: &Path) -> Result<ModsResult, UiError> {
     if !mods_path.exists() || !mods_path.is_dir() {
         return Err(UiError {
             name: "not_found".into(),
@@ -404,7 +553,7 @@ pub fn get_mods(path: String) -> Result<ModsResult, UiError> {
     let mut mods: Vec<OutputMod> = Vec::new();
     let mut errors: Vec<ModError> = Vec::new();
 
-    let read_dir = match read_dir(&mods_path) {
+    let read_dir = match read_dir(mods_path) {
         Ok(rd) => rd,
         Err(e) => {
             return Err(UiError {
@@ -445,7 +594,6 @@ pub fn get_mods(path: String) -> Result<ModsResult, UiError> {
             continue;
         }
 
-        // Open the zip file
         let file = match File::open(&path) {
             Ok(f) => f,
             Err(e) => {
@@ -458,7 +606,6 @@ pub fn get_mods(path: String) -> Result<ModsResult, UiError> {
             }
         };
 
-        // Build archive
         let mut archive = match ZipArchive::new(file) {
             Ok(a) => a,
             Err(e) => {
@@ -471,148 +618,22 @@ pub fn get_mods(path: String) -> Result<ModsResult, UiError> {
             }
         };
 
-        // Search for modinfo.json (case-insensitive) anywhere in the archive
-        let mut found_any = false;
-        let mut found_valid = false;
+        let had_modinfo_entry = archive.file_names().any(|name| {
+            Path::new(name).file_name().map_or(false, |f| {
+                f.to_str()
+                    .map_or(false, |s| s.eq_ignore_ascii_case("modinfo.json"))
+            })
+        });
 
-        for i in 0..archive.len() {
-            let mut file_in_zip = match archive.by_index(i) {
-                Ok(f) => f,
-                Err(e) => {
-                    errors.push(ModError {
-                        file: path.to_string_lossy().into_owned(),
-                        stage: "read_entry".into(),
-                        message: format!("by_index({}): {}", i, e),
-                    });
-                    continue;
-                }
-            };
-
-            if file_in_zip.is_dir() {
-                continue;
-            }
-
-            let name_in_zip = file_in_zip.name().to_string();
-            let filename = Path::new(&name_in_zip)
-                .file_name()
-                .and_then(|s| s.to_str())
-                .unwrap_or("");
-            if !filename.eq_ignore_ascii_case("modinfo.json") {
-                continue;
-            }
-
-            found_any = true;
-
-            let mut contents = String::new();
-            if let Err(e) = file_in_zip.read_to_string(&mut contents) {
-                errors.push(ModError {
-                    file: format!("{}::{}", path.to_string_lossy(), name_in_zip),
-                    stage: "read_entry".into(),
-                    message: e.to_string(),
-                });
-                // keep searching other entries
-                continue;
-            }
-
-            match json5_from_str::<Value>(&contents) {
-                Ok(json) => {
-                    // Successfully parsed modinfo.json
-                    // Case-insensitive lookup for a key named "modid"; allow string or number.
-                    let modid = json
-                        .as_object()
-                        .and_then(|obj| {
-                            obj.iter()
-                                .find(|(k, _)| k.eq_ignore_ascii_case("modid"))
-                                .map(|(_, v)| v)
-                        })
-                        .map(|v| {
-                            if let Some(s) = v.as_str() {
-                                s.to_string()
-                            } else if let Some(n) = v.as_i64() {
-                                n.to_string()
-                            } else if let Some(n) = v.as_u64() {
-                                n.to_string()
-                            } else if let Some(n) = v.as_f64() {
-                                // Avoid scientific notation for whole numbers
-                                if n.fract() == 0.0 {
-                                    (n as i64).to_string()
-                                } else {
-                                    n.to_string()
-                                }
-                            } else {
-                                "0".to_string()
-                            }
-                        })
-                        .unwrap_or_else(|| "0".to_string());
-                    let path = path.to_string_lossy().into_owned();
-                    let name = json
-                        .as_object()
-                        .and_then(|obj| {
-                            obj.iter()
-                                .find(|(k, _)| k.eq_ignore_ascii_case("name"))
-                                .map(|(_, v)| v)
-                        })
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("Unknown Mod")
-                        .to_string();
-                    let authors = json
-                        .as_object()
-                        .and_then(|obj| {
-                            obj.iter()
-                                .find(|(k, _)| k.eq_ignore_ascii_case("authors"))
-                                .map(|(_, v)| v)
-                        })
-                        .and_then(|v| v.as_array())
-                        .map(|arr| {
-                            arr.iter()
-                                .filter_map(|v| v.as_str().map(|s| s.to_string()))
-                                .collect()
-                        })
-                        .unwrap_or_else(|| vec!["Unknown".into()]);
-                    let version = json
-                        .as_object()
-                        .and_then(|obj| {
-                            obj.iter()
-                                .find(|(k, _)| k.eq_ignore_ascii_case("version"))
-                                .map(|(_, v)| v)
-                        })
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("0.0.0")
-                        .to_string();
-                    mods.push(OutputMod {
-                        modid,
-                        name,
-                        authors,
-                        version,
-                        path,
-                    });
-                    found_valid = true;
-                    // If you only want the first valid modinfo.json per zip, break here:
-                    break;
-                }
-                Err(e) => {
-                    errors.push(ModError {
-                        file: format!("{}::{}", path.to_string_lossy(), name_in_zip),
-                        stage: "parse_json".into(),
-                        message: e.to_string(),
-                    });
-                    // keep searching for another modinfo.json in the same zip
-                }
-            }
-        }
-
-        // If zip had a modinfo.json but all were invalid/unreadable
-        if found_any && !found_valid {
-            // already recorded detailed errors per entry; optional summary:
+        if let Some(output) = read_modinfo_from_zip(&path, &mut archive, &mut errors) {
+            mods.push(output);
+        } else if had_modinfo_entry {
             errors.push(ModError {
                 file: path.to_string_lossy().into_owned(),
                 stage: "zip_summary".into(),
                 message: "Found modinfo.json but failed to read/parse any".into(),
             });
-        }
-
-        // If no modinfo.json at all, you can decide whether to add a notice:
-        if !found_any {
+        } else {
             errors.push(ModError {
                 file: path.to_string_lossy().into_owned(),
                 stage: "missing_modinfo".into(),
@@ -622,6 +643,15 @@ pub fn get_mods(path: String) -> Result<ModsResult, UiError> {
     }
 
     Ok(ModsResult { mods, errors })
+}
+
+#[command]
+pub fn get_mods(path: String) -> Result<ModsResult, UiError> {
+    log_info!("get_mods: {}", path);
+    let start = std::time::Instant::now();
+    let result = get_mods_in_dir(&PathBuf::from(path).join("Mods"));
+    log_info!("get_mods completed in {}ms", start.elapsed().as_millis());
+    result
 }
 
 #[command]
@@ -635,7 +665,7 @@ pub fn get_mod_configs(app: AppHandle, installation_id: u64) -> Result<Vec<Value
             message: mod_config_path.to_string_lossy().into_owned(),
         });
     }
-    // Traverse the ModConfig directory and read all .json files
+
     let mut configs = Vec::new();
     for entry in
         read_dir(mod_config_path).map_err(|e| UiError::from(format!("Read dir error: {e}")))?
@@ -645,7 +675,6 @@ pub fn get_mod_configs(app: AppHandle, installation_id: u64) -> Result<Vec<Value
         if path.is_file() {
             if let Some(ext) = path.extension() {
                 if ext == "json" {
-                    // Output should be an array of objects with "filename" and "content"
                     let filename = path
                         .file_name()
                         .and_then(|s| s.to_str())
@@ -699,7 +728,6 @@ pub fn save_mod_config(
         });
     }
 
-    // Write new code to the file
     let mut f = File::create(&file_path).map_err(|e| UiError {
         name: "create_file_failed".into(),
         message: format!("Failed to create file: {e}"),
@@ -713,9 +741,14 @@ pub fn save_mod_config(
 }
 
 #[command]
-pub async fn get_mod_updates(params: String) -> Result<Value, UiError> {
+pub async fn get_mod_updates(
+    client: State<'_, Arc<reqwest::Client>>,
+    params: String,
+) -> Result<Value, UiError> {
     let url = format!("https://mods.vintagestory.at/api/updates?mods={}", params);
-    let res = get(&url)
+    let res = client
+        .get(&url)
+        .send()
         .await
         .map_err(|e| UiError::from(format!("Request error: {e}")))?;
     if !res.status().is_success() {
@@ -736,14 +769,19 @@ pub async fn get_mod_updates(params: String) -> Result<Value, UiError> {
 #[command]
 pub fn get_installation_mods(app: AppHandle, id: u64) -> Result<Vec<OutputMod>, UiError> {
     log_info!("get_installation_mods: installation={}", id);
+    let start = std::time::Instant::now();
     let (pb, _installation) = find_installation_by_id(&app, id)?;
-    let path = pb.to_string_lossy().to_string();
-    get_mods(path.to_string())
+    let result = get_mods_in_dir(&pb.join("Mods"))
         .map(|res| res.mods)
         .map_err(|e| UiError {
             name: e.name,
             message: e.message,
-        })
+        });
+    log_info!(
+        "get_installation_mods completed in {}ms",
+        start.elapsed().as_millis()
+    );
+    result
 }
 
 #[command]
