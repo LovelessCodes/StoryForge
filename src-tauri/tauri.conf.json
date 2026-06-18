@@ -69,7 +69,7 @@
         "type": "embedBootstrapper"
       },
       "wix": {
-        "version": "1.1.1.0"
+        "version": "1.1.2.0"
       }
     }
   },
@@ -88,5 +88,5 @@
     }
   },
   "productName": "Story Forge",
-  "version": "1.1.1"
+  "version": "1.1.2"
 }
