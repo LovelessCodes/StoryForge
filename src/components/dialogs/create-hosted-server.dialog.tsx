@@ -11,18 +11,18 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { rootDialogHandle } from "@/handles";
+import { useCreateInstance } from "@/hooks/queries/server-hosting";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { gameVersionsQuery } from "@/lib/queries";
 import { compareSemverDesc } from "@/lib/utils";
 import { useAccountStore } from "@/stores/accounts";
-import { useServerHostingStore } from "@/stores/server-hosting";
 
 type Props = {
   onSuccess?: () => void;
 };
 
 export function CreateHostedServerDialog({ onSuccess }: Props) {
-  const { createInstance, lookupPlayerUid, lookupPlayerName } = useServerHostingStore();
+  const createInstance = useCreateInstance();
   const { selectedUser } = useAccountStore();
 
   const { data: gameVersions } = useQuery(gameVersionsQuery);
@@ -47,9 +47,9 @@ export function CreateHostedServerDialog({ onSuccess }: Props) {
       defaultWhitelistUid: "",
       defaultWhitelistName: "",
     },
-    onSubmit: async ({ value }) => {
-      try {
-        await createInstance({
+    onSubmit: ({ value }) => {
+      createInstance.mutate(
+        {
           name: value.name,
           version: value.version,
           port: value.port,
@@ -60,14 +60,18 @@ export function CreateHostedServerDialog({ onSuccess }: Props) {
           whitelistEnabled: value.whitelistEnabled,
           defaultWhitelistUid: value.defaultWhitelistUid,
           defaultWhitelistName: value.defaultWhitelistName,
-        });
-
-        toast.success(`Instance "${value.name}" created`);
-        onSuccess?.();
-        rootDialogHandle.close();
-      } catch (e) {
-        toast.error(`Failed to create instance: ${String(e)}`);
-      }
+        },
+        {
+          onSuccess: () => {
+            toast.success(`Instance "${value.name}" created`);
+            onSuccess?.();
+            rootDialogHandle.close();
+          },
+          onError: (e) => {
+            toast.error(`Failed to create instance: ${String(e)}`);
+          },
+        },
+      );
     },
   });
 
@@ -75,7 +79,10 @@ export function CreateHostedServerDialog({ onSuccess }: Props) {
     if (!lookupInput.trim()) return;
     setLookingUp(true);
     try {
-      const result = await lookupPlayerUid(lookupInput.trim());
+      const { invoke } = await import("@tauri-apps/api/core");
+      const result = await invoke<{ uid: string; name: string } | null>("lookup_player_uid", {
+        accountName: lookupInput.trim(),
+      });
       if (result) {
         form.setFieldValue("defaultWhitelistUid", result.uid);
         form.setFieldValue("defaultWhitelistName", result.name);
@@ -93,7 +100,8 @@ export function CreateHostedServerDialog({ onSuccess }: Props) {
   const handleUidLookup = async (uid: string) => {
     if (!uid.trim()) return;
     try {
-      const name = await lookupPlayerName(uid.trim());
+      const { invoke } = await import("@tauri-apps/api/core");
+      const name = await invoke<string | null>("lookup_player_name", { uid: uid.trim() });
       if (name) {
         form.setFieldValue("defaultWhitelistName", name);
       }
@@ -354,12 +362,12 @@ export function CreateHostedServerDialog({ onSuccess }: Props) {
           >
             {(state) => (
               <Button
-                disabled={state.isSubmitting || !state.canSubmit}
+                disabled={state.isSubmitting || !state.canSubmit || createInstance.isPending}
                 size="sm"
                 type="submit"
                 variant="default"
               >
-                {state.isSubmitting ? "Creating…" : "Create Instance"}
+                {state.isSubmitting || createInstance.isPending ? "Creating…" : "Create Instance"}
               </Button>
             )}
           </form.Subscribe>
