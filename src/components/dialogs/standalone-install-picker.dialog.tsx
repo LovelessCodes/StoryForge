@@ -9,12 +9,12 @@ import { Button } from "@/components/ui/button";
 import { DialogClose, DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { rootDialogHandle } from "@/handles";
+import { useHostedServers } from "@/hooks/queries/server-hosting";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import type { ModInfo, ProgressPayload, Release } from "@/lib/types";
 import { hashPath, pathDelimiter } from "@/lib/utils";
 import { useInstallations } from "@/stores/installations";
-import { useServerHostingStore } from "@/stores/server-hosting";
 
 export type StandaloneInstallPickerProps = {
   modid: number;
@@ -30,7 +30,7 @@ type Destination = {
 
 export function StandaloneInstallPickerDialog({ modid, mod }: StandaloneInstallPickerProps) {
   const { installations } = useInstallations();
-  const { instances: hostedInstances } = useServerHostingStore();
+  const { data: hostedInstances } = useHostedServers();
   const { data: modInfo } = useQuery({
     queryFn: () => invoke("fetch_mod_info", { modid: modid.toString() }) as Promise<ModInfo>,
     queryKey: ["modInfo", modid],
@@ -45,7 +45,7 @@ export function StandaloneInstallPickerDialog({ modid, mod }: StandaloneInstallP
       path: `${inst.path}${pathDelimiter}Mods`,
       type: "installation" as const,
     })),
-    ...hostedInstances.map((si) => ({
+    ...(hostedInstances ?? []).map((si) => ({
       id: `hosted-${si.id}`,
       name: si.name,
       path: `${si.data_dir}${pathDelimiter}Mods`,
