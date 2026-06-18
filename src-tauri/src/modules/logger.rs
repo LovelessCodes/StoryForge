@@ -1,52 +1,41 @@
-use std::{
-    fs::{create_dir_all, read_to_string, File},
-    io::Write,
-    path::PathBuf,
-    sync::Mutex,
-};
+use std::fs::read_to_string;
+use std::sync::LazyLock;
+use std::sync::Mutex;
+use std::time::Instant;
+use tauri::Manager;
 
-static LOGGER: Mutex<Option<File>> = Mutex::new(None);
+static STARTUP_START: LazyLock<Mutex<Option<Instant>>> = LazyLock::new(|| Mutex::new(None));
+static WEBVIEW_START: LazyLock<Mutex<Option<Instant>>> = LazyLock::new(|| Mutex::new(None));
 
-/// Initialize the logger. Must be called once at startup.
-/// Creates/truncates `<app_data>/logs/app.log`.
-pub fn init(app_data: &PathBuf) {
-    let log_dir = app_data.join("logs");
-    let _ = create_dir_all(&log_dir);
-    let log_path = log_dir.join("app.log");
-    match File::create(&log_path) {
-        Ok(f) => {
-            *LOGGER.lock().unwrap() = Some(f);
-            let _ = writeln!(
-                LOGGER.lock().unwrap().as_mut().unwrap(),
-                "── Story Forge log started ──"
-            );
-        }
-        Err(e) => {
-            // Can't use log macros here — logger itself failed. Fallback to stderr.
-            eprintln!("[logger] Failed to create log file {:?}: {e}", log_path);
-        }
+/// Record the instant when Rust setup finishes (webview load about to begin).
+pub fn mark_webview_start() {
+    *WEBVIEW_START.lock().unwrap() = Some(Instant::now());
+}
+
+/// Log the gap between Rust setup completion and first frontend execution.
+#[tauri::command]
+pub fn log_webview_gap() -> Result<(), String> {
+    if let Some(start) = WEBVIEW_START.lock().unwrap().take() {
+        let elapsed = start.elapsed();
+        log::info!("Webview load gap: {:.2?}", elapsed);
     }
+    Ok(())
 }
 
-fn timestamp() -> String {
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default();
-    let secs = now.as_secs();
-    let hours = (secs / 3600) % 24;
-    let mins = (secs / 60) % 60;
-    let secs = secs % 60;
-    let millis = now.subsec_millis();
-    format!("{hours:02}:{mins:02}:{secs:02}.{millis:03}")
-}
-
-/// Write a log message with the given level. Called by the macros.
+/// Write a log message with the given level.
+///
+/// Called by the exported macros and the frontend `log_message` command.
+/// The actual destination is managed by `tauri-plugin-log`.
 pub fn log(level: &str, msg: &str) {
-    if let Ok(mut guard) = LOGGER.lock() {
-        if let Some(ref mut f) = *guard {
-            let _ = writeln!(f, "[{}] {} {}", timestamp(), level, msg);
-            let _ = f.flush();
-        }
+    STARTUP_START
+        .lock()
+        .unwrap()
+        .get_or_insert_with(Instant::now);
+    match level.trim() {
+        "INFO" | "INFO " => log::info!("{msg}"),
+        "DEBUG" | "DEBUG " => log::debug!("{msg}"),
+        "ERROR" | "ERROR " => log::error!("{msg}"),
+        _ => log::info!("{msg}"),
     }
 }
 
@@ -57,10 +46,25 @@ pub fn log_message(level: String, message: String) -> Result<(), String> {
     Ok(())
 }
 
-/// Read the current log file and return its contents
+/// Log the time elapsed since the given `Instant` under a label.
+pub fn log_elapsed(label: &str, start: std::time::Instant) {
+    let elapsed = start.elapsed();
+    log::info!("{label}: {:.2?}", elapsed);
+}
+
+/// Log the time elapsed from the first `log()` call to now.
+#[tauri::command]
+pub fn log_startup_time() -> Result<(), String> {
+    if let Some(start) = STARTUP_START.lock().unwrap().take() {
+        let elapsed = start.elapsed();
+        log::info!("Startup time: {:.2?}", elapsed);
+    }
+    Ok(())
+}
+
+/// Read the current log file and return its contents.
 #[tauri::command]
 pub fn get_logs(app: tauri::AppHandle) -> Result<String, String> {
-    use tauri::Manager;
     let app_data = app
         .path()
         .app_data_dir()
