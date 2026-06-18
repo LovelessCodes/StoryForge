@@ -1,4 +1,5 @@
 import { useParams, useRouter } from "@tanstack/react-router";
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import clsx from "clsx";
 import insane from "insane";
@@ -26,9 +27,19 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useMountEffect } from "@/hooks/use-mount-effect";
+import {
+  useHostedServer,
+  useServerStatus,
+  useServerConfig,
+  useStartServer,
+  useStopServer,
+  useRestartServer,
+  useSendCommand,
+  useUpdateInstance,
+  useDeleteInstance,
+  useWriteServerConfig,
+} from "@/hooks/queries/server-hosting";
 import { useServerDataDirSize } from "@/hooks/use-server-data-dir-size";
-import { useServerHostingStore, type ServerRuntimeStatus } from "@/stores/server-hosting";
 
 import { Group } from "../ui/group";
 import { Input } from "../ui/input";
@@ -42,17 +53,20 @@ function ServerHostingConsole({ instanceId }: { instanceId: number }) {
   const [logLines, setLogLines] = useState<{ timestamp: string; line: string }[]>([]);
   const [command, setCommand] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { sendCommand, getServerLogs, runtimeStatuses } = useServerHostingStore();
-  const isRunning = runtimeStatuses[instanceId]?.status === "running";
+  const sendCommand = useSendCommand();
+  const { data: statusData } = useServerStatus(instanceId);
+  const isRunning = statusData?.status === "running";
 
-  // Load initial logs
   useEffect(() => {
-    void getServerLogs(instanceId).then((res) => {
+    void invoke<{
+      lines: { timestamp: string; line: string }[];
+      next_offset: number;
+      has_more: boolean;
+    }>("get_server_logs", { instanceId, offset: null }).then((res) => {
       setLogLines(res.lines.map((l) => ({ timestamp: l.timestamp, line: l.line })));
     });
-  }, [instanceId, getServerLogs]);
+  }, [instanceId]);
 
-  // Listen for real-time log events
   useEffect(() => {
     let unlisten: (() => void) | undefined;
     void (async () => {
@@ -68,7 +82,6 @@ function ServerHostingConsole({ instanceId }: { instanceId: number }) {
     };
   }, [instanceId]);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -77,7 +90,7 @@ function ServerHostingConsole({ instanceId }: { instanceId: number }) {
 
   const handleSend = useCallback(() => {
     if (!command.trim()) return;
-    void sendCommand(instanceId, command.trim());
+    sendCommand.mutate({ id: instanceId, command: command.trim() });
     setCommand("");
   }, [command, instanceId, sendCommand]);
 
@@ -136,15 +149,16 @@ function ServerHostingConfig({ instanceId }: { instanceId: number }) {
   const [config, setConfig] = useState("");
   const [original, setOriginal] = useState("");
   const [loading, setLoading] = useState(true);
-  const { readServerConfig, writeServerConfig } = useServerHostingStore();
+  const { data: serverConfig, isPending } = useServerConfig(instanceId);
+  const writeConfig = useWriteServerConfig();
 
   useEffect(() => {
-    void readServerConfig(instanceId).then((c) => {
-      setConfig(c);
-      setOriginal(c);
+    if (serverConfig !== undefined) {
+      setConfig(serverConfig);
+      setOriginal(serverConfig);
       setLoading(false);
-    });
-  }, [instanceId, readServerConfig]);
+    }
+  }, [serverConfig]);
 
   const handleSave = async () => {
     if (config === original) {
@@ -153,17 +167,27 @@ function ServerHostingConfig({ instanceId }: { instanceId: number }) {
     }
     try {
       JSON.parse(config);
-      await writeServerConfig(instanceId, config);
-      setOriginal(config);
-      toast.success("serverconfig.json saved. Restart the server to apply changes.");
     } catch (e) {
       toast.error(`Failed to save: ${String(e)}`);
+      return;
     }
+    writeConfig.mutate(
+      { id: instanceId, json: config },
+      {
+        onSuccess: () => {
+          setOriginal(config);
+          toast.success("serverconfig.json saved. Restart the server to apply changes.");
+        },
+        onError: (e) => {
+          toast.error(`Failed to save: ${String(e)}`);
+        },
+      },
+    );
   };
 
   const hasChanges = config !== original;
 
-  if (loading) {
+  if (loading || isPending) {
     return (
       <div className="flex h-full flex-col gap-3">
         <Skeleton className="h-8 w-48" />
@@ -187,7 +211,7 @@ function ServerHostingConfig({ instanceId }: { instanceId: number }) {
           >
             Reset
           </Button>
-          <Button disabled={!hasChanges} size="sm" onClick={handleSave}>
+          <Button disabled={!hasChanges || writeConfig.isPending} size="sm" onClick={handleSave}>
             Save Changes
           </Button>
         </div>
@@ -219,9 +243,10 @@ function ServerHostingSettings({
   instanceId: number;
   canDelete: boolean;
 }) {
-  const { instances, updateInstance, deleteInstance } = useServerHostingStore();
   const router = useRouter();
-  const instance = instances.find((i) => i.id === instanceId);
+  const instance = useHostedServer(instanceId);
+  const updateInstance = useUpdateInstance();
+  const deleteInstance = useDeleteInstance();
 
   const [name, setName] = useState(instance?.name ?? "");
   const [port, setPort] = useState(String(instance?.port ?? ""));
@@ -238,22 +263,37 @@ function ServerHostingSettings({
   }
 
   const handleSave = async () => {
-    await updateInstance(instanceId, {
-      name,
-      port: Number(port) || instance.port,
-      bind_ip: bindIp,
-    });
-    toast.success("Settings saved");
+    updateInstance.mutate(
+      {
+        id: instanceId,
+        partial: {
+          name,
+          port: Number(port) || instance.port,
+          bind_ip: bindIp,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Settings saved");
+        },
+      },
+    );
   };
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteData, setDeleteData] = useState(false);
 
   const handleDelete = async () => {
-    await deleteInstance(instanceId, deleteData);
-    setDeleteOpen(false);
-    toast.success("Instance deleted");
-    void router.navigate({ to: "/server-hosting" });
+    deleteInstance.mutate(
+      { id: instanceId, deleteData },
+      {
+        onSuccess: () => {
+          setDeleteOpen(false);
+          toast.success("Instance deleted");
+          void router.navigate({ to: "/server-hosting" });
+        },
+      },
+    );
   };
 
   return (
@@ -273,7 +313,7 @@ function ServerHostingSettings({
             <Input onChange={(e) => setBindIp(e.target.value)} value={bindIp} />
           </label>
           <div className="flex gap-2 pt-2">
-            <Button size="sm" onClick={handleSave}>
+            <Button size="sm" disabled={updateInstance.isPending} onClick={handleSave}>
               Save Settings
             </Button>
           </div>
@@ -315,7 +355,11 @@ function ServerHostingSettings({
           </label>
           <AlertDialogFooter>
             <AlertDialogClose>Cancel</AlertDialogClose>
-            <Button variant="destructive" onClick={handleDelete}>
+            <Button
+              variant="destructive"
+              disabled={deleteInstance.isPending}
+              onClick={handleDelete}
+            >
               Delete
             </Button>
           </AlertDialogFooter>
@@ -330,18 +374,13 @@ export function ServerHostingDetailPage() {
   const router = useRouter();
   const instanceId = Number(id);
 
-  const {
-    instances,
-    runtimeStatuses,
-    loadInstances,
-    startServer,
-    stopServer,
-    restartServer,
-    updateRuntimeStatus,
-  } = useServerHostingStore();
+  const instance = useHostedServer(instanceId);
+  const { data: statusData } = useServerStatus(instanceId);
+  const startServer = useStartServer();
+  const stopServer = useStopServer();
+  const restartServer = useRestartServer();
 
-  const instance = instances.find((i) => i.id === instanceId);
-  const status = runtimeStatuses[instanceId] ?? {
+  const status = statusData ?? {
     status: "stopped",
     pid: null,
     uptime: null,
@@ -349,33 +388,6 @@ export function ServerHostingDetailPage() {
   };
 
   const { data: dirSize } = useServerDataDirSize(instanceId);
-
-  useMountEffect(() => {
-    void loadInstances();
-  });
-
-  // Listen for status updates
-  useEffect(() => {
-    let unlisten: (() => void) | undefined;
-    void (async () => {
-      unlisten = await listen<{
-        status: string;
-        pid?: number;
-        uptime?: number;
-        exit_code?: number;
-      }>(`server-status:${instanceId}`, (event) => {
-        updateRuntimeStatus(instanceId, {
-          status: event.payload.status as ServerRuntimeStatus["status"],
-          pid: event.payload.pid ?? null,
-          uptime: event.payload.uptime ?? null,
-          exit_code: event.payload.exit_code ?? null,
-        });
-      });
-    })();
-    return () => {
-      unlisten?.();
-    };
-  }, [instanceId, updateRuntimeStatus]);
 
   if (!instance) {
     return (
@@ -393,8 +405,7 @@ export function ServerHostingDetailPage() {
   }
 
   const isRunning = status.status === "running";
-  const isStarting = status.status === "starting";
-  const isBusy = isStarting || status.status === "stopping";
+  const isBusy = status.status === "starting" || status.status === "stopping";
   const statusColor =
     (
       {
@@ -450,15 +461,20 @@ export function ServerHostingDetailPage() {
             <PackageIcon className="mr-1 size-3" /> Mods
           </Button>
           {isRunning ? (
-            <Button size="sm" variant="outline" onClick={() => void stopServer(instanceId)}>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={stopServer.isPending}
+              onClick={() => stopServer.mutate(instanceId)}
+            >
               <SquareIcon className="size-3" /> Stop
             </Button>
           ) : (
             <Button
               size="sm"
               variant="outline"
-              disabled={isBusy}
-              onClick={() => void startServer(instanceId)}
+              disabled={isBusy || startServer.isPending}
+              onClick={() => startServer.mutate(instanceId)}
             >
               <PlayIcon className="size-3" /> Start
             </Button>
@@ -466,8 +482,8 @@ export function ServerHostingDetailPage() {
           <Button
             size="sm"
             variant="outline"
-            disabled={isBusy || !isRunning}
-            onClick={() => void restartServer(instanceId)}
+            disabled={isBusy || !isRunning || restartServer.isPending}
+            onClick={() => restartServer.mutate(instanceId)}
           >
             <RotateCcwIcon className="size-3" /> Restart
           </Button>
