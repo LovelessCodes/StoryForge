@@ -16,7 +16,6 @@ import {
   UserPlus2,
   ZapIcon,
 } from "lucide-react";
-import { useEffect } from "react";
 import { toast } from "sonner";
 
 import { AuthStatus } from "@/components/auth/auth-status";
@@ -43,6 +42,7 @@ import {
 } from "@/components/ui/sidebar";
 import { TooltipTrigger } from "@/components/ui/tooltip";
 import { rootDialogHandle, rootMenuHandle, rootTooltipHandle } from "@/handles";
+import { useHostedServers } from "@/hooks/queries/server-hosting";
 import { useAppVersion } from "@/hooks/use-app-version";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { useModpacks } from "@/hooks/use-modpacks";
@@ -50,7 +50,6 @@ import { useSaves } from "@/hooks/use-saves";
 import { useVerifyAuth } from "@/hooks/use-verify-auth";
 import { useAccountStore } from "@/stores/accounts";
 import { useInstallations } from "@/stores/installations";
-import { useServerHostingStore } from "@/stores/server-hosting";
 import { useServerStore } from "@/stores/servers";
 
 import { ModConfigsButton } from "./buttons/mod-configs.button";
@@ -60,16 +59,12 @@ export function AppSidebar() {
   const matches = useMatches();
   const { selectedUser, users, removeUser, setSelectedUser } = useAccountStore();
   const { installations } = useInstallations();
-  const { instances: hostedInstances, loadInstances } = useServerHostingStore();
+  const { data: hostedInstances } = useHostedServers();
   const { data: appVersion } = useAppVersion();
   const { data: saves } = useSaves();
   const { data: installedVersions } = useInstalledVersions();
   const { data: modpacks } = useModpacks();
   const { servers } = useServerStore();
-
-  useEffect(() => {
-    void loadInstances();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { mutate: verifyAuth } = useVerifyAuth({
     onError: (error, variables) => {
@@ -358,7 +353,7 @@ export function AppSidebar() {
                     <HardDriveIcon />
                     Hosting
                     <SidebarMenuBadge className="text-xs">
-                      {hostedInstances.length}
+                      {hostedInstances?.length ?? 0}
                     </SidebarMenuBadge>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
