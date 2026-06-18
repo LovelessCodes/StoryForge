@@ -14,9 +14,15 @@ import { Button } from "@/components/ui/button";
 import { Group, GroupSeparator } from "@/components/ui/group";
 import { TooltipTrigger } from "@/components/ui/tooltip";
 import { rootTooltipHandle } from "@/handles";
+import {
+  useServerStatus,
+  useStartServer,
+  useStopServer,
+  useRestartServer,
+} from "@/hooks/queries/server-hosting";
 import { useServerDataDirSize } from "@/hooks/use-server-data-dir-size";
+import type { HostedServerInstance } from "@/lib/server-hosting-types";
 import { cn, itemVariants } from "@/lib/utils";
-import { useServerHostingStore, type HostedServerInstance } from "@/stores/server-hosting";
 
 type Props = {
   instance: HostedServerInstance;
@@ -41,11 +47,14 @@ const statusLabels: Record<string, string> = {
 
 export function ServerInstanceRow({ instance, index, className }: Props) {
   const router = useRouter();
-  const { runtimeStatuses, startServer, stopServer, restartServer } = useServerHostingStore();
+  const { data: statusData } = useServerStatus(instance.id);
+  const startServer = useStartServer();
+  const stopServer = useStopServer();
+  const restartServer = useRestartServer();
 
   const { data: dirSize } = useServerDataDirSize(instance.id);
 
-  const status = runtimeStatuses[instance.id] ?? {
+  const status = statusData ?? {
     status: "stopped",
     pid: null,
     uptime: null,
@@ -105,7 +114,12 @@ export function ServerInstanceRow({ instance, index, className }: Props) {
         {isRunning ? (
           <TooltipTrigger
             render={
-              <Button onClick={() => void stopServer(instance.id)} size="icon" variant="outline">
+              <Button
+                disabled={stopServer.isPending}
+                onClick={() => stopServer.mutate(instance.id)}
+                size="icon"
+                variant="outline"
+              >
                 <SquareIcon aria-hidden="true" className="-ms-1" size={16} />
               </Button>
             }
@@ -115,7 +129,12 @@ export function ServerInstanceRow({ instance, index, className }: Props) {
         ) : isCrashed ? (
           <TooltipTrigger
             render={
-              <Button onClick={() => void restartServer(instance.id)} size="icon" variant="outline">
+              <Button
+                disabled={restartServer.isPending}
+                onClick={() => restartServer.mutate(instance.id)}
+                size="icon"
+                variant="outline"
+              >
                 <RotateCcwIcon aria-hidden="true" className="-ms-1" size={16} />
               </Button>
             }
@@ -126,8 +145,8 @@ export function ServerInstanceRow({ instance, index, className }: Props) {
           <TooltipTrigger
             render={
               <Button
-                disabled={isBusy}
-                onClick={() => void startServer(instance.id)}
+                disabled={isBusy || startServer.isPending}
+                onClick={() => startServer.mutate(instance.id)}
                 size="icon"
                 variant="outline"
               >
