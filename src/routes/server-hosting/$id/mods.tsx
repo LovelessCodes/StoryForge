@@ -5,7 +5,7 @@ import { ArrowLeftIcon } from "lucide-react";
 import { ModBrowser } from "@/components/pages/mods-browser";
 import { Button } from "@/components/ui/button";
 import { ErrorComponent } from "@/components/ui/error";
-import { useServerHostingStore } from "@/stores/server-hosting";
+import { useHostedServer } from "@/hooks/queries/server-hosting";
 
 export const Route = createFileRoute("/server-hosting/$id/mods")({
   component: ServerHostingModsPage,
@@ -17,8 +17,7 @@ function ServerHostingModsPage() {
   const router = useRouter();
   const instanceId = Number(id);
 
-  const instances = useServerHostingStore((s) => s.instances);
-  const instance = instances.find((i) => i.id === instanceId);
+  const instance = useHostedServer(instanceId);
 
   if (!instance) {
     return (
