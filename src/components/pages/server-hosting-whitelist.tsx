@@ -1,4 +1,3 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -12,8 +11,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  useWhitelist,
+  useServerStatus,
+  useAddToWhitelist,
+  useRemoveFromWhitelist,
+  useSetWhitelistMode,
+  useSendCommand,
+} from "@/hooks/queries/server-hosting";
 import { useAccountStore } from "@/stores/accounts";
-import { useServerHostingStore } from "@/stores/server-hosting";
 
 import { Input } from "../ui/input";
 import { ScrollArea } from "../ui/scroll-area";
@@ -23,55 +29,32 @@ type Props = {
 };
 
 export function ServerHostingWhitelist({ instanceId }: Props) {
-  const queryClient = useQueryClient();
   const [lookupName, setLookupName] = useState("");
   const [newUid, setNewUid] = useState("");
   const [newName, setNewName] = useState("");
-  const [lookupLoading, setLookupLoading] = useState(false);
 
-  const {
-    getWhitelist,
-    addToWhitelist,
-    removeFromWhitelist,
-    lookupPlayerUid,
-    sendCommand,
-    setWhitelistMode,
-    readServerConfig,
-    runtimeStatuses,
-  } = useServerHostingStore();
+  const { data, isLoading } = useWhitelist(instanceId);
+  const { data: statusData } = useServerStatus(instanceId);
+  const addMutation = useAddToWhitelist();
+  const removeMutation = useRemoveFromWhitelist();
+  const toggleMutation = useSetWhitelistMode();
+  const sendCommand = useSendCommand();
   const { selectedUser } = useAccountStore();
 
-  const status = runtimeStatuses[instanceId]?.status;
+  const status = statusData?.status;
   const isRunning = status === "running";
   const isBusy = status === "starting" || status === "stopping";
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["whitelist", instanceId],
-    queryFn: async () => {
-      const [list, configJson] = await Promise.all([
-        getWhitelist(instanceId),
-        readServerConfig(instanceId),
-      ]);
-      let whitelistEnabled = true;
-      try {
-        const config = JSON.parse(configJson);
-        whitelistEnabled = config.WhitelistMode !== 1;
-      } catch {
-        // config not valid JSON — leave default
-      }
-      return { entries: list, whitelistEnabled };
-    },
-    staleTime: 30_000,
-  });
 
   const entries = data?.entries ?? [];
   const whitelistEnabled = data?.whitelistEnabled ?? true;
 
   const handleLookup = async () => {
     if (!lookupName.trim()) return;
-    setLookupLoading(true);
     try {
-      const result = await lookupPlayerUid(lookupName.trim());
+      const { invoke } = await import("@tauri-apps/api/core");
+      const result = await invoke<{ uid: string; name: string } | null>("lookup_player_uid", {
+        accountName: lookupName.trim(),
+      });
       if (result) {
         setNewUid(result.uid);
         setNewName(result.name);
@@ -81,79 +64,8 @@ export function ServerHostingWhitelist({ instanceId }: Props) {
       }
     } catch (e) {
       toast.error(`Lookup failed: ${String(e)}`);
-    } finally {
-      setLookupLoading(false);
     }
   };
-
-  const addMutation = useMutation({
-    mutationFn: async ({ uid, playerName }: { uid: string; playerName: string }) => {
-      const entry = await addToWhitelist(instanceId, uid, playerName);
-      return { entry, playerName };
-    },
-    onSuccess: ({ playerName }) => {
-      void queryClient.invalidateQueries({ queryKey: ["whitelist", instanceId] });
-      setNewUid("");
-      setNewName("");
-      setLookupName("");
-      toast.success("Player added to whitelist");
-
-      if (isRunning) {
-        void sendCommand(instanceId, `/whitelist add ${playerName}`)
-          .then(() => toast.success(`Sent whitelist add command for ${playerName}`))
-          .catch(() =>
-            toast.warning(
-              "Player added to file but live command failed (server may not be responding)",
-            ),
-          );
-      }
-    },
-    onError: (e) => {
-      toast.error(`Failed to add: ${String(e)}`);
-    },
-  });
-
-  const removeMutation = useMutation({
-    mutationFn: async ({ uid, name }: { uid: string; name: string }) => {
-      await removeFromWhitelist(instanceId, uid);
-      return { uid, name };
-    },
-    onSuccess: ({ uid, name }) => {
-      void queryClient.invalidateQueries({ queryKey: ["whitelist", instanceId] });
-      toast.success("Player removed from whitelist");
-
-      if (isRunning) {
-        void sendCommand(instanceId, `/whitelist remove ${name || uid}`)
-          .then(() => toast.success(`Sent whitelist remove command for ${name || uid}`))
-          .catch(() =>
-            toast.warning(
-              "Player removed from file but live command failed (server may not be responding)",
-            ),
-          );
-      }
-    },
-    onError: (e) => {
-      toast.error(`Failed to remove: ${String(e)}`);
-    },
-  });
-
-  const toggleMutation = useMutation({
-    mutationFn: async (newState: boolean) => {
-      if (isRunning) {
-        await sendCommand(instanceId, newState ? "/whitelist on" : "/whitelist off");
-      } else {
-        await setWhitelistMode(instanceId, newState);
-      }
-      return newState;
-    },
-    onSuccess: (newState) => {
-      void queryClient.invalidateQueries({ queryKey: ["whitelist", instanceId] });
-      toast.success(`Whitelist ${newState ? "enabled" : "disabled"}`);
-    },
-    onError: (e) => {
-      toast.error(`Failed to toggle whitelist: ${String(e)}`);
-    },
-  });
 
   const handleAddMe = () => {
     if (selectedUser?.uid && selectedUser?.playername) {
@@ -203,7 +115,31 @@ export function ServerHostingWhitelist({ instanceId }: Props) {
                               !confirm(`Remove player ${entry.name || entry.uid} from whitelist?`)
                             )
                               return;
-                            removeMutation.mutate({ uid: entry.uid, name: entry.name });
+                            removeMutation.mutate(
+                              { id: instanceId, uid: entry.uid },
+                              {
+                                onSuccess: (_, { uid }) => {
+                                  if (isRunning) {
+                                    sendCommand.mutate(
+                                      {
+                                        id: instanceId,
+                                        command: `/whitelist remove ${entry.name || uid}`,
+                                      },
+                                      {
+                                        onSuccess: () =>
+                                          toast.success(
+                                            `Sent whitelist remove command for ${entry.name || uid}`,
+                                          ),
+                                        onError: () =>
+                                          toast.warning(
+                                            "Player removed from file but live command failed (server may not be responding)",
+                                          ),
+                                      },
+                                    );
+                                  }
+                                },
+                              },
+                            );
                           }}
                         >
                           <Trash2Icon className="size-3 text-red-500" />
@@ -227,7 +163,9 @@ export function ServerHostingWhitelist({ instanceId }: Props) {
               </div>
               <Button
                 disabled={isBusy || toggleMutation.isPending}
-                onClick={() => toggleMutation.mutate(!whitelistEnabled)}
+                onClick={() =>
+                  toggleMutation.mutate({ id: instanceId, enabled: !whitelistEnabled })
+                }
                 size="sm"
                 variant={whitelistEnabled ? "default" : "outline"}
               >
@@ -250,12 +188,12 @@ export function ServerHostingWhitelist({ instanceId }: Props) {
                   value={lookupName}
                 />
                 <Button
-                  disabled={!lookupName.trim() || lookupLoading}
+                  disabled={!lookupName.trim()}
                   onClick={handleLookup}
                   size="sm"
                   variant="outline"
                 >
-                  {lookupLoading ? "Looking up…" : "Look up UID"}
+                  Look up UID
                 </Button>
               </div>
 
@@ -285,7 +223,33 @@ export function ServerHostingWhitelist({ instanceId }: Props) {
                 <Button
                   disabled={!newUid.trim() || addMutation.isPending}
                   onClick={() =>
-                    addMutation.mutate({ uid: newUid.trim(), playerName: newName.trim() || newUid })
+                    addMutation.mutate(
+                      {
+                        id: instanceId,
+                        uid: newUid.trim(),
+                        name: newName.trim() || newUid,
+                      },
+                      {
+                        onSuccess: (entry) => {
+                          setNewUid("");
+                          setNewName("");
+                          setLookupName("");
+                          if (isRunning) {
+                            sendCommand.mutate(
+                              { id: instanceId, command: `/whitelist add ${entry.name}` },
+                              {
+                                onSuccess: () =>
+                                  toast.success(`Sent whitelist add command for ${entry.name}`),
+                                onError: () =>
+                                  toast.warning(
+                                    "Player added to file but live command failed (server may not be responding)",
+                                  ),
+                              },
+                            );
+                          }
+                        },
+                      },
+                    )
                   }
                   size="sm"
                 >
