@@ -20,7 +20,7 @@ export default defineConfig(async () => ({
       target: "react",
     }),
     react(),
-    devtools(),
+    ...(process.env.NODE_ENV !== "production" ? [devtools()] : []),
   ],
   resolve: {
     tsconfigPaths: true,
