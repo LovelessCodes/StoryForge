@@ -138,37 +138,6 @@ export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
         return true;
       })
       .sort((a, b) => {
-        if (side === "installed") {
-          const aInstalled =
-            installedModIdSet.has(a.modid) ||
-            (a.urlalias !== null && installedModIdSet.has(a.urlalias)) ||
-            a.modidstrs.some((id) => installedModIdSet.has(Number(id)));
-          const bInstalled =
-            installedModIdSet.has(b.modid) ||
-            (b.urlalias !== null && installedModIdSet.has(b.urlalias)) ||
-            b.modidstrs.some((id) => installedModIdSet.has(Number(id)));
-
-          if (orderDirection === "descending") {
-            return a.side === "both"
-              ? -1
-              : b.side === "both"
-                ? 1
-                : aInstalled
-                  ? -1
-                  : bInstalled
-                    ? 1
-                    : 0;
-          }
-          return a.side === "both"
-            ? 1
-            : b.side === "both"
-              ? -1
-              : aInstalled
-                ? 1
-                : bInstalled
-                  ? -1
-                  : 0;
-        }
         if (sortBy === "name") {
           return orderDirection === "descending"
             ? stripped(b.name).localeCompare(stripped(a.name))
