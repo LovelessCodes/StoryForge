@@ -1,4 +1,4 @@
-mod modules;
+pub mod modules;
 use modules::{
     auth, download, installations, maps, mods, news, saves, server_hosting, servers, sniffer,
     versions,
@@ -11,7 +11,6 @@ use tauri::{RunEvent, WebviewUrl, WebviewWindowBuilder};
 macro_rules! log_info {
     ($($arg:tt)*) => {{
         let msg = format!($($arg)*);
-        eprintln!("[StoryForge INFO] {msg}");
         $crate::modules::logger::log("INFO ", &msg);
     }};
 }
@@ -20,7 +19,6 @@ macro_rules! log_info {
 macro_rules! log_debug {
     ($($arg:tt)*) => {{
         let msg = format!($($arg)*);
-        eprintln!("[StoryForge DEBUG] {msg}");
         $crate::modules::logger::log("DEBUG", &msg);
     }};
 }
@@ -29,11 +27,12 @@ macro_rules! log_debug {
 macro_rules! log_error {
     ($($arg:tt)*) => {{
         let msg = format!($($arg)*);
-        eprintln!("[StoryForge ERROR] {msg}");
         $crate::modules::logger::log("ERROR", &msg);
     }};
 }
 
+use std::sync::Arc;
+use std::time::Duration;
 use tauri::Manager;
 
 /// Returns `true` if the application is running inside a Flatpak sandbox.
@@ -77,138 +76,140 @@ pub fn run() {
         .setup(|app| {
             let app_handle = app.handle();
 
-            // Init logger
+            // ── Step 0: Init logger ──
+            // Use app_data_dir()/logs/ so the LogViewer can find the file.
+            let log_dir = app_handle
+                .path()
+                .app_data_dir()
+                .expect("Failed to get app data dir")
+                .join("logs");
+            let _ = std::fs::create_dir_all(&log_dir);
+            app_handle
+                .plugin(
+                    tauri_plugin_log::Builder::new()
+                        .target(tauri_plugin_log::Target::new(
+                            tauri_plugin_log::TargetKind::Folder {
+                                path: log_dir,
+                                file_name: Some("app".into()),
+                            },
+                        ))
+                        .max_file_size(50_000 /* bytes */)
+                        .level(log::LevelFilter::Info)
+                        .format(|out, message, record| {
+                            out.finish(format_args!("[{}] {}", record.level(), message))
+                        })
+                        .build(),
+                )
+                .expect("Failed to init log plugin");
+
+            // Log startup info
+            let startup_start = std::time::Instant::now();
             if let Ok(data_dir) = app_handle.path().app_data_dir() {
-                modules::logger::init(&data_dir);
                 log_info!("App started, data dir: {:?}", data_dir);
-                // Also print to stderr so it's visible even if logger itself fails
-                eprintln!("[StoryForge] App started, data dir: {:?}", data_dir);
             } else {
-                eprintln!("[StoryForge] FATAL: Failed to resolve app_data_dir");
+                log_error!("FATAL: Failed to resolve app_data_dir");
                 panic!("Failed to resolve app_data_dir");
             }
 
             // ── Step 1: Create store directory ──
             log_info!("Setup step 1: creating store directory...");
-            eprintln!("[StoryForge] Setup step 1: creating store directory...");
+            let t1 = std::time::Instant::now();
             let store_path = match app.path().app_data_dir() {
                 Ok(dir) => dir.join("store"),
                 Err(e) => {
                     log_error!("Failed to get app_data_dir for store: {}", e);
-                    eprintln!(
-                        "[StoryForge] FATAL: Failed to get app_data_dir for store: {}",
-                        e
-                    );
                     panic!("Failed to get app_data_dir for store: {}", e);
                 }
             };
             if let Err(e) = std::fs::create_dir_all(&store_path) {
                 log_error!("Failed to create store directory {:?}: {}", store_path, e);
-                eprintln!(
-                    "[StoryForge] FATAL: Failed to create store directory {:?}: {}",
-                    store_path, e
-                );
                 panic!("Failed to create store directory: {}", e);
             }
             log_info!("Setup step 1 done: store dir created at {:?}", store_path);
-            eprintln!("[StoryForge] Setup step 1 done.");
+            modules::logger::log_elapsed("Setup step 1 elapsed", t1);
 
             // ── Step 2: Init zustand plugin ──
             log_info!("Setup step 2: initializing zustand plugin...");
-            eprintln!("[StoryForge] Setup step 2: initializing zustand plugin...");
+            let t2 = std::time::Instant::now();
             app_handle
                 .plugin(
                     tauri_plugin_zustand::Builder::new()
-                        .path(store_path)
+                        .path(store_path.clone())
                         .build(),
                 )
                 .map_err(|e| {
                     log_error!("Failed to initialize zustand plugin: {}", e);
-                    eprintln!(
-                        "[StoryForge] FATAL: Failed to initialize zustand plugin: {}",
-                        e
-                    );
                     e
                 })?;
             log_info!("Setup step 2 done: zustand plugin initialized");
-            eprintln!("[StoryForge] Setup step 2 done.");
+            modules::logger::log_elapsed("Setup step 2 elapsed", t2);
+
+            // ── Step 2.5: Run data migrations ──
+            log_info!("Setup step 2.5: running data migrations...");
+            let t2_5 = std::time::Instant::now();
+            modules::migrations::run_all(&app_handle);
+            log_info!("Setup step 2.5 done: migrations complete");
+            modules::logger::log_elapsed("Setup step 2.5 elapsed", t2_5);
+
+            // ── Step 2.75: Shared HTTP client ──
+            log_info!("Setup step 2.75: initializing shared HTTP client...");
+            let t2_75 = std::time::Instant::now();
+            let http_client = Arc::new(
+                reqwest::Client::builder()
+                    .timeout(Duration::from_secs(60))
+                    .connect_timeout(Duration::from_secs(10))
+                    .user_agent(concat!("StoryForge/", env!("CARGO_PKG_VERSION")))
+                    .build()
+                    .map_err(|e| {
+                        log_error!("Failed to build HTTP client: {e}");
+                        e
+                    })?,
+            );
+            app_handle.manage(http_client);
+            log_info!("Setup step 2.75 done: shared HTTP client ready");
+            modules::logger::log_elapsed("Setup step 2.75 elapsed", t2_75);
 
             // ── Step 3: Build main window ──
             log_info!("Setup step 3: building main window...");
-            eprintln!("[StoryForge] Setup step 3: building main window...");
+            let t3 = std::time::Instant::now();
 
             let win_builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
                 .title("Story Forge")
                 .inner_size(800.0, 600.0)
-                .transparent(false);
+                .transparent(cfg!(target_os = "macos"))
+                .decorations(!cfg!(target_os = "linux"));
 
             let window = match win_builder.build() {
                 Ok(w) => {
                     log_info!("Setup step 3 done: window created");
-                    eprintln!("[StoryForge] Setup step 3 done: window created");
                     w
                 }
                 Err(e) => {
                     log_error!("Failed to build main window: {}", e);
-                    eprintln!("[StoryForge] FATAL: Failed to build main window: {}", e);
                     panic!("Failed to build main window: {}", e);
                 }
             };
+
+            modules::logger::log_elapsed("Setup step 3 elapsed", t3);
 
             // ── Step 4: Platform-specific window config ──
             log_info!(
                 "Setup step 4: platform-specific window config (OS: {})",
                 std::env::consts::OS
             );
-            eprintln!(
-                "[StoryForge] Setup step 4: platform-specific window config (OS: {})",
-                std::env::consts::OS
-            );
+            let t4 = std::time::Instant::now();
 
-            #[cfg(target_os = "windows")]
-            {
-                let _ = window.set_decorations(false);
-            }
             #[cfg(target_os = "macos")]
             {
-                use objc2::rc::Retained;
-                use objc2_app_kit::{NSColor, NSWindowStyleMask, NSWindowTitleVisibility};
-
-                unsafe {
-                    let ns_window: Retained<objc2_app_kit::NSWindow> =
-                        Retained::retain(window.ns_window().unwrap() as *mut _).unwrap();
-
-                    // Hide the title bar and traffic lights, keep resizable
-                    ns_window.setTitlebarAppearsTransparent(true);
-                    ns_window.setTitleVisibility(NSWindowTitleVisibility::Hidden);
-                    let mut mask = ns_window.styleMask();
-                    mask.insert(NSWindowStyleMask::FullSizeContentView);
-                    mask.insert(NSWindowStyleMask::Resizable);
-                    mask.remove(NSWindowStyleMask::Titled);
-                    ns_window.setStyleMask(mask);
-
-                    // Rounded corners
-                    if let Some(content_view) = ns_window.contentView() {
-                        content_view.setWantsLayer(true);
-                        content_view.layer().unwrap().setCornerRadius(12.0);
-                        content_view.layer().unwrap().setMasksToBounds(true);
-                    }
-
-                    let bg_color = NSColor::colorWithRed_green_blue_alpha(
-                        50.0 / 255.0,
-                        158.0 / 255.0,
-                        163.5 / 255.0,
-                        0.0,
-                    );
-                    ns_window.setBackgroundColor(Some(&bg_color));
-                }
+                modules::platform::macos::apply_window_styling(&window);
             }
             log_info!("Setup step 4 done: platform-specific config applied");
-            eprintln!("[StoryForge] Setup step 4 done.");
+            modules::logger::log_elapsed("Setup step 4 elapsed", t4);
 
             // ── Step 5: Setup complete ──
             log_info!("Setup complete – app is running");
-            eprintln!("[StoryForge] Setup complete – app is running");
+            modules::logger::log_elapsed("Total Rust setup elapsed", startup_start);
+            modules::logger::mark_webview_start();
             Ok(())
         })
         .plugin(tauri_plugin_window_state::Builder::default().build())
@@ -246,6 +247,8 @@ pub fn run() {
             versions::remove_all_versions,
             // Logger
             modules::logger::log_message,
+            modules::logger::log_startup_time,
+            modules::logger::log_webview_gap,
             modules::logger::get_logs,
             // Installations
             installations::get_all_installations,
