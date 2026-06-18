@@ -14,7 +14,41 @@ import { useInstallationsStore } from "./stores/installations";
 import { useServerStore } from "./stores/servers";
 import { tauriSettingsHandler } from "./stores/settings";
 
-await tauriSettingsHandler.start();
+void invoke("log_webview_gap");
+
+const frontendLoadStart = performance.now();
+
+let settingsTime = 0,
+  serversTime = 0,
+  installationsTime = 0,
+  accountsTime = 0;
+await Promise.all([
+  (async () => {
+    const t = performance.now();
+    await tauriSettingsHandler.start();
+    settingsTime = performance.now() - t;
+  })(),
+  (async () => {
+    const t = performance.now();
+    await useServerStore.getState().loadServers();
+    serversTime = performance.now() - t;
+  })(),
+  (async () => {
+    const t = performance.now();
+    await useInstallationsStore.getState().loadInstallations();
+    installationsTime = performance.now() - t;
+  })(),
+  (async () => {
+    const t = performance.now();
+    await useAccountStore.getState().loadAccounts();
+    accountsTime = performance.now() - t;
+  })(),
+]);
+void invoke("log_message", {
+  level: "INFO ",
+  message: `Frontend store loading: ${(performance.now() - frontendLoadStart).toFixed(2)}ms (settings=${settingsTime.toFixed(2)}ms servers=${serversTime.toFixed(2)}ms installations=${installationsTime.toFixed(2)}ms accounts=${accountsTime.toFixed(2)}ms)`,
+});
+
 const dark = tauriSettingsHandler.store.getState().darkMode;
 if (dark) {
   document.body.classList.add("dark");
@@ -22,23 +56,17 @@ if (dark) {
   document.body.classList.remove("dark");
 }
 
-await useServerStore.getState().loadServers();
-await useInstallationsStore.getState().loadInstallations();
-
-await useAccountStore
-  .getState()
-  .loadAccounts()
-  .then(() => {
-    const { users, removeUser } = useAccountStore.getState();
-    for (const user of users) {
-      if (!user.sessionkey || !user.uid) continue;
-      invoke("verify", { sessionkey: user.sessionkey, uid: user.uid }).catch(async () => {
-        removeUser(user.uid);
-        toast.error(`${user.playername ?? user.email}'s session expired — please sign in again`);
-        rootDialogHandle.openWithPayload(() => <AddUserDialog email={user.email} />);
-      });
-    }
-  });
+{
+  const { users, removeUser } = useAccountStore.getState();
+  for (const user of users) {
+    if (!user.sessionkey || !user.uid) continue;
+    invoke("verify", { sessionkey: user.sessionkey, uid: user.uid }).catch(async () => {
+      removeUser(user.uid);
+      toast.error(`${user.playername ?? user.email}'s session expired — please sign in again`);
+      rootDialogHandle.openWithPayload(() => <AddUserDialog email={user.email} />);
+    });
+  }
+}
 
 const queryClient = new QueryClient();
 const router = createRouter({
@@ -55,6 +83,7 @@ declare module "@tanstack/react-router" {
   }
 }
 
+const reactRenderStart = performance.now();
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <MotionConfig reducedMotion="user">
     <LazyMotion features={domAnimation}>
@@ -66,3 +95,9 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     </LazyMotion>
   </MotionConfig>,
 );
+void invoke("log_message", {
+  level: "INFO ",
+  message: `React render: ${(performance.now() - reactRenderStart).toFixed(2)}ms`,
+});
+
+void invoke("log_startup_time");
