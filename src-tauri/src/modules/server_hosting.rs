@@ -1,20 +1,17 @@
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashMap,
     fs::{create_dir_all, read_dir, read_to_string, remove_dir_all, remove_file, write},
     io::Write as IoWrite,
     path::{Path, PathBuf},
-    process::Stdio,
-    sync::Mutex,
+    sync::Arc,
     time::{Duration, Instant},
 };
-use tauri::{command, AppHandle, Emitter, Manager};
-use tokio::io::{AsyncWriteExt, BufReader as AsyncBufReader};
-use tokio::process::{Child, Command};
+use tauri::{command, AppHandle, Emitter, Manager, State};
+use tokio::process::Command;
 
 use super::errors::UiError;
-use super::installations;
-use super::utils::{versions_folder, versions_subdir};
+use super::utils::{dir_size, format_size, versions_folder, versions_subdir};
+use crate::modules::server_hosting_actor;
 use crate::{log_error, log_info};
 
 // ── Data structures ──
@@ -34,19 +31,9 @@ pub struct HostedServerInstance {
     pub total_time_played: u64,
 }
 
-/// Runtime state for one instance (not persisted)
-struct ServerProcessState {
-    child: Option<Child>,
-    status: ServerStatus,
-    pid: Option<u32>,
-    started_at: Option<Instant>,
-    /// Set during initial startup to track if process has fully come up
-    startup_reported: bool,
-}
-
-#[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq)]
-enum ServerStatus {
+#[allow(dead_code)]
+pub(crate) enum ServerStatus {
     NotInstalled,
     Stopped,
     Starting,
@@ -56,7 +43,7 @@ enum ServerStatus {
 }
 
 impl ServerStatus {
-    fn as_str(&self) -> &'static str {
+    pub(crate) fn as_str(&self) -> &'static str {
         match self {
             ServerStatus::NotInstalled => "not_installed",
             ServerStatus::Stopped => "stopped",
@@ -65,6 +52,26 @@ impl ServerStatus {
             ServerStatus::Stopping => "stopping",
             ServerStatus::Crashed { .. } => "crashed",
         }
+    }
+}
+
+/// Whitelist mode stored in serverconfig.json.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum WhitelistMode {
+    Off = 1,
+    Whitelist = 2,
+}
+
+impl WhitelistMode {
+    pub fn as_u8(self) -> u8 {
+        self as u8
+    }
+}
+
+impl Default for WhitelistMode {
+    fn default() -> Self {
+        WhitelistMode::Off
     }
 }
 
@@ -121,21 +128,10 @@ pub struct HostedServerPartial {
     pub total_time_played: Option<u64>,
 }
 
-// ── Global state ──
-
-use std::sync::LazyLock;
-
-static PROCESSES: LazyLock<Mutex<HashMap<u64, ServerProcessState>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
-
-static STDIN_WRITERS: LazyLock<
-    Mutex<HashMap<u64, Arc<tokio::sync::Mutex<tokio::process::ChildStdin>>>>,
-> = LazyLock::new(|| Mutex::new(HashMap::new()));
-
 // ── Helpers ──
 
 fn generate_id(name: &str) -> u64 {
-    installations::generate_id(name)
+    crate::modules::utils::generate_id(name)
 }
 
 /// Convert a name to a filesystem-safe slug (lowercase, hyphens, alphanumeric only)
@@ -154,36 +150,6 @@ fn slugify(name: &str) -> String {
         .filter(|s| !s.is_empty())
         .collect::<Vec<_>>()
         .join("-")
-}
-
-fn format_size(bytes: u64) -> String {
-    const KB: u64 = 1024;
-    const MB: u64 = KB * 1024;
-    const GB: u64 = MB * 1024;
-    if bytes >= GB {
-        format!("{:.2} GB", bytes as f64 / GB as f64)
-    } else if bytes >= MB {
-        format!("{:.2} MB", bytes as f64 / MB as f64)
-    } else if bytes >= KB {
-        format!("{:.2} KB", bytes as f64 / KB as f64)
-    } else {
-        format!("{} B", bytes)
-    }
-}
-
-fn dir_size(path: &Path) -> u64 {
-    let mut total: u64 = 0;
-    if let Ok(entries) = read_dir(path) {
-        for entry in entries.flatten() {
-            let entry_path = entry.path();
-            if entry_path.is_dir() {
-                total += dir_size(&entry_path);
-            } else if let Ok(meta) = entry_path.metadata() {
-                total += meta.len();
-            }
-        }
-    }
-    total
 }
 
 /// Simple HH:MM:SS timestamp for log events
@@ -335,7 +301,7 @@ fn find_instance(
 }
 
 /// Emit a status update event over Tauri
-fn emit_status(
+pub(crate) fn emit_status(
     app: &AppHandle,
     instance_id: u64,
     status: &ServerStatus,
@@ -365,7 +331,7 @@ fn emit_status(
 }
 
 /// Emit a log line event for an instance
-fn emit_log(app: &AppHandle, instance_id: u64, line: &str) {
+pub(crate) fn emit_log(app: &AppHandle, instance_id: u64, line: &str) {
     let timestamp = format_timestamp();
     let _ = app.emit(
         &format!("server-log:{instance_id}"),
@@ -374,7 +340,7 @@ fn emit_log(app: &AppHandle, instance_id: u64, line: &str) {
 }
 
 /// Append a log line to the instance's log file
-fn append_log(app: &AppHandle, instance_name: &str, line: &str) {
+pub(crate) fn append_log(app: &AppHandle, instance_name: &str, line: &str) {
     let timestamp = format_epoch();
     if let Ok(data_dir) = app.path().app_data_dir() {
         let log_dir = data_dir.join("server-logs");
@@ -407,20 +373,7 @@ fn full_port_check(
     bind_ip: &str,
 ) -> Result<(), UiError> {
     if let Ok(instances) = scan_instances(app) {
-        let running_ids: Vec<u64> = {
-            if let Ok(procs) = PROCESSES.lock() {
-                procs
-                    .iter()
-                    .filter(|(_, s)| {
-                        s.status == ServerStatus::Running || s.status == ServerStatus::Starting
-                    })
-                    .map(|(&id, _)| id)
-                    .collect()
-            } else {
-                vec![]
-            }
-        };
-
+        let running_ids = server_hosting_actor::running_instance_ids();
         for inst in &instances {
             if inst.id == instance_id {
                 continue;
@@ -444,7 +397,7 @@ fn full_port_check(
 
 /// Resolve the server executable path for a given version.
 /// Finds VintagestoryServer.exe (Windows) or VintagestoryServer (Unix) in the game version folder.
-fn server_exe_path(app: &AppHandle, version: &str) -> Result<PathBuf, UiError> {
+pub(crate) fn server_exe_path(app: &AppHandle, version: &str) -> Result<PathBuf, UiError> {
     let base_dir = versions_folder(app.clone());
     let subdir = versions_subdir(app.clone());
     let version_dir = base_dir.join(&subdir).join(version);
@@ -551,19 +504,7 @@ pub async fn create_hosted_server(
 
     // Validate port not already in use
     let existing = scan_instances(&app)?;
-    let running_ids: Vec<u64> = {
-        if let Ok(procs) = PROCESSES.lock() {
-            procs
-                .iter()
-                .filter(|(_, s)| {
-                    s.status == ServerStatus::Running || s.status == ServerStatus::Starting
-                })
-                .map(|(&id, _)| id)
-                .collect()
-        } else {
-            vec![]
-        }
-    };
+    let running_ids = server_hosting_actor::running_instance_ids();
     for inst in &existing {
         if running_ids.contains(&inst.id) && inst.port == port && inst.bind_ip == bind_ip {
             return Err(UiError {
@@ -624,7 +565,11 @@ pub async fn create_hosted_server(
     }
     setconfig_parts.push(format!(
         "WhitelistMode: {}",
-        if whitelist_enabled { 2 } else { 1 }
+        if whitelist_enabled {
+            WhitelistMode::Whitelist.as_u8()
+        } else {
+            WhitelistMode::Off.as_u8()
+        }
     ));
     let setconfig_value = format!("{{ {} }}", setconfig_parts.join(", "));
 
@@ -635,11 +580,12 @@ pub async fn create_hosted_server(
     let setconfig_arg = format!("--setconfig={}", setconfig_value);
     log_info!("create_hosted_server: running --setconfig: exe={:?} dataPath={data_dir_str} arg={setconfig_arg}", exe_path);
 
-    let setconfig_output = std::process::Command::new(exe_path.to_string_lossy().as_ref())
+    let setconfig_output = Command::new(exe_path.to_string_lossy().as_ref())
         .arg("--dataPath")
         .arg(&data_dir_str)
         .arg(&setconfig_arg)
         .output()
+        .await
         .map_err(|e| UiError {
             name: "setconfig_failed".into(),
             message: format!("Failed to run --setconfig: {e}"),
@@ -711,15 +657,7 @@ pub async fn update_hosted_server(
     let (dir, mut instance) = find_instance(&app, instance_id)?;
 
     // Check if running before allowing port/ip changes
-    let is_running = {
-        if let Ok(procs) = PROCESSES.lock() {
-            procs.get(&instance_id).map_or(false, |s| {
-                s.status == ServerStatus::Running || s.status == ServerStatus::Starting
-            })
-        } else {
-            false
-        }
-    };
+    let is_running = server_hosting_actor::is_running(instance_id);
 
     if let Some(ref name) = partial.name {
         if is_running {
@@ -777,17 +715,11 @@ pub async fn delete_hosted_server(
     log_info!("delete_hosted_server: id={instance_id} delete_data={delete_data}");
 
     // Refuse if running
-    {
-        if let Ok(procs) = PROCESSES.lock() {
-            if let Some(state) = procs.get(&instance_id) {
-                if state.status == ServerStatus::Running || state.status == ServerStatus::Starting {
-                    return Err(UiError {
-                        name: "instance_running".into(),
-                        message: "Stop the instance before deleting it.".into(),
-                    });
-                }
-            }
-        }
+    if server_hosting_actor::is_running(instance_id) {
+        return Err(UiError {
+            name: "instance_running".into(),
+            message: "Stop the instance before deleting it.".into(),
+        });
     }
 
     let (dir, instance) = find_instance(&app, instance_id)?;
@@ -839,24 +771,15 @@ pub async fn start_hosted_server(app: AppHandle, instance_id: u64) -> Result<(),
 
     let (_dir, instance) = find_instance(&app, instance_id)?;
 
-    // Check not already running
-    {
-        if let Ok(procs) = PROCESSES.lock() {
-            if let Some(state) = procs.get(&instance_id) {
-                if state.status == ServerStatus::Running || state.status == ServerStatus::Starting {
-                    return Err(UiError {
-                        name: "already_running".into(),
-                        message: "Instance is already running.".into(),
-                    });
-                }
-            }
-        }
+    if server_hosting_actor::is_running(instance_id) {
+        return Err(UiError {
+            name: "already_running".into(),
+            message: "Instance is already running.".into(),
+        });
     }
 
-    // Check port conflicts
     full_port_check(&app, instance_id, instance.port, &instance.bind_ip)?;
 
-    // Ensure data dir exists
     if !instance.data_dir.exists() {
         create_dir_all(&instance.data_dir).map_err(|e| UiError {
             name: "create_dir_failed".into(),
@@ -864,328 +787,25 @@ pub async fn start_hosted_server(app: AppHandle, instance_id: u64) -> Result<(),
         })?;
     }
 
-    // NOTE: We do NOT pre-generate serverconfig.json here.
-    // The Vintage Story server will create its own complete config on first startup,
-    // including all default groups, permissions, and settings. A minimal pre-generated
-    // config would be incomplete and cause server crashes.
-
-    // Resolve server exe path
-    let exe_path = server_exe_path(&app, &instance.version)?;
-
-    // Build command — launch the server executable directly
-    let data_dir_str = instance.data_dir.to_string_lossy().to_string();
-    let mut cmd = Command::new(exe_path.to_string_lossy().as_ref());
-    cmd.arg("--dataPath").arg(&data_dir_str);
-
-    // Add extra start params
-    if !instance.start_params.is_empty() {
-        for param in instance.start_params.split_whitespace() {
-            cmd.arg(param);
-        }
-    }
-
-    cmd.stdout(Stdio::piped());
-
-    // Add extra start params
-    cmd.stderr(Stdio::piped());
-    cmd.stdin(Stdio::piped());
-    cmd.kill_on_drop(true);
-
-    // Update state to Starting
-    {
-        if let Ok(mut procs) = PROCESSES.lock() {
-            procs.insert(
-                instance_id,
-                ServerProcessState {
-                    child: None,
-                    status: ServerStatus::Starting,
-                    pid: None,
-                    started_at: Some(Instant::now()),
-                    startup_reported: false,
-                },
-            );
-        }
-    }
-    emit_status(
-        &app,
-        instance_id,
-        &ServerStatus::Starting,
-        None,
-        Some(Instant::now()),
-    );
-
-    let mut child = cmd.spawn().map_err(|e| {
-        // Reset state on failure
-        if let Ok(mut procs) = PROCESSES.lock() {
-            procs.remove(&instance_id);
-        }
-        log_error!("start_hosted_server: spawn failed: {e}");
-        UiError {
-            name: "spawn_failed".into(),
-            message: format!("Failed to start server process: {e}"),
-        }
-    })?;
-
-    let pid = child.id();
-
-    // Update state with child process
-    {
-        if let Ok(mut procs) = PROCESSES.lock() {
-            if let Some(state) = procs.get_mut(&instance_id) {
-                state.child = None; // moved into tokio tasks below
-                state.pid = pid;
-            }
-        }
-    }
-
-    // Split stdout/stderr/stdin for async handling
-    let stdout = child.stdout.take().expect("stdout not piped");
-    let stderr = child.stderr.take().expect("stderr not piped");
-    let stdin = child.stdin.take().expect("stdin not piped");
-
-    let app_clone = app.clone();
-    let instance_name = instance.name.clone();
-    let instance_id2 = instance_id;
-
-    // stdout reader task
-    tokio::spawn(async move {
-        use tokio::io::AsyncBufReadExt;
-        let reader = AsyncBufReader::new(stdout);
-        let mut lines = reader.lines();
-        loop {
-            match lines.next_line().await {
-                Ok(Some(line)) => {
-                    emit_log(&app_clone, instance_id2, &line);
-                    append_log(&app_clone, &instance_name, &line);
-
-                    // Detect server ready line to mark as Running
-                    if line.contains("Dedicated Server now running on Port") {
-                        log_info!("server_hosting: instance {instance_id2} detected Running line");
-                        if let Ok(mut procs) = PROCESSES.lock() {
-                            if let Some(state) = procs.get_mut(&instance_id2) {
-                                if !state.startup_reported {
-                                    state.startup_reported = true;
-                                    state.status = ServerStatus::Running;
-                                    emit_status(
-                                        &app_clone,
-                                        instance_id2,
-                                        &ServerStatus::Running,
-                                        state.pid,
-                                        state.started_at,
-                                    );
-                                }
-                            }
-                        }
-                    }
-                }
-                Ok(None) => break,
-                Err(_) => break,
-            }
-        }
-    });
-
-    let app_clone2 = app.clone();
-    let instance_name2 = instance.name.clone();
-
-    // stderr reader task
-    tokio::spawn(async move {
-        use tokio::io::AsyncBufReadExt;
-        let reader = AsyncBufReader::new(stderr);
-        let mut lines = reader.lines();
-        loop {
-            match lines.next_line().await {
-                Ok(Some(line)) => {
-                    emit_log(&app_clone2, instance_id2, &line);
-                    append_log(&app_clone2, &instance_name2, &line);
-                }
-                Ok(None) => break,
-                Err(_) => break,
-            }
-        }
-    });
-
-    // stdin writer — store for commands
-    let stdin_writer = Arc::new(tokio::sync::Mutex::new(stdin));
-
-    // Store stdin writer so we can write commands later
-    {
-        if let Ok(mut writers) = STDIN_WRITERS.lock() {
-            writers.insert(instance_id, stdin_writer);
-        }
-    }
-
-    // Spawn wait task to detect exit
-    let app_clone3 = app.clone();
-    let instance_id3 = instance_id;
-    tokio::spawn(async move {
-        let status = child.wait().await;
-        let exit_code = status.ok().and_then(|s| s.code());
-
-        // Remove stdin writer
-        {
-            if let Ok(mut writers) = STDIN_WRITERS.lock() {
-                writers.remove(&instance_id3);
-            }
-        }
-
-        let crashed = match exit_code {
-            Some(0) => false,
-            _ => true,
-        };
-
-        let new_status = if crashed {
-            ServerStatus::Crashed { exit_code }
-        } else {
-            ServerStatus::Stopped
-        };
-
-        if let Ok(mut procs) = PROCESSES.lock() {
-            if let Some(state) = procs.get_mut(&instance_id3) {
-                state.status = new_status.clone();
-                state.child = None;
-            }
-        }
-
-        emit_status(&app_clone3, instance_id3, &new_status, None, None);
-        log_info!("server_hosting: instance {instance_id3} exited with code {exit_code:?}");
-    });
-
-    log_info!("start_hosted_server: spawned instance {instance_id}");
-    Ok(())
+    server_hosting_actor::spawn(app, instance).await
 }
 
-use std::sync::Arc;
-
 #[command]
-pub async fn stop_hosted_server(app: AppHandle, instance_id: u64) -> Result<(), UiError> {
+pub async fn stop_hosted_server(_app: AppHandle, instance_id: u64) -> Result<(), UiError> {
     log_info!("stop_hosted_server: id={instance_id}");
-
-    // Write /stop command to stdin
-    send_server_command_internal(instance_id, "/stop").await?;
-
-    // Update status
-    {
-        if let Ok(mut procs) = PROCESSES.lock() {
-            if let Some(state) = procs.get_mut(&instance_id) {
-                state.status = ServerStatus::Stopping;
-                emit_status(
-                    &app,
-                    instance_id,
-                    &ServerStatus::Stopping,
-                    state.pid,
-                    state.started_at,
-                );
-            }
-        }
-    }
-
-    // Wait up to 10s for clean exit, then force kill
-    let app_clone = app.clone();
-    let instance_id2 = instance_id;
-    tokio::spawn(async move {
-        tokio::time::sleep(Duration::from_secs(10)).await;
-
-        // Check if still running
-        let still_running = {
-            if let Ok(procs) = PROCESSES.lock() {
-                procs.get(&instance_id2).map_or(false, |s| {
-                    s.status == ServerStatus::Running
-                        || s.status == ServerStatus::Starting
-                        || s.status == ServerStatus::Stopping
-                })
-            } else {
-                false
-            }
-        };
-
-        if still_running {
-            // Force kill — we need to kill the process by PID
-            // Since we don't hold the Child handle, we use platform-specific kill
-            if let Ok(procs) = PROCESSES.lock() {
-                if let Some(state) = procs.get(&instance_id2) {
-                    if let Some(pid) = state.pid {
-                        log_info!(
-                            "server_hosting: force killing instance {instance_id2} (pid {pid})"
-                        );
-                        #[cfg(unix)]
-                        {
-                            unsafe {
-                                libc::kill(pid as i32, libc::SIGKILL);
-                            }
-                        }
-                        #[cfg(windows)]
-                        {
-                            let _ = std::process::Command::new("taskkill")
-                                .args(["/F", "/PID", &pid.to_string()])
-                                .output();
-                        }
-                    }
-                }
-            }
-
-            // Update to crashed/stopped
-            if let Ok(mut procs) = PROCESSES.lock() {
-                if let Some(state) = procs.get_mut(&instance_id2) {
-                    state.status = ServerStatus::Crashed { exit_code: None };
-                }
-            }
-            emit_status(
-                &app_clone,
-                instance_id2,
-                &ServerStatus::Crashed { exit_code: None },
-                None,
-                None,
-            );
-        }
-    });
-
-    Ok(())
+    server_hosting_actor::stop(instance_id).await
 }
 
 #[command]
 pub async fn restart_hosted_server(app: AppHandle, instance_id: u64) -> Result<(), UiError> {
     log_info!("restart_hosted_server: id={instance_id}");
-
-    // Stop first
-    stop_hosted_server(app.clone(), instance_id).await?;
-
-    // Wait a bit for the process to fully exit
+    stop_hosted_server(app.clone(), instance_id).await.ok();
     tokio::time::sleep(Duration::from_secs(2)).await;
-
-    // Start again
     start_hosted_server(app, instance_id).await
 }
 
 async fn send_server_command_internal(instance_id: u64, command: &str) -> Result<(), UiError> {
-    let writer = {
-        if let Ok(writers) = STDIN_WRITERS.lock() {
-            writers.get(&instance_id).cloned()
-        } else {
-            None
-        }
-    };
-
-    match writer {
-        Some(stdin) => {
-            let mut stdin = stdin.lock().await;
-            stdin
-                .write_all(format!("{command}\n").as_bytes())
-                .await
-                .map_err(|e| UiError {
-                    name: "stdin_error".into(),
-                    message: format!("Failed to write to server stdin: {e}"),
-                })?;
-            stdin.flush().await.map_err(|e| UiError {
-                name: "stdin_error".into(),
-                message: format!("Failed to flush server stdin: {e}"),
-            })?;
-            Ok(())
-        }
-        None => Err(UiError {
-            name: "not_running".into(),
-            message: "Instance is not running (no stdin pipe available).".into(),
-        }),
-    }
+    server_hosting_actor::send_command(instance_id, command.to_string()).await
 }
 
 #[command]
@@ -1196,28 +816,7 @@ pub async fn send_server_command(instance_id: u64, command: String) -> Result<()
 
 #[command]
 pub async fn get_server_status(instance_id: u64) -> Result<ServerStatusInfo, UiError> {
-    if let Ok(procs) = PROCESSES.lock() {
-        if let Some(state) = procs.get(&instance_id) {
-            let uptime = state.started_at.map(|s| s.elapsed().as_secs());
-            let exit_code = match &state.status {
-                ServerStatus::Crashed { exit_code } => *exit_code,
-                _ => None,
-            };
-            return Ok(ServerStatusInfo {
-                status: state.status.as_str().to_string(),
-                pid: state.pid,
-                uptime,
-                exit_code,
-            });
-        }
-    }
-
-    Ok(ServerStatusInfo {
-        status: "stopped".to_string(),
-        pid: None,
-        uptime: None,
-        exit_code: None,
-    })
+    Ok(server_hosting_actor::status(instance_id).await)
 }
 
 #[command]
@@ -1340,21 +939,14 @@ pub async fn write_server_config(
     })?;
 
     // If running, emit note about restart required
-    {
-        if let Ok(procs) = PROCESSES.lock() {
-            if let Some(state) = procs.get(&instance_id) {
-                if state.status == ServerStatus::Running {
-                    // Emit a notification event
-                    let _ = app.emit(
-                        &format!("server-notice:{instance_id}"),
-                        serde_json::json!({
-                            "message": "serverconfig.json saved. Restart the server to apply changes.",
-                            "type": "restart_required"
-                        }),
-                    );
-                }
-            }
-        }
+    if server_hosting_actor::is_running(instance_id) {
+        let _ = app.emit(
+            &format!("server-notice:{instance_id}"),
+            serde_json::json!({
+                "message": "serverconfig.json saved. Restart the server to apply changes.",
+                "type": "restart_required"
+            }),
+        );
     }
 
     Ok(())
@@ -1380,7 +972,7 @@ fn get_default_config_json_with_port(server_name: &str, port: u16) -> String {
         "WelcomeMessage": "Welcome to the server!",
         "MaxClients": 16,
         "Password": "",
-        "WhitelistMode": 1,
+        "WhitelistMode": WhitelistMode::Off.as_u8(),
         "ServerUrl": "",
         "Upnp": false,
         "Advertise": false,
@@ -1410,19 +1002,7 @@ pub async fn check_port_available(
 ) -> Result<bool, UiError> {
     let instances = scan_instances(&app)?;
 
-    let running_ids: Vec<u64> = {
-        if let Ok(procs) = PROCESSES.lock() {
-            procs
-                .iter()
-                .filter(|(_, s)| {
-                    s.status == ServerStatus::Running || s.status == ServerStatus::Starting
-                })
-                .map(|(&id, _)| id)
-                .collect()
-        } else {
-            vec![]
-        }
-    };
+    let running_ids = server_hosting_actor::running_instance_ids();
 
     for inst in &instances {
         if let Some(exclude) = exclude_instance_id {
@@ -1526,15 +1106,7 @@ pub async fn add_to_whitelist(
     })?;
 
     // If running, also send /whitelist add command
-    let is_running = {
-        if let Ok(procs) = PROCESSES.lock() {
-            procs
-                .get(&instance_id)
-                .map_or(false, |s| s.status == ServerStatus::Running)
-        } else {
-            false
-        }
-    };
+    let is_running = server_hosting_actor::is_running(instance_id);
     if is_running {
         let _ = send_server_command_internal(instance_id, &format!("/whitelist add {uid}")).await;
     }
@@ -1588,15 +1160,7 @@ pub async fn remove_from_whitelist(
     })?;
 
     // If running, also send /whitelist remove command
-    let is_running = {
-        if let Ok(procs) = PROCESSES.lock() {
-            procs
-                .get(&instance_id)
-                .map_or(false, |s| s.status == ServerStatus::Running)
-        } else {
-            false
-        }
-    };
+    let is_running = server_hosting_actor::is_running(instance_id);
     if is_running {
         let _ =
             send_server_command_internal(instance_id, &format!("/whitelist remove {uid}")).await;
@@ -1652,19 +1216,24 @@ pub async fn set_whitelist_mode(
     let exe_path = server_exe_path(&app, &instance.version)?;
     let data_dir_str = instance.data_dir.to_string_lossy().to_string();
 
-    let mode: u8 = if enabled { 2 } else { 1 };
-    let setconfig_arg = format!("--setconfig={{ WhitelistMode: {} }}", mode);
+    let mode = if enabled {
+        WhitelistMode::Whitelist
+    } else {
+        WhitelistMode::Off
+    };
+    let setconfig_arg = format!("--setconfig={{ WhitelistMode: {} }}", mode.as_u8());
 
     log_info!(
         "set_whitelist_mode: exe={:?} dataPath={data_dir_str} arg={setconfig_arg}",
         exe_path
     );
 
-    let output = std::process::Command::new(exe_path.to_string_lossy().as_ref())
+    let output = Command::new(exe_path.to_string_lossy().as_ref())
         .arg("--dataPath")
         .arg(&data_dir_str)
         .arg(&setconfig_arg)
         .output()
+        .await
         .map_err(|e| UiError {
             name: "setconfig_failed".into(),
             message: format!("Failed to run --setconfig: {e}"),
@@ -1688,10 +1257,11 @@ pub async fn set_whitelist_mode(
 // ────────── Player UID/name lookup ──────────
 
 #[command]
-pub async fn lookup_player_uid(account_name: String) -> Result<Option<WhitelistEntry>, UiError> {
+pub async fn lookup_player_uid(
+    client: State<'_, Arc<reqwest::Client>>,
+    account_name: String,
+) -> Result<Option<WhitelistEntry>, UiError> {
     log_info!("lookup_player_uid: name={account_name}");
-
-    let client = reqwest::Client::new();
     let res = client
         .post("https://auth3.vintagestory.at/resolveplayername")
         .header("Content-Type", "application/x-www-form-urlencoded")
@@ -1735,10 +1305,11 @@ pub async fn lookup_player_uid(account_name: String) -> Result<Option<WhitelistE
 }
 
 #[command]
-pub async fn lookup_player_name(uid: String) -> Result<Option<String>, UiError> {
+pub async fn lookup_player_name(
+    client: State<'_, Arc<reqwest::Client>>,
+    uid: String,
+) -> Result<Option<String>, UiError> {
     log_info!("lookup_player_name: uid={uid}");
-
-    let client = reqwest::Client::new();
     let res = client
         .post("https://auth3.vintagestory.at/resolveplayeruid")
         .header("Content-Type", "application/x-www-form-urlencoded")
@@ -1778,44 +1349,9 @@ pub async fn lookup_player_name(uid: String) -> Result<Option<String>, UiError> 
 
 /// Force-kill all running server processes. Called on app shutdown.
 pub fn kill_all_running_servers() {
-    log_info!("server_hosting: killing all running servers on shutdown");
-
-    let pids: Vec<(u64, u32)> = {
-        if let Ok(procs) = PROCESSES.lock() {
-            procs
-                .iter()
-                .filter(|(_, s)| {
-                    s.status == ServerStatus::Running
-                        || s.status == ServerStatus::Starting
-                        || s.status == ServerStatus::Stopping
-                })
-                .filter_map(|(id, s)| s.pid.map(|pid| (*id, pid)))
-                .collect()
-        } else {
-            vec![]
-        }
-    };
-
-    for (id, pid) in &pids {
-        log_info!("server_hosting: killing instance {id} (pid {pid})");
-
-        #[cfg(unix)]
-        unsafe {
-            libc::kill(*pid as i32, libc::SIGKILL);
-        }
-        #[cfg(windows)]
-        {
-            let _ = std::process::Command::new("taskkill")
-                .args(["/F", "/PID", &pid.to_string()])
-                .output();
-        }
-    }
-
-    if let Ok(mut procs) = PROCESSES.lock() {
-        procs.clear();
-    }
-
-    log_info!("server_hosting: killed {} server(s)", pids.len());
+    tauri::async_runtime::block_on(async {
+        server_hosting_actor::kill_all().await;
+    });
 }
 
 #[command]
