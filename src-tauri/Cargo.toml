@@ -43,6 +43,8 @@ tauri-plugin-opener = "2"
 tauri-plugin-zustand = "1"
 tauri-plugin-window-state = "2"
 log = "0.4"
+thiserror = "1"
+tauri-plugin-log = "2"
 reqwest = { version = "0.13", default-features = false, features = [
   "json",
   "stream",
@@ -56,6 +58,7 @@ tokio = { version = "1", default-features = false, features = [
   "macros",
   "process",
 ] }
+tokio-util = "0.7"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 quick-xml = { version = "0.40", default-features = false, features = ["serialize"] }
@@ -88,3 +91,15 @@ tauri-plugin-updater = "2"
 objc2 = "0.6"
 objc2-app-kit = "0.3"
 objc2-quartz-core = "0.3"
+
+[dev-dependencies]
+tempfile = "3"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "utils"
+harness = false
+
+[[bench]]
+name = "heavy_paths"
+harness = false
