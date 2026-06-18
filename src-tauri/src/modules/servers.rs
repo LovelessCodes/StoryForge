@@ -114,7 +114,7 @@ pub fn fetch_all_servers(app: AppHandle) -> Result<Vec<SavedServer>, UiError> {
         }
         let dir_name = entry.file_name().to_string_lossy().to_string();
         // Get installation id from installation.json (same hash-based id)
-        let inst_id = super::installations::generate_id(&dir_name);
+        let inst_id = crate::modules::utils::generate_id(&dir_name);
         let servers = extract_servers_from_directory(&dir, inst_id, &dir_name);
         all_servers.extend(servers);
     }
