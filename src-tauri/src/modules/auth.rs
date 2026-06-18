@@ -1,6 +1,7 @@
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, HOST};
 use serde::{Deserialize, Serialize};
-use tauri::command;
+use std::sync::Arc;
+use tauri::{command, State};
 
 use super::errors::UiError;
 use crate::{log_error, log_info};
@@ -30,9 +31,12 @@ pub struct AuthVerifyResponse {
 }
 
 #[command]
-pub async fn verify(uid: String, sessionkey: String) -> Result<AuthVerifyResponse, UiError> {
+pub async fn verify(
+    client: State<'_, Arc<reqwest::Client>>,
+    uid: String,
+    sessionkey: String,
+) -> Result<AuthVerifyResponse, UiError> {
     log_info!("verify: uid={}", uid);
-    let client = reqwest::Client::new();
     let mut headers = HeaderMap::new();
     headers.insert(
         CONTENT_TYPE,
@@ -89,13 +93,13 @@ pub async fn verify(uid: String, sessionkey: String) -> Result<AuthVerifyRespons
 
 #[command]
 pub async fn login(
+    client: State<'_, Arc<reqwest::Client>>,
     email: String,
     password: String,
     totpcode: Option<String>,
     prelogintoken: Option<String>,
 ) -> Result<GameLoginResponse, UiError> {
     log_info!("login: email={}", email);
-    let client = reqwest::Client::new();
     let mut headers = HeaderMap::new();
     headers.insert(
         CONTENT_TYPE,
@@ -181,29 +185,10 @@ pub fn save_accounts(app: tauri::AppHandle, accounts: Vec<SavedAccount>) -> Resu
 
 #[command]
 pub fn load_accounts(app: tauri::AppHandle) -> Result<Vec<SavedAccount>, String> {
-    use std::fs::{read_to_string, remove_file};
+    use std::fs::read_to_string;
     use tauri::Manager;
     let data_dir = app.path().app_data_dir().map_err(|e| format!("{e}"))?;
     let path = data_dir.join("accounts.json");
-
-    // Migration: check old zustand store at {app_data}/store/accounts.json
-    let old_path = data_dir.join("store").join("accounts.json");
-    if old_path.exists() && !path.exists() {
-        if let Ok(old_json) = read_to_string(&old_path) {
-            if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&old_json) {
-                // Extract users array directly (no "state" wrapper)
-                if let Some(users) = parsed
-                    .get("users")
-                    .and_then(|u| serde_json::from_value::<Vec<SavedAccount>>(u.clone()).ok())
-                {
-                    let json = serde_json::to_string_pretty(&users).map_err(|e| format!("{e}"))?;
-                    std::fs::write(&path, &json).map_err(|e| format!("{e}"))?;
-                    let _ = remove_file(&old_path);
-                    return Ok(users);
-                }
-            }
-        }
-    }
 
     if !path.exists() {
         return Ok(Vec::new());
