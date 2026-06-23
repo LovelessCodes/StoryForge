@@ -156,7 +156,6 @@ pub fn run() {
             let t2_75 = std::time::Instant::now();
             let http_client = Arc::new(
                 reqwest::Client::builder()
-                    .timeout(Duration::from_secs(60))
                     .connect_timeout(Duration::from_secs(10))
                     .user_agent(concat!("StoryForge/", env!("CARGO_PKG_VERSION")))
                     .build()
