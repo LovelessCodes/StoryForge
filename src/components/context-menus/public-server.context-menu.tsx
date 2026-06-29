@@ -2,8 +2,8 @@ import type { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context
 import { DownloadCloudIcon, FolderPlusIcon, PlugIcon } from "lucide-react";
 import * as m from "motion/react-m";
 
-import { AddInstallationDialog } from "@/components/dialogs/addinstallation.dialog";
 import { ConnectServerDialog } from "@/components/dialogs/connectserver.dialog";
+import { InstallationDialog } from "@/components/dialogs/installation.dialog";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import {
   ContextMenu,
@@ -72,7 +72,7 @@ export const PublicServerContextMenu = ({
               render={
                 <DialogTrigger
                   handle={rootDialogHandle}
-                  payload={() => <AddInstallationDialog version={server.gameVersion} />}
+                  payload={() => <InstallationDialog version={server.gameVersion} />}
                 />
               }
             >

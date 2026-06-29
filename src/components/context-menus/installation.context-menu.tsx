@@ -15,7 +15,7 @@ import {
 import * as m from "motion/react-m";
 
 import { DeleteInstallationDialog } from "@/components/dialogs/deleteinstallation.dialog";
-import { EditInstallationDialog } from "@/components/dialogs/editinstallation.dialog";
+import { InstallationDialog } from "@/components/dialogs/installation.dialog";
 import { ViewLogsDialog } from "@/components/dialogs/viewlogs.dialog";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import {
@@ -154,7 +154,7 @@ export const InstallationContextMenu = ({
               <DialogTrigger
                 nativeButton={true}
                 handle={rootDialogHandle}
-                payload={() => <EditInstallationDialog installation={installation} />}
+                payload={() => <InstallationDialog installation={installation} />}
               />
             }
           >
