@@ -34,6 +34,7 @@ export type Installation = {
   sizeDisplay: string;
   modpackSlug: string | null;
   modpackVersion: string | null;
+  environmentVariables?: Record<string, string>;
 };
 
 type InstallationResult = {
@@ -50,6 +51,7 @@ type InstallationResult = {
   total_time_played: number;
   modpack_slug: string | null;
   modpack_version: string | null;
+  env_vars: Record<string, string>;
 };
 
 type InstallationsStore = {
@@ -118,6 +120,7 @@ export const useInstallationsStore = create<InstallationsStore>((set) => ({
             sizeDisplay: r.size_display,
             modpackSlug: r.modpack_slug ?? existing?.modpackSlug ?? null,
             modpackVersion: r.modpack_version ?? existing?.modpackVersion ?? null,
+            environmentVariables: r.env_vars ?? existing?.environmentVariables ?? {},
           };
         });
         return { installations };
@@ -156,6 +159,7 @@ export const useInstallationsStore = create<InstallationsStore>((set) => ({
         const newFavorite = !inst.favorite;
         // Persist to installation.json
         invoke("save_installation", {
+          envVars: null,
           favorite: newFavorite,
           icon: inst.icon,
           name: inst.name,
