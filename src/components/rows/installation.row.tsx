@@ -197,6 +197,17 @@ export function InstallationRow({ installation }: InstallationRowProps) {
             payload={() => "Pause"}
           />
         )}
+        {!isActive && (
+          <TooltipTrigger
+            render={
+              <Button disabled={isActive} onClick={handleClick} size="icon" variant="outline">
+                {icon}
+              </Button>
+            }
+            handle={rootTooltipHandle}
+            payload={() => tooltip}
+          />
+        )}
         {(isActive || isPaused) && (
           <TooltipTrigger
             render={
@@ -211,18 +222,6 @@ export function InstallationRow({ installation }: InstallationRowProps) {
             }
             handle={rootTooltipHandle}
             payload={() => "Cancel download"}
-          />
-        )}
-        {(isActive || isPaused) && <GroupSeparator />}
-        {!(isActive || isPaused) && (
-          <TooltipTrigger
-            render={
-              <Button disabled={isActive} onClick={handleClick} size="icon" variant="outline">
-                {icon}
-              </Button>
-            }
-            handle={rootTooltipHandle}
-            payload={() => tooltip}
           />
         )}
         <GroupSeparator className="max-md:hidden" />
