@@ -9,11 +9,12 @@ import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/di
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { TooltipTrigger } from "@/components/ui/tooltip";
-import { rootTooltipHandle } from "@/handles";
-import { useDownloadVersion } from "@/hooks/use-download-version";
+import { rootDialogHandle, rootTooltipHandle } from "@/handles";
+import { useDownloadManager } from "@/hooks/use-download-manager";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { gameVersionsQuery } from "@/lib/queries";
 import { compareSemverDesc } from "@/lib/utils";
+import { useDownloadStore } from "@/stores/downloads";
 
 export const versionSchema = z.object({
   version: z.string().min(1),
@@ -23,18 +24,22 @@ export function AddVersionDialog() {
   const { data: gameVersions } = useQuery(gameVersionsQuery);
   const installedVersions = useInstalledVersionNames();
   const currentPlatform = platform();
+  const { startDownload } = useDownloadManager();
+  const entries = useDownloadStore((s) => s.entries);
 
-  const availableVersions = gameVersions?.filter((v) => !installedVersions.includes(v));
+  const availableVersions = gameVersions?.filter(
+    (v) => !installedVersions.includes(v) && !Object.keys(entries).includes(v),
+  );
 
-  const sortedVersions = gameVersions?.sort(compareSemverDesc);
+  const sortedVersions = availableVersions?.sort(compareSemverDesc);
 
-  const { mutateAsync: downloadVersion, isPending } = useDownloadVersion();
   const form = useForm({
     defaultValues: {
-      version: availableVersions?.sort(compareSemverDesc).filter((v) => !v.includes("rc"))[0] ?? "",
+      version: sortedVersions?.filter((v) => !v.includes("rc"))[0] ?? "",
     },
     onSubmit: async ({ value }) => {
-      await downloadVersion(value.version);
+      startDownload(value.version);
+      rootDialogHandle.close();
     },
     validators: {
       onChange: versionSchema,
@@ -119,13 +124,8 @@ export function AddVersionDialog() {
             )}
           </form.Field>
         </div>
-        <Button
-          className="w-full"
-          disabled={isPending}
-          onClick={() => form.handleSubmit()}
-          type="button"
-        >
-          {isPending ? "Adding Version..." : "Add Version"}
+        <Button className="w-full" onClick={() => form.handleSubmit()} type="button">
+          Add Version
         </Button>
       </div>
     </>

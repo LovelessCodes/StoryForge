@@ -8,6 +8,13 @@ export type ProgressPayload = {
   message: string | null;
 };
 
+export type PausedDownload = {
+  label: string;
+  offset: number;
+  url: string;
+  filepath: string;
+};
+
 export type ModTag = {
   tagid: number;
   name: string;

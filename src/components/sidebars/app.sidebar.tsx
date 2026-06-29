@@ -49,6 +49,7 @@ import { useModpacks } from "@/hooks/use-modpacks";
 import { useSaves } from "@/hooks/use-saves";
 import { useVerifyAuth } from "@/hooks/use-verify-auth";
 import { useAccountStore } from "@/stores/accounts";
+import { useDownloadStore } from "@/stores/downloads";
 import { useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
 
@@ -64,6 +65,7 @@ export function AppSidebar() {
   const { data: saves } = useSaves();
   const { data: installedVersions } = useInstalledVersions();
   const { data: modpacks } = useModpacks();
+  const downloadEntries = useDownloadStore((s) => s.entries);
   const { servers } = useServerStore();
 
   const { mutate: verifyAuth } = useVerifyAuth({
@@ -390,7 +392,14 @@ export function AppSidebar() {
                 Versions
               </SidebarMenuButton>
               <SidebarMenuBadge className="text-muted-foreground text-xs">
-                {installedVersions?.length}
+                {(() => {
+                  const activeCount = Object.values(downloadEntries).filter(
+                    (e) => e.status !== "done",
+                  ).length;
+                  const installedCount = installedVersions?.length ?? 0;
+                  if (activeCount > 0) return `${installedCount}+${activeCount}`;
+                  return installedCount;
+                })()}
               </SidebarMenuBadge>
             </SidebarMenuItem>
             <SidebarMenuItem>

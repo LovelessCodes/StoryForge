@@ -238,6 +238,7 @@ pub fn run() {
             download::get_download_links,
             download::get_download_link,
             download::download_and_maybe_extract,
+            download::scan_resume_manifests,
             // Versions
             versions::fetch_versions,
             versions::get_installed_versions,
@@ -317,6 +318,7 @@ pub fn run() {
     app.run(|_app_handle, event| {
         if let RunEvent::Exit = event {
             server_hosting::kill_all_running_servers();
+            download::pause_all_active_downloads();
         }
     });
 }
