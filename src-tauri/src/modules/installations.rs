@@ -2,6 +2,7 @@ use json5;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, json, to_string_pretty, Value};
 use std::{
+    collections::HashMap,
     fs::{create_dir_all, read_dir, read_to_string, remove_dir_all, write, File},
     io::Read,
     path::{Path, PathBuf},
@@ -48,6 +49,8 @@ pub struct InstallationInfo {
     pub modpack_slug: Option<String>,
     #[serde(default)]
     pub modpack_version: Option<String>,
+    #[serde(default)]
+    pub env_vars: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -66,8 +69,8 @@ pub struct InstallationResult {
     pub total_time_played: u64,
     pub modpack_slug: Option<String>,
     pub modpack_version: Option<String>,
+    pub env_vars: HashMap<String, String>,
 }
-
 pub fn read_installation_json(dir: &Path) -> Result<InstallationInfo, UiError> {
     let file_path = installation_json_path(dir);
     if !file_path.exists() {
@@ -146,6 +149,7 @@ pub fn find_installation_by_id(
             total_time_played: 0,
             modpack_slug: None,
             modpack_version: None,
+            env_vars: HashMap::new(),
         },
     ))
 }
@@ -211,6 +215,7 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
                     total_time_played: 0,
                     modpack_slug: None,
                     modpack_version: None,
+                    env_vars: HashMap::new(),
                 })
             } else {
                 let info = InstallationInfo {
@@ -223,6 +228,7 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
                     total_time_played: 0,
                     modpack_slug: None,
                     modpack_version: None,
+                    env_vars: HashMap::new(),
                 };
                 let _ = write_installation_json(&dir, &info);
                 info
@@ -243,6 +249,7 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
                 total_time_played: info.total_time_played,
                 modpack_slug: info.modpack_slug,
                 modpack_version: info.modpack_version,
+                env_vars: info.env_vars.clone(),
             });
         }
     }
@@ -261,6 +268,7 @@ pub fn save_installation(
     start_params: String,
     favorite: bool,
     icon: Option<String>,
+    env_vars: Option<HashMap<String, String>>,
 ) -> Result<(), UiError> {
     log_info!(
         "save_installation: path={:?} name={:?} favorite={} icon={:?}",
@@ -271,7 +279,7 @@ pub fn save_installation(
     );
     let dir = PathBuf::from(&path);
     // Preserve existing playtime/modpack fields if the installation.json already exists
-    let (last_played, total_time_played, modpack_slug, modpack_version) =
+    let (last_played, total_time_played, modpack_slug, modpack_version, existing_env_vars) =
         read_installation_json(&dir)
             .map(|existing| {
                 (
@@ -279,9 +287,10 @@ pub fn save_installation(
                     existing.total_time_played,
                     existing.modpack_slug,
                     existing.modpack_version,
+                    existing.env_vars,
                 )
             })
-            .unwrap_or((None, 0, None, None));
+            .unwrap_or((None, 0, None, None, HashMap::new()));
     let info = InstallationInfo {
         name,
         version,
@@ -292,6 +301,7 @@ pub fn save_installation(
         total_time_played,
         modpack_slug,
         modpack_version,
+        env_vars: env_vars.unwrap_or(existing_env_vars),
     };
     write_installation_json(&dir, &info)
 }
@@ -337,6 +347,7 @@ pub async fn import_installation(
         total_time_played: 0,
         modpack_slug: modpack_slug.clone(),
         modpack_version: modpack_version.clone(),
+        env_vars: HashMap::new(),
     };
     write_installation_json(&inst_dir, &info)?;
 
@@ -522,6 +533,7 @@ pub async fn import_installation(
         total_time_played: 0,
         modpack_slug: modpack_slug.clone(),
         modpack_version: modpack_version.clone(),
+        env_vars: info.env_vars.clone(),
     };
 
     let _ = app.emit(
@@ -927,7 +939,15 @@ async fn spawn_game(
     #[cfg(target_os = "macos")]
     let (child, expect_version_line) = if let Some(ref app_bundle) = ctx.app_bundle {
         (
-            macos::spawn_via_open(app_bundle, pb, &ctx.dotnet_root, options, start_params).await?,
+            macos::spawn_via_open(
+                app_bundle,
+                pb,
+                &ctx.dotnet_root,
+                options,
+                start_params,
+                &installation.env_vars,
+            )
+            .await?,
             false,
         )
     } else {
@@ -938,6 +958,7 @@ async fn spawn_game(
                 &ctx.dotnet_root,
                 options,
                 start_params,
+                &installation.env_vars,
             )
             .await?,
             true,
@@ -952,6 +973,7 @@ async fn spawn_game(
             &ctx.dotnet_root,
             options,
             start_params,
+            &installation.env_vars,
         )
         .await?,
         true,
@@ -966,6 +988,7 @@ async fn spawn_direct(
     dotnet_root: &Path,
     options: &PlayGameParams,
     start_params: &str,
+    env_vars: &HashMap<String, String>,
 ) -> Result<tokio::process::Child, UiError> {
     log_info!(
         "[play_game] SPAWNING direct: {:?} --dataPath {:?} DOTNET_ROOT={:?}",
@@ -981,6 +1004,10 @@ async fn spawn_direct(
         .kill_on_drop(false)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
+
+    for (key, value) in env_vars {
+        cmd.env(key, value);
+    }
 
     let mut args: Vec<String> = vec![
         "--dataPath".into(),
@@ -1303,6 +1330,7 @@ pub mod macos {
         dotnet_root: &Path,
         options: &PlayGameParams,
         start_params: &str,
+        _env_vars: &HashMap<String, String>,
     ) -> Result<tokio::process::Child, UiError> {
         log_info!(
             "[play_game] SPAWNING via open: open -W -a {:?} --args --dataPath {:?} DOTNET_ROOT={:?}",
