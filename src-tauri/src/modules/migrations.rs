@@ -57,6 +57,7 @@ fn migrate_installations_from_zustand(app: &AppHandle) {
             total_time_played: 0,
             modpack_slug: None,
             modpack_version: None,
+            env_vars: std::collections::HashMap::new(),
         };
         let _ = write_installation_json(&old_pb, &info);
     }
