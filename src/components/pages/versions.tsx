@@ -3,6 +3,7 @@ import { AnimatePresence } from "motion/react";
 
 import { MotionVersionContextMenu } from "@/components/context-menus/version.context-menu";
 import { AddVersionDialog } from "@/components/dialogs/addversion.dialog";
+import { DownloadRow } from "@/components/rows/download.row";
 import { VersionRow } from "@/components/rows/version.row";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
@@ -10,11 +11,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { rootDialogHandle } from "@/handles";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { compareSemverDesc, itemVariants } from "@/lib/utils";
+import { useDownloadStore } from "@/stores/downloads";
 
 export function VersionsPage() {
   const { data: versions } = useInstalledVersions();
+  const downloadEntries = useDownloadStore((s) => s.entries);
 
   const sorted = (versions ?? []).toSorted((a, b) => compareSemverDesc(a.name, b.name));
+  const activeDownloads = Object.values(downloadEntries).filter((e) => e.status !== "done");
+  const hasContent = sorted.length > 0 || activeDownloads.length > 0;
 
   return (
     <div className="grid size-full grid-rows-[min-content_auto] gap-2">
@@ -30,6 +35,14 @@ export function VersionsPage() {
       </div>
       <ScrollArea className="h-full px-2">
         <AnimatePresence>
+          {activeDownloads.map((entry) => (
+            <div
+              className="flex items-center gap-2 p-2 not-last:border-b"
+              key={`download-${entry.token}`}
+            >
+              <DownloadRow entry={entry} />
+            </div>
+          ))}
           {sorted.map((version, index) => (
             <MotionVersionContextMenu
               animate="show"
@@ -45,7 +58,7 @@ export function VersionsPage() {
               <VersionRow version={version} />
             </MotionVersionContextMenu>
           ))}
-          {sorted.length === 0 && (
+          {!hasContent && (
             <p className="text-muted-foreground p-4 text-sm select-none">
               No versions yet. Click "Add version" to get started.
             </p>
