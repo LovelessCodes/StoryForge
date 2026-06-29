@@ -6,9 +6,10 @@ import { useId } from "react";
 import { toast } from "sonner";
 import z from "zod";
 
+import { EnvVarsEditor, type EnvVarEntry } from "@/components/env-vars-editor";
 import { InstallationIconPicker } from "@/components/pickers/installation-icon.picker";
 import { Button } from "@/components/ui/button";
-import { DialogClose, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
@@ -25,6 +26,8 @@ import { buildInstallationPath, compareSemverDesc, makeStringFolderSafe } from "
 import { useInstallationsStore } from "@/stores/installations";
 import { useSettingsStore } from "@/stores/settings";
 
+import { Tabs, TabsContent, TabsList, TabsTab } from "../ui/tabs";
+
 async function saveInstallationToDisk(installation: {
   name: string;
   path: string;
@@ -32,8 +35,10 @@ async function saveInstallationToDisk(installation: {
   startParams: string;
   favorite: boolean;
   icon: string | null;
+  envVars: Record<string, string> | null;
 }) {
   await invoke("save_installation", {
+    envVars: installation.envVars,
     favorite: installation.favorite,
     icon: installation.icon,
     name: installation.name,
@@ -44,6 +49,7 @@ async function saveInstallationToDisk(installation: {
 }
 
 export const installationSchema = z.object({
+  envVars: z.array(z.object({ key: z.string(), value: z.string() })),
   favorite: z.boolean(),
   icon: z.string(),
   id: z.number(),
@@ -92,6 +98,7 @@ export function AddInstallationDialog({ version }: AddInstallationDialogProps) {
   });
   const form = useForm({
     defaultValues: {
+      envVars: [] as EnvVarEntry[],
       favorite: false,
       icon: "",
       id: Date.now(),
@@ -130,6 +137,9 @@ export function AddInstallationDialog({ version }: AddInstallationDialogProps) {
         async (status) => {
           if (status) {
             await saveInstallationToDisk({
+              envVars: Object.fromEntries(
+                value.envVars.filter((e) => e.key.trim()).map((e) => [e.key.trim(), e.value]),
+              ),
               favorite: value.favorite,
               icon: value.icon || null,
               name: value.name,
@@ -151,17 +161,12 @@ export function AddInstallationDialog({ version }: AddInstallationDialogProps) {
   return (
     <>
       <DialogClose />
-      <div className="flex flex-col items-center gap-2">
-        <DialogHeader>
-          <DialogTitle className="sm:text-center">Add installation</DialogTitle>
-          <DialogDescription className="sm:text-center">
-            Enter the new installation's details.
-          </DialogDescription>
-        </DialogHeader>
-      </div>
-
-      <div className="space-y-5">
-        <div className="space-y-4">
+      <Tabs>
+        <TabsList>
+          <TabsTab value="info">Info</TabsTab>
+          <TabsTab value="advanced">Advanced</TabsTab>
+        </TabsList>
+        <TabsContent value="info" className="space-y-4">
           <form.Field name="name">
             {(field) => (
               <div className="grid gap-2">
@@ -219,96 +224,6 @@ export function AddInstallationDialog({ version }: AddInstallationDialogProps) {
                       void form.handleSubmit();
                     }
                   }}
-                  value={field.state.value}
-                />
-              </div>
-            )}
-          </form.Field>
-          <form.Field name="startParams">
-            {(field) => (
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <TooltipTrigger
-                    render={
-                      <Label
-                        className={clsx([
-                          field.state.meta.errors.length ? "text-destructive" : "",
-                          "w-fit",
-                        ])}
-                        htmlFor="startParams"
-                      />
-                    }
-                    handle={rootTooltipHandle}
-                    payload={() => (
-                      <>
-                        <p className="text-xs">Enter start parameters</p>
-                        {field.state.meta.errors.length > 0 &&
-                          field.state.meta.errors.map((error, index) => (
-                            <p
-                              className="text-destructive text-xs"
-                              // biome-ignore lint/suspicious/noArrayIndexKey: Needed
-                              key={index}
-                            >
-                              {error?.message}
-                            </p>
-                          ))}
-                      </>
-                    )}
-                  >
-                    Start parameters
-                    <span className="text-muted-foreground text-xs">(optional)</span>
-                  </TooltipTrigger>
-                </div>
-                <Input
-                  id={`${id}-start-params`}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onKeyUp={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void form.handleSubmit();
-                    }
-                  }}
-                  value={field.state.value}
-                />
-              </div>
-            )}
-          </form.Field>
-          <form.Field name="path">
-            {(field) => (
-              <div className="grid gap-2">
-                <TooltipTrigger
-                  render={
-                    <Label
-                      className={clsx([
-                        field.state.meta.errors.length ? "text-destructive" : "",
-                        "w-fit",
-                      ])}
-                      htmlFor="path"
-                    />
-                  }
-                  handle={rootTooltipHandle}
-                  payload={() => (
-                    <>
-                      <p className="text-xs">Enter installation path</p>
-                      {field.state.meta.errors.length > 0 &&
-                        field.state.meta.errors.map((error, index) => (
-                          <p
-                            className="text-destructive text-xs"
-                            // biome-ignore lint/suspicious/noArrayIndexKey: Needed
-                            key={index}
-                          >
-                            {error?.message}
-                          </p>
-                        ))}
-                    </>
-                  )}
-                >
-                  Path
-                  <span className="text-destructive">*</span>
-                </TooltipTrigger>
-                <Input
-                  className={field.state.meta.errors.length ? "text-destructive" : ""}
-                  disabled
                   value={field.state.value}
                 />
               </div>
@@ -419,16 +334,124 @@ export function AddInstallationDialog({ version }: AddInstallationDialogProps) {
               </div>
             )}
           </form.Field>
-        </div>
-        <Button
-          className="w-full"
-          disabled={form.state.isSubmitting}
-          onClick={() => form.handleSubmit()}
-          type="button"
-        >
-          {form.state.isSubmitting ? "Adding..." : "Add Installation"}
-        </Button>
-      </div>
+        </TabsContent>
+        <TabsContent value="advanced" className="space-y-4">
+          <form.Field name="startParams">
+            {(field) => (
+              <div className="grid gap-2">
+                <div className="flex items-center">
+                  <TooltipTrigger
+                    render={
+                      <Label
+                        className={clsx([
+                          field.state.meta.errors.length ? "text-destructive" : "",
+                          "w-fit",
+                        ])}
+                        htmlFor="startParams"
+                      />
+                    }
+                    handle={rootTooltipHandle}
+                    payload={() => (
+                      <>
+                        <p className="text-xs">Enter start parameters</p>
+                        {field.state.meta.errors.length > 0 &&
+                          field.state.meta.errors.map((error, index) => (
+                            <p
+                              className="text-destructive text-xs"
+                              // biome-ignore lint/suspicious/noArrayIndexKey: Needed
+                              key={index}
+                            >
+                              {error?.message}
+                            </p>
+                          ))}
+                      </>
+                    )}
+                  >
+                    Start parameters
+                    <span className="text-muted-foreground text-xs">(optional)</span>
+                  </TooltipTrigger>
+                </div>
+                <Input
+                  id={`${id}-start-params`}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onKeyUp={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void form.handleSubmit();
+                    }
+                  }}
+                  value={field.state.value}
+                />
+              </div>
+            )}
+          </form.Field>
+          <form.Field name="envVars">
+            {(field) => (
+              <div className="grid gap-2">
+                <div className="flex items-center">
+                  <Label className="w-fit">
+                    Environment variables
+                    <span className="text-muted-foreground text-xs">(optional)</span>
+                  </Label>
+                </div>
+                <EnvVarsEditor
+                  entries={field.state.value}
+                  onChange={(entries) => field.handleChange(entries)}
+                />
+              </div>
+            )}
+          </form.Field>
+          <form.Field name="path">
+            {(field) => (
+              <div className="grid gap-2">
+                <TooltipTrigger
+                  render={
+                    <Label
+                      className={clsx([
+                        field.state.meta.errors.length ? "text-destructive" : "",
+                        "w-fit",
+                      ])}
+                      htmlFor="path"
+                    />
+                  }
+                  handle={rootTooltipHandle}
+                  payload={() => (
+                    <>
+                      <p className="text-xs">Enter installation path</p>
+                      {field.state.meta.errors.length > 0 &&
+                        field.state.meta.errors.map((error, index) => (
+                          <p
+                            className="text-destructive text-xs"
+                            // biome-ignore lint/suspicious/noArrayIndexKey: Needed
+                            key={index}
+                          >
+                            {error?.message}
+                          </p>
+                        ))}
+                    </>
+                  )}
+                >
+                  Path
+                  <span className="text-destructive">*</span>
+                </TooltipTrigger>
+                <Input
+                  className={field.state.meta.errors.length ? "text-destructive" : ""}
+                  disabled
+                  value={field.state.value}
+                />
+              </div>
+            )}
+          </form.Field>
+        </TabsContent>
+      </Tabs>
+      <Button
+        className="mt-4 w-full"
+        disabled={form.state.isSubmitting}
+        onClick={() => form.handleSubmit()}
+        type="button"
+      >
+        {form.state.isSubmitting ? "Adding..." : "Add Installation"}
+      </Button>
     </>
   );
 }
