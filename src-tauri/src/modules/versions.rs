@@ -1,7 +1,7 @@
 use serde::Serialize;
 use std::{
     fs::{read_dir, remove_dir_all},
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::Arc,
 };
 use tauri::{command, AppHandle, State};
@@ -11,6 +11,26 @@ use crate::modules::utils::{dir_size, format_size, move_folder};
 use super::errors::UiError;
 use super::utils::{versions_folder, versions_subdir};
 use crate::{log_error, log_info};
+
+/// A version is incomplete (not fully installed) if its directory contains any sign
+/// of an in-progress or interrupted download: a `.resume.json` manifest or an
+/// archive file (`.tar.gz`, `.zip`) that hasn't been extracted yet.
+fn is_incomplete(dir: &Path) -> bool {
+    if !dir.is_dir() {
+        return false;
+    }
+    read_dir(dir)
+        .map(|entries| {
+            entries.flatten().any(|e| {
+                let p: PathBuf = e.path();
+                let name = p.to_string_lossy().to_string();
+                name.ends_with(".resume.json")
+                    || name.ends_with(".tar.gz")
+                    || name.ends_with(".zip")
+            })
+        })
+        .unwrap_or(false)
+}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct VersionInfo {
@@ -44,7 +64,7 @@ pub fn get_installed_versions(app: AppHandle) -> Result<Vec<VersionInfo>, UiErro
                 message: format!("Failed to read directory entry: {e}"),
             }
         })?;
-        if entry.path().is_dir() {
+        if entry.path().is_dir() && !is_incomplete(&entry.path()) {
             if let Some(name) = entry.file_name().to_str() {
                 let path = entry.path();
                 let size_bytes = dir_size(&path);
