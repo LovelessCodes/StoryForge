@@ -13,10 +13,9 @@ import { InstallationCard } from "@/components/cards/installation.card";
 import { ServerCard } from "@/components/cards/server.card";
 import { MotionInstallationContextMenu } from "@/components/context-menus/installation.context-menu";
 import { MotionServerContextMenu } from "@/components/context-menus/server.context-menu";
-import { AddInstallationDialog } from "@/components/dialogs/addinstallation.dialog";
 import { AddServerDialog } from "@/components/dialogs/addserver.dialog";
-import { EditInstallationDialog } from "@/components/dialogs/editinstallation.dialog";
 import { EditServerDialog } from "@/components/dialogs/editserver.dialog";
+import { InstallationDialog } from "@/components/dialogs/installation.dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
@@ -86,7 +85,7 @@ export function DashboardPage() {
                         }
                         onEdit={(i) =>
                           rootDialogHandle.openWithPayload(() => (
-                            <EditInstallationDialog installation={i} />
+                            <InstallationDialog installation={i} />
                           ))
                         }
                         onPlay={(i) => playWithInstallation({ id: i.id })}
@@ -99,10 +98,7 @@ export function DashboardPage() {
               <Button
                 className="text-muted-foreground w-full text-center text-sm"
                 render={
-                  <DialogTrigger
-                    handle={rootDialogHandle}
-                    payload={() => <AddInstallationDialog />}
-                  />
+                  <DialogTrigger handle={rootDialogHandle} payload={() => <InstallationDialog />} />
                 }
                 variant="outline"
               >
@@ -117,10 +113,7 @@ export function DashboardPage() {
               <Button
                 className="text-muted-foreground w-full text-center text-sm"
                 render={
-                  <DialogTrigger
-                    handle={rootDialogHandle}
-                    payload={() => <AddInstallationDialog />}
-                  />
+                  <DialogTrigger handle={rootDialogHandle} payload={() => <InstallationDialog />} />
                 }
                 variant="secondary"
               >

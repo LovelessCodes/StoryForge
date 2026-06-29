@@ -10,8 +10,8 @@ import {
 import { useCallback, useEffect } from "react";
 
 import { MotionPublicServerContextMenu } from "@/components/context-menus/public-server.context-menu";
-import { AddInstallationDialog } from "@/components/dialogs/addinstallation.dialog";
 import { ConnectServerDialog } from "@/components/dialogs/connectserver.dialog";
+import { InstallationDialog } from "@/components/dialogs/installation.dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
@@ -223,7 +223,7 @@ export function PublicServerList({
                         render={
                           <DialogTrigger
                             handle={rootDialogHandle}
-                            payload={() => <AddInstallationDialog version={server.gameVersion} />}
+                            payload={() => <InstallationDialog version={server.gameVersion} />}
                           />
                         }
                         size="icon"

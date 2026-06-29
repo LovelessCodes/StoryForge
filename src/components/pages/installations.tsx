@@ -2,8 +2,8 @@ import { FileDownIcon, FolderPlusIcon } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 
 import { MotionInstallationContextMenu } from "@/components/context-menus/installation.context-menu";
-import { AddInstallationDialog } from "@/components/dialogs/addinstallation.dialog";
 import { ImportInstallationDialog } from "@/components/dialogs/importinstallation.dialog";
+import { InstallationDialog } from "@/components/dialogs/installation.dialog";
 import { InstallationRow } from "@/components/rows/installation.row";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
@@ -23,7 +23,7 @@ export function InstallationsPage() {
         <Button
           className="w-full cursor-pointer justify-between"
           render={
-            <DialogTrigger handle={rootDialogHandle} payload={() => <AddInstallationDialog />} />
+            <DialogTrigger handle={rootDialogHandle} payload={() => <InstallationDialog />} />
           }
           variant="outline"
         >
