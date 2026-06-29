@@ -13,6 +13,7 @@ import { AppSidebar } from "@/components/sidebars/app.sidebar";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { useServerStatusListener } from "@/hooks/queries/server-hosting";
+import { useDownloadManager } from "@/hooks/use-download-manager";
 import { useUpdater } from "@/hooks/use-updater";
 import { cn } from "@/lib/utils";
 import { useSettingsStore } from "@/stores/settings";
@@ -26,6 +27,9 @@ export function RootComponent() {
 
   // Server hosting live status listener
   useServerStatusListener();
+
+  // Download manager — lives at root for event listeners + queue processing + startup scan
+  useDownloadManager();
 
   const relaunchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
