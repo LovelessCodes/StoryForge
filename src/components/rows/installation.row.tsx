@@ -1,5 +1,6 @@
 import { useRouter } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
+import { LoaderCircleIcon, PauseIcon, XIcon } from "lucide-react";
 import {
   DownloadCloudIcon,
   EllipsisIcon,
@@ -10,6 +11,7 @@ import {
   PackageSearchIcon,
   PencilIcon,
   PlayIcon,
+  RefreshCwIcon,
   StarIcon,
   TrashIcon,
 } from "lucide-react";
@@ -23,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { Group, GroupSeparator } from "@/components/ui/group";
 import { MenuTrigger } from "@/components/ui/menu";
+import { Progress, ProgressIndicator, ProgressTrack } from "@/components/ui/progress";
 import { TooltipTrigger } from "@/components/ui/tooltip";
 import {
   rootAlertDialogHandle,
@@ -30,12 +33,25 @@ import {
   rootMenuHandle,
   rootTooltipHandle,
 } from "@/handles";
-import { useDownloadVersion } from "@/hooks/use-download-version";
+import { useDownloadManager } from "@/hooks/use-download-manager";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import { cn, exportInstallation } from "@/lib/utils";
+import { useDownloadStore } from "@/stores/downloads";
 import { type Installation, useInstallations } from "@/stores/installations";
+
+function formatSpeed(bytesPerSec: number | null): string {
+  if (bytesPerSec === null || bytesPerSec <= 0) return "";
+  const units = ["B/s", "KB/s", "MB/s", "GB/s"];
+  let value = bytesPerSec;
+  let unitIdx = 0;
+  while (value >= 1024 && unitIdx < units.length - 1) {
+    value /= 1024;
+    unitIdx++;
+  }
+  return `${value.toFixed(unitIdx === 0 ? 0 : 1)} ${units[unitIdx]}`;
+}
 
 export type InstallationRowProps = {
   installation: Installation;
@@ -51,10 +67,62 @@ export function InstallationRow({ installation }: InstallationRowProps) {
   const versions = useInstalledVersionNames();
   const version = versions?.find((v) => v === installation.version);
 
+  // Download store + manager
+  const downloadEntry = useDownloadStore((s) => s.entries[installation.version]);
+  const { startDownload, resume, pause, cancel } = useDownloadManager();
+
   // Mutations
-  const { mutate: downloadVersion, isPending: isInstalling } = useDownloadVersion();
   const { mutate: playWithInstallation } = usePlayInstallation();
   const { mutate: openFolder } = useRevealInFolder();
+
+  const isActive =
+    downloadEntry && ["downloading", "pending", "extracting"].includes(downloadEntry.status);
+  const isPaused = downloadEntry?.status === "paused";
+  const isDone = downloadEntry?.status === "done" && !version;
+  const isDownloading = downloadEntry?.status === "downloading";
+  const percent = downloadEntry?.percent ?? 0;
+
+  const handleClick = () => {
+    if (version) {
+      playWithInstallation({ id: installation.id });
+    } else if (isPaused) {
+      resume(installation.version);
+    } else if (!isActive && !isDone) {
+      startDownload(installation.version);
+    }
+  };
+
+  const icon = version ? (
+    <PlayIcon aria-hidden="true" className="text-success -ms-1 opacity-60" size={16} />
+  ) : isActive ? (
+    <LoaderCircleIcon
+      aria-hidden="true"
+      className="text-warning-foreground -ms-1 animate-spin opacity-60"
+      size={16}
+    />
+  ) : isPaused ? (
+    <RefreshCwIcon
+      aria-hidden="true"
+      className="text-warning-foreground -ms-1 opacity-60"
+      size={16}
+    />
+  ) : (
+    <DownloadCloudIcon
+      aria-hidden="true"
+      className="text-warning-foreground -ms-1 opacity-60"
+      size={16}
+    />
+  );
+
+  const tooltip = version
+    ? "Launch"
+    : isActive
+      ? `Downloading ${installation.version}…`
+      : isPaused
+        ? `Resume download of ${installation.version}`
+        : isDone
+          ? `Finishing ${installation.version}…`
+          : `Download ${installation.version}`;
 
   return (
     <>
@@ -71,7 +139,7 @@ export function InstallationRow({ installation }: InstallationRowProps) {
           </div>
         )}
         <TooltipTrigger
-          className="flex flex-col justify-start"
+          className="flex w-full flex-col justify-start"
           handle={rootTooltipHandle}
           payload={() => (
             <>
@@ -88,40 +156,75 @@ export function InstallationRow({ installation }: InstallationRowProps) {
           {installation.version && (
             <p className="text-muted-foreground text-left text-xs">v{installation.version}</p>
           )}
-          <p className="text-muted-foreground text-left text-xs opacity-60">
-            {installation.sizeDisplay ?? "..."}
-          </p>
+          {downloadEntry && downloadEntry.status !== "done" ? (
+            <div className="flex w-full flex-col gap-1 pr-2">
+              <Progress value={Math.round(percent)}>
+                <ProgressTrack className="h-2">
+                  <ProgressIndicator />
+                </ProgressTrack>
+              </Progress>
+              <span className="text-muted-foreground flex gap-2 text-xs tabular-nums">
+                {percent > 0 && <span>{percent.toFixed(1)}%</span>}
+                {downloadEntry.speedBps != null && downloadEntry.speedBps > 0 && (
+                  <span>{formatSpeed(downloadEntry.speedBps)}</span>
+                )}
+                {downloadEntry.error && (
+                  <span className="text-destructive">{downloadEntry.error}</span>
+                )}
+              </span>
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-left text-xs opacity-60">
+              {installation.sizeDisplay ?? "..."}
+            </p>
+          )}
         </TooltipTrigger>
       </div>
       <Group>
-        <TooltipTrigger
-          render={
-            <Button
-              disabled={isInstalling}
-              onClick={() =>
-                version
-                  ? playWithInstallation({
-                      id: installation.id,
-                    })
-                  : downloadVersion(installation.version)
-              }
-              size="icon"
-              variant="outline"
-            >
-              {version ? (
-                <PlayIcon aria-hidden="true" className="text-success -ms-1 opacity-60" size={16} />
-              ) : (
-                <DownloadCloudIcon
-                  aria-hidden="true"
-                  className="text-warning-foreground -ms-1 opacity-60"
-                  size={16}
-                />
-              )}
-            </Button>
-          }
-          handle={rootTooltipHandle}
-          payload={() => (version ? "Launch" : `Download ${installation.version}`)}
-        />
+        {isDownloading && (
+          <TooltipTrigger
+            render={
+              <Button
+                aria-label="Pause"
+                onClick={() => pause(installation.version)}
+                size="icon"
+                variant="outline"
+              >
+                <PauseIcon aria-hidden="true" className="opacity-60" size={16} />
+              </Button>
+            }
+            handle={rootTooltipHandle}
+            payload={() => "Pause"}
+          />
+        )}
+        {(isActive || isPaused) && (
+          <TooltipTrigger
+            render={
+              <Button
+                aria-label="Cancel"
+                onClick={() => cancel(installation.version)}
+                size="icon"
+                variant="outline"
+              >
+                <XIcon aria-hidden="true" className="opacity-60" size={16} />
+              </Button>
+            }
+            handle={rootTooltipHandle}
+            payload={() => "Cancel download"}
+          />
+        )}
+        {(isActive || isPaused) && <GroupSeparator />}
+        {!(isActive || isPaused) && (
+          <TooltipTrigger
+            render={
+              <Button disabled={isActive} onClick={handleClick} size="icon" variant="outline">
+                {icon}
+              </Button>
+            }
+            handle={rootTooltipHandle}
+            payload={() => tooltip}
+          />
+        )}
         <GroupSeparator className="max-md:hidden" />
         <TooltipTrigger
           className="max-md:hidden"
