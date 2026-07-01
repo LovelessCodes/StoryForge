@@ -1548,9 +1548,11 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
 
 #[command]
 pub fn remove_installation(app: AppHandle, id: u64) -> Result<String, UiError> {
+    let start = Instant::now();
     log_info!("remove_installation: id={}", id);
     let (pb, _info) = find_installation_by_id(&app, id)?;
     if pb.exists() && pb.is_dir() {
+        let remove_dir_all_start = Instant::now();
         remove_dir_all(&pb).map_err(|e| {
             log_error!("installations: remove_failed: {e}");
             UiError {
@@ -1558,7 +1560,19 @@ pub fn remove_installation(app: AppHandle, id: u64) -> Result<String, UiError> {
                 message: format!("Failed to remove installation directory: {e}"),
             }
         })?;
+        log_info!(
+            "remove_installation: id={}, remove_dir_all took {}ms",
+            id,
+            remove_dir_all_start.elapsed().as_millis(),
+        );
+    } else {
+        log_info!("remove_installation: id={}, directory not found, no-op", id);
     }
+    log_info!(
+        "remove_installation: id={}, total command took {}ms",
+        id,
+        start.elapsed().as_millis(),
+    );
     Ok("removed".into())
 }
 
