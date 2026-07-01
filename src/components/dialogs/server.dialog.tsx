@@ -9,7 +9,7 @@ import z from "zod";
 
 import { PasswordInput } from "@/components/inputs/password.input";
 import { Button } from "@/components/ui/button";
-import { DialogClose, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
@@ -195,16 +195,6 @@ export function ServerDialog({ server, installation }: ServerDialogProps) {
   return (
     <>
       <DialogClose />
-      <div className="flex flex-col items-center gap-2">
-        <DialogHeader>
-          <DialogTitle className="sm:text-center">
-            {isEdit ? "Edit server" : "Add server"}
-          </DialogTitle>
-          <DialogDescription className="sm:text-center">
-            {isEdit ? "Update the server's details." : "Enter the new server's details."}
-          </DialogDescription>
-        </DialogHeader>
-      </div>
 
       <div className="space-y-5">
         <div className="space-y-4">
