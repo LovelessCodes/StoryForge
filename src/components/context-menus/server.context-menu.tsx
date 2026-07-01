@@ -13,7 +13,7 @@ import {
 import * as m from "motion/react-m";
 
 import { DeleteServerDialog } from "@/components/dialogs/deleteserver.dialog";
-import { EditServerDialog } from "@/components/dialogs/editserver.dialog";
+import { ServerDialog } from "@/components/dialogs/server.dialog";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import {
   ContextMenu,
@@ -127,7 +127,7 @@ export const ServerContextMenu = ({
             render={
               <DialogTrigger
                 handle={rootDialogHandle}
-                payload={() => <EditServerDialog server={server} />}
+                payload={() => <ServerDialog server={server} />}
               />
             }
           >

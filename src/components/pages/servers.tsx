@@ -2,7 +2,7 @@ import { MapPinPlusIcon } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 
 import { MotionServerContextMenu } from "@/components/context-menus/server.context-menu";
-import { AddServerDialog } from "@/components/dialogs/addserver.dialog";
+import { ServerDialog } from "@/components/dialogs/server.dialog";
 import { ServerRow } from "@/components/rows/server.row";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
@@ -20,7 +20,7 @@ export function ServersPage() {
       <div className="flex h-fit pt-1 pr-2 pl-2 max-md:pl-9">
         <Button
           className="w-full cursor-pointer justify-between"
-          render={<DialogTrigger handle={rootDialogHandle} payload={() => <AddServerDialog />} />}
+          render={<DialogTrigger handle={rootDialogHandle} payload={() => <ServerDialog />} />}
           variant="outline"
         >
           <span className="flex text-xs">Add server</span>

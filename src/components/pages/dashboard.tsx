@@ -13,9 +13,8 @@ import { InstallationCard } from "@/components/cards/installation.card";
 import { ServerCard } from "@/components/cards/server.card";
 import { MotionInstallationContextMenu } from "@/components/context-menus/installation.context-menu";
 import { MotionServerContextMenu } from "@/components/context-menus/server.context-menu";
-import { AddServerDialog } from "@/components/dialogs/addserver.dialog";
-import { EditServerDialog } from "@/components/dialogs/editserver.dialog";
 import { InstallationDialog } from "@/components/dialogs/installation.dialog";
+import { ServerDialog } from "@/components/dialogs/server.dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
@@ -177,7 +176,7 @@ export function DashboardPage() {
                             })
                           }
                           onEdit={(s) =>
-                            rootDialogHandle.openWithPayload(() => <EditServerDialog server={s} />)
+                            rootDialogHandle.openWithPayload(() => <ServerDialog server={s} />)
                           }
                           onUnfavorite={(s) => toggleFavoriteServer(s.id)}
                           server={server}
@@ -189,7 +188,7 @@ export function DashboardPage() {
               <Button
                 className="text-muted-foreground sticky bottom-0 w-full text-center text-sm"
                 render={
-                  <DialogTrigger handle={rootDialogHandle} payload={() => <AddServerDialog />} />
+                  <DialogTrigger handle={rootDialogHandle} payload={() => <ServerDialog />} />
                 }
                 variant="outline"
               >
@@ -204,7 +203,7 @@ export function DashboardPage() {
               <Button
                 className="text-muted-foreground w-full text-center text-sm"
                 render={
-                  <DialogTrigger handle={rootDialogHandle} payload={() => <AddServerDialog />} />
+                  <DialogTrigger handle={rootDialogHandle} payload={() => <ServerDialog />} />
                 }
                 variant="secondary"
               >

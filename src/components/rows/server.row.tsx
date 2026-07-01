@@ -1,7 +1,7 @@
 import { DownloadCloudIcon, PencilIcon, PlugIcon, StarIcon, TrashIcon } from "lucide-react";
 
 import { DeleteServerDialog } from "@/components/dialogs/deleteserver.dialog";
-import { EditServerDialog } from "@/components/dialogs/editserver.dialog";
+import { ServerDialog } from "@/components/dialogs/server.dialog";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
@@ -114,7 +114,7 @@ export function ServerRow({ server }: ServerRowProps) {
               render={
                 <DialogTrigger
                   handle={rootDialogHandle}
-                  payload={() => <EditServerDialog server={server} />}
+                  payload={() => <ServerDialog server={server} />}
                 />
               }
               variant="outline"
