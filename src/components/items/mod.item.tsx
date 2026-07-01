@@ -95,8 +95,8 @@ export function ModItem({
     },
     onSuccess: async () => {
       if (modsDirectory) {
-        await queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(modsDirectory) });
-        await queryClient.invalidateQueries({ queryKey: installedModsQueryKey(modsDirectory) });
+        void queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(modsDirectory) });
+        void queryClient.invalidateQueries({ queryKey: installedModsQueryKey(modsDirectory) });
         addModToInstallation({
           path: `${modsDirectory}${pathDelimiter}Mods`,
           url: updateMod?.mainfile || "",
@@ -150,10 +150,10 @@ export function ModItem({
         `Successfully ${installedMod && updateMod && updateMod.modversion > installedMod.version ? "updated" : "downgraded"} ${modInfo?.mod.name} to ${label}`,
         { id: `add-mod-${modInfo?.mod.modid}-${pathHash}` },
       );
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: modUpdatesQueryKey(modsDirectory),
       });
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: installedModsQueryKey(modsDirectory),
       });
     },

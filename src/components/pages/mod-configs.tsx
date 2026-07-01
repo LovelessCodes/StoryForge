@@ -48,7 +48,7 @@ export function ModConfigsPage() {
     },
     onSuccess: async () => {
       toast.success("Saved!", { id: "save-mod-config" });
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: modConfigsQueryKey(installation?.id ?? -1),
       });
     },

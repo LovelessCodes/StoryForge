@@ -40,7 +40,7 @@ export function DeleteWorldDialog({ world }: DeleteWorldDialogProps) {
       toast.success(`World ${world.data.world_name} deleted`, {
         id: `world-delete-${world.data.world_name}`,
       });
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ["saves"],
       });
       rootAlertDialogHandle.close();

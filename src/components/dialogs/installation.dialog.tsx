@@ -92,7 +92,7 @@ export function InstallationDialog({ installation, version }: InstallationDialog
       });
     },
     onSuccess: async (_, path) => {
-      await queryClient.invalidateQueries({ queryKey: installedVersionsQueryKey() });
+      void queryClient.invalidateQueries({ queryKey: installedVersionsQueryKey() });
       toast.success("Game initialized", {
         id: `initialize-game-${path}`,
       });

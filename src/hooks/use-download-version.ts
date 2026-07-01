@@ -91,7 +91,7 @@ export const useDownloadVersion = (props?: UseMutationOptions<string, Error, str
         });
         return;
       }
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: installedVersionsQueryKey(),
       });
       if (d === "success") {

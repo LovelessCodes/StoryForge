@@ -72,10 +72,10 @@ export const useAddLatestModVersion = ({
       toast.success(`Successfully downloaded ${modInfo?.mod.name} to ${label}`, {
         id: `add-mod-${modInfo?.mod.modid}-${pathHash}`,
       });
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: modUpdatesQueryKey(modsDirectory),
       });
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: installedModsQueryKey(modsDirectory),
       });
     },

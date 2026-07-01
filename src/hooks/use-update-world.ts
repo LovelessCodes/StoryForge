@@ -24,8 +24,8 @@ export const useUpdateWorld = (
     ...restProps,
     onSuccess: async (...args) => {
       const { installationId } = args[1];
-      await queryClient.invalidateQueries({ queryKey: ["saves"] });
-      await queryClient.invalidateQueries({ queryKey: ["saves", installationId] });
+      void queryClient.invalidateQueries({ queryKey: ["saves"] });
+      void queryClient.invalidateQueries({ queryKey: ["saves", installationId] });
       onSuccess?.(...args);
     },
   });

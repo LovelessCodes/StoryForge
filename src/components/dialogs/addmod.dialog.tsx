@@ -62,10 +62,10 @@ export function AddModDialog({ modid, modsDirectory }: AddModDialogProps) {
       toast.success(`Successfully added ${variables.mod.mod.name} to ${label}`, {
         id: `add-mod-${variables.mod.mod.modid}-${pathHash}`,
       });
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: installedModsQueryKey(variables.modsDirectory),
       });
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: modUpdatesQueryKey(variables.modsDirectory),
       });
       rootDialogHandle.close();

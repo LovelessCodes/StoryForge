@@ -35,7 +35,7 @@ export function EditWorldDialog({ world }: EditWorldDialogProps) {
     },
     onSuccess: async () => {
       toast.success(`World ${world.data.world_name} updated successfully`);
-      await queryClient.invalidateQueries({ queryKey: ["saves"] });
+      void queryClient.invalidateQueries({ queryKey: ["saves"] });
       rootDialogHandle.close();
     },
   });

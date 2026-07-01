@@ -31,8 +31,8 @@ export const useAddModUpdateToInstallation = (
       }) as Promise<string>,
     onSuccess: async (...args) => {
       const { modsDirectory } = args[1];
-      await queryClient.invalidateQueries({ queryKey: installedModsQueryKey(modsDirectory) });
-      await queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(modsDirectory) });
+      void queryClient.invalidateQueries({ queryKey: installedModsQueryKey(modsDirectory) });
+      void queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(modsDirectory) });
       onSuccess?.(...args);
     },
   });

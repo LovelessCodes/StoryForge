@@ -36,7 +36,7 @@ export function DeleteVersionDialog({ version }: DeleteVersionDialogProps) {
       toast.success(`Version ${version} deleted`, {
         id: `version-delete-${version}`,
       });
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: installedVersionsQueryKey(),
       });
       rootAlertDialogHandle.close();

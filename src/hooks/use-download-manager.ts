@@ -117,7 +117,7 @@ async function doDownload(
       store.removeEntry(token);
     } else if (result === "success") {
       store.updateEntry(token, { status: "done", percent: 100 });
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: installedVersionsQueryKey(),
       });
     } else if (result === "already_downloaded") {

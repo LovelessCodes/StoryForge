@@ -133,7 +133,7 @@ export function ImportInstallationDialog() {
 
       addInstallation(installation);
       await loadInstallations();
-      await queryClient.invalidateQueries({ queryKey: installedVersionsQueryKey() });
+      void queryClient.invalidateQueries({ queryKey: installedVersionsQueryKey() });
 
       toast.success(`Successfully imported "${result.name}"`, {
         id: "import-installation",

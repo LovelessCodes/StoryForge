@@ -41,7 +41,7 @@ export function RemoveModDialog({ name, path, modsDirectory }: RemoveModDialogPr
           id: `mod-remove-${variables.path}-${variables.modpath}`,
         });
         // Invalidate the mods query to refresh the list
-        await queryClient.invalidateQueries({
+        void queryClient.invalidateQueries({
           queryKey: installedModsQueryKey(modsDirectory),
         });
         rootAlertDialogHandle.close();

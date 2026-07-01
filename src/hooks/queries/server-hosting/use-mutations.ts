@@ -39,7 +39,7 @@ export const useCreateInstance = (
         defaultWhitelistName: params.defaultWhitelistName,
       }),
     onSuccess: async (...args) => {
-      await queryClient.invalidateQueries({ queryKey: hostedServersQueryKey() });
+      void queryClient.invalidateQueries({ queryKey: hostedServersQueryKey() });
       props?.onSuccess?.(...args);
     },
   });
@@ -54,7 +54,7 @@ export const useUpdateInstance = (
     mutationFn: ({ id, partial }: { id: number; partial: UpdateInstancePartial }) =>
       invoke("update_hosted_server", { instanceId: id, partial }) as Promise<void>,
     onSuccess: async (...args) => {
-      await queryClient.invalidateQueries({ queryKey: hostedServersQueryKey() });
+      void queryClient.invalidateQueries({ queryKey: hostedServersQueryKey() });
       props?.onSuccess?.(...args);
     },
   });
@@ -73,7 +73,7 @@ export const useDeleteInstance = (
       }) as Promise<void>,
     onSuccess: async (...args) => {
       const { id } = args[1];
-      await queryClient.invalidateQueries({ queryKey: hostedServersQueryKey() });
+      void queryClient.invalidateQueries({ queryKey: hostedServersQueryKey() });
       queryClient.removeQueries({ queryKey: serverStatusQueryKey(id) });
       queryClient.removeQueries({ queryKey: serverConfigQueryKey(id) });
       queryClient.removeQueries({ queryKey: whitelistQueryKey(id) });
@@ -196,7 +196,7 @@ export const useWriteServerConfig = (
       invoke("write_server_config", { instanceId: id, jsonContent: json }) as Promise<void>,
     onSuccess: async (...args) => {
       const { id } = args[1];
-      await queryClient.invalidateQueries({ queryKey: serverConfigQueryKey(id) });
+      void queryClient.invalidateQueries({ queryKey: serverConfigQueryKey(id) });
       props?.onSuccess?.(...args);
     },
   });
@@ -214,7 +214,7 @@ export const useAddToWhitelist = (
       invoke<WhitelistEntry>("add_to_whitelist", { instanceId: id, uid, name }),
     onSuccess: async (...args) => {
       const { id } = args[1];
-      await queryClient.invalidateQueries({ queryKey: whitelistQueryKey(id) });
+      void queryClient.invalidateQueries({ queryKey: whitelistQueryKey(id) });
       props?.onSuccess?.(...args);
     },
   });
@@ -230,7 +230,7 @@ export const useRemoveFromWhitelist = (
       invoke("remove_from_whitelist", { instanceId: id, uid }) as Promise<void>,
     onSuccess: async (...args) => {
       const { id } = args[1];
-      await queryClient.invalidateQueries({ queryKey: whitelistQueryKey(id) });
+      void queryClient.invalidateQueries({ queryKey: whitelistQueryKey(id) });
       props?.onSuccess?.(...args);
     },
   });
@@ -246,7 +246,7 @@ export const useBulkImportWhitelist = (
       invoke<number>("bulk_import_whitelist", { instanceId: id, entries }),
     onSuccess: async (...args) => {
       const { id } = args[1];
-      await queryClient.invalidateQueries({ queryKey: whitelistQueryKey(id) });
+      void queryClient.invalidateQueries({ queryKey: whitelistQueryKey(id) });
       props?.onSuccess?.(...args);
     },
   });
@@ -262,7 +262,7 @@ export const useSetWhitelistMode = (
       invoke("set_whitelist_mode", { instanceId: id, enabled }) as Promise<void>,
     onSuccess: async (...args) => {
       const { id } = args[1];
-      await queryClient.invalidateQueries({ queryKey: whitelistQueryKey(id) });
+      void queryClient.invalidateQueries({ queryKey: whitelistQueryKey(id) });
       props?.onSuccess?.(...args);
     },
   });

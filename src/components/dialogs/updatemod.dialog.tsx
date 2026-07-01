@@ -93,8 +93,8 @@ export function UpdateModDialog({ mod, modsDirectory, versionFrom }: UpdateModDi
       });
     },
     onSuccess: async (_, variables) => {
-      await queryClient.invalidateQueries({ queryKey: installedModsQueryKey(modsDirectory) });
-      await queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(modsDirectory) });
+      void queryClient.invalidateQueries({ queryKey: installedModsQueryKey(modsDirectory) });
+      void queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(modsDirectory) });
       addModToInstallation({
         path: `${modsDirectory}${pathDelimiter}Mods`,
         url: variables.mainfile,
@@ -138,10 +138,10 @@ export function UpdateModDialog({ mod, modsDirectory, versionFrom }: UpdateModDi
         `Successfully ${selectedVersion && selectedVersion.modversion > versionFrom ? "updated" : "downgraded"} ${modInfo?.mod.name} to ${label}`,
         { id: `add-mod-${modInfo?.mod.modid}-${pathHash}` },
       );
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: installedModsQueryKey(modsDirectory),
       });
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: modUpdatesQueryKey(modsDirectory),
       });
       rootDialogHandle.close();

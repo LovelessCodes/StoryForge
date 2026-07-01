@@ -113,7 +113,7 @@ export function SettingsPage() {
           id: "settings-save",
         });
       }
-      await queryClient.invalidateQueries({ queryKey: ["saves"] });
+      void queryClient.invalidateQueries({ queryKey: ["saves"] });
     },
   });
   const { mutateAsync: setVersionsParent } = useMutation({
@@ -165,7 +165,7 @@ export function SettingsPage() {
           id: "settings-save",
         });
       }
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: installedVersionsQueryKey(),
       });
     },

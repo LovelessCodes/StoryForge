@@ -104,8 +104,8 @@ export function StandaloneInstallPickerDialog({ modid, mod }: StandaloneInstallP
       const destDir = variables.dest.path.endsWith(`${pathDelimiter}Mods`)
         ? variables.dest.path.slice(0, -`${pathDelimiter}Mods`.length)
         : variables.dest.path;
-      await queryClient.invalidateQueries({ queryKey: installedModsQueryKey(destDir) });
-      await queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(destDir) });
+      void queryClient.invalidateQueries({ queryKey: installedModsQueryKey(destDir) });
+      void queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(destDir) });
       rootDialogHandle.close();
     },
   });

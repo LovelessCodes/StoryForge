@@ -33,7 +33,10 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
   const canDelete = activeServers.length === 0;
 
   const { mutate: deleteInstallation, isPending } = useMutation({
-    mutationFn: async (id: number) => invoke("remove_installation", { id }),
+    mutationFn: async (id: number) => {
+      const result = await invoke<string>("remove_installation", { id });
+      return result;
+    },
     onError: (error, variables) => {
       toast.error(`Error deleting installation: ${error}`, {
         id: `installation-delete-${variables}`,
@@ -46,8 +49,8 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
     },
     onSuccess: async (data, variables) => {
       if (data === "removed") {
-        await queryClient.invalidateQueries({ queryKey: ["saves"] });
-        await queryClient.invalidateQueries({ queryKey: ["saves", installation.id] });
+        void queryClient.invalidateQueries({ queryKey: ["saves"] });
+        void queryClient.invalidateQueries({ queryKey: ["saves", installation.id] });
         removeInstallation(variables);
         toast.success("Installation deleted", {
           id: `installation-delete-${variables}`,
