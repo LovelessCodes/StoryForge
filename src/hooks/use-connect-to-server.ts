@@ -65,6 +65,11 @@ export const useConnectToServer = (
       toast.error(`Error connecting to server: ${error.message}`);
     },
     onMutate: async (variable) => {
+      for (const unlisten of unlistens.current) {
+        unlisten();
+      }
+      unlistens.current = [];
+
       const installation = findInstallationForServer(installations, variable.installationId);
 
       // Listen for dotnet download progress
@@ -110,6 +115,13 @@ export const useConnectToServer = (
           toast.error(`Error launching game: ${event.payload.reason}`, {
             id: `launch-game-${variable.installationId}`,
           });
+        }
+        if (status === "success" || status === "error") {
+          unlistenDotnet();
+          unlistenLaunch();
+          unlistens.current = unlistens.current.filter(
+            (fn) => fn !== unlistenDotnet && fn !== unlistenLaunch,
+          );
         }
       });
       unlistens.current.push(unlistenLaunch);
