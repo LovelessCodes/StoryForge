@@ -273,6 +273,7 @@ pub fn run() {
             servers::add_server_to_installation,
             servers::remove_server_from_installation,
             servers::check_server_in_installation,
+            servers::set_server_favorite,
             // Saves
             saves::get_installation_saves,
             saves::get_all_saves,

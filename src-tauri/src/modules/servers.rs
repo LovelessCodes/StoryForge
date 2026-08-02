@@ -2,10 +2,11 @@ use reqwest::get;
 use serde::Serialize;
 use serde_json::{from_str, json, to_string_pretty, Map, Value};
 use std::{
+    collections::HashSet,
     fs::{read_dir, read_to_string, write},
     path::PathBuf,
 };
-use tauri::{command, AppHandle};
+use tauri::{command, AppHandle, Manager};
 
 use super::errors::UiError;
 use super::installations::find_installation_by_id;
@@ -21,6 +22,54 @@ pub struct SavedServer {
     pub password: String,
     pub installation_id: u64,
     pub installation_name: String,
+    pub favorite: bool,
+}
+
+// Tracked separately from clientsettings.json (shared with the game client),
+// keyed by the same id fetch_all_servers assigns.
+fn server_favorites_path(app: &AppHandle) -> Result<PathBuf, UiError> {
+    let dir = app.path().app_data_dir().map_err(|e| UiError {
+        name: "app_data_failed".into(),
+        message: format!("Failed to get app data dir: {e}"),
+    })?;
+    Ok(dir.join("server_favorites.json"))
+}
+
+fn read_server_favorites(app: &AppHandle) -> HashSet<u64> {
+    let path = match server_favorites_path(app) {
+        Ok(p) => p,
+        Err(_) => return HashSet::new(),
+    };
+    read_to_string(&path)
+        .ok()
+        .and_then(|content| from_str::<Vec<u64>>(&content).ok())
+        .map(|ids| ids.into_iter().collect())
+        .unwrap_or_default()
+}
+
+fn write_server_favorites(app: &AppHandle, favorites: &HashSet<u64>) -> Result<(), UiError> {
+    let path = server_favorites_path(app)?;
+    let ids: Vec<u64> = favorites.iter().copied().collect();
+    let content = to_string_pretty(&ids).map_err(|e| UiError {
+        name: "serialize_error".into(),
+        message: format!("Failed to serialize server favorites: {e}"),
+    })?;
+    write(&path, content).map_err(|e| UiError {
+        name: "io_error".into(),
+        message: format!("Failed to write server favorites: {e}"),
+    })
+}
+
+#[command]
+pub fn set_server_favorite(app: AppHandle, id: u64, favorite: bool) -> Result<(), UiError> {
+    log_info!("set_server_favorite: id={} favorite={}", id, favorite);
+    let mut favorites = read_server_favorites(&app);
+    if favorite {
+        favorites.insert(id);
+    } else {
+        favorites.remove(&id);
+    }
+    write_server_favorites(&app, &favorites)
 }
 
 fn parse_server_string(raw: &str) -> Option<(String, String, Option<u16>, String)> {
@@ -57,6 +106,7 @@ fn extract_servers_from_directory(
     dir: &PathBuf,
     installation_id: u64,
     installation_name: &str,
+    favorites: &HashSet<u64>,
 ) -> Vec<SavedServer> {
     let mut servers = Vec::new();
     let clientsettings_path = dir.join("clientsettings.json");
@@ -79,6 +129,7 @@ fn extract_servers_from_directory(
                                 password,
                                 installation_id,
                                 installation_name: installation_name.to_string(),
+                                favorite: favorites.contains(&id),
                             });
                         }
                     }
@@ -100,6 +151,8 @@ pub fn fetch_all_servers(app: AppHandle) -> Result<Vec<SavedServer>, UiError> {
         return Ok(all_servers);
     }
 
+    let favorites = read_server_favorites(&app);
+
     for entry in read_dir(&installations_dir).map_err(|e| UiError {
         name: "io_error".into(),
         message: format!("Failed to read installations dir: {e}"),
@@ -115,8 +168,21 @@ pub fn fetch_all_servers(app: AppHandle) -> Result<Vec<SavedServer>, UiError> {
         let dir_name = entry.file_name().to_string_lossy().to_string();
         // Get installation id from installation.json (same hash-based id)
         let inst_id = crate::modules::utils::generate_id(&dir_name);
-        let servers = extract_servers_from_directory(&dir, inst_id, &dir_name);
+        let servers = extract_servers_from_directory(&dir, inst_id, &dir_name, &favorites);
         all_servers.extend(servers);
+    }
+
+    // Prune favorites with no matching live server — catches removal from
+    // either StoryForge or direct edits to the game's own config/launcher.
+    let live_ids: HashSet<u64> = all_servers.iter().map(|s| s.id).collect();
+    if favorites.iter().any(|id| !live_ids.contains(id)) {
+        let pruned: HashSet<u64> = favorites.intersection(&live_ids).copied().collect();
+        if let Err(e) = write_server_favorites(&app, &pruned) {
+            log_error!(
+                "fetch_all_servers: failed to prune stale favorites: {}",
+                e.message
+            );
+        }
     }
 
     Ok(all_servers)
