@@ -12,7 +12,7 @@ import { useAddModToInstallation } from "@/hooks/use-add-mod-to-installation";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import type { ModInfo, ProgressPayload, Release } from "@/lib/types";
-import { hashPath } from "@/lib/utils";
+import { hashPath, latestRelease } from "@/lib/utils";
 
 export type AddModDialogProps = {
   modid: number;
@@ -28,7 +28,7 @@ export function AddModDialog({ modid, modsDirectory }: AddModDialogProps) {
   });
   const listenRef = useRef<UnlistenFn>(null);
   const [userSelectedVersion, setUserSelectedVersion] = useState<Release | null>(null);
-  const selectedVersion = userSelectedVersion ?? modInfo?.mod.releases[0] ?? null;
+  const selectedVersion = userSelectedVersion ?? latestRelease(modInfo?.mod.releases) ?? null;
   const queryClient = useQueryClient();
   const pathHash = hashPath(modsDirectory);
   const { mutate: addModToInstallation } = useAddModToInstallation({

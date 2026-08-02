@@ -13,7 +13,7 @@ import { useHostedServers } from "@/hooks/queries/server-hosting";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import type { ModInfo, ProgressPayload, Release } from "@/lib/types";
-import { hashPath, pathDelimiter } from "@/lib/utils";
+import { hashPath, latestRelease, pathDelimiter } from "@/lib/utils";
 import { useInstallations } from "@/stores/installations";
 
 export type StandaloneInstallPickerProps = {
@@ -55,7 +55,7 @@ export function StandaloneInstallPickerDialog({ modid, mod }: StandaloneInstallP
 
   const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null);
   const [userSelectedVersion, setUserSelectedVersion] = useState<Release | null>(null);
-  const selectedVersion = userSelectedVersion ?? modInfo?.mod.releases[0] ?? null;
+  const selectedVersion = userSelectedVersion ?? latestRelease(modInfo?.mod.releases) ?? null;
 
   const queryClient = useQueryClient();
   const listenRef = useRef<UnlistenFn>(null);

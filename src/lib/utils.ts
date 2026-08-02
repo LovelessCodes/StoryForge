@@ -44,6 +44,16 @@ export function compareSemverAsc(a: string, b: string) {
   return pa - pb;
 }
 
+/** Finds the latest mod version — releases[] isn't guaranteed sorted by version. */
+export function latestRelease<T extends { modversion: string }>(
+  releases: T[] | undefined,
+): T | undefined {
+  if (!releases || releases.length === 0) return undefined;
+  return releases.reduce((latest, release) =>
+    compareSemverDesc(release.modversion, latest.modversion) < 0 ? release : latest,
+  );
+}
+
 export const zipfolderprefix = () => {
   const currentPlatform = platform();
   const pf = currentPlatform.charAt(0).toLowerCase();
