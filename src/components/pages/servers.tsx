@@ -30,7 +30,10 @@ export function ServersPage() {
       <ScrollArea className="h-full px-2" scrollFade>
         <AnimatePresence>
           {servers
-            .sort((a, b) => a.index - b.index)
+            .sort((a, b) => {
+              if (a.favorite === b.favorite) return a.index - b.index;
+              return a.favorite ? -1 : 1;
+            })
             .map((server, index) => (
               <MotionServerContextMenu
                 animate="show"
