@@ -32,7 +32,15 @@ export type OutputMod = {
   path: string;
 };
 
-type SortBy = "created" | "name" | "trending" | "downloads" | "follows" | "comments" | "updated";
+type SortBy =
+  | "relevance"
+  | "created"
+  | "name"
+  | "trending"
+  | "downloads"
+  | "follows"
+  | "comments"
+  | "updated";
 type OrderDirection = "ascending" | "descending";
 type Side = "any" | "client" | "server" | "both" | "installed";
 type Category = "mod" | "externaltool" | "other";
@@ -43,6 +51,7 @@ const sortOptions: Record<SortBy, string> = {
   downloads: "Downloads",
   follows: "Follows",
   name: "Name",
+  relevance: "Relevance",
   trending: "Trending",
   updated: "Last Updated",
 };
@@ -65,6 +74,18 @@ const modsQuery = (params: ModsParams) => ({
   refetchOnWindowFocus: false,
   staleTime: Infinity,
 });
+
+/** Ranks match quality: name starts-with > name contains > tag match > description match. */
+function relevanceRank(mod: Mod, query: string): number {
+  const q = stripped(query);
+  if (!q) return 4;
+  const name = stripped(mod.name);
+  if (name.startsWith(q)) return 0;
+  if (name.includes(q)) return 1;
+  if (mod.tags.some((tag) => stripped(tag).includes(q))) return 2;
+  if (stripped(mod.summary).includes(q)) return 3;
+  return 4;
+}
 
 export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
   // ── Local filter state (replaces zustand useModsFilters) ──
@@ -138,6 +159,17 @@ export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
         return true;
       })
       .sort((a, b) => {
+        if (sortBy === "relevance") {
+          const rankA = relevanceRank(a, searchText);
+          const rankB = relevanceRank(b, searchText);
+          if (rankA !== rankB) {
+            return orderDirection === "descending" ? rankB - rankA : rankA - rankB;
+          }
+          // Same relevance tier — break ties by trending points.
+          return orderDirection === "descending"
+            ? a.trendingpoints - b.trendingpoints
+            : b.trendingpoints - a.trendingpoints;
+        }
         if (sortBy === "name") {
           return orderDirection === "descending"
             ? stripped(b.name).localeCompare(stripped(a.name))
@@ -168,7 +200,17 @@ export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
         }
         return orderDirection === "descending" ? 0 : -1;
       });
-  }, [mods, selectedModTags, author, category, side, installedModIdSet, sortBy, orderDirection]);
+  }, [
+    mods,
+    selectedModTags,
+    author,
+    category,
+    side,
+    installedModIdSet,
+    sortBy,
+    orderDirection,
+    searchText,
+  ]);
 
   // ── Tag lookup tables for ModItem ──
   const tagColorMap = useMemo(() => {
