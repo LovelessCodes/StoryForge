@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 import type { Mod } from "@/components/lists/mod.list";
 import type { ModInfo, ProgressPayload } from "@/lib/types";
-import { hashPath, pathDelimiter } from "@/lib/utils";
+import { hashPath, latestRelease, pathDelimiter } from "@/lib/utils";
 
 import { installedModsQueryKey } from "./use-installed-mods";
 import { modUpdatesQueryKey } from "./use-mod-updates";
@@ -32,7 +32,7 @@ export const useAddLatestModVersion = ({
         destpath: path,
         emitevent,
         extract: false,
-        url: modInfo.mod.releases[0]?.mainfile,
+        url: latestRelease(modInfo.mod.releases)?.mainfile,
       })) as string;
       return { modInfo };
     },
