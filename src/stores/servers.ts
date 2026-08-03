@@ -33,6 +33,7 @@ type SavedServer = {
   password: string;
   installation_id: number;
   installation_name: string;
+  favorite: boolean;
 };
 
 export const useServerStore = create<ServerStore>()((set) => ({
@@ -62,7 +63,7 @@ export const useServerStore = create<ServerStore>()((set) => ({
             ip: r.ip,
             port: r.port,
             password: r.password,
-            favorite: existing?.favorite ?? false,
+            favorite: existing?.favorite ?? r.favorite ?? false,
             installationId: r.installation_id,
             installationName: r.installation_name,
           };
@@ -99,12 +100,18 @@ export const useServerStore = create<ServerStore>()((set) => ({
     }),
   servers: [],
   toggleFavorite: (id) =>
-    set((state) => ({
-      ...state,
-      servers: state.servers.map((server) =>
-        server.id === id ? { ...server, favorite: !server.favorite } : server,
-      ),
-    })),
+    set((state) => {
+      const server = state.servers.find((s) => s.id === id);
+      if (server) {
+        invoke("set_server_favorite", { favorite: !server.favorite, id }).catch((e) =>
+          console.error("Failed to save server favorite:", e),
+        );
+      }
+      return {
+        ...state,
+        servers: state.servers.map((s) => (s.id === id ? { ...s, favorite: !s.favorite } : s)),
+      };
+    }),
   updateServer: (updatedServer, cb) =>
     set((state) => {
       if (!state.servers.find((s) => s.id === updatedServer.id)) {
