@@ -1,4 +1,4 @@
-import { DownloadCloudIcon, Lock, Pencil, Play, Star } from "lucide-react";
+import { DownloadCloudIcon, Lock, Pencil, Play, Star, Wifi, WifiOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Group } from "@/components/ui/group";
@@ -6,6 +6,7 @@ import { TooltipTrigger } from "@/components/ui/tooltip";
 import { rootTooltipHandle } from "@/handles";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
+import { useServerStatus } from "@/hooks/use-server-status";
 import { cn } from "@/lib/utils";
 import { findInstallationForServer, useInstallations } from "@/stores/installations";
 import type { Server } from "@/stores/servers";
@@ -31,17 +32,38 @@ export function ServerCard({ server, onConnect, onUnfavorite, onEdit }: ServerCa
   const versions = useInstalledVersionNames();
 
   const { mutate: installVersion, isPending: isInstalling } = useDownloadVersion();
+  const { isChecking, isOnline } = useServerStatus(server);
 
   return (
     <>
       <div className="flex items-center gap-3">
-        <div
-          className={`size-2 rounded-full ${
-            installation && versions.includes(installation.version)
-              ? "bg-success"
-              : "bg-muted-foreground/40"
-          }`}
-        />
+        <div className="flex flex-col items-center gap-1.5">
+          <div
+            className={`size-2 rounded-full ${
+              installation && versions.includes(installation.version)
+                ? "bg-success"
+                : "bg-muted-foreground/40"
+            }`}
+            title={
+              installation && versions.includes(installation.version)
+                ? "Matching version installed"
+                : "Matching version not installed"
+            }
+          />
+          {isChecking ? (
+            <span title="Checking server status...">
+              <Wifi aria-hidden="true" className="text-muted-foreground/40 size-3" />
+            </span>
+          ) : isOnline ? (
+            <span title="Server is online">
+              <Wifi aria-hidden="true" className="text-success size-3" />
+            </span>
+          ) : (
+            <span title="Server is unreachable">
+              <WifiOff aria-hidden="true" className="text-destructive size-3" />
+            </span>
+          )}
+        </div>
         <div className="text-left">
           <p className="text-foreground font-mono text-sm">
             {server.name}

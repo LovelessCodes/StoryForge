@@ -340,13 +340,31 @@ pub struct ServerSniffResult {
 
 // ── Command ──
 
+/// Delegates to `sniff_server_blocking` via `spawn_blocking` so the probe can't block the UI thread.
+#[tauri::command]
+pub async fn sniff_server(
+    host: String,
+    port: Option<u16>,
+    password: Option<String>,
+    timeout_secs: Option<f64>,
+) -> Result<ServerSniffResult, UiError> {
+    tokio::task::spawn_blocking(move || sniff_server_blocking(host, port, password, timeout_secs))
+        .await
+        .map_err(|e| {
+            log_error!("sniff_server: task join error: {e}");
+            UiError {
+                name: "internal_error".into(),
+                message: format!("Internal error: {e}"),
+            }
+        })?
+}
+
 /// Probes a Vintage Story server to detect version, password status, etc.
 ///
 /// Two-step process:
 /// 1. Send wrong version → get server's real version + basic flags
 /// 2. Send correct version + password → get detailed auth/password/whitelist status
-#[tauri::command]
-pub fn sniff_server(
+fn sniff_server_blocking(
     host: String,
     port: Option<u16>,
     password: Option<String>,
