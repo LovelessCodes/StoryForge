@@ -53,10 +53,6 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
       if (data === "removed") {
         void queryClient.invalidateQueries({ queryKey: ["saves"] });
         void queryClient.invalidateQueries({ queryKey: ["saves", installation.id] });
-        // Installation paths are name-derived with no uniqueness suffix, so a
-        // new installation can reuse this exact path — without this, its
-        // stale "mods installed at this path" cache (staleTime: Infinity)
-        // would otherwise outlive the installation it described.
         queryClient.removeQueries({ queryKey: installedModsQueryKey(installation.path) });
         queryClient.removeQueries({ queryKey: modUpdatesQueryKey(installation.path) });
         removeInstallation(variables);

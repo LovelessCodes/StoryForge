@@ -171,9 +171,6 @@ export function InstallationDialog({ installation, version }: InstallationDialog
                   source: installationsParent ?? appFolder ?? "",
                   subdir: oldSafeName,
                 });
-                // The old path's mod cache (staleTime: Infinity) would otherwise
-                // outlive this installation, same as on delete — a later
-                // installation reusing the old name would inherit stale data.
                 queryClient.removeQueries({ queryKey: installedModsQueryKey(installation.path) });
                 queryClient.removeQueries({ queryKey: modUpdatesQueryKey(installation.path) });
               }
