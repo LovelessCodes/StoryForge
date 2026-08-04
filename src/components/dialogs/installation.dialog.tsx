@@ -18,10 +18,12 @@ import { TooltipTrigger } from "@/components/ui/tooltip";
 import { rootDialogHandle, rootTooltipHandle } from "@/handles";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { useDownloadVersion } from "@/hooks/use-download-version";
+import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import {
   installedVersionsQueryKey,
   useInstalledVersionNames,
 } from "@/hooks/use-installed-versions";
+import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import { logToFile } from "@/lib/logger";
 import { gameVersionsQuery } from "@/lib/queries";
 import { buildInstallationPath, compareSemverDesc, makeStringFolderSafe } from "@/lib/utils";
@@ -169,6 +171,11 @@ export function InstallationDialog({ installation, version }: InstallationDialog
                   source: installationsParent ?? appFolder ?? "",
                   subdir: oldSafeName,
                 });
+                // The old path's mod cache (staleTime: Infinity) would otherwise
+                // outlive this installation, same as on delete — a later
+                // installation reusing the old name would inherit stale data.
+                queryClient.removeQueries({ queryKey: installedModsQueryKey(installation.path) });
+                queryClient.removeQueries({ queryKey: modUpdatesQueryKey(installation.path) });
               }
               await saveInstallationToDisk({
                 envVars: Object.fromEntries(
