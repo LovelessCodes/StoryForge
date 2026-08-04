@@ -75,16 +75,17 @@ const modsQuery = (params: ModsParams) => ({
   staleTime: Infinity,
 });
 
-/** Ranks match quality: name starts-with > name contains > tag match > description match. */
+/** Ranks match quality: exact name > name starts-with > name contains > tag match > description match. */
 function relevanceRank(mod: Mod, query: string): number {
   const q = stripped(query);
-  if (!q) return 4;
+  if (!q) return 5;
   const name = stripped(mod.name);
-  if (name.startsWith(q)) return 0;
-  if (name.includes(q)) return 1;
-  if (mod.tags.some((tag) => stripped(tag).includes(q))) return 2;
-  if (stripped(mod.summary).includes(q)) return 3;
-  return 4;
+  if (name === q) return 0;
+  if (name.startsWith(q)) return 1;
+  if (name.includes(q)) return 2;
+  if (mod.tags.some((tag) => stripped(tag).includes(q))) return 3;
+  if (stripped(mod.summary).includes(q)) return 4;
+  return 5;
 }
 
 export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
@@ -166,6 +167,10 @@ export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
             return orderDirection === "descending" ? rankB - rankA : rankA - rankB;
           }
           // Same relevance tier — break ties by trending points.
+          const lengthDiff = stripped(a.name).length - stripped(b.name).length;
+          if (lengthDiff !== 0) {
+            return orderDirection === "descending" ? -lengthDiff : lengthDiff;
+          }
           return orderDirection === "descending"
             ? a.trendingpoints - b.trendingpoints
             : b.trendingpoints - a.trendingpoints;
