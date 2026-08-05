@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { rootAlertDialogHandle } from "@/handles";
+import { installedModsQueryKey } from "@/hooks/use-installed-mods";
+import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import { useSavesFromInstallation } from "@/hooks/use-saves";
 import { type Installation, useInstallations } from "@/stores/installations";
 import { useServerStore } from "@/stores/servers";
@@ -51,6 +53,8 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
       if (data === "removed") {
         void queryClient.invalidateQueries({ queryKey: ["saves"] });
         void queryClient.invalidateQueries({ queryKey: ["saves", installation.id] });
+        queryClient.removeQueries({ queryKey: installedModsQueryKey(installation.path) });
+        queryClient.removeQueries({ queryKey: modUpdatesQueryKey(installation.path) });
         removeInstallation(variables);
         toast.success("Installation deleted", {
           id: `installation-delete-${variables}`,
