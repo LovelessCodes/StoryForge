@@ -23,6 +23,7 @@ import { useModUpdates } from "@/hooks/use-mod-updates";
 import { gameVersionsQuery, modTagsQuery } from "@/lib/queries";
 import type { ModTag } from "@/lib/types";
 import { cn, compareSemverDesc, stripped } from "@/lib/utils";
+import { useSettingsStore } from "@/stores/settings";
 
 export type OutputMod = {
   modid: number;
@@ -32,7 +33,7 @@ export type OutputMod = {
   path: string;
 };
 
-type SortBy =
+export type SortBy =
   | "relevance"
   | "created"
   | "name"
@@ -45,7 +46,7 @@ type OrderDirection = "ascending" | "descending";
 type Side = "any" | "client" | "server" | "both" | "installed";
 type Category = "mod" | "externaltool" | "other";
 
-const sortOptions: Record<SortBy, string> = {
+export const sortOptions: Record<SortBy, string> = {
   comments: "Comments",
   created: "Created",
   downloads: "Downloads",
@@ -93,7 +94,8 @@ export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
   const [searchText, setSearchText] = useState("");
   const [selectedModTags, setSelectedModTags] = useState<ModTag[]>([]);
   const [selectedGameVersions, setSelectedGameVersions] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<SortBy>("trending");
+  const defaultModSortBy = useSettingsStore((state) => state.defaultModSortBy);
+  const [sortBy, setSortBy] = useState<SortBy>(defaultModSortBy);
   const [orderDirection, setOrderDirection] = useState<OrderDirection>("ascending");
   const [author, setAuthor] = useState("");
   const [side, setSide] = useState<Side>("any");

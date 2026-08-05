@@ -3,6 +3,7 @@ import { appDataDir } from "@tauri-apps/api/path";
 import { createTauriStore } from "@tauri-store/zustand";
 import { create } from "zustand";
 
+import type { SortBy } from "@/components/pages/mods-browser";
 import { logToFile } from "@/lib/logger";
 
 export type SetParentConfigProps = {
@@ -13,6 +14,8 @@ export type SetParentConfigProps = {
 type SettingsStore = {
   darkMode: boolean;
   toggleDarkMode: () => void;
+  defaultModSortBy: SortBy;
+  setDefaultModSortBy: (sortBy: SortBy) => void;
   installationsParent: string | null;
   installationsSubdir: string;
   setInstallationsParent: (path: string | null, config?: SetParentConfigProps) => Promise<void>;
@@ -27,6 +30,8 @@ type SettingsStore = {
 
 export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
   darkMode: window.matchMedia?.("(prefers-color-scheme: dark)").matches,
+  defaultModSortBy: "trending",
+  setDefaultModSortBy: (sortBy) => set(() => ({ defaultModSortBy: sortBy })),
   installationsParent: null,
   installationsSubdir: "installations",
   setInstallationsParent: async (path, config) => {

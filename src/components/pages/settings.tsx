@@ -7,6 +7,7 @@ import z from "zod";
 
 import { AccountSettings } from "@/components/account-settings";
 import { LogViewer } from "@/components/log-viewer";
+import { type SortBy, sortOptions } from "@/components/pages/mods-browser";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -19,6 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 import { TooltipTrigger } from "@/components/ui/tooltip";
 import { rootTooltipHandle } from "@/handles";
@@ -29,8 +31,11 @@ import { cn } from "@/lib/utils";
 import { useInstallationsStore } from "@/stores/installations";
 import { type SetParentConfigProps, useSettingsStore } from "@/stores/settings";
 
+const sortByValues = Object.keys(sortOptions) as [SortBy, ...SortBy[]];
+
 const settingsSchema = z.object({
   darkMode: z.boolean(),
+  defaultModSortBy: z.enum(sortByValues),
   installationsParent: z.string().nullable(),
   streamMode: z.boolean(),
   useSystemDotnet: z.boolean(),
@@ -175,6 +180,7 @@ export function SettingsPage() {
   const form = useForm({
     defaultValues: {
       darkMode: settingsStore.darkMode,
+      defaultModSortBy: settingsStore.defaultModSortBy,
       installationsParent: settingsStore.installationsParent,
       streamMode: settingsStore.streamMode,
       useSystemDotnet: settingsStore.useSystemDotnet,
@@ -213,6 +219,9 @@ export function SettingsPage() {
       }
       if (value.streamMode !== settingsStore.streamMode) {
         settingsStore.toggleStreamMode();
+      }
+      if (value.defaultModSortBy !== settingsStore.defaultModSortBy) {
+        settingsStore.setDefaultModSortBy(value.defaultModSortBy);
       }
       if (value.useSystemDotnet !== settingsStore.useSystemDotnet) {
         settingsStore.toggleUseSystemDotnet();
@@ -469,6 +478,26 @@ export function SettingsPage() {
                     When enabled, the app will try to use your system's .NET runtime before
                     downloading its own.
                   </p>
+                </div>
+              )}
+            </form.Field>
+            <form.Field name="defaultModSortBy">
+              {(field) => (
+                <div className="grid gap-2">
+                  <Label>Default Mod Sort</Label>
+                  <Select
+                    onValueChange={(value) => field.handleChange(value as SortBy)}
+                    value={field.state.value}
+                  >
+                    <SelectTrigger>{sortOptions[field.state.value]}</SelectTrigger>
+                    <SelectContent align="start" alignItemWithTrigger={false}>
+                      {Object.entries(sortOptions).map(([key, value]) => (
+                        <SelectItem key={key} value={key}>
+                          {value}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
             </form.Field>
