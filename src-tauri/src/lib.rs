@@ -176,7 +176,7 @@ pub fn run() {
                 .title("Story Forge")
                 .inner_size(800.0, 600.0)
                 .transparent(cfg!(target_os = "macos"))
-                .decorations(!cfg!(target_os = "linux"));
+                .decorations(cfg!(target_os = "macos"));
 
             let window = match win_builder.build() {
                 Ok(w) => {
@@ -211,7 +211,14 @@ pub fn run() {
             modules::logger::mark_webview_start();
             Ok(())
         })
-        .plugin(tauri_plugin_window_state::Builder::default().build())
+        .plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_state_flags(
+                    tauri_plugin_window_state::StateFlags::all()
+                        & !tauri_plugin_window_state::StateFlags::DECORATIONS,
+                )
+                .build(),
+        )
         .invoke_handler(tauri::generate_handler![
             is_flatpak_cmd,
             // Authorization
