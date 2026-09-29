@@ -53,7 +53,7 @@ export function InstallationsPage() {
       </div>
       <ScrollArea className="h-full px-2" scrollFade>
         <AnimatePresence>
-          {installations.sort(sortInstallations).map((installation, index) => (
+          {installations.toSorted(sortInstallations).map((installation, index) => (
             <MotionInstallationContextMenu
               animate="show"
               className="flex items-center gap-2 p-2 not-last:border-b"

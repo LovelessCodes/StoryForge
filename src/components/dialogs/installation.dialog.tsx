@@ -100,7 +100,7 @@ export function InstallationDialog({ installation, version }: InstallationDialog
   });
 
   const defaultVersion =
-    version ?? gameVersions?.sort(compareSemverDesc).filter((v) => !v.includes("rc"))[0] ?? "";
+    version ?? gameVersions?.toSorted(compareSemverDesc).filter((v) => !v.includes("rc"))[0] ?? "";
 
   const form = useForm({
     defaultValues: isEdit
@@ -384,7 +384,7 @@ export function InstallationDialog({ installation, version }: InstallationDialog
                     </p>
                   </SelectTrigger>
                   <SelectContent align="start" alignItemWithTrigger={false}>
-                    {gameVersions?.sort(compareSemverDesc).map((v) => (
+                    {gameVersions?.toSorted(compareSemverDesc).map((v) => (
                       <SelectItem
                         className={installedVersions.includes(v) ? "bg-success/5" : ""}
                         key={v}
