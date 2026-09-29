@@ -216,27 +216,41 @@ pub struct SavedAccount {
 }
 
 #[command]
-pub fn save_accounts(app: tauri::AppHandle, accounts: Vec<SavedAccount>) -> Result<(), String> {
+pub fn save_accounts(app: tauri::AppHandle, accounts: Vec<SavedAccount>) -> Result<(), UiError> {
     use std::fs::write;
     use tauri::Manager;
-    let data_dir = app.path().app_data_dir().map_err(|e| format!("{e}"))?;
+    let data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| UiError::new("path_error", format!("Failed to resolve app data dir: {e}")))?;
     let path = data_dir.join("accounts.json");
-    let json = serde_json::to_string_pretty(&accounts).map_err(|e| format!("{e}"))?;
-    write(&path, json).map_err(|e| format!("{e}"))
+    let json = serde_json::to_string_pretty(&accounts).map_err(|e| {
+        UiError::new(
+            "serialize_error",
+            format!("Failed to serialize accounts: {e}"),
+        )
+    })?;
+    write(&path, json)
+        .map_err(|e| UiError::new("io_error", format!("Failed to write accounts.json: {e}")))
 }
 
 #[command]
-pub fn load_accounts(app: tauri::AppHandle) -> Result<Vec<SavedAccount>, String> {
+pub fn load_accounts(app: tauri::AppHandle) -> Result<Vec<SavedAccount>, UiError> {
     use std::fs::read_to_string;
     use tauri::Manager;
-    let data_dir = app.path().app_data_dir().map_err(|e| format!("{e}"))?;
+    let data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| UiError::new("path_error", format!("Failed to resolve app data dir: {e}")))?;
     let path = data_dir.join("accounts.json");
 
     if !path.exists() {
         return Ok(Vec::new());
     }
-    let json = read_to_string(&path).map_err(|e| format!("{e}"))?;
-    serde_json::from_str(&json).map_err(|e| format!("{e}"))
+    let json = read_to_string(&path)
+        .map_err(|e| UiError::new("io_error", format!("Failed to read accounts.json: {e}")))?;
+    serde_json::from_str(&json)
+        .map_err(|e| UiError::new("parse_error", format!("Failed to parse accounts.json: {e}")))
 }
 
 /// Masks the local part of an email address for logs.

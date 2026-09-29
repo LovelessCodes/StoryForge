@@ -1,3 +1,4 @@
+use super::errors::UiError;
 use super::utils::lock;
 use std::fs::read_to_string;
 use std::sync::LazyLock;
@@ -15,7 +16,7 @@ pub fn mark_webview_start() {
 
 /// Log the gap between Rust setup completion and first frontend execution.
 #[tauri::command]
-pub fn log_webview_gap() -> Result<(), String> {
+pub fn log_webview_gap() -> Result<(), UiError> {
     if let Some(start) = lock(&WEBVIEW_START).take() {
         let elapsed = start.elapsed();
         log::info!("Webview load gap: {:.2?}", elapsed);
@@ -39,7 +40,7 @@ pub fn log(level: &str, msg: &str) {
 
 /// Write a message from the frontend to the log file.
 #[tauri::command]
-pub fn log_message(level: String, message: String) -> Result<(), String> {
+pub fn log_message(level: String, message: String) -> Result<(), UiError> {
     log(&level, &message);
     Ok(())
 }
@@ -52,7 +53,7 @@ pub fn log_elapsed(label: &str, start: std::time::Instant) {
 
 /// Log the time elapsed from the first `log()` call to now.
 #[tauri::command]
-pub fn log_startup_time() -> Result<(), String> {
+pub fn log_startup_time() -> Result<(), UiError> {
     if let Some(start) = lock(&STARTUP_START).take() {
         let elapsed = start.elapsed();
         log::info!("Startup time: {:.2?}", elapsed);
@@ -62,14 +63,15 @@ pub fn log_startup_time() -> Result<(), String> {
 
 /// Read the current log file and return its contents.
 #[tauri::command]
-pub fn get_logs(app: tauri::AppHandle) -> Result<String, String> {
+pub fn get_logs(app: tauri::AppHandle) -> Result<String, UiError> {
     let app_data = app
         .path()
         .app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {e}"))?;
+        .map_err(|e| UiError::new("path_error", format!("Failed to resolve app data dir: {e}")))?;
     let log_path = app_data.join("logs").join("app.log");
     if !log_path.exists() {
         return Ok(String::new());
     }
-    read_to_string(&log_path).map_err(|e| format!("Failed to read log file: {e}"))
+    read_to_string(&log_path)
+        .map_err(|e| UiError::new("io_error", format!("Failed to read log file: {e}")))
 }
