@@ -248,6 +248,12 @@ function ServerHostingSettings({
   const updateInstance = useUpdateInstance();
   const deleteInstance = useDeleteInstance();
 
+  // These must stay above the `if (!instance)` early return: hooks cannot be
+  // skipped conditionally, or React sees a changed hook order once the
+  // instance list finishes loading.
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteData, setDeleteData] = useState(false);
+
   const [name, setName] = useState(instance?.name ?? "");
   const [port, setPort] = useState(String(instance?.port ?? ""));
   const [bindIp, setBindIp] = useState(instance?.bind_ip ?? "");
@@ -279,9 +285,6 @@ function ServerHostingSettings({
       },
     );
   };
-
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleteData, setDeleteData] = useState(false);
 
   const handleDelete = async () => {
     deleteInstance.mutate(
