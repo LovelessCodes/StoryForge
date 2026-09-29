@@ -144,7 +144,7 @@ fn extract_servers_from_directory(
 pub fn fetch_all_servers(app: AppHandle) -> Result<Vec<SavedServer>, UiError> {
     log_info!("fetch_all_servers");
     let subdir = installations_subdir(app.clone());
-    let installations_dir = installations_folder(app.clone()).join(&subdir);
+    let installations_dir = installations_folder(app.clone())?.join(&subdir);
     let mut all_servers: Vec<SavedServer> = Vec::new();
 
     if !installations_dir.is_dir() {

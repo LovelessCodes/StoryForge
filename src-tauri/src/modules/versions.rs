@@ -46,7 +46,7 @@ pub struct VersionInfo {
 pub fn get_installed_versions(app: AppHandle) -> Result<Vec<VersionInfo>, UiError> {
     log_info!("get_installed_versions");
     // Should look up the versions folder and return a list of installed versions
-    let base_dir = versions_folder(app.clone());
+    let base_dir = versions_folder(app.clone())?;
     let subdir = versions_subdir(app.clone());
     let versions_dir = base_dir.join(&subdir);
     if !versions_dir.exists() || !versions_dir.is_dir() {
@@ -87,7 +87,7 @@ pub fn remove_installed_version(version: String, app: AppHandle) -> Result<Strin
     log_info!("remove_installed_version: {}", version);
     let version = safe_file_name(&version)?;
     let subdir = versions_subdir(app.clone());
-    let versions_path = versions_folder(app.clone()).join(&subdir).join(&version);
+    let versions_path = versions_folder(app.clone())?.join(&subdir).join(&version);
     if !versions_path.exists() || !versions_path.is_dir() {
         log_error!("remove_installed_version: not found: {:?}", versions_path);
         return Err(UiError {
@@ -149,9 +149,9 @@ pub async fn move_versions_folder(
     require_managed_path(&app, Path::new(&source), "Source directory")?;
     require_safe_destination(Path::new(&destination), "Destination")?;
     log_info!("move_versions_folder: {:?} -> {:?}", src, dst);
-    move_folder(src, dst)?;
-    log_info!("move_versions_folder: done");
-    Ok("moved".into())
+    let outcome = move_folder(src, dst)?;
+    log_info!("move_versions_folder: {outcome}");
+    Ok(outcome)
 }
 
 #[command]

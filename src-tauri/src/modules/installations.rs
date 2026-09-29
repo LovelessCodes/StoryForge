@@ -130,7 +130,7 @@ pub fn find_installation_by_id(
     id: u64,
 ) -> Result<(PathBuf, InstallationInfo), UiError> {
     let subdir = installations_subdir(app.clone());
-    let installations_dir = installations_folder(app.clone()).join(&subdir);
+    let installations_dir = installations_folder(app.clone())?.join(&subdir);
     if !installations_dir.is_dir() {
         return Err(UiError::not_found(format!(
             "Installation with id {} not found",
@@ -167,7 +167,7 @@ pub fn find_installation_by_id(
 #[command]
 pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, UiError> {
     let subdir = installations_subdir(app.clone());
-    let installations_dir = installations_folder(app.clone()).join(&subdir);
+    let installations_dir = installations_folder(app.clone())?.join(&subdir);
     log_info!("get_all_installations: scanning {:?}", installations_dir);
 
     // Ensure dir exists
@@ -340,7 +340,7 @@ pub async fn import_installation(
 
     // 1. Create the installation directory
     let subdir = installations_subdir(app.clone());
-    let installations_dir = installations_folder(app.clone()).join(&subdir);
+    let installations_dir = installations_folder(app.clone())?.join(&subdir);
     let inst_dir = installations_dir.join(&safe_name);
     create_dir_all(&inst_dir).map_err(|e| UiError {
         name: "create_dir_failed".into(),
@@ -742,7 +742,7 @@ async fn resolve_launch_context(
     log_info!("[play_game] DOTNET_ROOT={:?}", dotnet_root);
 
     let subdir = versions_subdir(app.clone());
-    let version_path = versions_folder(app.clone())
+    let version_path = versions_folder(app.clone())?
         .join(&subdir)
         .join(&installation.version);
     log_info!("[play_game] version_path: {:?}", version_path);
@@ -1628,9 +1628,9 @@ pub async fn move_installations_folder(
     require_managed_path(&app, Path::new(&source), "Source directory")?;
     require_safe_destination(Path::new(&destination), "Destination")?;
     log_info!("move_installations_folder: {:?} -> {:?}", src, dst);
-    move_folder(src, dst)?;
-    log_info!("move_installations_folder: done");
-    Ok("moved".into())
+    let outcome = move_folder(src, dst)?;
+    log_info!("move_installations_folder: {outcome}");
+    Ok(outcome)
 }
 
 #[command]

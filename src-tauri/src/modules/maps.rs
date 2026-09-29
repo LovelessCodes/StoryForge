@@ -272,7 +272,7 @@ pub fn get_all_maps(app: AppHandle) -> Result<Vec<MapInfo>, UiError> {
     let start = std::time::Instant::now();
 
     let subdir = installations_subdir(app.clone());
-    let installations_dir = installations_folder(app.clone()).join(&subdir);
+    let installations_dir = installations_folder(app.clone())?.join(&subdir);
     let result = scan_maps(&installations_dir);
 
     log_info!(

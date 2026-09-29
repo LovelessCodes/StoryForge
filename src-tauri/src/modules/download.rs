@@ -18,7 +18,7 @@ use tokio_util::sync::CancellationToken;
 use super::errors::UiError;
 use super::paths::vintagestory_exe;
 use super::utils::{
-    is_at_least_1_22_3, normalize_path, require_managed_path, safe_file_name, safe_join,
+    is_at_least_1_22_3, lock, normalize_path, require_managed_path, safe_file_name, safe_join,
     versions_folder, versions_subdir,
 };
 use crate::{log_error, log_info};
@@ -68,7 +68,7 @@ struct UnregisterOnDrop {
 
 impl Drop for UnregisterOnDrop {
     fn drop(&mut self) {
-        active_downloads().lock().unwrap().remove(&self.event);
+        lock(active_downloads()).remove(&self.event);
     }
 }
 
@@ -77,7 +77,7 @@ impl Drop for UnregisterOnDrop {
 pub fn pause_all_active_downloads() {
     let map = active_downloads();
     let entries: Vec<_> = {
-        let guard = map.lock().unwrap();
+        let guard = lock(map);
         guard
             .iter()
             .map(|(event, ad)| {
@@ -87,7 +87,7 @@ pub fn pause_all_active_downloads() {
                     ad.stored_offset.load(Ordering::SeqCst),
                     ad.url.clone(),
                     ad.filepath.clone(),
-                    ad.etag.lock().unwrap().clone(),
+                    lock(&ad.etag).clone(),
                 )
             })
             .collect()
@@ -319,7 +319,7 @@ async fn download_file(
         .to_string();
 
     // Update the shared etag so pause_all_active_downloads has the latest value.
-    *ctx.stored_etag.lock().unwrap() = etag.clone();
+    *lock(&ctx.stored_etag) = etag.clone();
 
     let total = resp.content_length().map(|t| t + resume_offset);
     let mut file = if resume_offset > 0 {
@@ -675,7 +675,7 @@ pub async fn download_and_maybe_extract(
     // configured versions folder. This also gates the cleanup below, which
     // deletes the destination directory.
     if extract {
-        let versions_root = versions_folder(app.clone()).join(versions_subdir(app.clone()));
+        let versions_root = versions_folder(app.clone())?.join(versions_subdir(app.clone()));
         if !normalize_path(&destpath).starts_with(normalize_path(&versions_root)) {
             return Err(UiError {
                 name: "path_not_allowed".into(),
@@ -718,7 +718,7 @@ pub async fn download_and_maybe_extract(
 
     // Register in the global registry.
     {
-        let mut reg = active_downloads().lock().unwrap();
+        let mut reg = lock(active_downloads());
         reg.insert(
             emitevent.clone(),
             ActiveDownload {

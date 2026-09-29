@@ -10,16 +10,21 @@ use walkdir::WalkDir;
 
 use super::errors::UiError;
 
-pub fn versions_folder(app: AppHandle) -> PathBuf {
+/// Root folder that holds installed game versions.
+///
+/// Returns an error instead of panicking when the app data dir cannot be resolved.
+pub fn versions_folder(app: AppHandle) -> Result<PathBuf, UiError> {
     let version_parent: Option<String> = app
         .zustand()
         .get::<Option<String>>("settings", "versionsParent")
         .ok()
         .flatten();
-    if let Some(vp) = version_parent {
-        PathBuf::from(vp)
-    } else {
-        app.path().app_data_dir().unwrap()
+    match version_parent {
+        Some(vp) => Ok(PathBuf::from(vp)),
+        None => app.path().app_data_dir().map_err(|e| UiError {
+            name: "path_error".into(),
+            message: format!("Failed to resolve app data dir: {e}"),
+        }),
     }
 }
 
@@ -29,16 +34,21 @@ pub fn versions_subdir(app: AppHandle) -> String {
         .unwrap_or_else(|_| "versions".to_string())
 }
 
-pub fn installations_folder(app: AppHandle) -> PathBuf {
+/// Root folder that holds StoryForge installations.
+///
+/// Returns an error instead of panicking when the app data dir cannot be resolved.
+pub fn installations_folder(app: AppHandle) -> Result<PathBuf, UiError> {
     let installations_parent: Option<String> = app
         .zustand()
         .get::<Option<String>>("settings", "installationsParent")
         .ok()
         .flatten();
-    if let Some(ip) = installations_parent {
-        PathBuf::from(ip)
-    } else {
-        app.path().app_data_dir().unwrap()
+    match installations_parent {
+        Some(ip) => Ok(PathBuf::from(ip)),
+        None => app.path().app_data_dir().map_err(|e| UiError {
+            name: "path_error".into(),
+            message: format!("Failed to resolve app data dir: {e}"),
+        }),
     }
 }
 
@@ -48,6 +58,10 @@ pub fn installations_subdir(app: AppHandle) -> String {
         .unwrap_or_else(|_| "installations".to_string())
 }
 
+/// Moves a directory, falling back to copy+delete across filesystems.
+///
+/// Returns `"source_not_exist"` when the source is missing (no-op), `"renamed"`
+/// for a same-filesystem rename, or `"moved"` after a copy+delete.
 pub fn move_folder(source_path: PathBuf, destination_path: PathBuf) -> Result<String, UiError> {
     if !source_path.exists() || !source_path.is_dir() {
         return Ok("source_not_exist".into());
@@ -116,6 +130,14 @@ pub fn dir_name(path: &Path) -> String {
         .unwrap_or_default()
 }
 
+/// Locks a mutex, recovering the guarded value if another thread panicked
+/// while holding it. Poisoning must not turn one bug into an app-wide panic.
+pub fn lock<T>(mutex: &std::sync::Mutex<T>) -> std::sync::MutexGuard<'_, T> {
+    mutex
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
 /// Joins an untrusted relative path onto `base`, rejecting anything that could
 /// escape it: absolute paths, parent-directory references, and path prefixes.
 pub fn safe_join<P: AsRef<Path>>(base: P, candidate: &str) -> Result<PathBuf, UiError> {
@@ -175,16 +197,16 @@ pub fn normalize_path(path: &Path) -> PathBuf {
 
 /// Directories the app manages on disk: app data, the configured versions and
 /// installations parents, and every hosted server's data directory.
-fn managed_roots(app: &AppHandle) -> Vec<PathBuf> {
+fn managed_roots(app: &AppHandle) -> Result<Vec<PathBuf>, UiError> {
     let mut roots = vec![
-        versions_folder(app.clone()),
-        installations_folder(app.clone()),
+        versions_folder(app.clone())?,
+        installations_folder(app.clone())?,
     ];
     if let Ok(data_dir) = app.path().app_data_dir() {
         roots.push(data_dir);
     }
     roots.extend(super::server_hosting::data_dirs(app));
-    roots
+    Ok(roots)
 }
 
 /// Verifies that `candidate` is inside an app-managed directory.
@@ -196,7 +218,7 @@ fn managed_roots(app: &AppHandle) -> Vec<PathBuf> {
 pub fn require_managed_path(app: &AppHandle, candidate: &Path, what: &str) -> Result<(), UiError> {
     let normalized = normalize_path(candidate);
     let allowed = candidate.is_absolute()
-        && managed_roots(app).into_iter().any(|root| {
+        && managed_roots(app)?.into_iter().any(|root| {
             !root.as_os_str().is_empty() && normalized.starts_with(normalize_path(&root))
         });
 
@@ -392,5 +414,15 @@ mod tests {
             normalize_path(Path::new("a/../../b")),
             PathBuf::from("../b")
         );
+    }
+
+    #[test]
+    fn lock_recovers_from_poisoning() {
+        let mutex = std::sync::Mutex::new(42);
+        let _ = std::panic::catch_unwind(|| {
+            let _guard = mutex.lock().unwrap();
+            panic!("poison the mutex");
+        });
+        assert_eq!(*lock(&mutex), 42);
     }
 }

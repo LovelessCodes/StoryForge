@@ -426,7 +426,7 @@ fn full_port_check(
 /// Resolve the server executable path for a given version.
 /// Finds VintagestoryServer.exe (Windows) or VintagestoryServer (Unix) in the game version folder.
 pub(crate) fn server_exe_path(app: &AppHandle, version: &str) -> Result<PathBuf, UiError> {
-    let base_dir = versions_folder(app.clone());
+    let base_dir = versions_folder(app.clone())?;
     let subdir = versions_subdir(app.clone());
     let version_dir = base_dir.join(&subdir).join(version);
 
