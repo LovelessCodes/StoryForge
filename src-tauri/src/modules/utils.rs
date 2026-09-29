@@ -1,8 +1,11 @@
 use fs_extra::dir::{copy, CopyOptions};
 use semver::Version;
 use std::{
+    collections::HashMap,
     fs::{read_dir, remove_dir_all, rename},
     path::{Component, Path, PathBuf},
+    sync::{LazyLock, Mutex},
+    time::{Duration, Instant},
 };
 use tauri::{AppHandle, Manager};
 use tauri_plugin_zustand::ManagerExt;
@@ -121,6 +124,28 @@ pub fn dir_size(path: &Path) -> u64 {
         .filter(|m| m.is_file())
         .map(|m| m.len())
         .sum()
+}
+
+/// Cache for `dir_size` results, keyed by directory path.
+///
+/// A game installation is hundreds of megabytes across thousands of files, and
+/// the frontend asks for sizes on every visit; re-walking each time blocked the
+/// UI thread. Entries expire after [`DIR_SIZE_TTL`].
+static DIR_SIZE_CACHE: LazyLock<Mutex<HashMap<PathBuf, (Instant, u64)>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+const DIR_SIZE_TTL: Duration = Duration::from_secs(120);
+
+/// Like [`dir_size`], but reuses a recent result for the same path.
+pub fn dir_size_cached(path: &Path) -> u64 {
+    if let Some((at, size)) = lock(&DIR_SIZE_CACHE).get(path) {
+        if at.elapsed() < DIR_SIZE_TTL {
+            return *size;
+        }
+    }
+    let size = dir_size(path);
+    lock(&DIR_SIZE_CACHE).insert(path.to_path_buf(), (Instant::now(), size));
+    size
 }
 
 /// Extracts the file/directory name from a path as a `String`, lossily.
@@ -424,5 +449,18 @@ mod tests {
             panic!("poison the mutex");
         });
         assert_eq!(*lock(&mutex), 42);
+    }
+
+    #[test]
+    fn dir_size_cached_reuses_recent_results() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path();
+        fs::write(root.join("a.txt"), b"12345").unwrap();
+        assert_eq!(dir_size_cached(root), 5);
+
+        // New file is not noticed until the cache entry expires.
+        fs::write(root.join("b.txt"), b"1234567").unwrap();
+        assert_eq!(dir_size_cached(root), 5);
+        assert_eq!(dir_size(root), 12);
     }
 }

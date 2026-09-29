@@ -6,7 +6,7 @@ use std::{
 };
 use tauri::{command, AppHandle, State};
 
-use crate::modules::utils::{dir_size, format_size, move_folder};
+use crate::modules::utils::{dir_size_cached, format_size, move_folder};
 
 use super::errors::UiError;
 use super::utils::{
@@ -43,12 +43,23 @@ pub struct VersionInfo {
 }
 
 #[command]
-pub fn get_installed_versions(app: AppHandle) -> Result<Vec<VersionInfo>, UiError> {
+pub async fn get_installed_versions(app: AppHandle) -> Result<Vec<VersionInfo>, UiError> {
     log_info!("get_installed_versions");
-    // Should look up the versions folder and return a list of installed versions
     let base_dir = versions_folder(app.clone())?;
     let subdir = versions_subdir(app.clone());
     let versions_dir = base_dir.join(&subdir);
+
+    // Sizes walk the whole version tree; keep it off the UI thread.
+    tokio::task::spawn_blocking(move || scan_installed_versions(&versions_dir))
+        .await
+        .map_err(|e| {
+            log_error!("get_installed_versions: scan task failed: {e}");
+            UiError::new("internal_error", format!("Versions scan failed: {e}"))
+        })?
+}
+
+/// Blocking scan behind `get_installed_versions`.
+fn scan_installed_versions(versions_dir: &Path) -> Result<Vec<VersionInfo>, UiError> {
     if !versions_dir.exists() || !versions_dir.is_dir() {
         return Ok(vec![]);
     }
@@ -70,7 +81,7 @@ pub fn get_installed_versions(app: AppHandle) -> Result<Vec<VersionInfo>, UiErro
         if entry.path().is_dir() && !is_incomplete(&entry.path()) {
             if let Some(name) = entry.file_name().to_str() {
                 let path = entry.path();
-                let size_bytes = dir_size(&path);
+                let size_bytes = dir_size_cached(&path);
                 versions.push(VersionInfo {
                     name: name.to_string(),
                     size_bytes,
