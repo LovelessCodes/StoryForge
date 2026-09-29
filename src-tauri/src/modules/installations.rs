@@ -369,8 +369,8 @@ pub async fn import_installation(
             let config_zip_path = inst_dir.join("ModConfig.zip");
             let config_dir = inst_dir.join("ModConfig");
 
-            // Download the zip
-            let client = reqwest::Client::new();
+            // Download the zip with the shared client (consistent timeout/user agent).
+            let client = app.state::<Arc<reqwest::Client>>().clone();
             let resp = client.get(config_url).send().await.map_err(|e| UiError {
                 name: "modconfig_download_failed".into(),
                 message: format!("Failed to download ModConfig: {e}"),
@@ -477,6 +477,7 @@ pub async fn import_installation(
     // 6. Download each mod with progress events
     let mut downloaded: Vec<String> = Vec::new();
     let mut errors: Vec<String> = Vec::new();
+    let client = app.state::<Arc<reqwest::Client>>().clone();
 
     for (i, (modid, version_str)) in mod_entries.iter().enumerate() {
         let current = (i + 1) as u32;
@@ -492,7 +493,6 @@ pub async fn import_installation(
             }),
         );
 
-        let client = app.state::<Arc<reqwest::Client>>().clone();
         match mods::download_mod_file(&client, modid, version_str, &mods_dir).await {
             Ok(filename) => {
                 log_info!(

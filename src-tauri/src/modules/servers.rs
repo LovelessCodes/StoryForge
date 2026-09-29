@@ -1,12 +1,12 @@
-use reqwest::get;
 use serde::Serialize;
 use serde_json::{from_str, json, to_string_pretty, Map, Value};
 use std::{
     collections::HashSet,
     fs::{read_dir, read_to_string, write},
     path::{Path, PathBuf},
+    sync::Arc,
 };
-use tauri::{command, AppHandle, Manager};
+use tauri::{command, AppHandle, Manager, State};
 
 use super::errors::UiError;
 use super::installations::find_installation_by_id;
@@ -346,10 +346,12 @@ pub fn add_server_to_installation(
 }
 
 #[command]
-pub async fn fetch_public_servers() -> Result<Value, UiError> {
+pub async fn fetch_public_servers(
+    client: State<'_, Arc<reqwest::Client>>,
+) -> Result<Value, UiError> {
     log_info!("fetch_public_servers");
     let url = "https://masterserver.vintagestory.at/api/v1/servers/list";
-    let res = get(url).await.map_err(|e| {
+    let res = client.get(url).send().await.map_err(|e| {
         log_error!("fetch_public_servers: request failed: {e}");
         UiError::from(format!("Request error: {e}"))
     })?;
