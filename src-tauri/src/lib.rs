@@ -178,6 +178,7 @@ pub fn run() {
                 .transparent(cfg!(target_os = "macos"))
                 .decorations(!cfg!(target_os = "linux"));
 
+            #[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
             let window = match win_builder.build() {
                 Ok(w) => {
                     log_info!("Setup step 3 done: window created");
