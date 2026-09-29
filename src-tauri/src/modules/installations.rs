@@ -6,7 +6,7 @@ use std::{
     fs::{create_dir_all, read_dir, read_to_string, remove_dir_all, write, File},
     io::Read,
     path::{Path, PathBuf},
-    process::{Command, Stdio},
+    process::Stdio,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
@@ -25,8 +25,9 @@ use super::mods;
 use super::paths::{self, clientsettings_path, installation_json_path, mods_dir};
 use super::utils::{
     dir_name, dir_size, dir_size_cached, find_dir_by_id, format_size, generate_id,
-    installations_folder, installations_subdir, move_folder, require_managed_path,
-    require_safe_destination, safe_file_name, safe_join, versions_folder, versions_subdir,
+    installations_folder, installations_subdir, move_folder, parse_start_params,
+    require_managed_path, require_safe_destination, safe_file_name, safe_join, versions_folder,
+    versions_subdir,
 };
 use crate::{log_debug, log_error, log_info};
 
@@ -1058,7 +1059,7 @@ async fn spawn_direct(
     }
 
     cmd.args(&args);
-    cmd.args(start_params.split_whitespace().collect::<Vec<&str>>());
+    cmd.args(parse_start_params(start_params)?);
 
     cmd.spawn().map_err(|e| {
         log_error!("installations: launch_failed: {e}");
@@ -1386,7 +1387,7 @@ pub mod macos {
             open_args.push("--pw".to_string());
             open_args.push(password.clone());
         }
-        open_args.extend(start_params.split_whitespace().map(|s| s.to_string()));
+        open_args.extend(parse_start_params(start_params)?);
 
         tokio::process::Command::new("open")
             .env("DOTNET_ROOT", dotnet_root)
@@ -1412,162 +1413,26 @@ pub mod macos {
 }
 
 #[command]
-pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
-    let path = Path::new(&path);
+pub fn reveal_in_file_explorer(app: AppHandle, path: String) -> Result<String, UiError> {
+    use tauri_plugin_opener::OpenerExt;
 
-    if cfg!(target_os = "windows") {
-        // Validate path exists, create directory if needed
-        if !path.exists() {
-            // If path doesn't exist, it should be a directory - create it
-            create_dir_all(path).map_err(|e| {
-                log_error!("installations: create_dir_failed: {e}");
-                UiError {
-                    name: "create_dir_failed".into(),
-                    message: format!("Failed to create directory: {e}"),
-                }
-            })?;
-        }
-
-        // Now that we've ensured the path exists, open it
-        if path.is_file() {
-            // If it's a file, use /select to highlight it
-            Command::new("explorer")
-                .args(["/select,", &path.as_os_str().to_string_lossy()])
-                .status()
-                .map_err(|e| {
-                    log_error!("installations: Failed to open explorer: {e}");
-
-                    UiError::from(format!("Failed to open explorer: {e}"))
-                })?;
-        } else if path.is_dir() {
-            // If it's a directory, just open it
-            Command::new("explorer")
-                .arg(path.as_os_str().to_string_lossy().into_owned())
-                .status()
-                .map_err(|e| {
-                    log_error!("installations: Failed to open explorer: {e}");
-
-                    UiError::from(format!("Failed to open explorer: {e}"))
-                })?;
-        } else {
-            // This shouldn't happen after we created the directory, but handle it anyway
-            return Err(UiError {
-                name: "invalid_path".into(),
-                message: format!("Path is neither a file nor directory: {}", path.display()),
-            });
-        }
-    } else if cfg!(target_os = "macos") {
-        // Validate path exists, create directory if needed
-        if !path.exists() {
-            create_dir_all(path).map_err(|e| {
-                log_error!("installations: create_dir_failed: {e}");
-                UiError {
-                    name: "create_dir_failed".into(),
-                    message: format!("Failed to create directory: {e}"),
-                }
-            })?;
-        }
-
-        if path.is_dir() {
-            Command::new("open")
-                .arg(path.as_os_str())
-                .status()
-                .map_err(|e| {
-                    log_error!("installations: Failed to open Finder: {e}");
-
-                    UiError::from(format!("Failed to open Finder: {e}"))
-                })?;
-        } else if path.is_file() {
-            Command::new("open")
-                .args(["-R", &path.as_os_str().to_string_lossy()])
-                .status()
-                .map_err(|e| {
-                    log_error!("installations: Failed to open Finder: {e}");
-
-                    UiError::from(format!("Failed to open Finder: {e}"))
-                })?;
-        } else {
-            return Err(UiError {
-                name: "invalid_path".into(),
-                message: format!("Path is neither a file nor directory: {}", path.display()),
-            });
-        }
-    } else if cfg!(target_os = "linux") {
-        // Validate path exists, create directory if needed
-        if !path.exists() {
-            create_dir_all(path).map_err(|e| {
-                log_error!("installations: create_dir_failed: {e}");
-                UiError {
-                    name: "create_dir_failed".into(),
-                    message: format!("Failed to create directory: {e}"),
-                }
-            })?;
-        }
-
-        // Try xdg-open for general desktops.
-        // For files, most DEs open the default app; to "reveal", try the folder.
-        let target = if path.is_file() {
-            path.parent().unwrap_or(Path::new("/"))
-        } else {
-            path
-        };
-        // Prefer xdg-open; fall back to common file managers if needed.
-        let status = Command::new("xdg-open").arg(target).status();
-        if status.is_err() || !status.unwrap().success() {
-            // Try common file managers
-            let fm_cmds = [
-                (
-                    "nautilus",
-                    vec![target.as_os_str().to_string_lossy().into_owned()],
-                ),
-                (
-                    "dolphin",
-                    vec![target.as_os_str().to_string_lossy().into_owned()],
-                ),
-                (
-                    "thunar",
-                    vec![target.as_os_str().to_string_lossy().into_owned()],
-                ),
-                (
-                    "pcmanfm",
-                    vec![target.as_os_str().to_string_lossy().into_owned()],
-                ),
-                (
-                    "nemo",
-                    vec![target.as_os_str().to_string_lossy().into_owned()],
-                ),
-            ];
-            let mut launched = false;
-            for (bin, args) in fm_cmds {
-                if Command::new("sh")
-                    .arg("-c")
-                    .arg(format!("command -v {bin} >/dev/null 2>&1"))
-                    .status()
-                    .map(|s| s.success())
-                    .unwrap_or(false)
-                {
-                    let st = Command::new(bin).args(&args).status();
-                    if st.is_ok() && st.unwrap().success() {
-                        launched = true;
-                        break;
-                    }
-                }
-            }
-            if !launched {
-                return Err(UiError {
-                    name: "no_file_manager".into(),
-                    message: "Could not find a file manager to open the path.".into(),
-                });
-            }
-        }
-    } else {
-        return Err(UiError {
-            name: "unsupported_platform".into(),
-            message: "This platform is not supported for revealing files.".into(),
-        });
+    let path = PathBuf::from(&path);
+    if !path.exists() {
+        create_dir_all(&path).map_err(|e| {
+            log_error!("installations: create_dir_failed: {e}");
+            UiError::new(
+                "create_dir_failed",
+                format!("Failed to create directory: {e}"),
+            )
+        })?;
     }
 
-    Ok(path.as_os_str().to_string_lossy().to_string())
+    // The plugin canonicalizes the path, so it must exist by now.
+    app.opener()
+        .reveal_item_in_dir(&path)
+        .map_err(|e| UiError::new("reveal_failed", format!("Failed to open file manager: {e}")))?;
+
+    Ok(path.to_string_lossy().to_string())
 }
 
 #[command]

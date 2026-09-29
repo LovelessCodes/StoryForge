@@ -155,6 +155,16 @@ pub fn dir_name(path: &Path) -> String {
         .unwrap_or_default()
 }
 
+/// Splits user-provided start parameters like a shell would, so quoted
+/// values survive (`--name "My Server"`).
+pub fn parse_start_params(params: &str) -> Result<Vec<String>, UiError> {
+    if params.trim().is_empty() {
+        return Ok(Vec::new());
+    }
+    shell_words::split(params)
+        .map_err(|e| UiError::new("invalid_params", format!("Invalid start parameters: {e}")))
+}
+
 /// Rate limiter for progress callbacks: allows at most one call per interval.
 #[derive(Debug)]
 pub struct Throttle {
@@ -476,6 +486,17 @@ mod tests {
             panic!("poison the mutex");
         });
         assert_eq!(*lock(&mutex), 42);
+    }
+
+    #[test]
+    fn parse_start_params_handles_quotes() {
+        assert!(parse_start_params("").unwrap().is_empty());
+        assert_eq!(parse_start_params("--a b").unwrap(), vec!["--a", "b"]);
+        assert_eq!(
+            parse_start_params("--name 'My Server' --x").unwrap(),
+            vec!["--name", "My Server", "--x"]
+        );
+        assert!(parse_start_params("--name 'unclosed").is_err());
     }
 
     #[test]
