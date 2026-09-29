@@ -9,8 +9,6 @@ on:
       - "src-tauri/**"
       - ".github/workflows/rust.yml"
   pull_request:
-    branches:
-      - release
     paths:
       - "src-tauri/**"
       - ".github/workflows/rust.yml"
