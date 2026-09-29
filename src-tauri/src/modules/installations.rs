@@ -32,7 +32,7 @@ use crate::{log_debug, log_error, log_info};
 
 // --- Installation JSON5 persistence ---
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct InstallationInfo {
     pub name: String,
     pub version: String,
@@ -151,15 +151,7 @@ pub fn find_installation_by_id(
         dir,
         InstallationInfo {
             name,
-            version: String::new(),
-            start_params: String::new(),
-            favorite: false,
-            icon: None,
-            last_played: None,
-            total_time_played: 0,
-            modpack_slug: None,
-            modpack_version: None,
-            env_vars: HashMap::new(),
+            ..Default::default()
         },
     ))
 }
@@ -228,28 +220,12 @@ fn scan_installations(installations_dir: &Path) -> Result<Vec<InstallationResult
             let info = if has_json {
                 read_installation_json(&dir).unwrap_or_else(|_| InstallationInfo {
                     name: dir_name.clone(),
-                    version: String::new(),
-                    start_params: String::new(),
-                    favorite: false,
-                    icon: None,
-                    last_played: None,
-                    total_time_played: 0,
-                    modpack_slug: None,
-                    modpack_version: None,
-                    env_vars: HashMap::new(),
+                    ..Default::default()
                 })
             } else {
                 let info = InstallationInfo {
                     name: dir_name.clone(),
-                    version: String::new(),
-                    start_params: String::new(),
-                    favorite: false,
-                    icon: None,
-                    last_played: None,
-                    total_time_played: 0,
-                    modpack_slug: None,
-                    modpack_version: None,
-                    env_vars: HashMap::new(),
+                    ..Default::default()
                 };
                 let _ = write_installation_json(&dir, &info);
                 info
@@ -388,7 +364,7 @@ pub async fn import_installation(
                 config_url
             );
             let config_zip_path = inst_dir.join("ModConfig.zip");
-            let config_dir = inst_dir.join("ModConfig");
+            let config_dir = inst_dir.join(paths::MODCONFIG_DIR);
 
             // Download the zip with the shared client (consistent timeout/user agent).
             let client = app.state::<Arc<reqwest::Client>>().clone();
@@ -893,16 +869,16 @@ fn write_clientsettings(
                 .get_mut("modPaths")
                 .and_then(|v| v.as_array_mut())
             {
-                *mod_paths = vec![json!(mods_path), json!("Mods")];
+                *mod_paths = vec![json!(mods_path), json!(paths::MODS_DIR)];
                 log_info!("[play_game] updated existing modPaths");
             } else {
-                string_list_settings.insert("modPaths".into(), json!([mods_path, "Mods"]));
+                string_list_settings.insert("modPaths".into(), json!([mods_path, paths::MODS_DIR]));
                 log_info!("[play_game] inserted modPaths into existing stringListSettings");
             }
         } else {
             obj.insert(
                 "stringListSettings".into(),
-                json!({ "modPaths": [mods_path, "Mods"] }),
+                json!({ "modPaths": [mods_path, paths::MODS_DIR] }),
             );
             log_info!("[play_game] created stringListSettings with modPaths");
         }
@@ -1684,7 +1660,7 @@ pub fn get_installation_logs(
     installation_path: String,
 ) -> Result<Vec<InstallationLog>, UiError> {
     require_managed_path(&app, Path::new(&installation_path), "Installation path")?;
-    let logs_dir = PathBuf::from(&installation_path).join("Logs");
+    let logs_dir = PathBuf::from(&installation_path).join(paths::LOGS_DIR);
     let mut logs = Vec::new();
     if !logs_dir.is_dir() {
         return Ok(logs);
@@ -1733,7 +1709,7 @@ pub fn read_installation_log(app: AppHandle, log_path: String) -> Result<String,
 #[command]
 pub fn zip_modconfig(app: AppHandle, installation_path: String) -> Result<Vec<u8>, UiError> {
     require_managed_path(&app, Path::new(&installation_path), "Installation path")?;
-    let modconfig_dir = PathBuf::from(&installation_path).join("ModConfig");
+    let modconfig_dir = PathBuf::from(&installation_path).join(paths::MODCONFIG_DIR);
     if !modconfig_dir.is_dir() {
         return Err(UiError {
             name: "not_found".into(),

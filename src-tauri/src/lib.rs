@@ -115,7 +115,7 @@ pub fn run() {
             log_info!("Setup step 1: creating store directory...");
             let t1 = std::time::Instant::now();
             let store_path = match app.path().app_data_dir() {
-                Ok(dir) => dir.join("store"),
+                Ok(dir) => dir.join(modules::paths::STORE_DIR),
                 Err(e) => {
                     log_error!("Failed to get app_data_dir for store: {}", e);
                     panic!("Failed to get app_data_dir for store: {}", e);

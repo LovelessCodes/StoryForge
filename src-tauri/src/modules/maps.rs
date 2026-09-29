@@ -10,6 +10,7 @@ use std::{
 use tauri::{command, AppHandle};
 
 use super::errors::UiError;
+use super::paths;
 use super::proto::{GameData, MapPieceDb};
 use super::utils::{generate_id, installations_folder, installations_subdir};
 use crate::{log_error, log_info};
@@ -128,7 +129,10 @@ fn maps_db_path(world_path: &Path, savegame_identifier: &str) -> Result<PathBuf,
     world_path
         .parent()
         .and_then(|p| p.parent())
-        .map(|p| p.join("Maps").join(format!("{}.db", savegame_identifier)))
+        .map(|p| {
+            p.join(paths::MAPS_DIR)
+                .join(format!("{}.db", savegame_identifier))
+        })
         .ok_or_else(|| UiError::from("Could not determine Maps path"))
 }
 
@@ -224,7 +228,7 @@ pub fn scan_maps(installations_dir: &Path) -> Result<Vec<MapInfo>, UiError> {
         let inst_name = entry.file_name().to_string_lossy().to_string();
         let inst_id = generate_id(&inst_name);
 
-        let maps_dir = dir.join("Maps");
+        let maps_dir = paths::maps_dir(&dir);
         if !maps_dir.is_dir() {
             continue;
         }

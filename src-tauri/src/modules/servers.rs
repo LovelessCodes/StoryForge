@@ -10,6 +10,7 @@ use tauri::{command, AppHandle, Manager, State};
 
 use super::errors::UiError;
 use super::installations::find_installation_by_id;
+use super::paths;
 use super::utils::{installations_folder, installations_subdir};
 use crate::{log_error, log_info};
 
@@ -109,7 +110,7 @@ fn extract_servers_from_directory(
     favorites: &HashSet<u64>,
 ) -> Vec<SavedServer> {
     let mut servers = Vec::new();
-    let clientsettings_path = dir.join("clientsettings.json");
+    let clientsettings_path = paths::clientsettings_path(dir);
     if let Ok(content) = read_to_string(clientsettings_path) {
         if let Ok(json) = from_str::<Value>(&content) {
             if let Some(multiplayer_servers) = json
@@ -196,7 +197,7 @@ pub fn remove_server_from_installation(
 ) -> Result<(), UiError> {
     log_info!("remove_server_from_installation: id={}", installation_id);
     let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
-    let clientsettings_path = pb.join("clientsettings.json");
+    let clientsettings_path = paths::clientsettings_path(&pb);
     let mut clientsettings: Value = if clientsettings_path.exists() {
         let content = read_to_string(&clientsettings_path).map_err(|e| UiError {
             name: "io_error".into(),
@@ -257,7 +258,7 @@ pub fn check_server_in_installation(
     server: String,
 ) -> Result<bool, UiError> {
     let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
-    let clientsettings_path = pb.join("clientsettings.json");
+    let clientsettings_path = paths::clientsettings_path(&pb);
     if !clientsettings_path.exists() {
         return Ok(false);
     }
@@ -291,7 +292,7 @@ pub fn add_server_to_installation(
 ) -> Result<(), UiError> {
     log_info!("add_server_to_installation: id={}", installation_id);
     let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
-    let clientsettings_path = pb.join("clientsettings.json");
+    let clientsettings_path = paths::clientsettings_path(&pb);
     let mut clientsettings: Value = if clientsettings_path.exists() {
         let content = read_to_string(&clientsettings_path).map_err(|e| UiError {
             name: "io_error".into(),

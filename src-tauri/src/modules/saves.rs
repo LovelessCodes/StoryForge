@@ -13,6 +13,7 @@ use tauri::{command, AppHandle};
 
 use super::errors::UiError;
 use super::installations::find_installation_by_id;
+use super::paths;
 use super::proto::{GameData, MapMarkers, ProspectingLog};
 use super::utils::{installations_folder, installations_subdir, lock, require_managed_path};
 use crate::{log_error, log_info};
@@ -140,7 +141,7 @@ fn extract_prospecting_logs(gamedata: &GameData) -> Result<Vec<(String, Prospect
 
 fn has_map(installation_path: &Path, savegame_identifier: &str) -> bool {
     installation_path
-        .join("Maps")
+        .join(paths::MAPS_DIR)
         .join(format!("{}.db", savegame_identifier))
         .exists()
 }
@@ -224,7 +225,7 @@ fn saves_fingerprint(installations_dir: &Path) -> Result<u64, UiError> {
             continue;
         }
 
-        let saves_path = path.join("Saves");
+        let saves_path = paths::saves_dir(&path);
         if !saves_path.is_dir() {
             continue;
         }
@@ -314,7 +315,7 @@ pub fn scan_saves(installations_dir: &Path) -> Result<Vec<World>, UiError> {
             continue;
         }
 
-        let saves_path = path.join("Saves");
+        let saves_path = paths::saves_dir(&path);
         if !saves_path.exists() || !saves_path.is_dir() {
             continue;
         }
@@ -373,7 +374,7 @@ pub fn get_installation_saves(
     installation_id: u64,
 ) -> Result<Vec<String>, UiError> {
     let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
-    let saves_path = pb.join("Saves");
+    let saves_path = paths::saves_dir(&pb);
 
     let mut saves = Vec::new();
     if saves_path.exists() && saves_path.is_dir() {
@@ -406,7 +407,7 @@ pub fn update_world(
     identifier: Option<String>,
 ) -> Result<(), UiError> {
     let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
-    let saves_path = pb.join("Saves");
+    let saves_path = paths::saves_dir(&pb);
     if !saves_path.exists() {
         create_dir_all(&saves_path).map_err(|e| {
             log_error!("saves: Create dir error: {e}");
@@ -460,10 +461,10 @@ pub fn update_world(
         let maps_path = world_path
             .parent()
             .and_then(|p| p.parent())
-            .map(|p| p.join("Maps").join(format!("{}.db", id)));
+            .map(|p| p.join(paths::MAPS_DIR).join(format!("{}.db", id)));
         if let Some(maps_path) = maps_path {
             if maps_path.exists() && maps_path.is_file() {
-                let new_maps_path = pb.join("Maps").join(format!("{}.db", id));
+                let new_maps_path = pb.join(paths::MAPS_DIR).join(format!("{}.db", id));
                 if new_maps_path != maps_path && new_maps_path.exists() {
                     return Err(UiError {
                         name: "maps_exists".into(),
@@ -515,7 +516,7 @@ pub fn remove_world(app: AppHandle, world_path: String) -> Result<(), UiError> {
     let gamedata = read_gamedata(&conn)?;
 
     let maps_path = world_path.parent().and_then(|p| p.parent()).map(|p| {
-        p.join("Maps")
+        p.join(paths::MAPS_DIR)
             .join(format!("{}.db", gamedata.savegame_identifier))
     });
     if let Some(maps_path) = maps_path {

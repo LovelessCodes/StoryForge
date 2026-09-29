@@ -12,6 +12,7 @@ use tauri_plugin_zustand::ManagerExt;
 use walkdir::WalkDir;
 
 use super::errors::UiError;
+use super::paths;
 
 /// Root folder that holds installed game versions.
 ///
@@ -34,7 +35,7 @@ pub fn versions_folder(app: AppHandle) -> Result<PathBuf, UiError> {
 pub fn versions_subdir(app: AppHandle) -> String {
     app.zustand()
         .get::<String>("settings", "versionsSubdir")
-        .unwrap_or_else(|_| "versions".to_string())
+        .unwrap_or_else(|_| paths::DEFAULT_VERSIONS_SUBDIR.to_string())
 }
 
 /// Root folder that holds StoryForge installations.
@@ -58,7 +59,7 @@ pub fn installations_folder(app: AppHandle) -> Result<PathBuf, UiError> {
 pub fn installations_subdir(app: AppHandle) -> String {
     app.zustand()
         .get::<String>("settings", "installationsSubdir")
-        .unwrap_or_else(|_| "installations".to_string())
+        .unwrap_or_else(|_| paths::DEFAULT_INSTALLATIONS_SUBDIR.to_string())
 }
 
 /// Moves a directory, falling back to copy+delete across filesystems.
