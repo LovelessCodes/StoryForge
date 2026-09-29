@@ -9,11 +9,12 @@ use std::{
     io::{BufReader, Write},
     path::{Path, PathBuf},
     sync::Arc,
+    time::Duration,
 };
 use tauri::{AppHandle, Emitter, Manager};
 
 use super::errors::UiError;
-use super::utils::is_at_least_1_22_3;
+use super::utils::{is_at_least_1_22_3, Throttle};
 use crate::{log_debug, log_error, log_info};
 
 /// Map Vintage Story game version to .NET runtime channel.
@@ -475,6 +476,8 @@ async fn download_dotnet_runtime(
 
     let mut stream = resp.bytes_stream();
     let mut downloaded: u64 = 0;
+    // Emitting per chunk floods the webview on fast connections.
+    let mut progress = Throttle::new(Duration::from_millis(100));
 
     while let Some(chunk) = stream.next().await {
         let chunk = chunk.map_err(|e| {
@@ -484,7 +487,7 @@ async fn download_dotnet_runtime(
         file.write_all(&chunk)
             .map_err(|e| UiError::from(format!("Failed to write dotnet archive: {e}")))?;
         downloaded += chunk.len() as u64;
-        if total_size > 0 {
+        if total_size > 0 && progress.ready() {
             let percent = (downloaded as f64 / total_size as f64) * 100.0;
             let _ = app.emit(
                 &event_name,
