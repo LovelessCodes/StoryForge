@@ -147,7 +147,7 @@ pub fn run() {
             // ── Step 2.5: Run data migrations ──
             log_info!("Setup step 2.5: running data migrations...");
             let t2_5 = std::time::Instant::now();
-            modules::migrations::run_all(&app_handle);
+            modules::migrations::run_all(app_handle);
             log_info!("Setup step 2.5 done: migrations complete");
             modules::logger::log_elapsed("Setup step 2.5 elapsed", t2_5);
 

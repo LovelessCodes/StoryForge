@@ -619,9 +619,9 @@ pub fn get_mods_in_dir(mods_path: &Path) -> Result<ModsResult, UiError> {
         };
 
         let had_modinfo_entry = archive.file_names().any(|name| {
-            Path::new(name).file_name().map_or(false, |f| {
+            Path::new(name).file_name().is_some_and(|f| {
                 f.to_str()
-                    .map_or(false, |s| s.eq_ignore_ascii_case("modinfo.json"))
+                    .is_some_and(|s| s.eq_ignore_ascii_case("modinfo.json"))
             })
         });
 

@@ -12,6 +12,8 @@ use crate::{log_debug, log_error};
 
 /// Apply macOS window styling. Failures are logged but never fatal.
 pub fn apply_window_styling(window: &WebviewWindow) {
+    // SAFETY: `try_apply_window_styling` only calls AppKit APIs with a valid
+    // window handle and is documented to handle unexpected window state.
     let result = unsafe { try_apply_window_styling(window) };
     if let Err(e) = result {
         log_error!("platform::macos: failed to apply window styling: {e}");
@@ -30,8 +32,11 @@ unsafe fn try_apply_window_styling(window: &WebviewWindow) -> Result<(), String>
         .ns_window()
         .map_err(|e| format!("failed to get native NSWindow handle: {e}"))?;
 
-    let ns_window: Retained<objc2_app_kit::NSWindow> = Retained::retain(raw_ns_window as *mut _)
-        .ok_or_else(|| "failed to retain native NSWindow".to_string())?;
+    // SAFETY: `raw_ns_window` is a valid, non-null NSWindow pointer provided by
+    // Tauri for this window; retaining it keeps it alive for the duration.
+    let ns_window: Retained<objc2_app_kit::NSWindow> =
+        unsafe { Retained::retain(raw_ns_window as *mut _) }
+            .ok_or_else(|| "failed to retain native NSWindow".to_string())?;
 
     // Hide the title bar and traffic lights, keep resizable.
     ns_window.setTitlebarAppearsTransparent(true);

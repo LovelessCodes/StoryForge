@@ -156,7 +156,7 @@ pub fn find_system_dotnet_root(channel: &str) -> Option<PathBuf> {
         } else {
             log_debug!("[dotnet] find_system: no arm64 system dotnet found");
         }
-        return result;
+        result
     }
 
     #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]

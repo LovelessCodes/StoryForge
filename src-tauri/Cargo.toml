@@ -4,6 +4,7 @@ version = "1.2.1"
 description = "Launcher for Vintage Story"
 authors = ["lovelesscodes"]
 edition = "2021"
+rust-version = "1.85"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -65,7 +66,6 @@ quick-xml = { version = "0.40", default-features = false, features = ["serialize
 which = "8"
 zip = { version = "8", default-features = false, features = ["deflate"] }
 futures-util = "0.3"
-zip-extensions = "0.14"
 walkdir = "2"
 dunce = "1"
 prost = "0.14.3"
@@ -103,3 +103,9 @@ harness = false
 [[bench]]
 name = "heavy_paths"
 harness = false
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
