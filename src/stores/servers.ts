@@ -52,7 +52,8 @@ export const useServerStore = create<ServerStore>()((set) => ({
     try {
       const raw = await invoke<SavedServer[]>("fetch_all_servers");
       set((state) => {
-        // Merge with existing servers to preserve favorites and indexes
+        // Merge with existing servers to preserve row indexes; favorites come
+        // from Rust, which owns server_favorites.json.
         const existingById = new Map(state.servers.map((s) => [s.id, s]));
         const servers: Server[] = raw.map((r, idx) => {
           const existing = existingById.get(r.id);
@@ -63,7 +64,7 @@ export const useServerStore = create<ServerStore>()((set) => ({
             ip: r.ip,
             port: r.port,
             password: r.password,
-            favorite: existing?.favorite ?? r.favorite ?? false,
+            favorite: r.favorite ?? false,
             installationId: r.installation_id,
             installationName: r.installation_name,
           };
@@ -103,9 +104,17 @@ export const useServerStore = create<ServerStore>()((set) => ({
     set((state) => {
       const server = state.servers.find((s) => s.id === id);
       if (server) {
-        invoke("set_server_favorite", { favorite: !server.favorite, id }).catch((e) =>
-          console.error("Failed to save server favorite:", e),
-        );
+        const nextFavorite = !server.favorite;
+        invoke("set_server_favorite", { favorite: nextFavorite, id }).catch((e) => {
+          console.error("Failed to save server favorite:", e);
+          toast.error("Failed to save favorite");
+          // Roll the optimistic flip back; server_favorites.json is authoritative.
+          set((state) => ({
+            servers: state.servers.map((s) =>
+              s.id === id && s.favorite === nextFavorite ? { ...s, favorite: !nextFavorite } : s,
+            ),
+          }));
+        });
       }
       return {
         ...state,
@@ -129,12 +138,3 @@ export const useServerStore = create<ServerStore>()((set) => ({
       };
     }),
 }));
-
-export const useServers = () => {
-  const { servers, loadServers, ...rest } = useServerStore();
-  return {
-    servers: servers.toSorted((a, b) => a.index - b.index),
-    loadServers,
-    ...rest,
-  };
-};

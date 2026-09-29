@@ -13,6 +13,7 @@ import { TooltipTrigger } from "@/components/ui/tooltip";
 import { rootDialogHandle, rootTooltipHandle } from "@/handles";
 import { useUpdateWorld } from "@/hooks/use-update-world";
 import type { World } from "@/lib/types";
+import { pathBasename } from "@/lib/utils";
 import { useInstallations } from "@/stores/installations";
 
 export type EditWorldDialogProps = {
@@ -43,7 +44,7 @@ export function EditWorldDialog({ world }: EditWorldDialogProps) {
     defaultValues: {
       installationId:
         installations
-          .find((inst) => inst.path.split("/").pop() === world.installation_name)
+          .find((inst) => pathBasename(inst.path) === world.installation_name)
           ?.id.toString() || "",
       name: world.data.world_name || "",
     },
@@ -161,7 +162,7 @@ export function EditWorldDialog({ world }: EditWorldDialogProps) {
                   </SelectTrigger>
                   <SelectContent align="start" alignItemWithTrigger={false}>
                     {installations
-                      ?.sort((a, b) => a.index - b.index)
+                      ?.toSorted((a, b) => a.index - b.index)
                       .map((installation) => (
                         <SelectItem key={installation.id} value={installation.id.toString()}>
                           {installation.name} ({installation.version})
@@ -173,7 +174,12 @@ export function EditWorldDialog({ world }: EditWorldDialogProps) {
             )}
           </form.Field>
         </div>
-        <Button className="w-full" onClick={() => form.handleSubmit()} type="button">
+        <Button
+          className="w-full"
+          disabled={form.state.isSubmitting}
+          onClick={() => form.handleSubmit()}
+          type="button"
+        >
           Update World
         </Button>
       </div>

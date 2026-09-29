@@ -13,7 +13,7 @@ import { useServerStore } from "@/stores/servers";
 
 export function ServersPage() {
   // Stores
-  const { servers } = useServerStore();
+  const servers = useServerStore((s) => s.servers);
 
   return (
     <div className="grid size-full grid-rows-[min-content_auto]">
@@ -30,7 +30,7 @@ export function ServersPage() {
       <ScrollArea className="h-full px-2" scrollFade>
         <AnimatePresence>
           {servers
-            .sort((a, b) => {
+            .toSorted((a, b) => {
               if (a.favorite === b.favorite) return a.index - b.index;
               return a.favorite ? -1 : 1;
             })

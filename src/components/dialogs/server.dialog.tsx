@@ -61,7 +61,9 @@ export type ServerDialogProps = {
 export function ServerDialog({ server, installation }: ServerDialogProps) {
   const id = useId();
   const { installations } = useInstallations();
-  const { addServer, updateServer, loadServers } = useServerStore();
+  const addServer = useServerStore((s) => s.addServer);
+  const updateServer = useServerStore((s) => s.updateServer);
+  const loadServers = useServerStore((s) => s.loadServers);
   const { mutateAsync: addServerToInstallation } = useAddServerToInstallation();
   const [sniffResult, setSniffResult] = useState<SniffResult | null>(null);
 
@@ -420,7 +422,7 @@ export function ServerDialog({ server, installation }: ServerDialogProps) {
                   </SelectTrigger>
                   <SelectContent align="start" alignItemWithTrigger={false}>
                     {installations
-                      ?.sort((a, b) => a.index - b.index)
+                      ?.toSorted((a, b) => a.index - b.index)
                       .map((inst) => (
                         <SelectItem key={inst.id} value={inst.id.toString()}>
                           {inst.name} ({inst.version})
@@ -449,7 +451,12 @@ export function ServerDialog({ server, installation }: ServerDialogProps) {
               "Test Server"
             )}
           </Button>
-          <Button className="flex-1" onClick={() => form.handleSubmit()} type="button">
+          <Button
+            className="flex-1"
+            disabled={form.state.isSubmitting}
+            onClick={() => form.handleSubmit()}
+            type="button"
+          >
             {submitLabel}
           </Button>
         </div>

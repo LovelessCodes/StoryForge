@@ -39,6 +39,7 @@ function ServerHostingModsPage() {
       {/* Back navigation */}
       <div className="absolute top-2 left-2 z-10">
         <Button
+          aria-label="Back to server"
           onClick={() =>
             void router.navigate({
               to: "/server-hosting/$id",

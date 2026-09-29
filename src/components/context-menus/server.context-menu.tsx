@@ -42,7 +42,7 @@ export const ServerContextMenu = ({
   const navigate = useNavigate();
 
   // Stores
-  const { toggleFavorite } = useServerStore();
+  const toggleFavorite = useServerStore((s) => s.toggleFavorite);
   const { installations } = useInstallations();
   const installation = installations.find((inst) => inst.id === server.installationId);
 

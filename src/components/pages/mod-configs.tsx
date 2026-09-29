@@ -153,21 +153,35 @@ export function LiveBlock({
   const [parseError, setParseError] = useState<string | null>(null);
   const [data, setData] = useState<JSONValue>(() => safeInitialParse(code, setParseError));
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  // Tracks user edits only. Comparing against the `code` prop instead would
+  // schedule a save whenever the query refetched new content, overwriting it
+  // with stale local state.
+  const [dirty, setDirty] = useState(false);
   const onSaveRef = useRef(onSave);
-  onSaveRef.current = onSave;
 
-  // Debounced auto-save
+  // Keep the callback ref current without writing it during render.
   useEffect(() => {
-    if (parseError) return; // don't save invalid
-    if (JSON.stringify(data) === JSON.stringify(safeInitialParse(code, setParseError))) return;
+    onSaveRef.current = onSave;
+  });
+
+  // Debounced auto-save of user edits
+  useEffect(() => {
+    if (!dirty || parseError) return; // don't save invalid
     const id = setTimeout(() => {
       onSaveRef.current({ file, newCode: JSON.stringify(data, null, 2) });
+      setDirty(false);
     }, 600);
     return () => clearTimeout(id);
-  }, [data, file, parseError, code]);
+  }, [data, dirty, file, parseError]);
+
+  /** State updater for user edits; marks the block as dirty. */
+  function updateData(updater: (prev: JSONValue) => JSONValue) {
+    setData(updater);
+    setDirty(true);
+  }
 
   function updateAtPath(path: (string | number)[], next: JSONValue) {
-    setData((prev) => deepSet(prev, path, next));
+    updateData((prev) => deepSet(prev, path, next));
   }
 
   function handlePrimitiveChange(path: (string | number)[], raw: string, original: JSONValue) {
@@ -188,7 +202,7 @@ export function LiveBlock({
   }
 
   function addArrayItem(path: (string | number)[]) {
-    setData((prev) => {
+    updateData((prev) => {
       const arr = getAtPath(prev, path);
       if (!Array.isArray(arr)) return prev;
       const nextArr = [...arr, ""] as JSONArray;
@@ -197,7 +211,7 @@ export function LiveBlock({
   }
 
   function removeArrayItem(path: (string | number)[], index: number) {
-    setData((prev) => {
+    updateData((prev) => {
       const arr = getAtPath(prev, path);
       if (!Array.isArray(arr)) return prev;
       const nextArr = arr.filter((_, i) => i !== index) as JSONArray;
@@ -218,6 +232,8 @@ export function LiveBlock({
         <div className="space-y-2" key={kKey}>
           <div className="flex items-center gap-2">
             <Button
+              aria-expanded={!isCol}
+              aria-label={isCol ? "Expand array" : "Collapse array"}
               className="h-4 rounded border px-1 text-xs"
               onClick={() => toggleCollapse(path)}
               size="sm"
@@ -266,6 +282,8 @@ export function LiveBlock({
         <div className="space-y-2" key={kKey}>
           <div className="flex items-center gap-2">
             <button
+              aria-expanded={!isCol}
+              aria-label={isCol ? "Expand object" : "Collapse object"}
               className="rounded border px-1 text-xs"
               onClick={() => toggleCollapse(path)}
               type="button"

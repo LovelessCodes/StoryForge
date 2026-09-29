@@ -55,7 +55,7 @@ function parseMods(modsString: string): { modid: string; version: string }[] {
 export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
   const { appFolder } = useAppFolder();
   const { installationsParent, installationsSubdir } = useSettingsStore();
-  const { loadInstallations } = useInstallationsStore();
+  const loadInstallations = useInstallationsStore((s) => s.loadInstallations);
   const installedVersions = useInstalledVersionNames();
   const { mutateAsync: downloadVersion } = useDownloadVersion();
   const navigate = useNavigate();
@@ -285,10 +285,16 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
 
                     {isOwner && !isNaming && (
                       <div className="flex shrink-0 items-center gap-0.5">
-                        <Button onClick={() => startEdit(v)} size="icon-sm" variant="ghost">
+                        <Button
+                          aria-label="Edit version name"
+                          onClick={() => startEdit(v)}
+                          size="icon-sm"
+                          variant="ghost"
+                        >
                           <Pencil className="size-3.5" />
                         </Button>
                         <Button
+                          aria-label="Delete version"
                           onClick={() => handleDelete(v)}
                           size="icon-sm"
                           variant="destructive-ghost"
@@ -367,6 +373,7 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
                           />
                         </div>
                         <Button
+                          aria-label="Install this version"
                           className="shrink-0"
                           disabled={importing || !installName.trim()}
                           onClick={() => handleConfirmInstall(v)}
@@ -375,6 +382,7 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
                           <CheckIcon className="size-4" />
                         </Button>
                         <Button
+                          aria-label="Cancel install"
                           className="shrink-0"
                           disabled={importing}
                           onClick={handleCancelInstall}

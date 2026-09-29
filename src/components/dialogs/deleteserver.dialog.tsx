@@ -28,7 +28,7 @@ export function DeleteServerDialog({ server }: DeleteServerDialogProps) {
       rootAlertDialogHandle.close();
     },
   });
-  const { loadServers } = useServerStore();
+  const loadServers = useServerStore((s) => s.loadServers);
 
   return (
     <>

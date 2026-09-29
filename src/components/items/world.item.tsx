@@ -16,7 +16,7 @@ import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import type { World } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, pathBasename } from "@/lib/utils";
 import { useInstallations } from "@/stores/installations";
 import { useSettingsStore } from "@/stores/settings";
 
@@ -26,7 +26,7 @@ export const WorldItem = ({ world }: { world: World }) => {
   const [copiedText, copyToClipboard] = useCopyToClipboard();
   const worldData = world.data;
   const installation = installations.find(
-    (installation) => installation.path.split("/").pop() === world.installation_name,
+    (installation) => pathBasename(installation.path) === world.installation_name,
   );
   const version = versions?.find((v) => v === installation?.version);
   const { mutate: installVersion, isPending: isInstalling } = useDownloadVersion();
@@ -112,7 +112,7 @@ export const WorldItem = ({ world }: { world: World }) => {
                   await invoke("play_game", {
                     options: {
                       installation_id: installation.id,
-                      save: world.path.split("/").pop()?.replace(".vcdbs", ""),
+                      save: pathBasename(world.path).replace(/\.vcdbs$/i, ""),
                       use_system_dotnet: useSystemDotnet,
                     },
                   });

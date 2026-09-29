@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 import type { Mod } from "@/components/lists/mod.list";
@@ -22,6 +22,14 @@ export const useAddLatestModVersion = ({
   const emitevent = `mod-download-${mod.modid}-${pathHash}`;
   const queryClient = useQueryClient();
   const listenRef = useRef<UnlistenFn>(null);
+
+  useEffect(
+    () => () => {
+      listenRef.current?.();
+      listenRef.current = null;
+    },
+    [],
+  );
 
   return useMutation({
     mutationFn: async ({ path }: { path: string }) => {
@@ -46,6 +54,7 @@ export const useAddLatestModVersion = ({
         id: `add-mod-${result?.modInfo?.mod.modid}-${pathHash}`,
       });
       listenRef.current?.();
+      listenRef.current = null;
     },
     onMutate: async () => {
       const modInfo = (await invoke("fetch_mod_info", {
@@ -68,18 +77,24 @@ export const useAddLatestModVersion = ({
       return { modInfo };
     },
     onSuccess: async (_, __, { modInfo }) => {
-      if (!modsDirectory) return;
+      // Always detach first: the old early return leaked the listener for
+      // standalone downloads (no modsDirectory).
       listenRef.current?.();
-      const label = modsDirectory.split(pathDelimiter).pop() || modsDirectory;
+      listenRef.current = null;
+      const label = modsDirectory
+        ? modsDirectory.split(pathDelimiter).pop() || modsDirectory
+        : "Mods";
       toast.success(`Successfully downloaded ${modInfo?.mod.name} to ${label}`, {
         id: `add-mod-${modInfo?.mod.modid}-${pathHash}`,
       });
-      void queryClient.invalidateQueries({
-        queryKey: modUpdatesQueryKey(modsDirectory),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: installedModsQueryKey(modsDirectory),
-      });
+      if (modsDirectory) {
+        void queryClient.invalidateQueries({
+          queryKey: modUpdatesQueryKey(modsDirectory),
+        });
+        void queryClient.invalidateQueries({
+          queryKey: installedModsQueryKey(modsDirectory),
+        });
+      }
     },
   });
 };

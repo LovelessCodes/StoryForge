@@ -1,7 +1,7 @@
 import { type UseMutationOptions, useMutation } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 import { findInstallationForServer, useInstallations } from "@/stores/installations";
@@ -40,6 +40,16 @@ export const useConnectToServer = (
     },
   });
   const unlistens = useRef<UnlistenFn[]>([]);
+
+  // Detach on unmount; launch/dotnet errors previously left them attached.
+  useEffect(
+    () => () => {
+      for (const unlisten of unlistens.current) unlisten();
+      unlistens.current = [];
+    },
+    [],
+  );
+
   return useMutation({
     ...props,
     mutationFn: async ({ name, ip, password, installationId, pub }) => {
@@ -62,6 +72,9 @@ export const useConnectToServer = (
       });
     },
     onError: (error) => {
+      // play_game failed: no launch event will arrive, so drop the listeners.
+      for (const unlisten of unlistens.current) unlisten();
+      unlistens.current = [];
       toast.error(`Error connecting to server: ${error.message}`);
     },
     onMutate: async (variable) => {
