@@ -173,7 +173,12 @@ export function EditWorldDialog({ world }: EditWorldDialogProps) {
             )}
           </form.Field>
         </div>
-        <Button className="w-full" onClick={() => form.handleSubmit()} type="button">
+        <Button
+          className="w-full"
+          disabled={form.state.isSubmitting}
+          onClick={() => form.handleSubmit()}
+          type="button"
+        >
           Update World
         </Button>
       </div>

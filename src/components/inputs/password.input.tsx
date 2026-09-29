@@ -11,24 +11,27 @@ export function PasswordInput({ className, ...rest }: PasswordInputProps) {
   const id = useId();
   const [visible, setVisible] = useState<boolean>(false);
 
-  const toggleVisibility = () => {
-    setVisible((prev) => !prev);
-  };
-
   const computedClassName = typeof className === "function" ? className(visible) : className;
 
   return (
     <InputGroup>
       <InputGroupInput
         id={id}
-        type={visible ? "text" : "password"}
         placeholder="········"
-        value={rest.value}
-        onChange={rest.onChange}
+        {...rest}
         className={computedClassName}
+        type={visible ? "text" : "password"}
       />
-      <InputGroupAddon align="inline-end" onClick={toggleVisibility} className="cursor-pointer">
-        {visible ? <EyeIcon size={12} /> : <EyeOffIcon size={12} />}
+      <InputGroupAddon align="inline-end">
+        <button
+          aria-label={visible ? "Hide password" : "Show password"}
+          aria-pressed={visible}
+          className="cursor-pointer"
+          onClick={() => setVisible((prev) => !prev)}
+          type="button"
+        >
+          {visible ? <EyeIcon size={12} /> : <EyeOffIcon size={12} />}
+        </button>
       </InputGroupAddon>
     </InputGroup>
   );

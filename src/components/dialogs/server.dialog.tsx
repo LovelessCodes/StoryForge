@@ -449,7 +449,12 @@ export function ServerDialog({ server, installation }: ServerDialogProps) {
               "Test Server"
             )}
           </Button>
-          <Button className="flex-1" onClick={() => form.handleSubmit()} type="button">
+          <Button
+            className="flex-1"
+            disabled={form.state.isSubmitting}
+            onClick={() => form.handleSubmit()}
+            type="button"
+          >
             {submitLabel}
           </Button>
         </div>

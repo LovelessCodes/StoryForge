@@ -218,6 +218,8 @@ export function LiveBlock({
         <div className="space-y-2" key={kKey}>
           <div className="flex items-center gap-2">
             <Button
+              aria-expanded={!isCol}
+              aria-label={isCol ? "Expand array" : "Collapse array"}
               className="h-4 rounded border px-1 text-xs"
               onClick={() => toggleCollapse(path)}
               size="sm"
@@ -266,6 +268,8 @@ export function LiveBlock({
         <div className="space-y-2" key={kKey}>
           <div className="flex items-center gap-2">
             <button
+              aria-expanded={!isCol}
+              aria-label={isCol ? "Expand object" : "Collapse object"}
               className="rounded border px-1 text-xs"
               onClick={() => toggleCollapse(path)}
               type="button"

@@ -422,6 +422,7 @@ export function ServerHostingDetailPage() {
       <div className="flex shrink-0 items-center justify-between px-2">
         <div className="flex items-center gap-4">
           <Button
+            aria-label="Back to server list"
             onClick={() => void router.navigate({ to: "/server-hosting" })}
             size="icon-sm"
             variant="ghost"

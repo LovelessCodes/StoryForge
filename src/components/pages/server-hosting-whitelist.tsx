@@ -107,6 +107,7 @@ export function ServerHostingWhitelist({ instanceId }: Props) {
                       </TableCell>
                       <TableCell>
                         <Button
+                          aria-label={`Remove ${entry.name || entry.uid} from whitelist`}
                           size="icon-sm"
                           variant="ghost"
                           disabled={removeMutation.isPending}

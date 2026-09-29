@@ -102,6 +102,7 @@ export function RootComponent() {
             {platform() === "macos" && (
               <>
                 <button
+                  aria-label="Close window"
                   onClick={() => getCurrentWindow().close()}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
@@ -118,6 +119,7 @@ export function RootComponent() {
                   />
                 </button>
                 <button
+                  aria-label="Minimize window"
                   type="button"
                   onClick={() => getCurrentWindow().minimize()}
                   onKeyDown={(e) => {
@@ -134,6 +136,7 @@ export function RootComponent() {
                   />
                 </button>
                 <button
+                  aria-label="Maximize window"
                   type="button"
                   onClick={() => getCurrentWindow().toggleMaximize()}
                   onKeyDown={(e) => {
@@ -156,6 +159,7 @@ export function RootComponent() {
             {platform() === "windows" && (
               <>
                 <Button
+                  aria-label="Minimize window"
                   onClick={() => getCurrentWindow().minimize()}
                   size="icon-sm"
                   variant="ghost"
@@ -163,13 +167,19 @@ export function RootComponent() {
                   <MinimizeIcon className="hover:text-warning transition-colors" size={16} />
                 </Button>
                 <Button
+                  aria-label="Maximize window"
                   onClick={() => getCurrentWindow().toggleMaximize()}
                   size="icon-sm"
                   variant="ghost"
                 >
                   <MaximizeIcon className="hover:text-success transition-colors" size={16} />
                 </Button>
-                <Button onClick={() => getCurrentWindow().close()} size="icon-sm" variant="ghost">
+                <Button
+                  aria-label="Close window"
+                  onClick={() => getCurrentWindow().close()}
+                  size="icon-sm"
+                  variant="ghost"
+                >
                   <XIcon className="hover:text-destructive transition-colors" size={16} />
                 </Button>
               </>
