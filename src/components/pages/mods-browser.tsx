@@ -26,7 +26,8 @@ import { cn, compareSemverDesc, stripped } from "@/lib/utils";
 import { useSettingsStore } from "@/stores/settings";
 
 export type OutputMod = {
-  modid: number;
+  /** Rust serialises this as a string, even for numeric ids. */
+  modid: string;
   name: string;
   authors: string[];
   version: string;
@@ -134,10 +135,7 @@ export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
   );
 
   // ── Computed data for ModList ──
-  const installedModIdSet = useMemo(
-    () => new Set(instMods?.mods.flatMap((m) => [m.modid, m.modid.toString()])),
-    [instMods],
-  );
+  const installedModIdSet = useMemo(() => new Set(instMods?.mods.map((m) => m.modid)), [instMods]);
 
   const modsList = useMemo(() => {
     if (!mods) return [];
@@ -154,7 +152,7 @@ export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
         if (side !== "installed") {
           if (side !== "any" && mod.side !== side) return false;
         } else if (
-          !installedModIdSet.has(mod.modid) &&
+          !installedModIdSet.has(String(mod.modid)) &&
           !mod.modidstrs.some((id) => installedModIdSet.has(id))
         ) {
           return false;

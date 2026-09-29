@@ -17,6 +17,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { modConfigsQueryKey, useModConfigs } from "@/hooks/use-mod-configs";
+import type { JSONArray, JSONObject, JSONValue } from "@/lib/types";
 import { useInstallations } from "@/stores/installations";
 
 const Editor = lazy(() => import("@monaco-editor/react"));
@@ -101,12 +102,6 @@ export function ModConfigsPage() {
 }
 
 // --- Live JSON Editor ---
-type JSONPrimitive = string | number | boolean | null;
-type JSONValue = JSONPrimitive | JSONObject | JSONArray;
-interface JSONObject {
-  [k: string]: JSONValue;
-}
-interface JSONArray extends Array<JSONValue> {}
 
 function isObject(val: JSONValue): val is JSONObject {
   return typeof val === "object" && val !== null && !Array.isArray(val);
@@ -146,7 +141,7 @@ export function LiveBlock({
   file,
   onSave,
 }: {
-  code: string;
+  code: JSONValue;
   file: string;
   onSave: (params: { file: string; newCode: string }) => void;
 }) {
@@ -386,7 +381,7 @@ export function LiveBlock({
 }
 
 // Heuristic + tolerant initial parse
-function safeInitialParse(raw: string, setErr: (s: string | null) => void): JSONValue {
+function safeInitialParse(raw: JSONValue, setErr: (s: string | null) => void): JSONValue {
   if (typeof raw !== "string") return raw as unknown as JSONValue;
   const trimmed = raw.trim();
   if (trimmed.length === 0) return {};
@@ -435,7 +430,7 @@ export function CodeBlock({
   file,
   onSave,
 }: {
-  code: string;
+  code: JSONValue;
   file: string;
   onSave: (params: { file: string; newCode: string }) => void;
 }) {

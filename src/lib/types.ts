@@ -120,8 +120,17 @@ export type LandClaim = {
   allow_traverse_everyone: boolean;
 };
 
+/** JSON value types used by the config editor and command payloads. */
+export type JSONPrimitive = string | number | boolean | null;
+export type JSONValue = JSONPrimitive | JSONObject | JSONArray;
+export interface JSONObject {
+  [k: string]: JSONValue;
+}
+export interface JSONArray extends Array<JSONValue> {}
+
 export type MapPieceDb = {
-  pixels: number[][];
+  /** Flat `Vec<i32>` on the Rust side. */
+  pixels: number[];
 };
 
 export type ServerWorldPlayerData = {
@@ -168,7 +177,8 @@ export type GameData = {
   world_name: string;
   total_seconds_played: number;
   world_play_style: number;
-  last_played: string;
+  /** Optional on the Rust side. */
+  last_played: string | null;
   created_game_version: string;
   game_time_speed: number;
   mini_dimensions_created: number;
