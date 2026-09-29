@@ -462,23 +462,37 @@ pub fn get_map_tile(world_path: String, position: i64) -> Result<MapTile, UiErro
 fn decode_tile(position: i64, data: Vec<u8>) -> Result<MapTile, UiError> {
     let (x, y) = decode_position(position);
 
-    let (image_data, width, height) = if let Ok(map_piece) = MapPieceDb::decode(data.as_slice()) {
-        let pixel_count = map_piece.pixels.len();
-        let size = (pixel_count as f64).sqrt() as u32;
-        let png_data = pixels_to_png(&map_piece.pixels, size, size)?;
-        (png_data, size, size)
-    } else {
-        let (width, height) = detect_image_dimensions(&data).unwrap_or((512, 512));
-        (data, width, height)
-    };
+    // Sniff image magic before protobuf: prost decoding is permissive and can
+    // accept arbitrary bytes (e.g. a PNG) as an empty/partial MapPieceDb.
+    if let Some((width, height)) = detect_image_dimensions(&data) {
+        return Ok(MapTile {
+            x,
+            y,
+            position,
+            image_data: data,
+            width,
+            height,
+        });
+    }
+
+    let map_piece = MapPieceDb::decode(data.as_slice()).map_err(|e| {
+        log_error!("maps: tile is neither image nor protobuf: {e}");
+        UiError::new(
+            "decode_error",
+            format!("Tile data is neither an image nor a MapPieceDb: {e}"),
+        )
+    })?;
+    let pixel_count = map_piece.pixels.len();
+    let size = (pixel_count as f64).sqrt() as u32;
+    let png_data = pixels_to_png(&map_piece.pixels, size, size)?;
 
     Ok(MapTile {
         x,
         y,
         position,
-        image_data,
-        width,
-        height,
+        image_data: png_data,
+        width: size,
+        height: size,
     })
 }
 
@@ -602,4 +616,36 @@ pub fn get_all_map_tiles_by_path(map_path: String) -> Result<Vec<MapTile>, UiErr
         tiles.push(decode_tile(position, data)?);
     }
     Ok(tiles)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use image::{ImageBuffer, ImageFormat, Rgba};
+    use prost::Message;
+    use std::io::Cursor;
+
+    #[test]
+    fn decode_tile_prefers_image_magic_over_protobuf() {
+        let img: ImageBuffer<Rgba<u8>, Vec<u8>> =
+            ImageBuffer::from_fn(2, 3, |_, _| Rgba([10, 20, 30, 255]));
+        let mut png = Vec::new();
+        img.write_to(&mut Cursor::new(&mut png), ImageFormat::Png)
+            .unwrap();
+
+        let tile = decode_tile(0, png).unwrap();
+        assert_eq!((tile.width, tile.height), (2, 3));
+    }
+
+    #[test]
+    fn decode_tile_decodes_map_piece() {
+        let piece = MapPieceDb {
+            pixels: vec![0xFF0000, 0x00FF00, 0x0000FF, 0xFFFFFF],
+        };
+        let mut buf = Vec::new();
+        piece.encode(&mut buf).unwrap();
+
+        let tile = decode_tile(0, buf).unwrap();
+        assert_eq!((tile.width, tile.height), (2, 2));
+    }
 }
