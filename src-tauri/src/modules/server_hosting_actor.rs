@@ -22,6 +22,7 @@ use super::server_hosting::{
     append_log, emit_log, emit_status, server_exe_path, HostedServerInstance, ServerStatus,
     ServerStatusInfo,
 };
+use super::utils::lock;
 use crate::{log_error, log_info};
 
 /// Commands that can be sent to a running server actor.
@@ -64,37 +65,27 @@ static ACTORS: LazyLock<Mutex<std::collections::HashMap<u64, ServerActorHandle>>
 
 /// Returns true if an actor is registered for the given instance.
 pub fn is_running(instance_id: u64) -> bool {
-    ACTORS
-        .lock()
-        .map(|actors| actors.contains_key(&instance_id))
-        .unwrap_or(false)
+    lock(&ACTORS).contains_key(&instance_id)
 }
 
 /// Returns the IDs of all registered actors.
 pub fn running_instance_ids() -> Vec<u64> {
-    ACTORS
-        .lock()
-        .map(|actors| actors.keys().copied().collect())
-        .unwrap_or_default()
+    lock(&ACTORS).keys().copied().collect()
 }
 
 /// Register a new actor handle.
 pub fn register(instance_id: u64, handle: ServerActorHandle) {
-    if let Ok(mut actors) = ACTORS.lock() {
-        actors.insert(instance_id, handle);
-    }
+    lock(&ACTORS).insert(instance_id, handle);
 }
 
 /// Unregister an actor handle. Does not stop the process.
 pub fn unregister(instance_id: u64) {
-    if let Ok(mut actors) = ACTORS.lock() {
-        actors.remove(&instance_id);
-    }
+    lock(&ACTORS).remove(&instance_id);
 }
 
 /// Get a clone of an actor handle if one exists.
 pub fn get_handle(instance_id: u64) -> Option<ServerActorHandle> {
-    ACTORS.lock().ok()?.get(&instance_id).cloned()
+    lock(&ACTORS).get(&instance_id).cloned()
 }
 
 /// Spawn a new server process and actor task for the given instance.

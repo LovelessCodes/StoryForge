@@ -14,7 +14,7 @@ use tauri::{command, AppHandle};
 use super::errors::UiError;
 use super::installations::find_installation_by_id;
 use super::proto::{GameData, MapMarkers, ProspectingLog};
-use super::utils::{installations_folder, installations_subdir, require_managed_path};
+use super::utils::{installations_folder, installations_subdir, lock, require_managed_path};
 use crate::{log_error, log_info};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -252,7 +252,7 @@ fn saves_fingerprint(installations_dir: &Path) -> Result<u64, UiError> {
 
 fn try_cached_saves(installations_dir: &Path) -> Option<Vec<World>> {
     let fingerprint = saves_fingerprint(installations_dir).ok()?;
-    let cache = saves_cache().lock().ok()?;
+    let cache = lock(saves_cache());
     let entry = cache.entries.get(installations_dir)?;
     if entry.fingerprint == fingerprint {
         return Some(entry.worlds.clone());
@@ -262,7 +262,8 @@ fn try_cached_saves(installations_dir: &Path) -> Option<Vec<World>> {
 
 fn store_saves_cache(installations_dir: &Path, worlds: &[World]) {
     if let Ok(fingerprint) = saves_fingerprint(installations_dir) {
-        if let Ok(mut cache) = saves_cache().lock() {
+        let mut cache = lock(saves_cache());
+        {
             cache.entries.insert(
                 installations_dir.to_path_buf(),
                 SavesCacheEntry {
@@ -275,10 +276,9 @@ fn store_saves_cache(installations_dir: &Path, worlds: &[World]) {
 }
 
 fn invalidate_saves_cache() {
-    if let Ok(mut cache) = saves_cache().lock() {
-        cache.entries.clear();
-        log_info!("saves: invalidated save cache");
-    }
+    let mut cache = lock(saves_cache());
+    cache.entries.clear();
+    log_info!("saves: invalidated save cache");
 }
 
 // ── Commands ──
@@ -347,7 +347,7 @@ pub fn get_all_saves(app: AppHandle) -> Result<Vec<World>, UiError> {
     let start = std::time::Instant::now();
 
     let subdir = installations_subdir(app.clone());
-    let installation_dir_path = installations_folder(app.clone()).join(&subdir);
+    let installation_dir_path = installations_folder(app.clone())?.join(&subdir);
     let result = scan_saves(&installation_dir_path);
 
     log_info!(
