@@ -1549,6 +1549,14 @@ mod tests {
     }
 
     #[test]
+    fn slugify_is_filesystem_safe() {
+        assert_eq!(slugify("My Server"), "my-server");
+        assert_eq!(slugify("  spaced  out  "), "spaced-out");
+        assert_eq!(slugify("../../etc"), "etc");
+        assert_eq!(slugify(""), "");
+    }
+
+    #[test]
     fn ports_overlap_handles_wildcard_binds() {
         assert!(ports_overlap("0.0.0.0", 42420, "127.0.0.1", 42420));
         assert!(ports_overlap("127.0.0.1", 42420, "0.0.0.0", 42420));

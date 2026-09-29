@@ -607,6 +607,16 @@ mod tests {
     use std::io::Cursor;
 
     #[test]
+    fn decode_position_round_trips() {
+        assert_eq!(decode_position(0), (0, 0));
+        let packed = (5i64 << COORD_BITS) | 7;
+        assert_eq!(decode_position(packed), (5, 7));
+        // Negative x relies on arithmetic shift.
+        let negative = (-3i64) << COORD_BITS;
+        assert_eq!(decode_position(negative), (-3, 0));
+    }
+
+    #[test]
     fn decode_tile_prefers_image_magic_over_protobuf() {
         let img: ImageBuffer<Rgba<u8>, Vec<u8>> =
             ImageBuffer::from_fn(2, 3, |_, _| Rgba([10, 20, 30, 255]));

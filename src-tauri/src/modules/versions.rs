@@ -189,3 +189,28 @@ pub async fn remove_all_versions(
 
     Ok("removed".into())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn is_incomplete_detects_download_artifacts() {
+        let tmp = tempfile::tempdir().unwrap();
+
+        // Complete install: plain directory without download artifacts.
+        let complete = tmp.path().join("complete");
+        std::fs::create_dir(&complete).unwrap();
+        std::fs::write(complete.join("Vintagestory"), b"bin").unwrap();
+        assert!(!is_incomplete(&complete));
+
+        for artifact in ["version.tar.gz", "version.zip", "version.resume.json"] {
+            let dir = tmp.path().join(artifact.replace('.', "_"));
+            std::fs::create_dir(&dir).unwrap();
+            std::fs::write(dir.join(artifact), b"partial").unwrap();
+            assert!(is_incomplete(&dir), "{artifact} should mark incomplete");
+        }
+
+        assert!(!is_incomplete(&tmp.path().join("does-not-exist")));
+    }
+}

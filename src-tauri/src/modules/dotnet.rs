@@ -641,3 +641,17 @@ pub async fn ensure_dotnet(
     log_info!("[dotnet] installed to {:?}", root);
     Ok(root)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dotnet_channel_matches_game_version() {
+        assert_eq!(dotnet_channel("1.22.3"), "10.0");
+        assert_eq!(dotnet_channel("1.23.0"), "10.0");
+        assert_eq!(dotnet_channel("1.21.6"), "8.0");
+        assert_eq!(dotnet_channel("1.20.12"), "7.0");
+        assert_eq!(dotnet_channel(""), "7.0");
+    }
+}

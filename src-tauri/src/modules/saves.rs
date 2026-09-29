@@ -209,7 +209,9 @@ fn store_saves_cache(installations_dir: &Path, worlds: &[World]) {
     }
 }
 
-fn invalidate_saves_cache() {
+/// Drops the cached save scan, forcing the next `scan_saves` to re-read
+/// every database. Used by writers and by the cold-path benchmark.
+pub fn invalidate_saves_cache() {
     let mut cache = lock(saves_cache());
     cache.entries.clear();
     log_info!("saves: invalidated save cache");
