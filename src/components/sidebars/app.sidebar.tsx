@@ -70,13 +70,19 @@ export function AppSidebar() {
 
   const { mutate: verifyAuth } = useVerifyAuth({
     onError: (error, variables) => {
-      removeUser(variables.uid);
-      toast.error(
-        `Error verifying auth for ${users.find((user) => user.uid === variables.uid)?.playername}: ${error.message}`,
-        {
+      const playername = users.find((user) => user.uid === variables.uid)?.playername;
+      // Only a rejected session may delete the saved account; network, HTTP
+      // and parse failures keep it (same rule as the startup check).
+      if ((error as { name?: string }).name === "invalid_session") {
+        removeUser(variables.uid);
+        toast.error(`Auth is NOT valid for ${playername}`, {
           id: `verify-auth-${variables.uid}`,
-        },
-      );
+        });
+      } else {
+        toast.error(`Could not verify auth for ${playername}: ${error.message}`, {
+          id: `verify-auth-${variables.uid}`,
+        });
+      }
     },
     onMutate: (variables) => {
       toast.loading(
