@@ -50,13 +50,9 @@ jobs:
           toolchain: stable
           components: rustfmt, clippy
 
-      - name: Cache Rust build
-        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
-        with:
-          workspaces: src-tauri
-          # Only the trusted release branch may write the cache; PRs restore it.
-          save-if: ${{ github.ref == 'refs/heads/release' }}
-
+      # No dependency caching on purpose: zizmor's cache-poisoning audit rejects
+      # Swatinem/rust-cache in PR-triggered workflows (it does not recognise
+      # rust-cache's save-if gate). Revisit once zizmor supports it.
       - name: Format check
         working-directory: src-tauri
         run: cargo fmt --check
