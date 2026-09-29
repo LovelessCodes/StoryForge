@@ -60,7 +60,18 @@ if (dark) {
   const { users, removeUser } = useAccountStore.getState();
   for (const user of users) {
     if (!user.sessionkey || !user.uid) continue;
-    invoke("verify", { sessionkey: user.sessionkey, uid: user.uid }).catch(async () => {
+    invoke("verify", { sessionkey: user.sessionkey, uid: user.uid }).catch((error: unknown) => {
+      // Only a rejected session may delete saved credentials. Network, HTTP or
+      // parse failures must keep the account so an offline launch doesn't wipe
+      // every saved login.
+      const name = (error as { name?: string } | null)?.name;
+      if (name !== "invalid_session") {
+        void invoke("log_message", {
+          level: "ERROR",
+          message: `Session verify failed for ${user.playername ?? user.email}: ${String(error)}`,
+        });
+        return;
+      }
       removeUser(user.uid);
       toast.error(`${user.playername ?? user.email}'s session expired — please sign in again`);
       rootDialogHandle.openWithPayload(() => <AddUserDialog email={user.email} />);
