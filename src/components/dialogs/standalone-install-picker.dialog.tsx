@@ -7,7 +7,13 @@ import { toast } from "sonner";
 import type { Mod } from "@/components/lists/mod.list";
 import { Button } from "@/components/ui/button";
 import { DialogClose, DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+} from "@/components/ui/select";
 import { rootDialogHandle } from "@/handles";
 import { useHostedServers } from "@/hooks/queries/server-hosting";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
@@ -135,7 +141,6 @@ export function StandaloneInstallPickerDialog({ modid, mod }: StandaloneInstallP
       <div className="mt-2 flex flex-col gap-4">
         {/* Destination picker */}
         <div className="flex flex-col gap-1">
-          <label className="text-muted-foreground text-xs font-medium">Destination</label>
           <Select
             onValueChange={(value) => {
               const dest = destinations.find((d) => d.id === value);
@@ -143,6 +148,9 @@ export function StandaloneInstallPickerDialog({ modid, mod }: StandaloneInstallP
             }}
             value={selectedDestination?.id ?? undefined}
           >
+            <SelectLabel className="text-muted-foreground text-xs font-medium">
+              Destination
+            </SelectLabel>
             <SelectTrigger className="w-full truncate">
               <span>{selectedDestination?.name ?? "Select destination..."}</span>
             </SelectTrigger>
@@ -182,7 +190,6 @@ export function StandaloneInstallPickerDialog({ modid, mod }: StandaloneInstallP
 
         {/* Version picker */}
         <div className="flex flex-col gap-1">
-          <label className="text-muted-foreground text-xs font-medium">Version</label>
           <Select
             onValueChange={(value) => {
               const release = modInfo?.mod.releases.find((r) => r.modversion === value) || null;
@@ -190,6 +197,7 @@ export function StandaloneInstallPickerDialog({ modid, mod }: StandaloneInstallP
             }}
             value={selectedVersion?.modversion ?? undefined}
           >
+            <SelectLabel className="text-muted-foreground text-xs font-medium">Version</SelectLabel>
             <SelectTrigger className="w-full truncate">
               <span>
                 {selectedVersion?.modversion ? (
