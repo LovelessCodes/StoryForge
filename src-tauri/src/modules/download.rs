@@ -12,12 +12,15 @@ use std::{
         Arc, Mutex, OnceLock,
     },
 };
-use tauri::{command, AppHandle, Emitter, Listener, Runtime, State};
+use tauri::{command, AppHandle, Emitter, Listener, State};
 use tokio_util::sync::CancellationToken;
 
 use super::errors::UiError;
 use super::paths::vintagestory_exe;
-use super::utils::{is_at_least_1_22_3, safe_file_name, safe_join};
+use super::utils::{
+    is_at_least_1_22_3, normalize_path, require_managed_path, safe_file_name, safe_join,
+    versions_folder, versions_subdir,
+};
 use crate::{log_error, log_info};
 
 #[derive(Serialize, Clone)]
@@ -130,8 +133,8 @@ pub struct PausedDownload {
 }
 
 /// Context shared by the download and extraction helpers.
-struct DownloadContext<R: Runtime> {
-    app: AppHandle<R>,
+struct DownloadContext {
+    app: AppHandle,
     event: String,
     token: CancellationToken,
     pause_flag: Arc<AtomicBool>,
@@ -139,7 +142,7 @@ struct DownloadContext<R: Runtime> {
     stored_etag: Arc<Mutex<String>>,
 }
 
-impl<R: Runtime> DownloadContext<R> {
+impl DownloadContext {
     fn is_cancelled(&self) -> bool {
         self.token.is_cancelled()
     }
@@ -168,10 +171,7 @@ impl<R: Runtime> DownloadContext<R> {
 }
 
 /// Install frontend-driven cancellation AND pause listeners, returning a token and pause flag.
-fn setup_controls<R: Runtime>(
-    app: &AppHandle<R>,
-    event: &str,
-) -> (CancellationToken, Arc<AtomicBool>) {
+fn setup_controls(app: &AppHandle, event: &str) -> (CancellationToken, Arc<AtomicBool>) {
     let token = CancellationToken::new();
     let cancel_token = token.child_token();
     let pause_flag = Arc::new(AtomicBool::new(false));
@@ -275,8 +275,8 @@ fn infer_filename(url: &str, headers: &reqwest::header::HeaderMap) -> String {
 /// Stream a remote file to disk, returning the path to the saved archive.
 /// When `resume_offset > 0`, sends a `Range` header and appends to the existing partial file.
 /// Returns `Ok(archive_path)` on completion, `Ok(("<paused>", archive_path))` on pause.
-async fn download_file<R: Runtime>(
-    ctx: &DownloadContext<R>,
+async fn download_file(
+    ctx: &DownloadContext,
     client: &reqwest::Client,
     url: &str,
     dest_dir: &Path,
@@ -402,8 +402,8 @@ async fn download_file<R: Runtime>(
 }
 
 /// Extract a zip archive to `extract_dir`, optionally stripping `prefix`.
-async fn extract_zip<R: Runtime>(
-    ctx: &DownloadContext<R>,
+async fn extract_zip(
+    ctx: &DownloadContext,
     archive: &Path,
     extract_dir: &Path,
     prefix: Option<&str>,
@@ -444,8 +444,8 @@ async fn extract_zip<R: Runtime>(
     .map_err(|e| UiError::from(format!("spawn blocking error: {e}")))?
 }
 
-fn extract_zip_sync<R: Runtime>(
-    ctx: &DownloadContext<R>,
+fn extract_zip_sync(
+    ctx: &DownloadContext,
     archive: &Path,
     extract_dir: &Path,
     prefix: Option<&str>,
@@ -529,8 +529,8 @@ fn extract_zip_sync<R: Runtime>(
 }
 
 /// Extract a tar archive (plain or gzip-compressed) to `extract_dir`.
-async fn extract_tar<R: Runtime>(
-    ctx: &DownloadContext<R>,
+async fn extract_tar(
+    ctx: &DownloadContext,
     archive: &Path,
     extract_dir: &Path,
 ) -> Result<(), UiError> {
@@ -569,8 +569,8 @@ async fn extract_tar<R: Runtime>(
     .map_err(|e| UiError::from(format!("spawn blocking error: {e}")))?
 }
 
-fn extract_tar_sync<R: Runtime>(
-    ctx: &DownloadContext<R>,
+fn extract_tar_sync(
+    ctx: &DownloadContext,
     archive: &Path,
     extract_dir: &Path,
 ) -> Result<(), UiError> {
@@ -601,8 +601,8 @@ fn extract_tar_sync<R: Runtime>(
     }
 }
 
-fn extract_tar_archive<R: Runtime, Rdr: io::Read>(
-    ctx: &DownloadContext<R>,
+fn extract_tar_archive<Rdr: io::Read>(
+    ctx: &DownloadContext,
     reader: Rdr,
     extract_dir: &Path,
 ) -> Result<(), UiError> {
@@ -654,9 +654,9 @@ fn extract_tar_archive<R: Runtime, Rdr: io::Read>(
 
 #[command]
 #[allow(clippy::too_many_arguments)] // TODO: group args into a params struct
-pub async fn download_and_maybe_extract<R: Runtime>(
+pub async fn download_and_maybe_extract(
     client: State<'_, Arc<reqwest::Client>>,
-    app: tauri::AppHandle<R>,
+    app: tauri::AppHandle,
     url: String,
     destpath: String,
     emitevent: String,
@@ -666,6 +666,26 @@ pub async fn download_and_maybe_extract<R: Runtime>(
 ) -> Result<String, UiError> {
     let destpath = PathBuf::from(&destpath);
     log_info!("download: url={} dest={:?}", url, destpath);
+
+    // Downloads may only target app-managed directories: version/installation
+    // folders, app data, or a hosted server's data directory.
+    require_managed_path(&app, &destpath, "Download destination")?;
+
+    // Extraction is only used for game versions and must stay inside the
+    // configured versions folder. This also gates the cleanup below, which
+    // deletes the destination directory.
+    if extract {
+        let versions_root = versions_folder(app.clone()).join(versions_subdir(app.clone()));
+        if !normalize_path(&destpath).starts_with(normalize_path(&versions_root)) {
+            return Err(UiError {
+                name: "path_not_allowed".into(),
+                message: format!(
+                    "Refusing to extract outside the versions folder: {}",
+                    destpath.display()
+                ),
+            });
+        }
+    }
 
     let (token, pause_flag) = setup_controls(&app, &emitevent);
 
@@ -758,9 +778,7 @@ pub async fn download_and_maybe_extract<R: Runtime>(
 
     if ctx.is_cancelled() {
         cleanup(&archive_path, &destpath);
-        ctx.emit(DownloadContext::<R>::cancelled_payload(
-            "Download cancelled",
-        ))?;
+        ctx.emit(DownloadContext::cancelled_payload("Download cancelled"))?;
         return Ok("cancelled".into());
     }
 
@@ -784,9 +802,7 @@ pub async fn download_and_maybe_extract<R: Runtime>(
 
         if ctx.is_cancelled() {
             cleanup(&archive_path, &destpath);
-            ctx.emit(DownloadContext::<R>::cancelled_payload(
-                "Extraction cancelled",
-            ))?;
+            ctx.emit(DownloadContext::cancelled_payload("Extraction cancelled"))?;
             return Ok("cancelled".into());
         }
 

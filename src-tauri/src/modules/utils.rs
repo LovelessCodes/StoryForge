@@ -150,6 +150,84 @@ pub fn safe_file_name(name: &str) -> Result<String, UiError> {
     }
 }
 
+/// Normalizes a path syntactically, resolving `.` and `..` without touching the
+/// filesystem. Used for containment checks before a path exists.
+pub fn normalize_path(path: &Path) -> PathBuf {
+    let mut result = PathBuf::new();
+    for component in path.components() {
+        match component {
+            Component::Prefix(p) => result.push(p.as_os_str()),
+            Component::RootDir => result.push(component),
+            Component::CurDir => {}
+            Component::ParentDir => match result.components().next_back() {
+                Some(Component::Normal(_)) => {
+                    result.pop();
+                }
+                // Clamp at the filesystem root; keep `..` for relative paths.
+                Some(Component::RootDir) | Some(Component::Prefix(_)) => {}
+                _ => result.push(".."),
+            },
+            Component::Normal(name) => result.push(name),
+        }
+    }
+    result
+}
+
+/// Directories the app manages on disk: app data, the configured versions and
+/// installations parents, and every hosted server's data directory.
+fn managed_roots(app: &AppHandle) -> Vec<PathBuf> {
+    let mut roots = vec![
+        versions_folder(app.clone()),
+        installations_folder(app.clone()),
+    ];
+    if let Ok(data_dir) = app.path().app_data_dir() {
+        roots.push(data_dir);
+    }
+    roots.extend(super::server_hosting::data_dirs(app));
+    roots
+}
+
+/// Verifies that `candidate` is inside an app-managed directory.
+///
+/// Commands that read, move, or delete paths received from the webview call
+/// this so a compromised frontend cannot reach arbitrary user files. Hosted
+/// server data directories are user-configurable and therefore part of the
+/// managed set.
+pub fn require_managed_path(app: &AppHandle, candidate: &Path, what: &str) -> Result<(), UiError> {
+    let normalized = normalize_path(candidate);
+    let allowed = candidate.is_absolute()
+        && managed_roots(app).into_iter().any(|root| {
+            !root.as_os_str().is_empty() && normalized.starts_with(normalize_path(&root))
+        });
+
+    if allowed {
+        Ok(())
+    } else {
+        Err(UiError {
+            name: "path_not_allowed".into(),
+            message: format!(
+                "{what} is not inside an app-managed directory: {}",
+                candidate.display()
+            ),
+        })
+    }
+}
+
+/// Minimal sanity checks for a user-picked destination directory.
+///
+/// Destinations come from native folder dialogs, so they may live outside the
+/// managed roots, but they must be absolute and must not be a filesystem root.
+pub fn require_safe_destination(candidate: &Path, what: &str) -> Result<(), UiError> {
+    let normalized = normalize_path(candidate);
+    if !candidate.is_absolute() || normalized.parent().is_none() {
+        return Err(UiError {
+            name: "invalid_path".into(),
+            message: format!("{what} is not a usable directory: {}", candidate.display()),
+        });
+    }
+    Ok(())
+}
+
 /// Generates a deterministic ID from a name using the FNV-1a 32-bit hash.
 ///
 /// The returned value fits in a JavaScript safe integer (< 2^53), so it can be
@@ -299,5 +377,20 @@ mod tests {
         assert_eq!(safe_file_name("../mod.zip").unwrap(), "mod.zip");
         assert!(safe_file_name("").is_err());
         assert!(safe_file_name("..").is_err());
+    }
+
+    #[test]
+    fn test_normalize_path() {
+        assert_eq!(
+            normalize_path(Path::new("/a/b/../c")),
+            PathBuf::from("/a/c")
+        );
+        assert_eq!(normalize_path(Path::new("/a/./b")), PathBuf::from("/a/b"));
+        assert_eq!(normalize_path(Path::new("/a/../../b")), PathBuf::from("/b"));
+        assert_eq!(normalize_path(Path::new("/../b")), PathBuf::from("/b"));
+        assert_eq!(
+            normalize_path(Path::new("a/../../b")),
+            PathBuf::from("../b")
+        );
     }
 }

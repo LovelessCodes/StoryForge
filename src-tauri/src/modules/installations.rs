@@ -25,7 +25,8 @@ use super::mods;
 use super::paths::{self, clientsettings_path, installation_json_path, mods_dir};
 use super::utils::{
     dir_name, dir_size, find_dir_by_id, format_size, generate_id, installations_folder,
-    installations_subdir, move_folder, safe_join, versions_folder, versions_subdir,
+    installations_subdir, move_folder, require_managed_path, require_safe_destination,
+    safe_file_name, safe_join, versions_folder, versions_subdir,
 };
 use crate::{log_debug, log_error, log_info};
 
@@ -567,8 +568,9 @@ pub async fn import_installation(
 }
 
 #[command]
-pub async fn initialize_game(path: String) -> Result<String, UiError> {
+pub async fn initialize_game(app: AppHandle, path: String) -> Result<String, UiError> {
     log_info!("initialize_game: {:?}", path);
+    require_managed_path(&app, Path::new(&path), "Installation path")?;
     let pb = mods_dir(PathBuf::from(&path));
     if !pb.exists() {
         create_dir_all(&pb).map_err(|e| {
@@ -1586,8 +1588,10 @@ pub async fn rename_installations_folder(
     subdir: String,
 ) -> Result<String, UiError> {
     let source_path = PathBuf::from(source)
-        .join(installations_subdir(app))
+        .join(installations_subdir(app.clone()))
         .join(&subdir);
+    require_managed_path(&app, &source_path, "Source directory")?;
+    let new_name = safe_file_name(&new_name)?;
     let destination_path = source_path
         .parent()
         .ok_or_else(|| UiError {
@@ -1605,12 +1609,15 @@ pub async fn rename_installations_folder(
 
 #[command]
 pub async fn move_installations_folder(
+    app: AppHandle,
     source: String,
     destination: String,
     subdir: String,
 ) -> Result<String, UiError> {
     let src = PathBuf::from(&source).join(&subdir);
     let dst = PathBuf::from(&destination).join(&subdir);
+    require_managed_path(&app, Path::new(&source), "Source directory")?;
+    require_safe_destination(Path::new(&destination), "Destination")?;
     log_info!("move_installations_folder: {:?} -> {:?}", src, dst);
     move_folder(src, dst)?;
     log_info!("move_installations_folder: done");
@@ -1618,7 +1625,12 @@ pub async fn move_installations_folder(
 }
 
 #[command]
-pub async fn remove_all_installations(source: String, subdir: String) -> Result<String, UiError> {
+pub async fn remove_all_installations(
+    app: AppHandle,
+    source: String,
+    subdir: String,
+) -> Result<String, UiError> {
+    require_managed_path(&app, Path::new(&source), "Source directory")?;
     let source_path = PathBuf::from(source).join(&subdir);
     if !source_path.exists() || !source_path.is_dir() {
         return Ok("not_exists".into());
@@ -1644,7 +1656,11 @@ pub struct InstallationLog {
 }
 
 #[command]
-pub fn get_installation_logs(installation_path: String) -> Result<Vec<InstallationLog>, UiError> {
+pub fn get_installation_logs(
+    app: AppHandle,
+    installation_path: String,
+) -> Result<Vec<InstallationLog>, UiError> {
+    require_managed_path(&app, Path::new(&installation_path), "Installation path")?;
     let logs_dir = PathBuf::from(&installation_path).join("Logs");
     let mut logs = Vec::new();
     if !logs_dir.is_dir() {
@@ -1682,7 +1698,8 @@ pub fn get_installation_logs(installation_path: String) -> Result<Vec<Installati
 }
 
 #[command]
-pub fn read_installation_log(log_path: String) -> Result<String, UiError> {
+pub fn read_installation_log(app: AppHandle, log_path: String) -> Result<String, UiError> {
+    require_managed_path(&app, Path::new(&log_path), "Log path")?;
     read_to_string(&log_path).map_err(|e| UiError {
         name: "read_failed".into(),
         message: format!("Failed to read log file: {e}"),
@@ -1691,7 +1708,8 @@ pub fn read_installation_log(log_path: String) -> Result<String, UiError> {
 
 /// Zip up the ModConfig folder from an installation and return the bytes.
 #[command]
-pub fn zip_modconfig(installation_path: String) -> Result<Vec<u8>, UiError> {
+pub fn zip_modconfig(app: AppHandle, installation_path: String) -> Result<Vec<u8>, UiError> {
+    require_managed_path(&app, Path::new(&installation_path), "Installation path")?;
     let modconfig_dir = PathBuf::from(&installation_path).join("ModConfig");
     if !modconfig_dir.is_dir() {
         return Err(UiError {

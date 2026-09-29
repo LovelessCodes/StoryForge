@@ -14,7 +14,7 @@ use tauri::{command, AppHandle};
 use super::errors::UiError;
 use super::installations::find_installation_by_id;
 use super::proto::{GameData, MapMarkers, ProspectingLog};
-use super::utils::{installations_folder, installations_subdir};
+use super::utils::{installations_folder, installations_subdir, require_managed_path};
 use crate::{log_error, log_info};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -467,8 +467,9 @@ pub fn update_world(
 }
 
 #[command]
-pub fn remove_world(world_path: String) -> Result<(), UiError> {
+pub fn remove_world(app: AppHandle, world_path: String) -> Result<(), UiError> {
     let world_path = Path::new(&world_path);
+    require_managed_path(&app, world_path, "World path")?;
     if !world_path.exists() || !world_path.is_file() {
         return Err(UiError {
             name: "world_not_found".into(),

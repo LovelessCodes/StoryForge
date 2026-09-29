@@ -249,6 +249,18 @@ fn scan_instances(app: &AppHandle) -> Result<Vec<HostedServerInstance>, UiError>
     Ok(instances)
 }
 
+/// Data directories of all configured hosted server instances.
+pub(crate) fn data_dirs(app: &AppHandle) -> Vec<PathBuf> {
+    scan_instances(app)
+        .map(|instances| {
+            instances
+                .into_iter()
+                .map(|instance| instance.data_dir)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 /// Find an instance by ID — scan from hosted-servers dir
 fn find_instance(
     app: &AppHandle,
