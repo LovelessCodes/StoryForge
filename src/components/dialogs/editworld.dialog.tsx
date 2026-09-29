@@ -161,7 +161,7 @@ export function EditWorldDialog({ world }: EditWorldDialogProps) {
                   </SelectTrigger>
                   <SelectContent align="start" alignItemWithTrigger={false}>
                     {installations
-                      ?.sort((a, b) => a.index - b.index)
+                      ?.toSorted((a, b) => a.index - b.index)
                       .map((installation) => (
                         <SelectItem key={installation.id} value={installation.id.toString()}>
                           {installation.name} ({installation.version})

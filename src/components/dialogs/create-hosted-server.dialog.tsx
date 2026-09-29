@@ -31,7 +31,7 @@ export function CreateHostedServerDialog({ onSuccess }: Props) {
   const [lookupInput, setLookupInput] = useState("");
   const [lookingUp, setLookingUp] = useState(false);
 
-  const allVersions = (gameVersions ?? []).sort(compareSemverDesc);
+  const allVersions = (gameVersions ?? []).toSorted(compareSemverDesc);
   const firstVersion = allVersions[0] ?? "";
 
   const form = useForm({

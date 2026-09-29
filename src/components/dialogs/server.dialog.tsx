@@ -420,7 +420,7 @@ export function ServerDialog({ server, installation }: ServerDialogProps) {
                   </SelectTrigger>
                   <SelectContent align="start" alignItemWithTrigger={false}>
                     {installations
-                      ?.sort((a, b) => a.index - b.index)
+                      ?.toSorted((a, b) => a.index - b.index)
                       .map((inst) => (
                         <SelectItem key={inst.id} value={inst.id.toString()}>
                           {inst.name} ({inst.version})

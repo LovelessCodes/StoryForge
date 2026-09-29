@@ -59,7 +59,7 @@ export function PublicServersPage() {
               : "Game version(s)"}
           </SelectTrigger>
           <SelectContent align="start" alignItemWithTrigger={false}>
-            {gameVersions?.sort(compareSemverDesc).map((version) => (
+            {gameVersions?.toSorted(compareSemverDesc).map((version) => (
               <SelectItem
                 key={version}
                 onClick={() =>
