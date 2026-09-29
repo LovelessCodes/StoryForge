@@ -36,6 +36,9 @@ fn open_vcdbs(path: &Path, writable: bool) -> Result<Connection, UiError> {
             UiError::from(format!("DB open error: {e}"))
         })
     } else {
+        // `immutable=1` keeps reads from creating -wal/-shm files next to the
+        // game's data while it is running. Trade-off: concurrent writes by the
+        // game are not detected, so values can be briefly stale.
         let uri = format!("file:{}?immutable=1", path.to_string_lossy());
         Connection::open_with_flags(
             &uri,
@@ -427,6 +430,24 @@ pub fn update_world(
         .to_lowercase();
     let new_world_path = saves_path.join(format!("{}.vcdbs", file_name));
 
+    // Never overwrite an existing world: renaming to a taken name would
+    // silently destroy the other world's save.
+    if new_world_path.as_path() != world_path && new_world_path.exists() {
+        return Err(UiError {
+            name: "name_taken".into(),
+            message: format!("A world named \"{file_name}\" already exists"),
+        });
+    }
+
+    // Update the WorldName field before moving anything, so a DB failure
+    // leaves the original file untouched.
+    {
+        let conn = open_vcdbs(world_path, true)?;
+        let mut gamedata = read_gamedata(&conn)?;
+        gamedata.world_name = name;
+        write_gamedata(&conn, &gamedata)?;
+    }
+
     // If an identifier is provided, and a Maps file is found with that identifier, move it too
     if let Some(id) = identifier {
         let maps_path = world_path
@@ -436,6 +457,12 @@ pub fn update_world(
         if let Some(maps_path) = maps_path {
             if maps_path.exists() && maps_path.is_file() {
                 let new_maps_path = pb.join("Maps").join(format!("{}.db", id));
+                if new_maps_path != maps_path && new_maps_path.exists() {
+                    return Err(UiError {
+                        name: "maps_exists".into(),
+                        message: format!("A Maps database for {id} already exists"),
+                    });
+                }
                 let maps_dir = new_maps_path.parent().unwrap();
                 if !maps_dir.exists() {
                     create_dir_all(maps_dir).map_err(|e| {
@@ -456,12 +483,6 @@ pub fn update_world(
         UiError::from(format!("Rename error: {e}"))
     })?;
     invalidate_saves_cache();
-
-    // Update the "WorldName" field in the protobuf data inside the .vcdbs file
-    let conn = open_vcdbs(&new_world_path, true)?;
-    let mut gamedata = read_gamedata(&conn)?;
-    gamedata.world_name = name;
-    write_gamedata(&conn, &gamedata)?;
 
     Ok(())
 }
