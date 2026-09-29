@@ -3,7 +3,10 @@ use prost::Message;
 use rusqlite::Connection;
 use std::{fs, io::Write, path::Path, sync::OnceLock};
 use story_forge_lib::modules::{
-    maps::scan_maps, mods::get_mods_in_dir, proto::GameData, saves::scan_saves,
+    maps::scan_maps,
+    mods::get_mods_in_dir,
+    proto::GameData,
+    saves::{invalidate_saves_cache, scan_saves},
 };
 use tempfile::TempDir;
 
@@ -103,14 +106,32 @@ fn bench_get_mods(c: &mut Criterion) {
     });
 }
 
-fn bench_scan_saves(c: &mut Criterion) {
+fn bench_scan_saves_cold(c: &mut Criterion) {
     let fixture = saves_fixture();
-    c.bench_function("scan_saves 20x5 vcdbs", |b| {
+    c.bench_function("scan_saves cold 20x5 vcdbs", |b| {
+        b.iter(|| {
+            invalidate_saves_cache();
+            black_box(scan_saves(black_box(fixture.path())).unwrap());
+        })
+    });
+}
+
+fn bench_scan_saves_cached(c: &mut Criterion) {
+    let fixture = saves_fixture();
+    // Warm the cache once, then measure the fingerprint-only path.
+    let _ = scan_saves(fixture.path()).unwrap();
+    c.bench_function("scan_saves cached 20x5 vcdbs", |b| {
         b.iter(|| {
             black_box(scan_saves(black_box(fixture.path())).unwrap());
         })
     });
 }
 
-criterion_group!(benches, bench_scan_maps, bench_get_mods, bench_scan_saves);
+criterion_group!(
+    benches,
+    bench_scan_maps,
+    bench_get_mods,
+    bench_scan_saves_cold,
+    bench_scan_saves_cached
+);
 criterion_main!(benches);

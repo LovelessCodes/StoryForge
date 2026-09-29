@@ -373,3 +373,51 @@ pub async fn fetch_public_servers(
     })?;
     Ok(json)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_server_string_handles_variants() {
+        assert_eq!(
+            parse_server_string("My Server,example.com:42420,secret"),
+            Some((
+                "My Server".to_string(),
+                "example.com".to_string(),
+                Some(42420),
+                "secret".to_string()
+            ))
+        );
+        assert_eq!(
+            parse_server_string("NoPort,10.0.0.1"),
+            Some((
+                "NoPort".to_string(),
+                "10.0.0.1".to_string(),
+                None,
+                String::new()
+            ))
+        );
+        assert_eq!(
+            parse_server_string("Pw,10.0.0.1:1,hunter2"),
+            Some((
+                "Pw".to_string(),
+                "10.0.0.1".to_string(),
+                Some(1),
+                "hunter2".to_string()
+            ))
+        );
+        // Invalid port stays part of the address, password still parsed.
+        assert_eq!(
+            parse_server_string("Bad,host:notaport,pw"),
+            Some((
+                "Bad".to_string(),
+                "host:notaport".to_string(),
+                None,
+                "pw".to_string()
+            ))
+        );
+        assert_eq!(parse_server_string("onlyname"), None);
+        assert_eq!(parse_server_string(""), None);
+    }
+}

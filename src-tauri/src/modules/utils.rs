@@ -413,20 +413,25 @@ mod tests {
     }
 
     #[test]
-    fn test_find_dir_by_id_collision() {
-        let tmp = tempfile::tempdir().unwrap();
-        let a = tmp.path().join("collision-a");
-        let b = tmp.path().join("collision-b");
-        fs::create_dir(&a).unwrap();
-        fs::create_dir(&b).unwrap();
+    fn find_dir_by_id_detects_collisions() {
+        // Brute-force two names with the same 32-bit FNV-1a hash.
+        let mut seen = std::collections::HashMap::new();
+        let mut pair = None;
+        for i in 0..1_000_000u32 {
+            let name = format!("n{i}");
+            if let Some(previous) = seen.insert(generate_id(&name), name.clone()) {
+                pair = Some((previous, name));
+                break;
+            }
+        }
+        let (a, b) = pair.expect("no FNV-1a collision found in 1M names");
 
-        // Force a collision by overriding generate_id is hard; instead we test
-        // the collision path by manually creating two dirs whose names happen
-        // to collide. Since that's statistically unlikely, we verify the error
-        // variant exists by checking the error name.
-        let id = generate_id("collision-a");
-        // Only one match should succeed.
-        assert!(find_dir_by_id(tmp.path(), id).is_ok());
+        let tmp = tempfile::tempdir().unwrap();
+        fs::create_dir(tmp.path().join(&a)).unwrap();
+        fs::create_dir(tmp.path().join(&b)).unwrap();
+
+        let err = find_dir_by_id(tmp.path(), generate_id(&a)).unwrap_err();
+        assert_eq!(err.name, "id_collision");
     }
 
     #[test]

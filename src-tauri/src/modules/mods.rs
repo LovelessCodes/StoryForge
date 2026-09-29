@@ -893,6 +893,26 @@ mod tests {
     use super::*;
 
     #[test]
+    fn modinfo_helpers_are_case_insensitive_and_tolerant() {
+        let info = serde_json::json!({
+            "ModID": 1234,
+            "Name": "Test Mod",
+            "Authors": ["A", "B"],
+            "Version": 2
+        });
+        assert_eq!(modinfo_modid(&info), "1234");
+        assert_eq!(modinfo_string(&info, "name").unwrap(), "Test Mod");
+        assert_eq!(modinfo_string_array(&info, "authors").len(), 2);
+        // Non-string version falls back to the default.
+        assert_eq!(modinfo_string(&info, "version").unwrap_or_default(), "");
+
+        let missing = serde_json::json!({});
+        assert_eq!(modinfo_modid(&missing), "0");
+        assert!(modinfo_string(&missing, "name").is_none());
+        assert!(modinfo_string_array(&missing, "authors").is_empty());
+    }
+
+    #[test]
     fn mods_cache_uses_fingerprint_and_invalidates() {
         let tmp = tempfile::tempdir().unwrap();
         let dir = tmp.path().join("Mods");
