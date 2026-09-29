@@ -1,6 +1,6 @@
 use image::{ImageBuffer, ImageFormat, ImageReader, Rgba};
 use prost::Message;
-use rusqlite::{Connection, OpenFlags};
+use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use std::{
     fs::{metadata, read_dir},
@@ -11,8 +11,9 @@ use tauri::{command, AppHandle};
 
 use super::errors::UiError;
 use super::paths;
-use super::proto::{GameData, MapPieceDb};
+use super::proto::MapPieceDb;
 use super::utils::{generate_id, installations_folder, installations_subdir};
+use super::vcdbs;
 use crate::{log_error, log_info};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -73,18 +74,6 @@ pub fn decode_position(position: i64) -> (i32, i32) {
 
 // ── Database helpers ──
 
-fn open_sqlite_readonly(path: &Path) -> Result<Connection, UiError> {
-    let uri = format!("file:{}?immutable=1", path.to_string_lossy());
-    Connection::open_with_flags(
-        &uri,
-        OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
-    )
-    .map_err(|e| {
-        log_error!("maps: DB open error: {e}");
-        UiError::new("db_error", format!("DB open error: {e}"))
-    })
-}
-
 fn open_world_db(world_path: &Path) -> Result<Connection, UiError> {
     if !world_path.exists() || !world_path.is_file() {
         return Err(UiError {
@@ -92,37 +81,7 @@ fn open_world_db(world_path: &Path) -> Result<Connection, UiError> {
             message: format!("World path {} not found", world_path.display()),
         });
     }
-    open_sqlite_readonly(world_path)
-}
-
-fn read_gamedata(conn: &Connection) -> Result<GameData, UiError> {
-    let mut stmt = conn
-        .prepare("SELECT data FROM gamedata LIMIT 1")
-        .map_err(|e| {
-            log_error!("maps: DB prepare error: {e}");
-            UiError::new("db_error", format!("DB prepare error: {e}"))
-        })?;
-
-    let mut rows = stmt.query([]).map_err(|e| {
-        log_error!("maps: DB query error: {e}");
-        UiError::new("db_error", format!("DB query error: {e}"))
-    })?;
-
-    if let Some(row) = rows.next().map_err(|e| {
-        log_error!("maps: DB row error: {e}");
-        UiError::new("db_error", format!("DB row error: {e}"))
-    })? {
-        let data: Vec<u8> = row.get(0).map_err(|e| {
-            log_error!("maps: DB get error: {e}");
-            UiError::new("db_error", format!("DB get error: {e}"))
-        })?;
-        GameData::decode(data.as_slice()).map_err(|e| {
-            log_error!("maps: Protobuf decode error: {e}");
-            UiError::new("decode_error", format!("Protobuf decode error: {e}"))
-        })
-    } else {
-        Err(UiError::from("No gamedata found"))
-    }
+    vcdbs::open(world_path, false)
 }
 
 fn maps_db_path(world_path: &Path, savegame_identifier: &str) -> Result<PathBuf, UiError> {
@@ -139,7 +98,7 @@ fn maps_db_path(world_path: &Path, savegame_identifier: &str) -> Result<PathBuf,
 fn get_maps_db_path(world_path: &str) -> Result<PathBuf, UiError> {
     let world_path_obj = Path::new(world_path);
     let conn = open_world_db(world_path_obj)?;
-    let gamedata = read_gamedata(&conn)?;
+    let gamedata = vcdbs::read_gamedata(&conn)?;
     let maps_path = maps_db_path(world_path_obj, &gamedata.savegame_identifier)?;
 
     if !maps_path.exists() {
@@ -153,7 +112,7 @@ fn get_maps_db_path(world_path: &str) -> Result<PathBuf, UiError> {
 }
 
 fn read_map_db(map_path: &str) -> Result<Connection, UiError> {
-    open_sqlite_readonly(Path::new(map_path))
+    vcdbs::open_readonly(Path::new(map_path))
 }
 
 /// Whitelist-validate a dynamic table name. Table names must be non-empty,
@@ -298,14 +257,14 @@ pub async fn inspect_map_database(world_path: String) -> Result<MapDatabaseInfo,
 fn inspect_map_database_blocking(world_path: String) -> Result<MapDatabaseInfo, UiError> {
     let world_path_obj = Path::new(&world_path);
     let conn = open_world_db(world_path_obj)?;
-    let gamedata = read_gamedata(&conn)?;
+    let gamedata = vcdbs::read_gamedata(&conn)?;
 
     let maps_path = maps_db_path(world_path_obj, &gamedata.savegame_identifier)?;
     if !maps_path.exists() {
         return Ok(empty_db_info());
     }
 
-    let map_conn = open_sqlite_readonly(&maps_path)?;
+    let map_conn = vcdbs::open_readonly(&maps_path)?;
 
     let mut tables = Vec::new();
     let mut table_stmt = map_conn
@@ -398,7 +357,7 @@ pub async fn get_map_bounds(world_path: String) -> Result<MapBounds, UiError> {
 /// Blocking implementation of [`get_map_bounds`].
 fn get_map_bounds_blocking(world_path: String) -> Result<MapBounds, UiError> {
     let maps_path = get_maps_db_path(&world_path)?;
-    let conn = open_sqlite_readonly(&maps_path)?;
+    let conn = vcdbs::open_readonly(&maps_path)?;
     let table_name = find_map_table(&conn)?;
     bounds_from_conn(&conn, &table_name)
 }
@@ -466,7 +425,7 @@ pub async fn get_map_tile(world_path: String, position: i64) -> Result<MapTile, 
 /// Blocking implementation of [`get_map_tile`].
 fn get_map_tile_blocking(world_path: String, position: i64) -> Result<MapTile, UiError> {
     let maps_path = get_maps_db_path(&world_path)?;
-    let conn = open_sqlite_readonly(&maps_path)?;
+    let conn = vcdbs::open_readonly(&maps_path)?;
     let table_name = find_map_table(&conn)?;
 
     let data: Vec<u8> = conn
@@ -530,11 +489,8 @@ pub async fn get_all_map_tiles(world_path: String) -> Result<Vec<MapTile>, UiErr
 }
 
 /// Blocking implementation of [`get_all_map_tiles`].
-fn get_all_map_tiles_blocking(world_path: String) -> Result<Vec<MapTile>, UiError> {
-    let maps_path = get_maps_db_path(&world_path)?;
-    let conn = open_sqlite_readonly(&maps_path)?;
-    let table_name = find_map_table(&conn)?;
-
+/// Reads every tile from a map table, decoding each one.
+fn read_all_tiles(conn: &Connection, table_name: &str) -> Result<Vec<MapTile>, UiError> {
     let mut stmt = conn
         .prepare(&format!("SELECT position, data FROM {}", table_name))
         .map_err(|e| {
@@ -564,6 +520,13 @@ fn get_all_map_tiles_blocking(world_path: String) -> Result<Vec<MapTile>, UiErro
     }
 
     Ok(tiles)
+}
+
+fn get_all_map_tiles_blocking(world_path: String) -> Result<Vec<MapTile>, UiError> {
+    let maps_path = get_maps_db_path(&world_path)?;
+    let conn = vcdbs::open_readonly(&maps_path)?;
+    let table_name = find_map_table(&conn)?;
+    read_all_tiles(&conn, &table_name)
 }
 
 /// Convert pixel array to PNG image
@@ -631,37 +594,9 @@ pub async fn get_all_map_tiles_by_path(map_path: String) -> Result<Vec<MapTile>,
 
 /// Blocking implementation of [`get_all_map_tiles_by_path`].
 fn get_all_map_tiles_by_path_blocking(map_path: String) -> Result<Vec<MapTile>, UiError> {
-    log_info!("get_all_map_tiles_by_path");
     let conn = read_map_db(&map_path)?;
     let table_name = find_map_table(&conn)?;
-
-    let mut stmt = conn
-        .prepare(&format!("SELECT position, data FROM {}", table_name))
-        .map_err(|e| {
-            log_error!("maps: Tile query error: {e}");
-            UiError::new("db_error", format!("Tile query error: {e}"))
-        })?;
-    let mut rows = stmt.query([]).map_err(|e| {
-        log_error!("maps: Tile query error: {e}");
-        UiError::new("db_error", format!("Tile query error: {e}"))
-    })?;
-
-    let mut tiles = Vec::new();
-    while let Some(row) = rows.next().map_err(|e| {
-        log_error!("maps: Tile row error: {e}");
-        UiError::new("db_error", format!("Tile row error: {e}"))
-    })? {
-        let position: i64 = row.get(0).map_err(|e| {
-            log_error!("maps: Position get error: {e}");
-            UiError::new("db_error", format!("Position get error: {e}"))
-        })?;
-        let data: Vec<u8> = row.get(1).map_err(|e| {
-            log_error!("maps: Data get error: {e}");
-            UiError::new("db_error", format!("Data get error: {e}"))
-        })?;
-        tiles.push(decode_tile(position, data)?);
-    }
-    Ok(tiles)
+    read_all_tiles(&conn, &table_name)
 }
 
 #[cfg(test)]

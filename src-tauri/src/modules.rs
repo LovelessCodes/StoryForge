@@ -17,4 +17,5 @@ pub mod server_hosting_actor;
 pub mod servers;
 pub mod sniffer;
 pub mod utils;
+pub mod vcdbs;
 pub mod versions;
