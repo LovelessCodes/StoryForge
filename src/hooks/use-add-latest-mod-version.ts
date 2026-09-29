@@ -29,10 +29,12 @@ export const useAddLatestModVersion = ({
         modid: mod.modid.toString(),
       })) as ModInfo;
       (await invoke("download_and_maybe_extract", {
-        destpath: path,
-        emitevent,
-        extract: false,
-        url: latestRelease(modInfo.mod.releases)?.mainfile,
+        params: {
+          destpath: path,
+          emitevent,
+          extract: false,
+          url: latestRelease(modInfo.mod.releases)?.mainfile,
+        },
       })) as string;
       return { modInfo };
     },

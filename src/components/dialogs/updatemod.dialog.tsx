@@ -104,10 +104,12 @@ export function UpdateModDialog({ mod, modsDirectory, versionFrom }: UpdateModDi
   const { mutate: addModToInstallation, isPending } = useMutation({
     mutationFn: ({ path, url }: { path: string; url: string }) =>
       invoke("download_and_maybe_extract", {
-        destpath: path,
-        emitevent,
-        extract: false,
-        url,
+        params: {
+          destpath: path,
+          emitevent,
+          extract: false,
+          url,
+        },
       }) as Promise<string>,
     onError: (error) => {
       toast.error(

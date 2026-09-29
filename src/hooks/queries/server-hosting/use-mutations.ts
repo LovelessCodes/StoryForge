@@ -27,16 +27,18 @@ export const useCreateInstance = (
     ...props,
     mutationFn: (params: CreateInstanceParams) =>
       invoke<HostedServerInstance>("create_hosted_server", {
-        name: params.name,
-        version: params.version,
-        dataDir: params.data_dir,
-        port: params.port,
-        bindIp: params.bind_ip,
-        startParams: params.start_params,
-        password: params.password,
-        whitelistEnabled: params.whitelistEnabled,
-        defaultWhitelistUid: params.defaultWhitelistUid,
-        defaultWhitelistName: params.defaultWhitelistName,
+        params: {
+          name: params.name,
+          version: params.version,
+          dataDir: params.data_dir,
+          port: params.port,
+          bindIp: params.bind_ip,
+          startParams: params.start_params,
+          password: params.password,
+          whitelistEnabled: params.whitelistEnabled,
+          defaultWhitelistUid: params.defaultWhitelistUid,
+          defaultWhitelistName: params.defaultWhitelistName,
+        },
       }),
     onSuccess: async (...args) => {
       void queryClient.invalidateQueries({ queryKey: hostedServersQueryKey() });

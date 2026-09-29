@@ -71,12 +71,14 @@ export function ImportInstallationDialog() {
     }) => {
       const safeName = makeStringFolderSafe(input.name);
       const result = (await invoke("import_installation", {
-        emitevent: input.emitevent,
-        mods: input.mods,
-        name: input.name,
-        safeName,
-        startParams: input.startParams,
-        version: input.version,
+        params: {
+          emitevent: input.emitevent,
+          mods: input.mods,
+          name: input.name,
+          safeName,
+          startParams: input.startParams,
+          version: input.version,
+        },
       })) as BackendInstallationResult;
       return result;
     },

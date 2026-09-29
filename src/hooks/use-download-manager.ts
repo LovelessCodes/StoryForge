@@ -103,12 +103,14 @@ async function doDownload(
 
   try {
     const result = (await invoke("download_and_maybe_extract", {
-      destpath: versionPath,
-      emitevent: evt,
-      extract: true,
-      extractdir: versionPath,
-      url,
-      zipsubfolderprefix: zipfolderprefix(),
+      params: {
+        destpath: versionPath,
+        emitevent: evt,
+        extract: true,
+        extractdir: versionPath,
+        url,
+        zipsubfolderprefix: zipfolderprefix(),
+      },
     })) as string;
 
     if (result === "paused") {

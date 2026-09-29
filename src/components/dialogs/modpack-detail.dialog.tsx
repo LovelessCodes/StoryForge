@@ -126,15 +126,17 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
 
       // Also sanitize in the invoke payload — Rust side uses same event name
       await invoke("import_installation", {
-        emitevent,
-        modConfigUrl: version.modConfigsUrl || null,
-        modpackSlug: modpack.slug,
-        modpackVersion: version.version,
-        mods: version.modsString,
-        name: installName,
-        safeName,
-        startParams: "",
-        version: version.gameVersion,
+        params: {
+          emitevent,
+          modConfigUrl: version.modConfigsUrl || null,
+          modpackSlug: modpack.slug,
+          modpackVersion: version.version,
+          mods: version.modsString,
+          name: installName,
+          safeName,
+          startParams: "",
+          version: version.gameVersion,
+        },
       });
 
       listenRef.current?.();
