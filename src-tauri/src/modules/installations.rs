@@ -115,6 +115,15 @@ pub fn write_installation_json(dir: &Path, info: &InstallationInfo) -> Result<()
     Ok(())
 }
 
+/// Builds the ID of an installation from its on-disk directory name.
+///
+/// The ID must agree with `find_installation_by_id`, which hashes directory
+/// names, so the sanitized folder name is the single source of truth — never
+/// the display name (the two can differ, e.g. "My World" vs "my_world").
+fn installation_id_for_dir(dir: &Path) -> u64 {
+    generate_id(&dir_name(dir))
+}
+
 pub fn find_installation_by_id(
     app: &AppHandle,
     id: u64,
@@ -450,7 +459,7 @@ pub async fn import_installation(
         }
     }
 
-    let id = generate_id(&name);
+    let id = installation_id_for_dir(&inst_dir);
 
     // 5. Parse mods: "modid@version,modid@version,..."
     let mod_entries: Vec<(&str, &str)> = mods
@@ -1740,4 +1749,23 @@ pub fn zip_modconfig(installation_path: String) -> Result<Vec<u8>, UiError> {
 
     log_info!("zip_modconfig: {:?} → {} bytes", modconfig_dir, buf.len());
     Ok(buf)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The ID returned by `import_installation` must match the directory that
+    /// was created, otherwise `find_installation_by_id` cannot find the
+    /// installation again when the display name differs from the folder name.
+    #[test]
+    fn installation_id_matches_directory_name() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().join("my_world");
+        std::fs::create_dir(&dir).unwrap();
+
+        let id = installation_id_for_dir(&dir);
+        assert_eq!(find_dir_by_id(tmp.path(), id).unwrap(), Some(dir));
+        assert_ne!(id, generate_id("My World"));
+    }
 }
