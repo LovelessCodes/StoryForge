@@ -284,7 +284,14 @@ pub fn get_all_maps(app: AppHandle) -> Result<Vec<MapInfo>, UiError> {
 
 /// Inspect the Maps database for a given world
 #[command]
-pub fn inspect_map_database(world_path: String) -> Result<MapDatabaseInfo, UiError> {
+pub async fn inspect_map_database(world_path: String) -> Result<MapDatabaseInfo, UiError> {
+    tokio::task::spawn_blocking(move || inspect_map_database_blocking(world_path))
+        .await
+        .map_err(|e| UiError::new("internal_error", format!("Map query failed: {e}")))?
+}
+
+/// Blocking implementation of [`inspect_map_database`].
+fn inspect_map_database_blocking(world_path: String) -> Result<MapDatabaseInfo, UiError> {
     let world_path_obj = Path::new(&world_path);
     let conn = open_world_db(world_path_obj)?;
     let gamedata = read_gamedata(&conn)?;
@@ -378,7 +385,14 @@ pub fn inspect_map_database(world_path: String) -> Result<MapDatabaseInfo, UiErr
 
 /// Get the bounds (min/max X and Y) of all map tiles
 #[command]
-pub fn get_map_bounds(world_path: String) -> Result<MapBounds, UiError> {
+pub async fn get_map_bounds(world_path: String) -> Result<MapBounds, UiError> {
+    tokio::task::spawn_blocking(move || get_map_bounds_blocking(world_path))
+        .await
+        .map_err(|e| UiError::new("internal_error", format!("Map query failed: {e}")))?
+}
+
+/// Blocking implementation of [`get_map_bounds`].
+fn get_map_bounds_blocking(world_path: String) -> Result<MapBounds, UiError> {
     let maps_path = get_maps_db_path(&world_path)?;
     let conn = open_sqlite_readonly(&maps_path)?;
     let table_name = find_map_table(&conn)?;
@@ -439,7 +453,14 @@ fn bounds_from_conn(conn: &Connection, table_name: &str) -> Result<MapBounds, Ui
 
 /// Read a single map tile by position
 #[command]
-pub fn get_map_tile(world_path: String, position: i64) -> Result<MapTile, UiError> {
+pub async fn get_map_tile(world_path: String, position: i64) -> Result<MapTile, UiError> {
+    tokio::task::spawn_blocking(move || get_map_tile_blocking(world_path, position))
+        .await
+        .map_err(|e| UiError::new("internal_error", format!("Map query failed: {e}")))?
+}
+
+/// Blocking implementation of [`get_map_tile`].
+fn get_map_tile_blocking(world_path: String, position: i64) -> Result<MapTile, UiError> {
     let maps_path = get_maps_db_path(&world_path)?;
     let conn = open_sqlite_readonly(&maps_path)?;
     let table_name = find_map_table(&conn)?;
@@ -498,7 +519,14 @@ fn decode_tile(position: i64, data: Vec<u8>) -> Result<MapTile, UiError> {
 
 /// Get all map tiles for a world (legacy bulk API; prefer on-demand `get_map_tile`)
 #[command]
-pub fn get_all_map_tiles(world_path: String) -> Result<Vec<MapTile>, UiError> {
+pub async fn get_all_map_tiles(world_path: String) -> Result<Vec<MapTile>, UiError> {
+    tokio::task::spawn_blocking(move || get_all_map_tiles_blocking(world_path))
+        .await
+        .map_err(|e| UiError::new("internal_error", format!("Map query failed: {e}")))?
+}
+
+/// Blocking implementation of [`get_all_map_tiles`].
+fn get_all_map_tiles_blocking(world_path: String) -> Result<Vec<MapTile>, UiError> {
     let maps_path = get_maps_db_path(&world_path)?;
     let conn = open_sqlite_readonly(&maps_path)?;
     let table_name = find_map_table(&conn)?;
@@ -576,7 +604,14 @@ fn detect_image_dimensions(data: &[u8]) -> Option<(u32, u32)> {
 // ── Direct-path variants (no world needed) ──
 
 #[command]
-pub fn get_map_bounds_by_path(map_path: String) -> Result<MapBounds, UiError> {
+pub async fn get_map_bounds_by_path(map_path: String) -> Result<MapBounds, UiError> {
+    tokio::task::spawn_blocking(move || get_map_bounds_by_path_blocking(map_path))
+        .await
+        .map_err(|e| UiError::new("internal_error", format!("Map query failed: {e}")))?
+}
+
+/// Blocking implementation of [`get_map_bounds_by_path`].
+fn get_map_bounds_by_path_blocking(map_path: String) -> Result<MapBounds, UiError> {
     log_info!("get_map_bounds_by_path");
     let conn = read_map_db(&map_path)?;
     let table_name = find_map_table(&conn)?;
@@ -584,7 +619,14 @@ pub fn get_map_bounds_by_path(map_path: String) -> Result<MapBounds, UiError> {
 }
 
 #[command]
-pub fn get_all_map_tiles_by_path(map_path: String) -> Result<Vec<MapTile>, UiError> {
+pub async fn get_all_map_tiles_by_path(map_path: String) -> Result<Vec<MapTile>, UiError> {
+    tokio::task::spawn_blocking(move || get_all_map_tiles_by_path_blocking(map_path))
+        .await
+        .map_err(|e| UiError::new("internal_error", format!("Map query failed: {e}")))?
+}
+
+/// Blocking implementation of [`get_all_map_tiles_by_path`].
+fn get_all_map_tiles_by_path_blocking(map_path: String) -> Result<Vec<MapTile>, UiError> {
     log_info!("get_all_map_tiles_by_path");
     let conn = read_map_db(&map_path)?;
     let table_name = find_map_table(&conn)?;
