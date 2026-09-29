@@ -11,7 +11,7 @@ use tokio::process::Command;
 
 use super::dotnet;
 use super::errors::UiError;
-use super::utils::{dir_size, format_size, normalize_path, versions_folder, versions_subdir};
+use super::utils::{dir_size, format_size, lock, normalize_path, versions_folder, versions_subdir};
 use crate::modules::server_hosting_actor;
 use crate::{log_error, log_info};
 
@@ -373,30 +373,69 @@ pub(crate) fn emit_log(app: &AppHandle, instance_id: u64, line: &str) {
     );
 }
 
-/// Append a log line to the instance's log file.
-pub(crate) fn append_log(app: &AppHandle, instance_id: u64, line: &str) {
-    let timestamp = format_epoch();
-    if let Ok(data_dir) = app.path().app_data_dir() {
-        let log_dir = data_dir.join("server-logs");
-        let _ = create_dir_all(&log_dir);
-        // Keyed by ID: names are user-supplied and could contain path separators.
-        let log_path = log_dir.join(format!("{instance_id}.log"));
+/// Maximum size of an instance log before rotation.
+const LOG_MAX_BYTES: u64 = 10 * 1024 * 1024;
 
-        // Rotate if > 10 MB
-        if let Ok(meta) = std::fs::metadata(&log_path) {
-            if meta.len() > 10 * 1024 * 1024 {
-                let rotated = log_dir.join(format!("{instance_id}.1.log"));
-                let _ = std::fs::rename(&log_path, &rotated);
+/// Cached writer for one instance's log file.
+///
+/// Opening a file per line (and creating the directory and stat-ing for
+/// rotation each time) cost four syscalls per log line; a busy server emits
+/// thousands of lines per minute.
+pub(crate) struct InstanceLog {
+    path: PathBuf,
+    rotated: PathBuf,
+    file: std::fs::File,
+    written: u64,
+}
+
+impl InstanceLog {
+    /// Appends one `[epoch] line` entry, rotating the file when it grows too large.
+    fn write_line(&mut self, line: &str) {
+        if self.written > LOG_MAX_BYTES {
+            let _ = std::fs::rename(&self.path, &self.rotated);
+            if let Ok(file) = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&self.path)
+            {
+                self.file = file;
+                self.written = 0;
             }
         }
-
-        if let Ok(mut file) = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&log_path)
-        {
-            let _ = writeln!(file, "[{timestamp}] {line}");
+        let timestamp = format_epoch();
+        if writeln!(self.file, "[{timestamp}] {line}").is_ok() {
+            self.written += (timestamp.len() + line.len() + 4) as u64;
         }
+    }
+}
+
+/// Opens (creating if needed) the log file for a hosted server instance.
+///
+/// Keyed by ID: names are user-supplied and could contain path separators.
+pub(crate) fn open_instance_log(app: &AppHandle, instance_id: u64) -> Option<InstanceLog> {
+    let data_dir = app.path().app_data_dir().ok()?;
+    let dir = data_dir.join("server-logs");
+    create_dir_all(&dir).ok()?;
+    let path = dir.join(format!("{instance_id}.log"));
+    let file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+        .ok()?;
+    let written = file.metadata().map(|meta| meta.len()).unwrap_or(0);
+    Some(InstanceLog {
+        path,
+        rotated: dir.join(format!("{instance_id}.1.log")),
+        file,
+        written,
+    })
+}
+
+/// Appends a line to a cached instance log, if one could be opened.
+pub(crate) fn append_log(writer: &std::sync::Mutex<Option<InstanceLog>>, line: &str) {
+    let mut guard = lock(writer);
+    if let Some(log) = guard.as_mut() {
+        log.write_line(line);
     }
 }
 
@@ -1515,6 +1554,29 @@ mod tests {
         assert!(ports_overlap("127.0.0.1", 42420, "127.0.0.1", 42420));
         assert!(!ports_overlap("127.0.0.1", 42420, "127.0.0.1", 42421));
         assert!(!ports_overlap("127.0.0.1", 42420, "192.168.1.5", 42420));
+    }
+
+    #[test]
+    fn instance_log_rotates_when_too_large() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("42.log");
+        let file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&path)
+            .unwrap();
+        let mut log = InstanceLog {
+            path: path.clone(),
+            rotated: tmp.path().join("42.1.log"),
+            file,
+            written: LOG_MAX_BYTES + 1,
+        };
+
+        log.write_line("after rotation");
+        assert!(tmp.path().join("42.1.log").exists());
+        assert!(std::fs::read_to_string(&path)
+            .unwrap()
+            .contains("after rotation"));
     }
 
     #[test]

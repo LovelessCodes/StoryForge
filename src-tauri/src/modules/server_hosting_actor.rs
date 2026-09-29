@@ -20,8 +20,8 @@ use tokio::{
 };
 
 use super::server_hosting::{
-    append_log, emit_log, emit_status, server_exe_path, HostedServerInstance, ServerStatus,
-    ServerStatusInfo,
+    append_log, emit_log, emit_status, open_instance_log, server_exe_path, HostedServerInstance,
+    ServerStatus, ServerStatusInfo,
 };
 use super::utils::lock;
 use crate::{log_error, log_info};
@@ -193,12 +193,14 @@ async fn run_actor(
 ) {
     let instance_id = instance.id;
     let started_at = Instant::now();
+    let log_writer = Arc::new(std::sync::Mutex::new(open_instance_log(&app, instance_id)));
     let stdin = Arc::new(tokio::sync::Mutex::new(stdin));
     let status = Arc::new(tokio::sync::Mutex::new(ServerStatus::Starting));
     let startup_reported = Arc::new(std::sync::atomic::AtomicBool::new(false));
 
     // stdout reader
     let app_stdout = app.clone();
+    let log_stdout = log_writer.clone();
     let status_stdout = status.clone();
     let startup_reported_stdout = startup_reported.clone();
     tokio::spawn(async move {
@@ -206,7 +208,7 @@ async fn run_actor(
         let mut lines = reader.lines();
         while let Ok(Some(line)) = lines.next_line().await {
             emit_log(&app_stdout, instance_id, &line);
-            append_log(&app_stdout, instance_id, &line);
+            append_log(&log_stdout, &line);
 
             // Also detect startup line here — VS may print it to stdout
             if line.contains("Dedicated Server now running on Port")
@@ -227,6 +229,7 @@ async fn run_actor(
 
     // stderr reader
     let app_stderr = app.clone();
+    let log_stderr = log_writer.clone();
     let status_stderr = status.clone();
     let startup_reported_stderr = startup_reported.clone();
     tokio::spawn(async move {
@@ -234,7 +237,7 @@ async fn run_actor(
         let mut lines = reader.lines();
         while let Ok(Some(line)) = lines.next_line().await {
             emit_log(&app_stderr, instance_id, &line);
-            append_log(&app_stderr, instance_id, &line);
+            append_log(&log_stderr, &line);
 
             // Detect server ready line to mark as Running
             if line.contains("Dedicated Server now running on Port")
