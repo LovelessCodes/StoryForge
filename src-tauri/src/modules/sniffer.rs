@@ -2,7 +2,7 @@ use serde::Serialize;
 use std::{
     io::{Read, Write},
     net::{SocketAddr, TcpStream, ToSocketAddrs},
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use super::errors::UiError;
@@ -27,12 +27,24 @@ fn write_varint(value: u64) -> Vec<u8> {
     result
 }
 
+// ── Limits ──
+
+/// Maximum total response size accepted from a probed server.
+const MAX_RESPONSE_BYTES: usize = 8 * 1024 * 1024;
+
+/// Maximum nesting depth when walking nested protobuf messages.
+const MAX_PROTO_DEPTH: usize = 32;
+
 fn read_varint(data: &[u8], offset: &mut usize) -> Option<u64> {
     let mut value: u64 = 0;
     let mut shift = 0;
     while *offset < data.len() {
         let byte = data[*offset];
         *offset += 1;
+        if shift >= 64 {
+            // Overlong encoding; refuse instead of shifting out of range.
+            return None;
+        }
         value |= ((byte & 0x7F) as u64) << shift;
         if byte & 0x80 == 0 {
             return Some(value);
@@ -128,7 +140,17 @@ fn send_packet(addr: &SocketAddr, wire: &[u8], timeout: Duration) -> Result<Vec<
 
     let mut data = Vec::new();
     let mut buf = [0u8; 65536];
+    let deadline = Instant::now() + timeout;
     loop {
+        if Instant::now() >= deadline {
+            break;
+        }
+        if data.len() >= MAX_RESPONSE_BYTES {
+            log_error!(
+                "sniff_server: response from {addr} exceeded {MAX_RESPONSE_BYTES} bytes, truncating"
+            );
+            break;
+        }
         match stream.read(&mut buf) {
             Ok(0) => break,
             Ok(n) => data.extend_from_slice(&buf[..n]),
@@ -149,7 +171,14 @@ fn send_packet(addr: &SocketAddr, wire: &[u8], timeout: Duration) -> Result<Vec<
 // ── Protobuf parser ──
 
 fn parse_protobuf(payload: &[u8]) -> serde_json::Value {
+    parse_protobuf_at_depth(payload, 0)
+}
+
+fn parse_protobuf_at_depth(payload: &[u8], depth: usize) -> serde_json::Value {
     let mut result = serde_json::Map::new();
+    if depth > MAX_PROTO_DEPTH {
+        return serde_json::Value::Object(result);
+    }
     let mut offset: usize = 0;
 
     while offset < payload.len() {
@@ -169,11 +198,12 @@ fn parse_protobuf(payload: &[u8]) -> serde_json::Value {
                 }
             }
             2 => {
-                let length = match read_varint(payload, &mut offset) {
-                    Some(v) => v as usize,
-                    None => break,
-                };
-                if offset + length > payload.len() {
+                let length =
+                    match read_varint(payload, &mut offset).and_then(|v| usize::try_from(v).ok()) {
+                        Some(v) => v,
+                        None => break,
+                    };
+                if length > payload.len().saturating_sub(offset) {
                     break;
                 }
                 let raw = &payload[offset..offset + length];
@@ -185,7 +215,7 @@ fn parse_protobuf(payload: &[u8]) -> serde_json::Value {
                         serde_json::Value::String(s.to_string()),
                     );
                 } else {
-                    let nested = parse_protobuf(raw);
+                    let nested = parse_protobuf_at_depth(raw, depth + 1);
                     if nested.as_object().map(|o| o.is_empty()).unwrap_or(true) {
                         result.insert(
                             format!("hex_{tag}"),
@@ -215,7 +245,7 @@ fn parse_response_packets(data: &[u8]) -> Vec<serde_json::Value> {
             data[offset + 3],
         ]) as usize;
 
-        if pkt_len == 0 || offset + 4 + pkt_len > data.len() {
+        if pkt_len == 0 || pkt_len > data.len().saturating_sub(offset + 4) {
             break;
         }
 
@@ -475,4 +505,60 @@ fn sniff_server_blocking(
         info.password_valid
     );
     Ok(info)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn read_varint_rejects_overlong_encoding() {
+        let data = [0xFFu8; 11];
+        let mut offset = 0;
+        assert_eq!(read_varint(&data, &mut offset), None);
+    }
+
+    #[test]
+    fn read_varint_roundtrips() {
+        for value in [0u64, 1, 127, 128, 300, u64::MAX] {
+            let encoded = write_varint(value);
+            let mut offset = 0;
+            assert_eq!(read_varint(&encoded, &mut offset), Some(value));
+            assert_eq!(offset, encoded.len());
+        }
+    }
+
+    #[test]
+    fn parse_protobuf_handles_bogus_length() {
+        // tag 1 with wire type 2, then a length far larger than the payload.
+        let mut payload = write_varint((1 << 3) | 2);
+        payload.extend(write_varint(u64::MAX));
+        payload.push(0x00);
+        assert!(parse_protobuf(&payload).as_object().is_some());
+    }
+
+    #[test]
+    fn parse_protobuf_caps_nesting_depth() {
+        let mut message = Vec::new();
+        for _ in 0..(MAX_PROTO_DEPTH + 20) {
+            message = wire_message(1, &message);
+        }
+        let parsed = parse_protobuf(&message);
+        assert!(json_depth(&parsed) <= MAX_PROTO_DEPTH + 2);
+    }
+
+    fn json_depth(value: &serde_json::Value) -> usize {
+        match value {
+            serde_json::Value::Object(map) => map.values().map(json_depth).max().unwrap_or(0) + 1,
+            serde_json::Value::Array(arr) => arr.iter().map(json_depth).max().unwrap_or(0) + 1,
+            _ => 0,
+        }
+    }
+
+    #[test]
+    fn parse_response_packets_ignores_truncated_data() {
+        let mut data = 5u32.to_be_bytes().to_vec(); // claims 5 bytes
+        data.push(0x01); // provides 1
+        assert!(parse_response_packets(&data).is_empty());
+    }
 }
