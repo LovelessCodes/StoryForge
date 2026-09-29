@@ -25,7 +25,7 @@ use super::mods;
 use super::paths::{self, clientsettings_path, installation_json_path, mods_dir};
 use super::utils::{
     dir_name, dir_size, find_dir_by_id, format_size, generate_id, installations_folder,
-    installations_subdir, move_folder, versions_folder, versions_subdir,
+    installations_subdir, move_folder, safe_join, versions_folder, versions_subdir,
 };
 use crate::{log_debug, log_error, log_info};
 
@@ -424,7 +424,10 @@ pub async fn import_installation(
                     name: "modconfig_extract_failed".into(),
                     message: format!("Failed to read zip entry {i}: {e}"),
                 })?;
-                let out_path = config_dir.join(entry.name());
+                let out_path = safe_join(&config_dir, entry.name()).map_err(|e| UiError {
+                    name: "modconfig_extract_failed".into(),
+                    message: format!("Unsafe entry {}: {}", entry.name(), e.message),
+                })?;
 
                 if entry.name().ends_with('/') {
                     create_dir_all(&out_path).map_err(|e| UiError {

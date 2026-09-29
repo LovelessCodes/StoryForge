@@ -2,7 +2,7 @@ use fs_extra::dir::{copy, CopyOptions};
 use semver::Version;
 use std::{
     fs::{read_dir, remove_dir_all, rename},
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
 };
 use tauri::{AppHandle, Manager};
 use tauri_plugin_zustand::ManagerExt;
@@ -114,6 +114,40 @@ pub fn dir_name(path: &Path) -> String {
     path.file_name()
         .map(|n| n.to_string_lossy().to_string())
         .unwrap_or_default()
+}
+
+/// Joins an untrusted relative path onto `base`, rejecting anything that could
+/// escape it: absolute paths, parent-directory references, and path prefixes.
+pub fn safe_join<P: AsRef<Path>>(base: P, candidate: &str) -> Result<PathBuf, UiError> {
+    if candidate.is_empty() {
+        return Err(UiError::new("invalid_path", "Path must not be empty"));
+    }
+
+    let mut joined = base.as_ref().to_path_buf();
+    for component in Path::new(candidate).components() {
+        match component {
+            Component::Normal(part) => joined.push(part),
+            Component::CurDir => {}
+            Component::ParentDir | Component::RootDir | Component::Prefix(_) => {
+                return Err(UiError {
+                    name: "invalid_path".into(),
+                    message: format!("Path escapes its directory: {candidate}"),
+                });
+            }
+        }
+    }
+    Ok(joined)
+}
+
+/// Reduces an untrusted file name to a single safe path component.
+pub fn safe_file_name(name: &str) -> Result<String, UiError> {
+    match Path::new(name).file_name().and_then(|n| n.to_str()) {
+        Some(n) if !n.is_empty() && n != "." && n != ".." => Ok(n.to_string()),
+        _ => Err(UiError {
+            name: "invalid_filename".into(),
+            message: format!("Invalid file name: {name}"),
+        }),
+    }
 }
 
 /// Generates a deterministic ID from a name using the FNV-1a 32-bit hash.
@@ -237,5 +271,33 @@ mod tests {
         assert!(is_at_least_1_22_3("1.22.3").unwrap());
         assert!(is_at_least_1_22_3("1.23.0").unwrap());
         assert!(!is_at_least_1_22_3("1.22.2").unwrap());
+    }
+
+    #[test]
+    fn test_safe_join_accepts_relative_paths() {
+        let base = Path::new("/out");
+        assert_eq!(
+            safe_join(base, "docs/readme.txt").unwrap(),
+            PathBuf::from("/out/docs/readme.txt")
+        );
+        assert_eq!(safe_join(base, "a/./b").unwrap(), PathBuf::from("/out/a/b"));
+    }
+
+    #[test]
+    fn test_safe_join_rejects_escapes() {
+        let base = Path::new("/out");
+        assert!(safe_join(base, "").is_err());
+        assert!(safe_join(base, "../evil").is_err());
+        assert!(safe_join(base, "a/../../evil").is_err());
+        assert!(safe_join(base, "/etc/passwd").is_err());
+    }
+
+    #[test]
+    fn test_safe_file_name() {
+        assert_eq!(safe_file_name("mod.zip").unwrap(), "mod.zip");
+        assert_eq!(safe_file_name("dir/mod.zip").unwrap(), "mod.zip");
+        assert_eq!(safe_file_name("../mod.zip").unwrap(), "mod.zip");
+        assert!(safe_file_name("").is_err());
+        assert!(safe_file_name("..").is_err());
     }
 }
