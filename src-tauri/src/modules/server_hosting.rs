@@ -393,7 +393,21 @@ fn parse_log_line(raw_line: &str) -> (String, String) {
     }
 }
 
-/// Full port conflict check: scan all instances on disk
+/// Two bind addresses conflict when they share a port and either binds all
+/// interfaces or the addresses are identical.
+fn ports_overlap(a_ip: &str, a_port: u16, b_ip: &str, b_port: u16) -> bool {
+    a_port == b_port && (a_ip == b_ip || a_ip == "0.0.0.0" || b_ip == "0.0.0.0")
+}
+
+/// True when the OS lets us bind the address right now.
+///
+/// Catches ports held by processes outside StoryForge, which instance-based
+/// checks cannot see.
+fn port_is_free(bind_ip: &str, port: u16) -> bool {
+    std::net::TcpListener::bind((bind_ip, port)).is_ok()
+}
+
+/// Full port conflict check: scan all instances on disk, then the OS.
 fn full_port_check(
     app: &AppHandle,
     instance_id: u64,
@@ -403,13 +417,10 @@ fn full_port_check(
     if let Ok(instances) = scan_instances(app) {
         let running_ids = server_hosting_actor::running_instance_ids();
         for inst in &instances {
-            if inst.id == instance_id {
+            if inst.id == instance_id || !running_ids.contains(&inst.id) {
                 continue;
             }
-            if !running_ids.contains(&inst.id) {
-                continue;
-            }
-            if inst.port == port && inst.bind_ip == bind_ip {
+            if ports_overlap(&inst.bind_ip, inst.port, bind_ip, port) {
                 return Err(UiError {
                     name: "port_conflict".into(),
                     message: format!(
@@ -420,6 +431,14 @@ fn full_port_check(
             }
         }
     }
+
+    if !port_is_free(bind_ip, port) {
+        return Err(UiError {
+            name: "port_conflict".into(),
+            message: format!("Port {bind_ip}:{port} is already in use by another process"),
+        });
+    }
+
     Ok(())
 }
 
@@ -535,7 +554,8 @@ pub async fn create_hosted_server(
     let existing = scan_instances(&app)?;
     let running_ids = server_hosting_actor::running_instance_ids();
     for inst in &existing {
-        if running_ids.contains(&inst.id) && inst.port == port && inst.bind_ip == bind_ip {
+        if running_ids.contains(&inst.id) && ports_overlap(&inst.bind_ip, inst.port, &bind_ip, port)
+        {
             return Err(UiError {
                 name: "port_conflict".into(),
                 message: format!(
@@ -844,8 +864,13 @@ pub async fn stop_hosted_server(_app: AppHandle, instance_id: u64) -> Result<(),
 #[command]
 pub async fn restart_hosted_server(app: AppHandle, instance_id: u64) -> Result<(), UiError> {
     log_info!("restart_hosted_server: id={instance_id}");
-    stop_hosted_server(app.clone(), instance_id).await.ok();
-    tokio::time::sleep(Duration::from_secs(2)).await;
+    // Wait for the old process to actually exit before starting again,
+    // otherwise the actor is still registered and the port still bound.
+    match server_hosting_actor::stop_and_wait(instance_id, Duration::from_secs(30)).await {
+        Ok(()) => {}
+        Err(e) if e.name == "not_running" => {}
+        Err(e) => return Err(e),
+    }
     start_hosted_server(app, instance_id).await
 }
 
@@ -1039,17 +1064,17 @@ pub async fn check_port_available(
     let running_ids = server_hosting_actor::running_instance_ids();
 
     for inst in &instances {
-        if let Some(exclude) = exclude_instance_id {
-            if inst.id == exclude {
-                continue;
-            }
+        if Some(inst.id) == exclude_instance_id {
+            continue;
         }
-        if running_ids.contains(&inst.id) && inst.port == port && inst.bind_ip == bind_ip {
+        if running_ids.contains(&inst.id) && ports_overlap(&inst.bind_ip, inst.port, &bind_ip, port)
+        {
             return Ok(false);
         }
     }
 
-    Ok(true)
+    // Also catch ports held by unrelated processes.
+    Ok(port_is_free(&bind_ip, port))
 }
 
 // ────────── Whitelist management ──────────
@@ -1427,5 +1452,14 @@ mod tests {
         assert_eq!(parse_log_line("[123]"), ("123".into(), String::new()));
         assert_eq!(parse_log_line("plain"), (String::new(), "plain".into()));
         assert_eq!(parse_log_line(""), (String::new(), String::new()));
+    }
+
+    #[test]
+    fn ports_overlap_handles_wildcard_binds() {
+        assert!(ports_overlap("0.0.0.0", 42420, "127.0.0.1", 42420));
+        assert!(ports_overlap("127.0.0.1", 42420, "0.0.0.0", 42420));
+        assert!(ports_overlap("127.0.0.1", 42420, "127.0.0.1", 42420));
+        assert!(!ports_overlap("127.0.0.1", 42420, "127.0.0.1", 42421));
+        assert!(!ports_overlap("127.0.0.1", 42420, "192.168.1.5", 42420));
     }
 }
