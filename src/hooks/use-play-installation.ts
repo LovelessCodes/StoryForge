@@ -2,7 +2,7 @@ import type { UseMutationOptions } from "@tanstack/react-query";
 import { useMutation } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 import { useInstallations } from "@/stores/installations";
@@ -13,6 +13,16 @@ export const usePlayInstallation = (
 ) => {
   const unlistens = useRef<UnlistenFn[]>([]);
   const { installations, updateLastPlayed, updatePlaytime } = useInstallations();
+
+  // Detach on unmount; otherwise every play leaks three listeners for the
+  // lifetime of the app.
+  useEffect(
+    () => () => {
+      for (const unlisten of unlistens.current) unlisten();
+      unlistens.current = [];
+    },
+    [],
+  );
   return useMutation({
     ...props,
     mutationFn: ({ id, save }) => {
@@ -25,6 +35,11 @@ export const usePlayInstallation = (
       toast.error(`Error playing with installation: ${error.message}`);
     },
     onMutate: async (variable) => {
+      // Drop listeners from the previous play so repeated plays don't stack
+      // duplicate toasts and playtime updates.
+      for (const unlisten of unlistens.current) unlisten();
+      unlistens.current = [];
+
       const installation = installations.find((inst) => inst.id === variable.id);
 
       // Listen for dotnet download progress
