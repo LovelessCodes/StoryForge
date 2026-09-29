@@ -30,6 +30,43 @@ pub struct AuthVerifyResponse {
     pub reason: Option<String>,
 }
 
+/// Error returned by `login`.
+///
+/// The pre-login challenge carries a token the frontend must resend. It lives
+/// in a dedicated field so `name` stays a stable error code and session tokens
+/// never leak into it.
+#[derive(Debug, Serialize)]
+#[serde(untagged)]
+pub enum LoginError {
+    Ui(UiError),
+    Prelogin(PreloginChallenge),
+}
+
+#[derive(Debug, Serialize)]
+pub struct PreloginChallenge {
+    pub name: String,
+    pub message: String,
+    pub prelogintoken: String,
+}
+
+impl From<UiError> for LoginError {
+    fn from(e: UiError) -> Self {
+        Self::Ui(e)
+    }
+}
+
+impl From<String> for LoginError {
+    fn from(s: String) -> Self {
+        Self::Ui(s.into())
+    }
+}
+
+impl From<&str> for LoginError {
+    fn from(s: &str) -> Self {
+        Self::Ui(s.into())
+    }
+}
+
 #[command]
 pub async fn verify(
     client: State<'_, Arc<reqwest::Client>>,
@@ -102,7 +139,7 @@ pub async fn login(
     password: String,
     totpcode: Option<String>,
     prelogintoken: Option<String>,
-) -> Result<GameLoginResponse, UiError> {
+) -> Result<GameLoginResponse, LoginError> {
     log_info!("login: email={}", redact_email(&email));
     let mut headers = HeaderMap::new();
     headers.insert(
@@ -135,7 +172,8 @@ pub async fn login(
         return Err(UiError {
             name: "http_error".into(),
             message: format!("HTTP error: {}", res.status()),
-        });
+        }
+        .into());
     }
 
     let json_response = res.json::<GameLoginResponse>().await.map_err(|e| {
@@ -145,20 +183,20 @@ pub async fn login(
     })?;
 
     if json_response.valid == 0 {
-        if json_response.prelogintoken.is_some() {
-            return Err(UiError {
-                name: json_response
-                    .prelogintoken
-                    .unwrap_or("prelogin_required".to_string()),
+        if let Some(token) = json_response.prelogintoken {
+            return Err(LoginError::Prelogin(PreloginChallenge {
+                name: "prelogin_required".into(),
                 message: json_response
                     .reason
                     .unwrap_or("Pre-login required".to_string()),
-            });
+                prelogintoken: token,
+            }));
         }
         return Err(UiError {
             name: "invalid_login".into(),
             message: json_response.reason.unwrap_or("Invalid login".to_string()),
-        });
+        }
+        .into());
     }
 
     Ok(json_response)
