@@ -69,15 +69,19 @@ pub async fn verify(
         log_error!("auth: Read error: {e}");
         format!("Read error: {e}")
     })?;
-    log_info!(
-        "verify response: {}",
-        &response_text[..response_text.len().min(500)]
-    );
 
     let json_response: AuthVerifyResponse = serde_json::from_str(&response_text).map_err(|e| {
         log_error!("auth: Parse error: {e}");
         format!("Parse error: {e}")
     })?;
+
+    // Never log the response body: it contains the mptoken and entitlements.
+    log_info!(
+        "verify: valid={} has_entitlements={} has_gameserver={}",
+        json_response.valid,
+        json_response.entitlements.is_some(),
+        json_response.hasgameserver
+    );
 
     if json_response.valid == 0 {
         return Err(UiError {
@@ -99,7 +103,7 @@ pub async fn login(
     totpcode: Option<String>,
     prelogintoken: Option<String>,
 ) -> Result<GameLoginResponse, UiError> {
-    log_info!("login: email={}", email);
+    log_info!("login: email={}", redact_email(&email));
     let mut headers = HeaderMap::new();
     headers.insert(
         CONTENT_TYPE,
@@ -195,4 +199,30 @@ pub fn load_accounts(app: tauri::AppHandle) -> Result<Vec<SavedAccount>, String>
     }
     let json = read_to_string(&path).map_err(|e| format!("{e}"))?;
     serde_json::from_str(&json).map_err(|e| format!("{e}"))
+}
+
+/// Masks the local part of an email address for logs.
+///
+/// `user@example.com` becomes `u***@example.com`, so log files and the bug
+/// reports that include them don't carry full user identifiers.
+fn redact_email(email: &str) -> String {
+    match email.split_once('@') {
+        Some((local, domain)) => {
+            let first = local.chars().next().map(String::from).unwrap_or_default();
+            format!("{first}***@{domain}")
+        }
+        None => "***".to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn redact_email_masks_local_part() {
+        assert_eq!(redact_email("user@example.com"), "u***@example.com");
+        assert_eq!(redact_email("a@b"), "a***@b");
+        assert_eq!(redact_email("not-an-email"), "***");
+    }
 }
