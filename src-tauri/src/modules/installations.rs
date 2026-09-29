@@ -304,20 +304,40 @@ pub fn save_installation(
     write_installation_json(&dir, &info)
 }
 
+/// Arguments for [`import_installation`].
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportInstallationParams {
+    pub name: String,
+    pub safe_name: String,
+    pub version: String,
+    pub start_params: String,
+    pub mods: String,
+    pub emitevent: String,
+    #[serde(default)]
+    pub modpack_slug: Option<String>,
+    #[serde(default)]
+    pub modpack_version: Option<String>,
+    #[serde(default)]
+    pub mod_config_url: Option<String>,
+}
+
 #[command]
-#[allow(clippy::too_many_arguments)] // TODO: group args into a params struct
 pub async fn import_installation(
     app: AppHandle,
-    name: String,
-    safe_name: String,
-    version: String,
-    start_params: String,
-    mods: String,
-    emitevent: String,
-    modpack_slug: Option<String>,
-    modpack_version: Option<String>,
-    mod_config_url: Option<String>,
+    params: ImportInstallationParams,
 ) -> Result<InstallationResult, UiError> {
+    let ImportInstallationParams {
+        name,
+        safe_name,
+        version,
+        start_params,
+        mods,
+        emitevent,
+        modpack_slug,
+        modpack_version,
+        mod_config_url,
+    } = params;
     log_info!(
         "import_installation: name={} version={} mods={} mod_config_url={:?}",
         name,

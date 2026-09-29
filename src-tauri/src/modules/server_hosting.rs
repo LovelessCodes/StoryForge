@@ -574,21 +574,39 @@ pub(crate) fn server_exe_path(app: &AppHandle, version: &str) -> Result<PathBuf,
 
 // ────────── Instance management ──────────
 
+/// Arguments for [`create_hosted_server`].
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateHostedServerParams {
+    pub name: String,
+    pub version: String,
+    pub data_dir: String,
+    pub port: u16,
+    pub bind_ip: String,
+    pub start_params: String,
+    pub password: String,
+    pub whitelist_enabled: bool,
+    pub default_whitelist_uid: String,
+    pub default_whitelist_name: String,
+}
+
 #[command]
-#[allow(clippy::too_many_arguments)] // TODO: group args into a params struct
 pub async fn create_hosted_server(
     app: AppHandle,
-    name: String,
-    version: String,
-    data_dir: String,
-    port: u16,
-    bind_ip: String,
-    start_params: String,
-    password: String,
-    whitelist_enabled: bool,
-    default_whitelist_uid: String,
-    default_whitelist_name: String,
+    params: CreateHostedServerParams,
 ) -> Result<HostedServerInstance, UiError> {
+    let CreateHostedServerParams {
+        name,
+        version,
+        data_dir,
+        port,
+        bind_ip,
+        start_params,
+        password,
+        whitelist_enabled,
+        default_whitelist_uid,
+        default_whitelist_name,
+    } = params;
     log_info!("create_hosted_server: name={name} version={version} port={port}");
 
     // Validate version exists (game version must be downloaded)

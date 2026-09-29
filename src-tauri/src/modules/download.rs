@@ -702,18 +702,34 @@ fn extract_tar_archive<Rdr: io::Read>(
     Ok(())
 }
 
+/// Arguments for [`download_and_maybe_extract`].
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DownloadRequest {
+    pub url: String,
+    pub destpath: String,
+    pub emitevent: String,
+    pub extract: bool,
+    #[serde(default)]
+    pub extractdir: Option<String>,
+    #[serde(default)]
+    pub zipsubfolderprefix: Option<String>,
+}
+
 #[command]
-#[allow(clippy::too_many_arguments)] // TODO: group args into a params struct
 pub async fn download_and_maybe_extract(
     client: State<'_, Arc<reqwest::Client>>,
     app: tauri::AppHandle,
-    url: String,
-    destpath: String,
-    emitevent: String,
-    extract: bool,
-    extractdir: Option<String>,
-    zipsubfolderprefix: Option<String>,
+    params: DownloadRequest,
 ) -> Result<String, UiError> {
+    let DownloadRequest {
+        url,
+        destpath,
+        emitevent,
+        extract,
+        extractdir,
+        zipsubfolderprefix,
+    } = params;
     let destpath = PathBuf::from(&destpath);
     log_info!("download: url={} dest={:?}", url, destpath);
 

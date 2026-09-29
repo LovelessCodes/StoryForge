@@ -166,27 +166,45 @@ pub async fn spawn(
     let handle = ServerActorHandle { tx };
     register(instance_id, handle.clone());
 
+    let process = ServerProcess {
+        child,
+        pid,
+        stdout,
+        stderr,
+        stdin,
+    };
     let app_clone = app.clone();
     tokio::spawn(async move {
-        run_actor(app_clone, instance, pid, child, stdout, stderr, stdin, rx).await;
+        run_actor(app_clone, instance, process, rx).await;
     });
 
     log_info!("start_hosted_server: spawned instance {instance_id}");
     Ok(())
 }
 
-/// Main actor loop. Owns the `Child` handle and all I/O streams.
-#[allow(clippy::too_many_arguments)] // TODO: group pipes into a struct
-async fn run_actor(
-    app: tauri::AppHandle,
-    instance: HostedServerInstance,
+/// Owned handles for a spawned server process.
+struct ServerProcess {
+    child: Child,
     pid: Option<u32>,
-    mut child: Child,
     stdout: tokio::process::ChildStdout,
     stderr: tokio::process::ChildStderr,
     stdin: tokio::process::ChildStdin,
+}
+
+/// Main actor loop. Owns the `Child` handle and all I/O streams.
+async fn run_actor(
+    app: tauri::AppHandle,
+    instance: HostedServerInstance,
+    process: ServerProcess,
     mut cmd_rx: mpsc::UnboundedReceiver<ServerCommand>,
 ) {
+    let ServerProcess {
+        mut child,
+        pid,
+        stdout,
+        stderr,
+        stdin,
+    } = process;
     let instance_id = instance.id;
     let started_at = Instant::now();
     let log_writer = Arc::new(std::sync::Mutex::new(open_instance_log(&app, instance_id)));
