@@ -78,7 +78,7 @@ fn migrate_accounts_from_zustand(app: &AppHandle) {
         return;
     }
 
-    let old_path = data_dir.join("store").join("accounts.json");
+    let old_path = data_dir.join(super::paths::STORE_DIR).join("accounts.json");
     if !old_path.exists() {
         return;
     }

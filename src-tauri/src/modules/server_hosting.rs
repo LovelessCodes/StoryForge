@@ -11,6 +11,7 @@ use tokio::process::Command;
 
 use super::dotnet;
 use super::errors::UiError;
+use super::paths;
 use super::utils::{dir_size, format_size, lock, normalize_path, versions_folder, versions_subdir};
 use crate::modules::server_hosting_actor;
 use crate::{log_error, log_info};
@@ -753,7 +754,7 @@ pub async fn create_hosted_server(
                 name: "serialize_failed".into(),
                 message: format!("Failed to serialize playerwhitelist.json: {e}"),
             })?;
-        let whitelist_path = data_path.join("playerwhitelist.json");
+        let whitelist_path = paths::playerwhitelist_path(&data_path);
         if whitelist_path.exists() {
             log_info!(
                 "create_hosted_server: playerwhitelist.json already exists, leaving it untouched"
@@ -1061,7 +1062,7 @@ pub async fn get_server_logs(
 #[command]
 pub async fn read_server_config(app: AppHandle, instance_id: u64) -> Result<String, UiError> {
     let (_dir, instance) = find_instance(&app, instance_id)?;
-    let config_path = instance.data_dir.join("serverconfig.json");
+    let config_path = paths::serverconfig_path(&instance.data_dir);
 
     if config_path.exists() {
         read_to_string(&config_path).map_err(|e| UiError {
@@ -1096,7 +1097,7 @@ pub async fn write_server_config(
         })?;
     }
 
-    let config_path = instance.data_dir.join("serverconfig.json");
+    let config_path = paths::serverconfig_path(&instance.data_dir);
     write(&config_path, &json_content).map_err(|e| UiError {
         name: "write_failed".into(),
         message: format!("Failed to write serverconfig.json: {e}"),
@@ -1190,7 +1191,7 @@ pub async fn get_whitelist(
     instance_id: u64,
 ) -> Result<Vec<WhitelistEntry>, UiError> {
     let (_dir, instance) = find_instance(&app, instance_id)?;
-    let whitelist_path = instance.data_dir.join("playerwhitelist.json");
+    let whitelist_path = paths::playerwhitelist_path(&instance.data_dir);
 
     read_whitelist(&whitelist_path)
 }
@@ -1205,7 +1206,7 @@ pub async fn add_to_whitelist(
     log_info!("add_to_whitelist: id={instance_id} uid={uid} name={name}");
 
     let (_dir, instance) = find_instance(&app, instance_id)?;
-    let whitelist_path = instance.data_dir.join("playerwhitelist.json");
+    let whitelist_path = paths::playerwhitelist_path(&instance.data_dir);
 
     // Ensure data dir exists
     if !instance.data_dir.exists() {
@@ -1270,7 +1271,7 @@ pub async fn remove_from_whitelist(
     log_info!("remove_from_whitelist: id={instance_id} uid={uid}");
 
     let (_dir, instance) = find_instance(&app, instance_id)?;
-    let whitelist_path = instance.data_dir.join("playerwhitelist.json");
+    let whitelist_path = paths::playerwhitelist_path(&instance.data_dir);
 
     if !whitelist_path.exists() {
         return Err(UiError {
@@ -1322,7 +1323,7 @@ pub async fn bulk_import_whitelist(
     );
 
     let (_dir, instance) = find_instance(&app, instance_id)?;
-    let whitelist_path = instance.data_dir.join("playerwhitelist.json");
+    let whitelist_path = paths::playerwhitelist_path(&instance.data_dir);
 
     if !instance.data_dir.exists() {
         create_dir_all(&instance.data_dir).map_err(|e| UiError {

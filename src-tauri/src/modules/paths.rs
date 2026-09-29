@@ -1,6 +1,4 @@
 //! Vintage Story file and directory path constants and helpers.
-// Allow dead code while this module is being adopted across the codebase.
-#![allow(dead_code)]
 //!
 //! This module centralizes names and path-building helpers for Vintage Story
 //! installations, saves, mods, maps, and server files. Keeping them in one place
@@ -45,14 +43,14 @@ pub const SAVES_DIR: &str = "Saves";
 /// Directory inside an installation that holds map databases.
 pub const MAPS_DIR: &str = "Maps";
 
-/// File extension for Vintage Story save/world databases.
-pub const SAVE_EXTENSION: &str = ".vcdbs";
+/// Directory inside an installation that holds mod configs.
+pub const MODCONFIG_DIR: &str = "ModConfig";
 
-/// SQLite table that holds the protobuf `GameData` blob in save/map databases.
-pub const GAMEDATA_TABLE: &str = "gamedata";
+/// Directory inside an installation that holds game logs.
+pub const LOGS_DIR: &str = "Logs";
 
-/// Column in `gamedata` that holds the protobuf bytes.
-pub const GAMEDATA_DATA_COLUMN: &str = "data";
+/// Whitelist file inside a hosted server data directory.
+pub const PLAYERWHITELIST_JSON: &str = "playerwhitelist.json";
 
 /// Subdirectory inside the app data dir where versions are stored by default.
 pub const DEFAULT_VERSIONS_SUBDIR: &str = "versions";
@@ -73,6 +71,11 @@ pub fn saves_dir<P: AsRef<Path>>(installation: P) -> PathBuf {
     installation.as_ref().join(SAVES_DIR)
 }
 
+/// Returns the path to a hosted server's `playerwhitelist.json`.
+pub fn playerwhitelist_path<P: AsRef<Path>>(data_dir: P) -> PathBuf {
+    data_dir.as_ref().join(PLAYERWHITELIST_JSON)
+}
+
 /// Returns the path to an installation's `Maps` directory.
 pub fn maps_dir<P: AsRef<Path>>(installation: P) -> PathBuf {
     installation.as_ref().join(MAPS_DIR)
@@ -86,22 +89,6 @@ pub fn clientsettings_path<P: AsRef<Path>>(installation: P) -> PathBuf {
 /// Returns the path to an installation's `installation.json`.
 pub fn installation_json_path<P: AsRef<Path>>(installation: P) -> PathBuf {
     installation.as_ref().join(INSTALLATION_JSON)
-}
-
-/// Returns the path to a world/save `.vcdbs` file inside an installation.
-pub fn save_path<P: AsRef<Path>, S: AsRef<str>>(installation: P, world_name: S) -> PathBuf {
-    installation
-        .as_ref()
-        .join(SAVES_DIR)
-        .join(format!("{}{}", world_name.as_ref(), SAVE_EXTENSION))
-}
-
-/// Returns the path to a map database for a given world identifier.
-pub fn map_db_path<P: AsRef<Path>, S: AsRef<str>>(installation: P, world_id: S) -> PathBuf {
-    installation
-        .as_ref()
-        .join(MAPS_DIR)
-        .join(format!("{}.db", world_id.as_ref()))
 }
 
 /// Returns the path to a server's `serverconfig.json`.
@@ -131,14 +118,6 @@ mod tests {
         assert_eq!(
             clientsettings_path(&inst),
             PathBuf::from("/game/MyWorld/clientsettings.json")
-        );
-        assert_eq!(
-            save_path(&inst, "world1"),
-            PathBuf::from("/game/MyWorld/Saves/world1.vcdbs")
-        );
-        assert_eq!(
-            map_db_path(&inst, "abc123"),
-            PathBuf::from("/game/MyWorld/Maps/abc123.db")
         );
     }
 }
