@@ -31,6 +31,7 @@ import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { usePlayInstallation } from "@/hooks/use-play-installation";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import type { World } from "@/lib/types";
+import { pathBasename } from "@/lib/utils";
 import { useInstallations } from "@/stores/installations";
 
 export const WorldContextMenu = ({
@@ -44,7 +45,7 @@ export const WorldContextMenu = ({
   // Stores
   const { installations } = useInstallations();
   const installation = installations.find(
-    (installation) => installation.path.split("/").pop() === world.installation_name,
+    (installation) => pathBasename(installation.path) === world.installation_name,
   );
 
   // Mutations
