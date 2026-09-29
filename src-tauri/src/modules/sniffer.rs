@@ -53,7 +53,7 @@ fn wire_string(tag: u64, value: &str) -> Vec<u8> {
 }
 
 fn wire_varint(tag: u64, value: u64) -> Vec<u8> {
-    let mut buf = write_varint((tag << 3) | 0);
+    let mut buf = write_varint(tag << 3);
     buf.extend(write_varint(value));
     buf
 }

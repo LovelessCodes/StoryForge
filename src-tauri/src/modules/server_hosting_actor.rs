@@ -127,6 +127,8 @@ pub async fn spawn(
     // On Unix, run the server in its own process group so we can terminate
     // any spawned children together with the main process.
     #[cfg(unix)]
+    // SAFETY: `setpgid` is async-signal-safe and only touches the child process
+    // created by `fork`; failures are ignored deliberately.
     unsafe {
         cmd.pre_exec(|| {
             libc::setpgid(0, 0);
@@ -180,6 +182,7 @@ pub async fn spawn(
 }
 
 /// Main actor loop. Owns the `Child` handle and all I/O streams.
+#[allow(clippy::too_many_arguments)] // TODO: group pipes into a struct
 async fn run_actor(
     app: tauri::AppHandle,
     instance: HostedServerInstance,
@@ -205,28 +208,23 @@ async fn run_actor(
     tokio::spawn(async move {
         let reader = AsyncBufReader::new(stdout);
         let mut lines = reader.lines();
-        loop {
-            match lines.next_line().await {
-                Ok(Some(line)) => {
-                    emit_log(&app_stdout, instance_id, &line);
-                    append_log(&app_stdout, &name_stdout, &line);
+        while let Ok(Some(line)) = lines.next_line().await {
+            emit_log(&app_stdout, instance_id, &line);
+            append_log(&app_stdout, &name_stdout, &line);
 
-                    // Also detect startup line here — VS may print it to stdout
-                    if line.contains("Dedicated Server now running on Port")
-                        && !startup_reported_stdout.load(std::sync::atomic::Ordering::SeqCst)
-                    {
-                        startup_reported_stdout.store(true, std::sync::atomic::Ordering::SeqCst);
-                        *status_stdout.lock().await = ServerStatus::Running;
-                        emit_status(
-                            &app_stdout,
-                            instance_id,
-                            &ServerStatus::Running,
-                            pid,
-                            Some(started_at),
-                        );
-                    }
-                }
-                Ok(None) | Err(_) => break,
+            // Also detect startup line here — VS may print it to stdout
+            if line.contains("Dedicated Server now running on Port")
+                && !startup_reported_stdout.load(std::sync::atomic::Ordering::SeqCst)
+            {
+                startup_reported_stdout.store(true, std::sync::atomic::Ordering::SeqCst);
+                *status_stdout.lock().await = ServerStatus::Running;
+                emit_status(
+                    &app_stdout,
+                    instance_id,
+                    &ServerStatus::Running,
+                    pid,
+                    Some(started_at),
+                );
             }
         }
     });
@@ -239,28 +237,23 @@ async fn run_actor(
     tokio::spawn(async move {
         let reader = AsyncBufReader::new(stderr);
         let mut lines = reader.lines();
-        loop {
-            match lines.next_line().await {
-                Ok(Some(line)) => {
-                    emit_log(&app_stderr, instance_id, &line);
-                    append_log(&app_stderr, &name_stderr, &line);
+        while let Ok(Some(line)) = lines.next_line().await {
+            emit_log(&app_stderr, instance_id, &line);
+            append_log(&app_stderr, &name_stderr, &line);
 
-                    // Detect server ready line to mark as Running
-                    if line.contains("Dedicated Server now running on Port")
-                        && !startup_reported_stderr.load(std::sync::atomic::Ordering::SeqCst)
-                    {
-                        startup_reported_stderr.store(true, std::sync::atomic::Ordering::SeqCst);
-                        *status_stderr.lock().await = ServerStatus::Running;
-                        emit_status(
-                            &app_stderr,
-                            instance_id,
-                            &ServerStatus::Running,
-                            pid,
-                            Some(started_at),
-                        );
-                    }
-                }
-                Ok(None) | Err(_) => break,
+            // Detect server ready line to mark as Running
+            if line.contains("Dedicated Server now running on Port")
+                && !startup_reported_stderr.load(std::sync::atomic::Ordering::SeqCst)
+            {
+                startup_reported_stderr.store(true, std::sync::atomic::Ordering::SeqCst);
+                *status_stderr.lock().await = ServerStatus::Running;
+                emit_status(
+                    &app_stderr,
+                    instance_id,
+                    &ServerStatus::Running,
+                    pid,
+                    Some(started_at),
+                );
             }
         }
     });
@@ -325,6 +318,8 @@ async fn run_actor(
                                 log_info!("server_hosting: instance {instance_id} did not stop cleanly, escalating");
                                 if let Some(p) = pid {
                                     #[cfg(unix)]
+                                    // SAFETY: `p` is the live child PID recorded at spawn; the
+                                    // process group was created with `setpgid` above.
                                     unsafe {
                                         let _ = libc::killpg(p as i32, libc::SIGTERM);
                                     }

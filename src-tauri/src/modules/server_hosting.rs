@@ -56,9 +56,10 @@ impl ServerStatus {
 }
 
 /// Whitelist mode stored in serverconfig.json.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[repr(u8)]
 pub enum WhitelistMode {
+    #[default]
     Off = 1,
     Whitelist = 2,
 }
@@ -66,12 +67,6 @@ pub enum WhitelistMode {
 impl WhitelistMode {
     pub fn as_u8(self) -> u8 {
         self as u8
-    }
-}
-
-impl Default for WhitelistMode {
-    fn default() -> Self {
-        WhitelistMode::Off
     }
 }
 
@@ -469,6 +464,7 @@ pub(crate) fn server_exe_path(app: &AppHandle, version: &str) -> Result<PathBuf,
 // ────────── Instance management ──────────
 
 #[command]
+#[allow(clippy::too_many_arguments)] // TODO: group args into a params struct
 pub async fn create_hosted_server(
     app: AppHandle,
     name: String,
@@ -737,14 +733,12 @@ pub async fn delete_hosted_server(
     }
 
     // Remove data directory (worlds, mods, config)
-    if delete_data {
-        if instance.data_dir != dir {
-            if let Err(e) = remove_dir_all(&instance.data_dir) {
-                log_error!(
-                    "delete_hosted_server: failed to remove data dir {:?}: {e}",
-                    instance.data_dir
-                );
-            }
+    if delete_data && instance.data_dir != dir {
+        if let Err(e) = remove_dir_all(&instance.data_dir) {
+            log_error!(
+                "delete_hosted_server: failed to remove data dir {:?}: {e}",
+                instance.data_dir
+            );
         }
     }
 

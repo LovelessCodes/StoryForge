@@ -307,6 +307,7 @@ pub fn save_installation(
 }
 
 #[command]
+#[allow(clippy::too_many_arguments)] // TODO: group args into a params struct
 pub async fn import_installation(
     app: AppHandle,
     name: String,

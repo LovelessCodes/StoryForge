@@ -4,7 +4,7 @@ use serde_json::{from_str, json, to_string_pretty, Map, Value};
 use std::{
     collections::HashSet,
     fs::{read_dir, read_to_string, write},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 use tauri::{command, AppHandle, Manager};
 
@@ -103,7 +103,7 @@ fn server_id(name: &str, ip: &str, port: Option<u16>) -> u64 {
 }
 
 fn extract_servers_from_directory(
-    dir: &PathBuf,
+    dir: &Path,
     installation_id: u64,
     installation_name: &str,
     favorites: &HashSet<u64>,

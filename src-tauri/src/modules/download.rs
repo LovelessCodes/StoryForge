@@ -650,6 +650,7 @@ fn extract_tar_archive<R: Runtime, Rdr: io::Read>(
 }
 
 #[command]
+#[allow(clippy::too_many_arguments)] // TODO: group args into a params struct
 pub async fn download_and_maybe_extract<R: Runtime>(
     client: State<'_, Arc<reqwest::Client>>,
     app: tauri::AppHandle<R>,
