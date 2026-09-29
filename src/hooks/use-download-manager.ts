@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { appDataDir } from "@tauri-apps/api/path";
-import { useCallback, useRef } from "react";
+import { useCallback } from "react";
 
 import { useMountEffect } from "@/hooks/use-mount-effect";
 import type { PausedDownload, ProgressPayload } from "@/lib/types";
@@ -186,16 +186,15 @@ function processQueue(queryClient: ReturnType<typeof useQueryClient>): void {
 }
 
 export function useDownloadManager() {
+  // `queryClient` is a stable reference from the provider, so it can be used
+  // directly; a ref to keep it "current" was only writing during render.
   const queryClient = useQueryClient();
-  const qcRef = useRef(queryClient);
-  qcRef.current = queryClient;
 
   // On mount: scan for orphaned .resume.json files + process any pending queue.
   // Runs once per session, no matter how many components use this hook.
   useMountEffect(() => {
     if (bootstrapStarted) return;
     bootstrapStarted = true;
-    const qc = qcRef.current;
 
     void (async () => {
       const appFolder = await appDataDir();
@@ -214,20 +213,23 @@ export function useDownloadManager() {
         }
       }
 
-      processQueue(qc);
+      processQueue(queryClient);
     })();
   });
 
-  const startDownload = useCallback((version: string) => {
-    const store = useDownloadStore.getState();
-    const token = version;
+  const startDownload = useCallback(
+    (version: string) => {
+      const store = useDownloadStore.getState();
+      const token = version;
 
-    if (store.entries[token]) return;
-    pauseRequests.delete(token);
+      if (store.entries[token]) return;
+      pauseRequests.delete(token);
 
-    store.addEntry({ token, label: version, status: "pending" });
-    processQueue(qcRef.current);
-  }, []);
+      store.addEntry({ token, label: version, status: "pending" });
+      processQueue(queryClient);
+    },
+    [queryClient],
+  );
 
   const pause = useCallback((version: string) => {
     // Recorded in case the command has not started listening yet.
@@ -235,17 +237,20 @@ export function useDownloadManager() {
     void emit(`${eventName(version)}:pause`);
   }, []);
 
-  const resume = useCallback((version: string) => {
-    const store = useDownloadStore.getState();
-    const token = version;
-    const entry = store.entries[token];
+  const resume = useCallback(
+    (version: string) => {
+      const store = useDownloadStore.getState();
+      const token = version;
+      const entry = store.entries[token];
 
-    if (!entry || entry.status !== "paused") return;
+      if (!entry || entry.status !== "paused") return;
 
-    pauseRequests.delete(token);
-    store.updateEntry(token, { status: "pending" });
-    processQueue(qcRef.current);
-  }, []);
+      pauseRequests.delete(token);
+      store.updateEntry(token, { status: "pending" });
+      processQueue(queryClient);
+    },
+    [queryClient],
+  );
 
   const cancel = useCallback((version: string) => {
     const store = useDownloadStore.getState();
@@ -262,24 +267,27 @@ export function useDownloadManager() {
     store.removeEntry(version);
   }, []);
 
-  const retry = useCallback((version: string) => {
-    const store = useDownloadStore.getState();
-    const token = version;
-    const entry = store.entries[token];
+  const retry = useCallback(
+    (version: string) => {
+      const store = useDownloadStore.getState();
+      const token = version;
+      const entry = store.entries[token];
 
-    if (!entry || entry.status !== "error") return;
+      if (!entry || entry.status !== "error") return;
 
-    pauseRequests.delete(token);
-    store.updateEntry(token, {
-      status: "pending",
-      error: null,
-      bytesDownloaded: 0,
-      totalBytes: null,
-      percent: null,
-      speedBps: null,
-    });
-    processQueue(qcRef.current);
-  }, []);
+      pauseRequests.delete(token);
+      store.updateEntry(token, {
+        status: "pending",
+        error: null,
+        bytesDownloaded: 0,
+        totalBytes: null,
+        percent: null,
+        speedBps: null,
+      });
+      processQueue(queryClient);
+    },
+    [queryClient],
+  );
 
   return { startDownload, pause, resume, cancel, retry };
 }
