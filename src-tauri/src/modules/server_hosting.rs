@@ -147,6 +147,14 @@ fn slugify(name: &str) -> String {
         .join("-")
 }
 
+/// Escapes a value for Vintage Story's `--setconfig` single-quoted string syntax.
+///
+/// Backslashes must be escaped before quotes, otherwise a trailing `\` would
+/// escape the closing quote and inject the following keys.
+fn escape_setconfig(value: &str) -> String {
+    value.replace('\\', "\\\\").replace('\'', "\\'")
+}
+
 /// Simple HH:MM:SS timestamp for log events
 fn format_timestamp() -> String {
     use std::time::SystemTime;
@@ -346,18 +354,19 @@ pub(crate) fn emit_log(app: &AppHandle, instance_id: u64, line: &str) {
     );
 }
 
-/// Append a log line to the instance's log file
-pub(crate) fn append_log(app: &AppHandle, instance_name: &str, line: &str) {
+/// Append a log line to the instance's log file.
+pub(crate) fn append_log(app: &AppHandle, instance_id: u64, line: &str) {
     let timestamp = format_epoch();
     if let Ok(data_dir) = app.path().app_data_dir() {
         let log_dir = data_dir.join("server-logs");
         let _ = create_dir_all(&log_dir);
-        let log_path = log_dir.join(format!("{instance_name}.log"));
+        // Keyed by ID: names are user-supplied and could contain path separators.
+        let log_path = log_dir.join(format!("{instance_id}.log"));
 
         // Rotate if > 10 MB
         if let Ok(meta) = std::fs::metadata(&log_path) {
             if meta.len() > 10 * 1024 * 1024 {
-                let rotated = log_dir.join(format!("{instance_name}.1.log"));
+                let rotated = log_dir.join(format!("{instance_id}.1.log"));
                 let _ = std::fs::rename(&log_path, &rotated);
             }
         }
@@ -369,6 +378,18 @@ pub(crate) fn append_log(app: &AppHandle, instance_name: &str, line: &str) {
         {
             let _ = writeln!(file, "[{timestamp}] {line}");
         }
+    }
+}
+
+/// Splits a `[timestamp] message` log line into its parts. Tolerates
+/// malformed lines and never panics.
+fn parse_log_line(raw_line: &str) -> (String, String) {
+    match raw_line
+        .strip_prefix('[')
+        .and_then(|rest| rest.split_once(']'))
+    {
+        Some((timestamp, message)) => (timestamp.to_string(), message.trim_start().to_string()),
+        None => (String::new(), raw_line.to_string()),
     }
 }
 
@@ -527,6 +548,15 @@ pub async fn create_hosted_server(
 
     let id = generate_id(&name);
 
+    // IDs are derived from the name: a duplicate name would silently overwrite
+    // the existing instance's config and share its directory.
+    if let Some(other) = existing.iter().find(|inst| inst.id == id) {
+        return Err(UiError {
+            name: "instance_exists".into(),
+            message: format!("A server instance named \"{}\" already exists.", other.name),
+        });
+    }
+
     // Create the instance directory under hosted-servers/{id}/
     let app_data_dir = app.path().app_data_dir().map_err(|e| UiError {
         name: "path_error".into(),
@@ -564,12 +594,12 @@ pub async fn create_hosted_server(
     // our custom values, then exits immediately.
     let mut setconfig_parts: Vec<String> = Vec::new();
     setconfig_parts.push(format!("Port: {}", port));
-    setconfig_parts.push(format!("ServerName: '{}'", name.replace('\'', "\\'")));
+    setconfig_parts.push(format!("ServerName: '{}'", escape_setconfig(&name)));
     if instance.bind_ip != "0.0.0.0" {
-        setconfig_parts.push(format!("Ip: '{}'", instance.bind_ip.replace('\'', "\\'")));
+        setconfig_parts.push(format!("Ip: '{}'", escape_setconfig(&instance.bind_ip)));
     }
     if !password.is_empty() {
-        setconfig_parts.push(format!("Password: '{}'", password.replace('\'', "\\'")));
+        setconfig_parts.push(format!("Password: '{}'", escape_setconfig(&password)));
     }
     setconfig_parts.push(format!(
         "WhitelistMode: {}",
@@ -674,8 +704,16 @@ pub async fn update_hosted_server(
                 message: "Cannot rename a running instance.".into(),
             });
         }
+        // Renaming changes the derived ID; refuse collisions.
+        let new_id = generate_id(name);
+        if new_id != instance.id && scan_instances(&app)?.iter().any(|other| other.id == new_id) {
+            return Err(UiError {
+                name: "instance_exists".into(),
+                message: format!("A server instance named \"{name}\" already exists."),
+            });
+        }
         instance.name = name.clone();
-        instance.id = generate_id(name);
+        instance.id = new_id;
     }
     if let Some(ref version) = partial.version {
         // Validate version exists
@@ -732,14 +770,15 @@ pub async fn delete_hosted_server(
 
     let (dir, instance) = find_instance(&app, instance_id)?;
 
-    // Remove logs
+    // Remove logs (keyed by ID, same as append_log)
     if let Ok(data_dir) = app.path().app_data_dir() {
-        let log_path = data_dir
-            .join("server-logs")
-            .join(format!("{}.log", instance.name));
-        if log_path.exists() {
-            if let Err(e) = remove_file(&log_path) {
-                log_error!("delete_hosted_server: failed to remove log: {e}");
+        let log_dir = data_dir.join("server-logs");
+        for suffix in [".log", ".1.log"] {
+            let log_path = log_dir.join(format!("{instance_id}{suffix}"));
+            if log_path.exists() {
+                if let Err(e) = remove_file(&log_path) {
+                    log_error!("delete_hosted_server: failed to remove log: {e}");
+                }
             }
         }
     }
@@ -831,14 +870,12 @@ pub async fn get_server_logs(
     instance_id: u64,
     offset: Option<u64>,
 ) -> Result<ServerLogsResponse, UiError> {
-    let (_dir, instance) = find_instance(&app, instance_id)?;
-
     let data_dir = app.path().app_data_dir().map_err(|e| UiError {
         name: "path_error".into(),
         message: format!("Failed to resolve app data dir: {e}"),
     })?;
     let log_dir = data_dir.join("server-logs");
-    let log_path = log_dir.join(format!("{}.log", instance.name));
+    let log_path = log_dir.join(format!("{instance_id}.log"));
 
     if !log_path.exists() {
         return Ok(ServerLogsResponse {
@@ -871,16 +908,7 @@ pub async fn get_server_logs(
     let mut lines: Vec<ServerLogLine> = Vec::with_capacity(slice.len());
     for (i, &raw_line) in slice.iter().enumerate() {
         let offset = (start_idx + i) as u64;
-        // Parse "[timestamp] message" format
-        let (timestamp, message) = if let Some(rest) = raw_line.strip_prefix('[') {
-            if let Some(end) = rest.find(']') {
-                (rest[..end].to_string(), rest[end + 2..].to_string())
-            } else {
-                (String::new(), raw_line.to_string())
-            }
-        } else {
-            (String::new(), raw_line.to_string())
-        };
+        let (timestamp, message) = parse_log_line(raw_line);
         lines.push(ServerLogLine {
             offset,
             timestamp,
@@ -1374,4 +1402,30 @@ pub async fn get_server_data_dir_size(
         size_bytes,
         size_display,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn escape_setconfig_handles_quotes_and_backslashes() {
+        assert_eq!(escape_setconfig("plain"), "plain");
+        assert_eq!(escape_setconfig("it's"), "it\\'s");
+        assert_eq!(escape_setconfig("back\\slash"), "back\\\\slash");
+        // A trailing backslash must not escape the closing quote.
+        assert_eq!(escape_setconfig("a\\'b"), "a\\\\\\'b");
+    }
+
+    #[test]
+    fn parse_log_line_never_panics() {
+        assert_eq!(
+            parse_log_line("[123] hello"),
+            ("123".into(), "hello".into())
+        );
+        assert_eq!(parse_log_line("[123]hello"), ("123".into(), "hello".into()));
+        assert_eq!(parse_log_line("[123]"), ("123".into(), String::new()));
+        assert_eq!(parse_log_line("plain"), (String::new(), "plain".into()));
+        assert_eq!(parse_log_line(""), (String::new(), String::new()));
+    }
 }

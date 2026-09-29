@@ -194,7 +194,6 @@ async fn run_actor(
     mut cmd_rx: mpsc::UnboundedReceiver<ServerCommand>,
 ) {
     let instance_id = instance.id;
-    let instance_name = instance.name.clone();
     let started_at = Instant::now();
     let stdin = Arc::new(tokio::sync::Mutex::new(stdin));
     let status = Arc::new(tokio::sync::Mutex::new(ServerStatus::Starting));
@@ -202,7 +201,6 @@ async fn run_actor(
 
     // stdout reader
     let app_stdout = app.clone();
-    let name_stdout = instance_name.clone();
     let status_stdout = status.clone();
     let startup_reported_stdout = startup_reported.clone();
     tokio::spawn(async move {
@@ -210,7 +208,7 @@ async fn run_actor(
         let mut lines = reader.lines();
         while let Ok(Some(line)) = lines.next_line().await {
             emit_log(&app_stdout, instance_id, &line);
-            append_log(&app_stdout, &name_stdout, &line);
+            append_log(&app_stdout, instance_id, &line);
 
             // Also detect startup line here — VS may print it to stdout
             if line.contains("Dedicated Server now running on Port")
@@ -231,7 +229,6 @@ async fn run_actor(
 
     // stderr reader
     let app_stderr = app.clone();
-    let name_stderr = instance_name.clone();
     let status_stderr = status.clone();
     let startup_reported_stderr = startup_reported.clone();
     tokio::spawn(async move {
@@ -239,7 +236,7 @@ async fn run_actor(
         let mut lines = reader.lines();
         while let Ok(Some(line)) = lines.next_line().await {
             emit_log(&app_stderr, instance_id, &line);
-            append_log(&app_stderr, &name_stderr, &line);
+            append_log(&app_stderr, instance_id, &line);
 
             // Detect server ready line to mark as Running
             if line.contains("Dedicated Server now running on Port")
