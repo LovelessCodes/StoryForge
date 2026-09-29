@@ -1,5 +1,5 @@
 use serde::Serialize;
-use serde_json::{from_str, json, to_string_pretty, Map, Value};
+use serde_json::{from_str, json, to_string_pretty, Value};
 use std::{
     collections::HashSet,
     fs::{read_dir, read_to_string, write},
@@ -189,6 +189,78 @@ pub fn fetch_all_servers(app: AppHandle) -> Result<Vec<SavedServer>, UiError> {
     Ok(all_servers)
 }
 
+/// Reads an installation's `clientsettings.json`, or an empty object.
+fn read_clientsettings(installation_dir: &Path) -> Result<Value, UiError> {
+    let path = paths::clientsettings_path(installation_dir);
+    if !path.exists() {
+        return Ok(json!({}));
+    }
+    let content = read_to_string(&path).map_err(|e| {
+        UiError::new(
+            "io_error",
+            format!("Failed to read clientsettings.json: {e}"),
+        )
+    })?;
+    from_str(&content).map_err(|e| {
+        UiError::new(
+            "parse_error",
+            format!("Failed to parse clientsettings.json: {e}"),
+        )
+    })
+}
+
+/// Returns the installation's configured multiplayer servers.
+fn multiplayer_servers(installation_dir: &Path) -> Result<Vec<Value>, UiError> {
+    let clientsettings = read_clientsettings(installation_dir)?;
+    Ok(clientsettings
+        .get("stringListSettings")
+        .and_then(|sl| sl.get("multiplayerservers"))
+        .and_then(|ms| ms.as_array())
+        .cloned()
+        .unwrap_or_default())
+}
+
+/// Applies `mutate` to `stringListSettings.multiplayerservers` and writes the
+/// file back, creating both the file and the nested keys when missing.
+fn update_multiplayer_servers<F>(installation_dir: &Path, mutate: F) -> Result<(), UiError>
+where
+    F: FnOnce(&mut Vec<Value>),
+{
+    let clientsettings_path = paths::clientsettings_path(installation_dir);
+    let mut clientsettings = read_clientsettings(installation_dir)?;
+
+    let mut string_list_settings = clientsettings
+        .get_mut("stringListSettings")
+        .and_then(|sls| sls.as_object_mut())
+        .cloned()
+        .unwrap_or_default();
+
+    let mut servers = string_list_settings
+        .get_mut("multiplayerservers")
+        .and_then(|ms| ms.as_array())
+        .cloned()
+        .unwrap_or_default();
+
+    mutate(&mut servers);
+
+    string_list_settings.insert("multiplayerservers".to_string(), Value::Array(servers));
+    clientsettings["stringListSettings"] = Value::Object(string_list_settings);
+
+    let new_content = to_string_pretty(&clientsettings).map_err(|e| {
+        UiError::new(
+            "serialize_error",
+            format!("Failed to serialize clientsettings.json: {e}"),
+        )
+    })?;
+    write(&clientsettings_path, new_content).map_err(|e| {
+        UiError::new(
+            "io_error",
+            format!("Failed to write clientsettings.json: {e}"),
+        )
+    })?;
+    Ok(())
+}
+
 #[command]
 pub fn remove_server_from_installation(
     app: AppHandle,
@@ -197,58 +269,9 @@ pub fn remove_server_from_installation(
 ) -> Result<(), UiError> {
     log_info!("remove_server_from_installation: id={}", installation_id);
     let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
-    let clientsettings_path = paths::clientsettings_path(&pb);
-    let mut clientsettings: Value = if clientsettings_path.exists() {
-        let content = read_to_string(&clientsettings_path).map_err(|e| UiError {
-            name: "io_error".into(),
-            message: format!("Failed to read clientsettings.json: {e}"),
-        })?;
-        from_str(&content).map_err(|e| UiError {
-            name: "parse_error".into(),
-            message: format!("Failed to parse clientsettings.json: {e}"),
-        })?
-    } else {
-        json!({})
-    };
-    // Extract or create stringListSettings as an object
-    let mut string_list_settings = if let Some(sls) = clientsettings
-        .get_mut("stringListSettings")
-        .and_then(|sls| sls.as_object_mut())
-    {
-        sls.clone()
-    } else {
-        Map::new()
-    };
-
-    // Extract or create multiplayerservers as an array
-    let mut multiplayer_servers = if let Some(ms) = string_list_settings
-        .get_mut("multiplayerservers")
-        .and_then(|ms| ms.as_array())
-    {
-        ms.clone()
-    } else {
-        Vec::new()
-    };
-
-    multiplayer_servers.retain(|s| s != &Value::String(server.as_str().to_string()));
-
-    // Put the updated multiplayerservers back into string_list_settings
-    string_list_settings.insert(
-        "multiplayerservers".to_string(),
-        Value::Array(multiplayer_servers),
-    );
-
-    // Put the updated string_list_settings back into clientsettings
-    clientsettings["stringListSettings"] = Value::Object(string_list_settings);
-    let new_content = to_string_pretty(&clientsettings).map_err(|e| UiError {
-        name: "serialize_error".into(),
-        message: format!("Failed to serialize clientsettings.json: {e}"),
-    })?;
-    write(&clientsettings_path, new_content).map_err(|e| UiError {
-        name: "io_error".into(),
-        message: format!("Failed to write clientsettings.json: {e}"),
-    })?;
-    Ok(())
+    update_multiplayer_servers(&pb, move |servers| {
+        servers.retain(|s| s != &Value::String(server.clone()))
+    })
 }
 
 #[command]
@@ -258,30 +281,8 @@ pub fn check_server_in_installation(
     server: String,
 ) -> Result<bool, UiError> {
     let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
-    let clientsettings_path = paths::clientsettings_path(&pb);
-    if !clientsettings_path.exists() {
-        return Ok(false);
-    }
-    let content = read_to_string(&clientsettings_path).map_err(|e| UiError {
-        name: "io_error".into(),
-        message: format!("Failed to read clientsettings.json: {e}"),
-    })?;
-    let clientsettings: Value = from_str(&content).map_err(|e| UiError {
-        name: "parse_error".into(),
-        message: format!("Failed to parse clientsettings.json: {e}"),
-    })?;
-    if let Some(multiplayer_servers) = clientsettings
-        .get("stringListSettings")
-        .and_then(|sl| sl.get("multiplayerservers"))
-        .and_then(|ms| ms.as_array())
-    {
-        for s in multiplayer_servers {
-            if s == &Value::String(server.clone()) {
-                return Ok(true);
-            }
-        }
-    }
-    Ok(false)
+    let server = Value::String(server);
+    Ok(multiplayer_servers(&pb)?.iter().any(|s| s == &server))
 }
 
 #[command]
@@ -292,58 +293,7 @@ pub fn add_server_to_installation(
 ) -> Result<(), UiError> {
     log_info!("add_server_to_installation: id={}", installation_id);
     let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
-    let clientsettings_path = paths::clientsettings_path(&pb);
-    let mut clientsettings: Value = if clientsettings_path.exists() {
-        let content = read_to_string(&clientsettings_path).map_err(|e| UiError {
-            name: "io_error".into(),
-            message: format!("Failed to read clientsettings.json: {e}"),
-        })?;
-        from_str(&content).map_err(|e| UiError {
-            name: "parse_error".into(),
-            message: format!("Failed to parse clientsettings.json: {e}"),
-        })?
-    } else {
-        json!({})
-    };
-    // Extract or create stringListSettings as an object
-    let mut string_list_settings = if let Some(sls) = clientsettings
-        .get_mut("stringListSettings")
-        .and_then(|sls| sls.as_object_mut())
-    {
-        sls.clone()
-    } else {
-        Map::new()
-    };
-
-    // Extract or create multiplayerservers as an array
-    let mut multiplayer_servers = if let Some(ms) = string_list_settings
-        .get_mut("multiplayerservers")
-        .and_then(|ms| ms.as_array())
-    {
-        ms.clone()
-    } else {
-        Vec::new()
-    };
-
-    multiplayer_servers.push(Value::String(server));
-
-    // Put the updated multiplayerservers back into string_list_settings
-    string_list_settings.insert(
-        "multiplayerservers".to_string(),
-        Value::Array(multiplayer_servers),
-    );
-
-    // Put the updated string_list_settings back into clientsettings
-    clientsettings["stringListSettings"] = Value::Object(string_list_settings);
-    let new_content = to_string_pretty(&clientsettings).map_err(|e| UiError {
-        name: "serialize_error".into(),
-        message: format!("Failed to serialize clientsettings.json: {e}"),
-    })?;
-    write(&clientsettings_path, new_content).map_err(|e| UiError {
-        name: "io_error".into(),
-        message: format!("Failed to write clientsettings.json: {e}"),
-    })?;
-    Ok(())
+    update_multiplayer_servers(&pb, move |servers| servers.push(Value::String(server)))
 }
 
 #[command]

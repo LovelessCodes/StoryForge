@@ -1,5 +1,4 @@
 use prost::Message;
-use rusqlite::{Connection, OpenFlags};
 use serde::{Deserialize, Serialize};
 use std::{
     ffi::OsStr,
@@ -16,6 +15,7 @@ use super::installations::find_installation_by_id;
 use super::paths;
 use super::proto::{GameData, MapMarkers, ProspectingLog};
 use super::utils::{installations_folder, installations_subdir, lock, require_managed_path};
+use super::vcdbs;
 use crate::{log_error, log_info};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,76 +29,6 @@ pub struct World {
 }
 
 // ── SQLite helpers for .vcdbs files ──
-
-fn open_vcdbs(path: &Path, writable: bool) -> Result<Connection, UiError> {
-    if writable {
-        Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_WRITE).map_err(|e| {
-            log_error!("saves: DB open error: {e}");
-            UiError::new("db_error", format!("DB open error: {e}"))
-        })
-    } else {
-        // `immutable=1` keeps reads from creating -wal/-shm files next to the
-        // game's data while it is running. Trade-off: concurrent writes by the
-        // game are not detected, so values can be briefly stale.
-        let uri = format!("file:{}?immutable=1", path.to_string_lossy());
-        Connection::open_with_flags(
-            &uri,
-            OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
-        )
-        .map_err(|e| {
-            log_error!("saves: DB open error: {e}");
-            UiError::new("db_error", format!("DB open error: {e}"))
-        })
-    }
-}
-
-fn read_gamedata(conn: &Connection) -> Result<GameData, UiError> {
-    let mut stmt = conn
-        .prepare("SELECT data FROM gamedata LIMIT 1")
-        .map_err(|e| {
-            log_error!("saves: DB prepare error: {e}");
-            UiError::new("db_error", format!("DB prepare error: {e}"))
-        })?;
-
-    let mut rows = stmt.query([]).map_err(|e| {
-        log_error!("saves: DB query error: {e}");
-        UiError::new("db_error", format!("DB query error: {e}"))
-    })?;
-
-    let Some(row) = rows.next().map_err(|e| {
-        log_error!("saves: DB row error: {e}");
-        UiError::new("db_error", format!("DB row error: {e}"))
-    })?
-    else {
-        return Err(UiError::from("No gamedata found"));
-    };
-
-    let data: Vec<u8> = row.get(0).map_err(|e| {
-        log_error!("saves: DB get error: {e}");
-        UiError::new("db_error", format!("DB get error: {e}"))
-    })?;
-
-    GameData::decode(data.as_slice()).map_err(|e| {
-        log_error!("saves: Protobuf decode error: {e}");
-        UiError::new("decode_error", format!("Protobuf decode error: {e}"))
-    })
-}
-
-fn write_gamedata(conn: &Connection, gamedata: &GameData) -> Result<(), UiError> {
-    let mut buf = Vec::new();
-    gamedata.encode(&mut buf).map_err(|e| {
-        log_error!("saves: Protobuf encode error: {e}");
-        UiError::new("encode_error", format!("Protobuf encode error: {e}"))
-    })?;
-
-    conn.execute("UPDATE gamedata SET data = ?1", [&buf])
-        .map_err(|e| {
-            log_error!("saves: DB update error: {e}");
-            UiError::new("db_error", format!("DB update error: {e}"))
-        })?;
-
-    Ok(())
-}
 
 // ── Protobuf / gamedata helpers ──
 
@@ -151,8 +81,8 @@ fn load_world_from_vcdbs(
     save_path: &Path,
     installation_name: String,
 ) -> Result<World, UiError> {
-    let conn = open_vcdbs(save_path, false)?;
-    let gamedata = read_gamedata(&conn)?;
+    let conn = vcdbs::open(save_path, false)?;
+    let gamedata = vcdbs::read_gamedata(&conn)?;
 
     let compressed = compress_gamedata(&gamedata);
     let has_map = has_map(installation_path, &gamedata.savegame_identifier);
@@ -450,10 +380,10 @@ pub fn update_world(
     // Update the WorldName field before moving anything, so a DB failure
     // leaves the original file untouched.
     {
-        let conn = open_vcdbs(world_path, true)?;
-        let mut gamedata = read_gamedata(&conn)?;
+        let conn = vcdbs::open(world_path, true)?;
+        let mut gamedata = vcdbs::read_gamedata(&conn)?;
         gamedata.world_name = name;
-        write_gamedata(&conn, &gamedata)?;
+        vcdbs::write_gamedata(&conn, &gamedata)?;
     }
 
     // If an identifier is provided, and a Maps file is found with that identifier, move it too
@@ -512,8 +442,8 @@ pub fn remove_world(app: AppHandle, world_path: String) -> Result<(), UiError> {
         });
     }
 
-    let conn = open_vcdbs(world_path, false)?;
-    let gamedata = read_gamedata(&conn)?;
+    let conn = vcdbs::open(world_path, false)?;
+    let gamedata = vcdbs::read_gamedata(&conn)?;
 
     let maps_path = world_path.parent().and_then(|p| p.parent()).map(|p| {
         p.join(paths::MAPS_DIR)
