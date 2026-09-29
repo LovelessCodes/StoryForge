@@ -110,12 +110,8 @@ pub async fn spawn(
         .arg("--dataPath")
         .arg(&data_dir_str);
 
-    // Add extra start params
-    if !instance.start_params.is_empty() {
-        for param in instance.start_params.split_whitespace() {
-            cmd.arg(param);
-        }
-    }
+    // Add extra start params (shell-like quoting)
+    cmd.args(super::utils::parse_start_params(&instance.start_params)?);
 
     cmd.stdout(Stdio::piped())
         .stderr(Stdio::piped())
