@@ -286,7 +286,7 @@ export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
             </SelectValue>
           </SelectTrigger>
           <SelectContent align="start" alignItemWithTrigger={false}>
-            {gameVersions?.sort(compareSemverDesc).map((version) => (
+            {gameVersions?.toSorted(compareSemverDesc).map((version) => (
               <SelectItem
                 key={version}
                 onClick={() =>
@@ -323,7 +323,7 @@ export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
           </SelectTrigger>
           <SelectContent align="start" alignItemWithTrigger={false}>
             {modTags
-              ?.sort((a, b) => stripped(a.name).localeCompare(stripped(b.name)))
+              ?.toSorted((a, b) => stripped(a.name).localeCompare(stripped(b.name)))
               .map((tag) => (
                 <SelectItem
                   key={tag.tagid}

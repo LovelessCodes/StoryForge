@@ -1,12 +1,13 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { emit, listen } from "@tauri-apps/api/event";
+import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { appDataDir } from "@tauri-apps/api/path";
 import { useCallback, useRef } from "react";
 
 import { useMountEffect } from "@/hooks/use-mount-effect";
 import type { PausedDownload, ProgressPayload } from "@/lib/types";
 import { buildVersionPath, zipfolderprefix } from "@/lib/utils";
+import { claimVersionDownload, releaseVersionDownload } from "@/lib/version-download-lock";
 import { useDownloadStore } from "@/stores/downloads";
 import { useSettingsStore } from "@/stores/settings";
 
@@ -20,6 +21,9 @@ const MAX_CONCURRENT = 3;
  * mount - including once per visible download row.
  */
 let bootstrapStarted = false;
+
+/** Pauses requested before the Rust command started listening. */
+const pauseRequests = new Set<string>();
 
 /** Throttle store updates to once per ~200ms to avoid flooding React renders. */
 const lastStoreUpdate = new Map<string, number>();
@@ -67,48 +71,64 @@ async function doDownload(
 
   store.updateEntry(token, { status: "downloading", speedBps: null });
 
-  // Resolve paths
-  const appFolder = await appDataDir();
-  const { versionsParent, versionsSubdir } = useSettingsStore.getState();
-  const versionPath = buildVersionPath(versionsParent ?? appFolder, version, versionsSubdir);
-
-  // Get download URL
-  const url = (await invoke("get_download_link", { version })) as string;
-  if (!url) throw new Error("Download URL not found");
-
-  const evt = eventName(version);
-
-  // Set up progress listener
-  const unlisten = await listen<ProgressPayload>(evt, (event) => {
-    const { phase, downloaded, total, percent } = event.payload;
-
-    if (phase === "download") {
-      const bytesDownloaded = downloaded ?? 0;
-      recordSpeedSample(token, bytesDownloaded);
-      const speedBps = computeSpeed(token);
-
-      // Throttle: only push to React store every ~200ms
-      const now = performance.now();
-      const last = lastStoreUpdate.get(token) ?? 0;
-      if (now - last >= 200) {
-        lastStoreUpdate.set(token, now);
-        store.updateEntry(token, {
-          bytesDownloaded,
-          totalBytes: total ?? null,
-          percent: percent ?? null,
-          speedBps,
-        });
-      }
-    } else if (phase === "extract") {
-      store.updateEntry(token, { status: "extracting" });
-    } else if (phase === "paused") {
-      store.updateEntry(token, { status: "paused" });
-    } else if (phase === "done") {
-      store.updateEntry(token, { status: "done", percent: 100, speedBps: null });
-    }
-  });
+  let unlisten: UnlistenFn | null = null;
 
   try {
+    if (!claimVersionDownload(version)) {
+      throw new Error("This version is already downloading");
+    }
+
+    // Resolve paths
+    const appFolder = await appDataDir();
+    const { versionsParent, versionsSubdir } = useSettingsStore.getState();
+    const versionPath = buildVersionPath(versionsParent ?? appFolder, version, versionsSubdir);
+
+    // Get download URL
+    const url = (await invoke("get_download_link", { version })) as string;
+    if (!url) throw new Error("Download URL not found");
+
+    // Cancelled while resolving the URL: cancel() removed the entry, so don't
+    // start a ghost download that nobody can see or stop.
+    if (!useDownloadStore.getState().entries[token]) return;
+
+    const evt = eventName(version);
+
+    // Set up progress listener
+    unlisten = await listen<ProgressPayload>(evt, (event) => {
+      const { phase, downloaded, total, percent } = event.payload;
+
+      if (phase === "download") {
+        const bytesDownloaded = downloaded ?? 0;
+        recordSpeedSample(token, bytesDownloaded);
+        const speedBps = computeSpeed(token);
+
+        // Throttle: only push to React store every ~200ms
+        const now = performance.now();
+        const last = lastStoreUpdate.get(token) ?? 0;
+        if (now - last >= 200) {
+          lastStoreUpdate.set(token, now);
+          store.updateEntry(token, {
+            bytesDownloaded,
+            totalBytes: total ?? null,
+            percent: percent ?? null,
+            speedBps,
+          });
+        }
+      } else if (phase === "extract") {
+        store.updateEntry(token, { status: "extracting" });
+      } else if (phase === "paused") {
+        store.updateEntry(token, { status: "paused" });
+      } else if (phase === "done") {
+        store.updateEntry(token, { status: "done", percent: 100, speedBps: null });
+      }
+    });
+
+    // A pause requested during setup never reached Rust; honour it here.
+    if (pauseRequests.delete(token)) {
+      store.updateEntry(token, { status: "paused" });
+      return;
+    }
+
     const result = (await invoke("download_and_maybe_extract", {
       params: {
         destpath: versionPath,
@@ -131,12 +151,18 @@ async function doDownload(
       });
     } else if (result === "already_downloaded") {
       store.removeEntry(token);
+      // The version is on disk: refresh the list even though nothing downloaded.
+      void queryClient.invalidateQueries({
+        queryKey: installedVersionsQueryKey(),
+      });
     }
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     store.updateEntry(token, { status: "error", error: message });
   } finally {
-    unlisten();
+    releaseVersionDownload(version);
+    pauseRequests.delete(token);
+    unlisten?.();
     speedSamples.delete(token);
     lastStoreUpdate.delete(token);
     // Process next in queue
@@ -197,12 +223,15 @@ export function useDownloadManager() {
     const token = version;
 
     if (store.entries[token]) return;
+    pauseRequests.delete(token);
 
     store.addEntry({ token, label: version, status: "pending" });
     processQueue(qcRef.current);
   }, []);
 
   const pause = useCallback((version: string) => {
+    // Recorded in case the command has not started listening yet.
+    pauseRequests.add(version);
     void emit(`${eventName(version)}:pause`);
   }, []);
 
@@ -213,6 +242,7 @@ export function useDownloadManager() {
 
     if (!entry || entry.status !== "paused") return;
 
+    pauseRequests.delete(token);
     store.updateEntry(token, { status: "pending" });
     processQueue(qcRef.current);
   }, []);
@@ -221,6 +251,7 @@ export function useDownloadManager() {
     const store = useDownloadStore.getState();
     const entry = store.entries[version];
 
+    pauseRequests.delete(version);
     void emit(`${eventName(version)}:cancel`);
 
     // Paused downloads have no active task — clean up partial files directly.
@@ -238,6 +269,7 @@ export function useDownloadManager() {
 
     if (!entry || entry.status !== "error") return;
 
+    pauseRequests.delete(token);
     store.updateEntry(token, {
       status: "pending",
       error: null,

@@ -118,11 +118,17 @@ export function WorldMapViewer({
     ? Math.round((bounds.min_x * MAP_CHUNK_SIZE) / SPAWN_COORDINATE) * SPAWN_COORDINATE
     : 0;
 
-  // Observe container resize to trigger re-render
-  // Uses a ref to always call the latest scheduleRedraw
+  // Observe container resize to trigger re-render.
+  // Uses a ref to always call the latest scheduleRedraw. Attached through a
+  // callback ref because the container only mounts after the loading
+  // branches - a mount-time effect ran while the ref was still null and the
+  // observer was never registered.
   const scheduleRedrawRef = useRef<() => void>(undefined);
-  useEffect(() => {
-    if (!containerRef.current) return;
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const attachContainer = useCallback((node: HTMLDivElement | null) => {
+    resizeObserverRef.current?.disconnect();
+    containerRef.current = node;
+    if (!node) return;
 
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -131,13 +137,11 @@ export function WorldMapViewer({
         scheduleRedrawRef.current?.();
       }
     });
-
-    resizeObserver.observe(containerRef.current);
-
-    return () => {
-      resizeObserver.disconnect();
-    };
+    resizeObserver.observe(node);
+    resizeObserverRef.current = resizeObserver;
   }, []);
+
+  useEffect(() => () => resizeObserverRef.current?.disconnect(), []);
 
   // Initialize viewport when bounds are loaded
   useEffect(() => {
@@ -344,8 +348,8 @@ export function WorldMapViewer({
         }
       }
     }
-    // Debug info
-    if (bounds) {
+    // Debug overlay: development builds only.
+    if (import.meta.env.DEV) {
       ctx.fillStyle = "rgba(255,255,255,0.8)";
       ctx.font = "12px monospace";
       ctx.fillText(
@@ -354,7 +358,7 @@ export function WorldMapViewer({
         20,
       );
     }
-  }, [tiles, bounds, chooseLodLevel]);
+  }, [tiles, chooseLodLevel]);
 
   // Draw overlay (markers, prospecting, cursor tooltip background not included)
   const drawOverlay = useCallback(() => {
@@ -499,8 +503,10 @@ export function WorldMapViewer({
     });
   }, [drawBase, drawOverlay]);
 
-  // Keep scheduleRedrawRef current for the ResizeObserver callback
-  scheduleRedrawRef.current = scheduleRedraw;
+  // Keep scheduleRedrawRef current for the ResizeObserver callback.
+  useEffect(() => {
+    scheduleRedrawRef.current = scheduleRedraw;
+  }, [scheduleRedraw]);
 
   // Redraw when dependencies change
   // Redraw on essential viewport/data changes (intentionally excluding image/icon caches to reduce churn)
@@ -532,9 +538,11 @@ export function WorldMapViewer({
     [viewport],
   );
 
-  // Mouse wheel zoom
+  // Mouse wheel zoom. Pure handler: the state updater must not perform side
+  // effects (React may invoke it twice), so the next viewport is computed
+  // here and the ref/state are set directly.
   const handleWheel = useCallback(
-    (e: React.WheelEvent) => {
+    (e: WheelEvent) => {
       e.preventDefault();
       const canvas = overlayCanvasRef.current;
       if (!canvas || !tiles || tiles.length === 0) return;
@@ -542,21 +550,35 @@ export function WorldMapViewer({
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
       const tileSize = tiles[0]?.width || 512;
-      setViewport((prev) => {
-        const delta = e.deltaY > 0 ? 0.9 : 1.1;
-        const newZoom = Math.max(0.1, Math.min(5, prev.zoom * delta));
-        const worldMouseX = mouseX / (prev.zoom * tileSize) + prev.x;
-        const worldMouseY = mouseY / (prev.zoom * tileSize) + prev.y;
-        const newX = worldMouseX - mouseX / (newZoom * tileSize);
-        const newY = worldMouseY - mouseY / (newZoom * tileSize);
-        const vp = { x: newX, y: newY, zoom: newZoom };
-        viewportRef.current = vp;
-        scheduleRedraw();
-        return vp;
-      });
+
+      const prev = viewportRef.current;
+      const delta = e.deltaY > 0 ? 0.9 : 1.1;
+      const newZoom = Math.max(0.1, Math.min(5, prev.zoom * delta));
+      const worldMouseX = mouseX / (prev.zoom * tileSize) + prev.x;
+      const worldMouseY = mouseY / (prev.zoom * tileSize) + prev.y;
+      const updated = {
+        x: worldMouseX - mouseX / (newZoom * tileSize),
+        y: worldMouseY - mouseY / (newZoom * tileSize),
+        zoom: newZoom,
+      };
+
+      viewportRef.current = updated;
+      setViewport(updated);
+      scheduleRedraw();
     },
     [tiles, scheduleRedraw],
   );
+
+  // React registers wheel listeners as passive, so preventDefault inside the
+  // JSX handler was a no-op and the page scrolled while zooming. Attach a
+  // non-passive listener once the canvas exists.
+  useEffect(() => {
+    const canvas = overlayCanvasRef.current;
+    if (!canvas) return;
+    const onWheel = (e: WheelEvent) => handleWheel(e);
+    canvas.addEventListener("wheel", onWheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", onWheel);
+  }, [handleWheel]);
 
   // Mouse panning
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -738,7 +760,7 @@ export function WorldMapViewer({
     <Card className="relative h-full min-h-100 overflow-hidden">
       <div
         className="h-full w-full"
-        ref={containerRef}
+        ref={attachContainer}
         style={{ cursor: isPanning ? "grabbing" : "grab" }}
       >
         <canvas
@@ -751,7 +773,6 @@ export function WorldMapViewer({
           onMouseLeave={handleMouseLeave}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
-          onWheel={handleWheel}
           ref={overlayCanvasRef}
         />
         {/* Cursor coordinates display */}

@@ -9,7 +9,7 @@ export function WorldList({ worlds }: { worlds: World[] }) {
   return (
     <AnimatePresence>
       {worlds
-        .sort((a, b) => {
+        .toSorted((a, b) => {
           const aLastPlayed = a.data.last_played ? new Date(a.data.last_played).getTime() : 0;
           const bLastPlayed = b.data.last_played ? new Date(b.data.last_played).getTime() : 0;
           return bLastPlayed - aLastPlayed;

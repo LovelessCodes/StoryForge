@@ -58,7 +58,7 @@ export function DashboardPage() {
               </Link>
               <ScrollArea className="border-input h-full border-x" scrollFade>
                 <AnimatePresence>
-                  {installations.sort(sortInstallations).map((installation, index) => (
+                  {installations.toSorted(sortInstallations).map((installation, index) => (
                     <MotionInstallationContextMenu
                       animate={{ opacity: 1, y: 0 }}
                       className="flex items-center justify-between px-4 py-3 not-last:border-b"
@@ -144,7 +144,7 @@ export function DashboardPage() {
               <ScrollArea scrollFade className="border-input h-full border-x">
                 <AnimatePresence>
                   {servers
-                    .sort((a, b) => {
+                    .toSorted((a, b) => {
                       if (a.favorite === b.favorite) {
                         return a.index - b.index;
                       }
