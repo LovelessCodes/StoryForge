@@ -24,9 +24,9 @@ use super::errors::UiError;
 use super::mods;
 use super::paths::{self, clientsettings_path, installation_json_path, mods_dir};
 use super::utils::{
-    dir_name, dir_size, find_dir_by_id, format_size, generate_id, installations_folder,
-    installations_subdir, move_folder, require_managed_path, require_safe_destination,
-    safe_file_name, safe_join, versions_folder, versions_subdir,
+    dir_name, dir_size, dir_size_cached, find_dir_by_id, format_size, generate_id,
+    installations_folder, installations_subdir, move_folder, require_managed_path,
+    require_safe_destination, safe_file_name, safe_join, versions_folder, versions_subdir,
 };
 use crate::{log_debug, log_error, log_info};
 
@@ -165,14 +165,25 @@ pub fn find_installation_by_id(
 }
 
 #[command]
-pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, UiError> {
+pub async fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, UiError> {
     let subdir = installations_subdir(app.clone());
     let installations_dir = installations_folder(app.clone())?.join(&subdir);
     log_info!("get_all_installations: scanning {:?}", installations_dir);
 
+    // Walks every installation (and its files) on disk: keep it off the UI thread.
+    tokio::task::spawn_blocking(move || scan_installations(&installations_dir))
+        .await
+        .map_err(|e| {
+            log_error!("installations: scan task failed: {e}");
+            UiError::new("internal_error", format!("Installations scan failed: {e}"))
+        })?
+}
+
+/// Blocking scan behind `get_all_installations`.
+fn scan_installations(installations_dir: &Path) -> Result<Vec<InstallationResult>, UiError> {
     // Ensure dir exists
     if !installations_dir.exists() {
-        create_dir_all(&installations_dir).map_err(|e| {
+        create_dir_all(installations_dir).map_err(|e| {
             log_error!("installations: create_dir_failed: {e}");
             UiError {
                 name: "create_dir_failed".into(),
@@ -184,7 +195,7 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
     // --- Scan directories ---
     let mut results: Vec<InstallationResult> = Vec::new();
     if installations_dir.is_dir() {
-        for entry in read_dir(&installations_dir).map_err(|e| {
+        for entry in read_dir(installations_dir).map_err(|e| {
             log_error!("installations: io_error: {e}");
             UiError {
                 name: "io_error".into(),
@@ -244,7 +255,7 @@ pub fn get_all_installations(app: AppHandle) -> Result<Vec<InstallationResult>, 
                 info
             };
 
-            let size_bytes = dir_size(&dir);
+            let size_bytes = dir_size_cached(&dir);
             results.push(InstallationResult {
                 id,
                 name: info.name,
