@@ -56,7 +56,7 @@ export function ModItem({
   const emitevent = `mod-download-${mod.modid}-${pathHash}`;
 
   const installedMod = installedMods.find(
-    (i) => i.modid === mod.modid || mod.modidstrs.includes(i.modid.toString()),
+    (i) => i.modid === String(mod.modid) || mod.modidstrs.includes(i.modid),
   );
   const updateMod =
     modUpdates?.updates[mod.modidstrs[0]] ??
