@@ -345,19 +345,26 @@ pub fn scan_saves(installations_dir: &Path) -> Result<Vec<World>, UiError> {
 }
 
 #[command]
-pub fn get_all_saves(app: AppHandle) -> Result<Vec<World>, UiError> {
+pub async fn get_all_saves(app: AppHandle) -> Result<Vec<World>, UiError> {
     log_info!("get_all_saves");
-    let start = std::time::Instant::now();
-
     let subdir = installations_subdir(app.clone());
     let installation_dir_path = installations_folder(app.clone())?.join(&subdir);
-    let result = scan_saves(&installation_dir_path);
 
-    log_info!(
-        "get_all_saves completed in {}ms",
-        start.elapsed().as_millis()
-    );
-    result
+    // Opens every .vcdbs and decodes protobuf: keep it off the UI thread.
+    tokio::task::spawn_blocking(move || {
+        let start = std::time::Instant::now();
+        let result = scan_saves(&installation_dir_path);
+        log_info!(
+            "get_all_saves completed in {}ms",
+            start.elapsed().as_millis()
+        );
+        result
+    })
+    .await
+    .map_err(|e| {
+        log_error!("get_all_saves: scan task failed: {e}");
+        UiError::new("internal_error", format!("Saves scan failed: {e}"))
+    })?
 }
 
 #[command]
