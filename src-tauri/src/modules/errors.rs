@@ -3,8 +3,11 @@ use thiserror::Error;
 
 /// Frontend-facing error type returned by all Tauri commands.
 ///
-/// Module-level code should use typed errors (via `thiserror`) and convert to
-/// `UiError` at the command boundary.
+/// `name` is a stable machine-readable code for the failure category (e.g.
+/// `io_error`, `request_error`, `parse_error`, `db_error`, `not_found`), not a
+/// user-facing string. `message` carries the human-readable detail, including
+/// the operation that failed. Module-level code should use typed errors (via
+/// `thiserror`) and convert to `UiError` at the command boundary.
 #[derive(Debug, Clone, Serialize, Error)]
 #[error("[{name}] {message}")]
 pub struct UiError {

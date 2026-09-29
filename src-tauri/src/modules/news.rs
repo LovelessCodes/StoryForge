@@ -35,11 +35,12 @@ pub async fn fetch_news(
         .get(url)
         .send()
         .await
-        .map_err(|e| UiError::from(format!("Request error: {e}")))?
+        .map_err(|e| UiError::new("request_error", format!("Request error: {e}")))?
         .text()
         .await
-        .map_err(|e| UiError::from(format!("Read error: {e}")))?;
+        .map_err(|e| UiError::new("io_error", format!("Read error: {e}")))?;
 
-    let rss: Rss = from_str(&xml).map_err(|e| UiError::from(format!("XML parse error: {e}")))?;
+    let rss: Rss =
+        from_str(&xml).map_err(|e| UiError::new("parse_error", format!("XML parse error: {e}")))?;
     Ok(json!(rss.channel.item))
 }

@@ -223,13 +223,13 @@ pub async fn fetch_mod_info(
         .get(&url)
         .send()
         .await
-        .map_err(|e| UiError::from(format!("Request error: {e}")))?
+        .map_err(|e| UiError::new("request_error", format!("Request error: {e}")))?
         .text()
         .await
-        .map_err(|e| UiError::from(format!("Read error: {e}")))?;
+        .map_err(|e| UiError::new("io_error", format!("Read error: {e}")))?;
 
-    let json: Value =
-        from_str(&res).map_err(|e| UiError::from(format!("JSON parse error: {e}")))?;
+    let json: Value = from_str(&res)
+        .map_err(|e| UiError::new("parse_error", format!("JSON parse error: {e}")))?;
     Ok(json)
 }
 
@@ -246,13 +246,13 @@ pub async fn fetch_authors(
         .get(&url)
         .send()
         .await
-        .map_err(|e| UiError::from(format!("Request error: {e}")))?
+        .map_err(|e| UiError::new("request_error", format!("Request error: {e}")))?
         .text()
         .await
-        .map_err(|e| UiError::from(format!("Read error: {e}")))?;
+        .map_err(|e| UiError::new("io_error", format!("Read error: {e}")))?;
 
-    let json: Value =
-        from_str(&res).map_err(|e| UiError::from(format!("JSON parse error: {e}")))?;
+    let json: Value = from_str(&res)
+        .map_err(|e| UiError::new("parse_error", format!("JSON parse error: {e}")))?;
     Ok(json)
 }
 
@@ -276,7 +276,7 @@ pub async fn add_mod_to_installation(
         .get(&url)
         .send()
         .await
-        .map_err(|e| UiError::from(format!("Request error: {e}")))?;
+        .map_err(|e| UiError::new("request_error", format!("Request error: {e}")))?;
     if !response.status().is_success() {
         return Err(UiError {
             name: "http_error".into(),
@@ -337,7 +337,7 @@ pub async fn download_mod_file(
         .get(&url)
         .send()
         .await
-        .map_err(|e| UiError::from(format!("Request error: {e}")))?;
+        .map_err(|e| UiError::new("request_error", format!("Request error: {e}")))?;
 
     if !res.status().is_success() {
         return Err(UiError {
@@ -349,7 +349,7 @@ pub async fn download_mod_file(
     let mod_info: ModInfoResponse = res
         .json()
         .await
-        .map_err(|e| UiError::from(format!("JSON error: {e}")))?;
+        .map_err(|e| UiError::new("parse_error", format!("JSON error: {e}")))?;
 
     // 2. Find the release matching the requested version
     let release = mod_info
@@ -378,7 +378,7 @@ pub async fn download_mod_file(
         .get(download_url)
         .send()
         .await
-        .map_err(|e| UiError::from(format!("Download request error: {e}")))?;
+        .map_err(|e| UiError::new("request_error", format!("Download request error: {e}")))?;
 
     if !response.status().is_success() {
         return Err(UiError {
@@ -767,10 +767,10 @@ pub fn get_mod_configs(app: AppHandle, installation_id: u64) -> Result<Vec<Value
     }
 
     let mut configs = Vec::new();
-    for entry in
-        read_dir(mod_config_path).map_err(|e| UiError::from(format!("Read dir error: {e}")))?
+    for entry in read_dir(mod_config_path)
+        .map_err(|e| UiError::new("io_error", format!("Read dir error: {e}")))?
     {
-        let entry = entry.map_err(|e| UiError::from(format!("Dir entry error: {e}")))?;
+        let entry = entry.map_err(|e| UiError::new("io_error", format!("Dir entry error: {e}")))?;
         let path = entry.path();
         if path.is_file() {
             if let Some(ext) = path.extension() {
@@ -781,12 +781,13 @@ pub fn get_mod_configs(app: AppHandle, installation_id: u64) -> Result<Vec<Value
                         .unwrap_or("")
                         .to_string();
                     let mut file = File::open(&path)
-                        .map_err(|e| UiError::from(format!("Open file error: {e}")))?;
+                        .map_err(|e| UiError::new("io_error", format!("Open file error: {e}")))?;
                     let mut content = String::new();
                     file.read_to_string(&mut content)
-                        .map_err(|e| UiError::from(format!("Read file error: {e}")))?;
-                    let json_content: Value = json5_from_str(&content)
-                        .map_err(|e| UiError::from(format!("Parse JSON error: {e}")))?;
+                        .map_err(|e| UiError::new("io_error", format!("Read file error: {e}")))?;
+                    let json_content: Value = json5_from_str(&content).map_err(|e| {
+                        UiError::new("parse_error", format!("Parse JSON error: {e}"))
+                    })?;
                     configs.push(json!({
                         "filename": filename,
                         "content": json_content
@@ -856,7 +857,7 @@ pub async fn get_mod_updates(
         .get(&url)
         .send()
         .await
-        .map_err(|e| UiError::from(format!("Request error: {e}")))?;
+        .map_err(|e| UiError::new("request_error", format!("Request error: {e}")))?;
     if !res.status().is_success() {
         return Err(UiError {
             name: "http_error".into(),
@@ -866,9 +867,9 @@ pub async fn get_mod_updates(
     let res_text = res
         .text()
         .await
-        .map_err(|e| UiError::from(format!("Read error: {e}")))?;
-    let json: Value =
-        from_str(&res_text).map_err(|e| UiError::from(format!("Parse error: {e}")))?;
+        .map_err(|e| UiError::new("io_error", format!("Read error: {e}")))?;
+    let json: Value = from_str(&res_text)
+        .map_err(|e| UiError::new("parse_error", format!("Parse error: {e}")))?;
     Ok(json)
 }
 

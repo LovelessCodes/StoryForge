@@ -33,7 +33,7 @@ fn open_vcdbs(path: &Path, writable: bool) -> Result<Connection, UiError> {
     if writable {
         Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_WRITE).map_err(|e| {
             log_error!("saves: DB open error: {e}");
-            UiError::from(format!("DB open error: {e}"))
+            UiError::new("db_error", format!("DB open error: {e}"))
         })
     } else {
         // `immutable=1` keeps reads from creating -wal/-shm files next to the
@@ -46,7 +46,7 @@ fn open_vcdbs(path: &Path, writable: bool) -> Result<Connection, UiError> {
         )
         .map_err(|e| {
             log_error!("saves: DB open error: {e}");
-            UiError::from(format!("DB open error: {e}"))
+            UiError::new("db_error", format!("DB open error: {e}"))
         })
     }
 }
@@ -56,17 +56,17 @@ fn read_gamedata(conn: &Connection) -> Result<GameData, UiError> {
         .prepare("SELECT data FROM gamedata LIMIT 1")
         .map_err(|e| {
             log_error!("saves: DB prepare error: {e}");
-            UiError::from(format!("DB prepare error: {e}"))
+            UiError::new("db_error", format!("DB prepare error: {e}"))
         })?;
 
     let mut rows = stmt.query([]).map_err(|e| {
         log_error!("saves: DB query error: {e}");
-        UiError::from(format!("DB query error: {e}"))
+        UiError::new("db_error", format!("DB query error: {e}"))
     })?;
 
     let Some(row) = rows.next().map_err(|e| {
         log_error!("saves: DB row error: {e}");
-        UiError::from(format!("DB row error: {e}"))
+        UiError::new("db_error", format!("DB row error: {e}"))
     })?
     else {
         return Err(UiError::from("No gamedata found"));
@@ -74,12 +74,12 @@ fn read_gamedata(conn: &Connection) -> Result<GameData, UiError> {
 
     let data: Vec<u8> = row.get(0).map_err(|e| {
         log_error!("saves: DB get error: {e}");
-        UiError::from(format!("DB get error: {e}"))
+        UiError::new("db_error", format!("DB get error: {e}"))
     })?;
 
     GameData::decode(data.as_slice()).map_err(|e| {
         log_error!("saves: Protobuf decode error: {e}");
-        UiError::from(format!("Protobuf decode error: {e}"))
+        UiError::new("decode_error", format!("Protobuf decode error: {e}"))
     })
 }
 
@@ -87,13 +87,13 @@ fn write_gamedata(conn: &Connection, gamedata: &GameData) -> Result<(), UiError>
     let mut buf = Vec::new();
     gamedata.encode(&mut buf).map_err(|e| {
         log_error!("saves: Protobuf encode error: {e}");
-        UiError::from(format!("Protobuf encode error: {e}"))
+        UiError::new("encode_error", format!("Protobuf encode error: {e}"))
     })?;
 
     conn.execute("UPDATE gamedata SET data = ?1", [&buf])
         .map_err(|e| {
             log_error!("saves: DB update error: {e}");
-            UiError::from(format!("DB update error: {e}"))
+            UiError::new("db_error", format!("DB update error: {e}"))
         })?;
 
     Ok(())
@@ -131,7 +131,7 @@ fn extract_prospecting_logs(gamedata: &GameData) -> Result<Vec<(String, Prospect
     for (key, value) in &gamedata.mod_data {
         if let Some(player_uid) = key.strip_prefix("oreMapMarkers-") {
             let items = ProspectingLog::decode(value.as_slice())
-                .map_err(|e| UiError::from(format!("Protobuf decode error: {e}")))?;
+                .map_err(|e| UiError::new("decode_error", format!("Protobuf decode error: {e}")))?;
             results.push((player_uid.to_string(), items));
         }
     }
@@ -213,11 +213,11 @@ fn saves_fingerprint(installations_dir: &Path) -> Result<u64, UiError> {
 
     for entry in read_dir(installations_dir).map_err(|e| {
         log_error!("saves: Read dir error: {e}");
-        UiError::from(format!("Read dir error: {e}"))
+        UiError::new("io_error", format!("Read dir error: {e}"))
     })? {
         let entry = entry.map_err(|e| {
             log_error!("saves: Dir entry error: {e}");
-            UiError::from(format!("Dir entry error: {e}"))
+            UiError::new("io_error", format!("Dir entry error: {e}"))
         })?;
         let path = entry.path();
         if !path.is_dir() {
@@ -231,11 +231,11 @@ fn saves_fingerprint(installations_dir: &Path) -> Result<u64, UiError> {
 
         for save_entry in read_dir(&saves_path).map_err(|e| {
             log_error!("saves: Read dir error: {e}");
-            UiError::from(format!("Read dir error: {e}"))
+            UiError::new("io_error", format!("Read dir error: {e}"))
         })? {
             let save_entry = save_entry.map_err(|e| {
                 log_error!("saves: Dir entry error: {e}");
-                UiError::from(format!("Dir entry error: {e}"))
+                UiError::new("io_error", format!("Dir entry error: {e}"))
             })?;
             let save_path = save_entry.path();
             if !save_path.is_file() {
@@ -301,11 +301,11 @@ pub fn scan_saves(installations_dir: &Path) -> Result<Vec<World>, UiError> {
 
     for entry in read_dir(installations_dir).map_err(|e| {
         log_error!("saves: Read dir error: {e}");
-        UiError::from(format!("Read dir error: {e}"))
+        UiError::new("io_error", format!("Read dir error: {e}"))
     })? {
         let entry = entry.map_err(|e| {
             log_error!("saves: Dir entry error: {e}");
-            UiError::from(format!("Dir entry error: {e}"))
+            UiError::new("io_error", format!("Dir entry error: {e}"))
         })?;
         let path = entry.path();
         let installation_name = entry.file_name().into_string().unwrap_or_default();
@@ -321,11 +321,11 @@ pub fn scan_saves(installations_dir: &Path) -> Result<Vec<World>, UiError> {
 
         for save_entry in read_dir(saves_path).map_err(|e| {
             log_error!("saves: Read dir error: {e}");
-            UiError::from(format!("Read dir error: {e}"))
+            UiError::new("io_error", format!("Read dir error: {e}"))
         })? {
             let save_entry = save_entry.map_err(|e| {
                 log_error!("saves: Dir entry error: {e}");
-                UiError::from(format!("Dir entry error: {e}"))
+                UiError::new("io_error", format!("Dir entry error: {e}"))
             })?;
             let save_path = save_entry.path();
             if !save_path.is_file() {
@@ -379,11 +379,11 @@ pub fn get_installation_saves(
     if saves_path.exists() && saves_path.is_dir() {
         for entry in read_dir(saves_path).map_err(|e| {
             log_error!("saves: Read dir error: {e}");
-            UiError::from(format!("Read dir error: {e}"))
+            UiError::new("io_error", format!("Read dir error: {e}"))
         })? {
             let entry = entry.map_err(|e| {
                 log_error!("saves: Dir entry error: {e}");
-                UiError::from(format!("Dir entry error: {e}"))
+                UiError::new("io_error", format!("Dir entry error: {e}"))
             })?;
             let path = entry.path();
             if path.is_file() && path.extension() == Some(OsStr::new("vcdbs")) {
@@ -410,7 +410,7 @@ pub fn update_world(
     if !saves_path.exists() {
         create_dir_all(&saves_path).map_err(|e| {
             log_error!("saves: Create dir error: {e}");
-            UiError::from(format!("Create dir error: {e}"))
+            UiError::new("io_error", format!("Create dir error: {e}"))
         })?;
     }
     let world_path = Path::new(&world_path);
@@ -474,12 +474,12 @@ pub fn update_world(
                 if !maps_dir.exists() {
                     create_dir_all(maps_dir).map_err(|e| {
                         log_error!("saves: Create dir error: {e}");
-                        UiError::from(format!("Create dir error: {e}"))
+                        UiError::new("io_error", format!("Create dir error: {e}"))
                     })?;
                 }
                 rename(maps_path, &new_maps_path).map_err(|e| {
                     log_error!("saves: Rename error: {e}");
-                    UiError::from(format!("Rename error: {e}"))
+                    UiError::new("io_error", format!("Rename error: {e}"))
                 })?;
             }
         }
@@ -487,7 +487,7 @@ pub fn update_world(
 
     rename(world_path, &new_world_path).map_err(|e| {
         log_error!("saves: Rename error: {e}");
-        UiError::from(format!("Rename error: {e}"))
+        UiError::new("io_error", format!("Rename error: {e}"))
     })?;
     invalidate_saves_cache();
 
@@ -522,14 +522,14 @@ pub fn remove_world(app: AppHandle, world_path: String) -> Result<(), UiError> {
         if maps_path.exists() && maps_path.is_file() {
             remove_file(maps_path).map_err(|e| {
                 log_error!("saves: Remove file error: {e}");
-                UiError::from(format!("Remove file error: {e}"))
+                UiError::new("io_error", format!("Remove file error: {e}"))
             })?;
         }
     }
 
     remove_file(world_path).map_err(|e| {
         log_error!("saves: Remove file error: {e}");
-        UiError::from(format!("Remove file error: {e}"))
+        UiError::new("io_error", format!("Remove file error: {e}"))
     })?;
     invalidate_saves_cache();
     Ok(())
