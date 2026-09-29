@@ -13,7 +13,7 @@ use zip::read::ZipArchive;
 
 use super::errors::UiError;
 use super::installations::find_installation_by_id;
-use super::utils::{safe_file_name, safe_join};
+use super::utils::{require_managed_path, safe_file_name, safe_join};
 use crate::log_info;
 
 #[allow(dead_code)]
@@ -259,10 +259,12 @@ pub async fn fetch_authors(
 #[command]
 pub async fn add_mod_to_installation(
     client: State<'_, Arc<reqwest::Client>>,
+    app: AppHandle,
     path: String,
     url: String,
 ) -> Result<String, UiError> {
     log_info!("add_mod_to_installation: {:?}", path);
+    require_managed_path(&app, Path::new(&path), "Installation path")?;
     let pb = PathBuf::from(path).join("Mods");
     if !pb.exists() {
         create_dir_all(&pb).map_err(|e| UiError {
@@ -651,8 +653,9 @@ pub fn get_mods_in_dir(mods_path: &Path) -> Result<ModsResult, UiError> {
 }
 
 #[command]
-pub fn get_mods(path: String) -> Result<ModsResult, UiError> {
+pub fn get_mods(app: AppHandle, path: String) -> Result<ModsResult, UiError> {
     log_info!("get_mods: {}", path);
+    require_managed_path(&app, Path::new(&path), "Installation path")?;
     let start = std::time::Instant::now();
     let result = get_mods_in_dir(&PathBuf::from(path).join("Mods"));
     log_info!("get_mods completed in {}ms", start.elapsed().as_millis());
@@ -796,8 +799,12 @@ pub fn get_installation_mods(app: AppHandle, id: u64) -> Result<Vec<OutputMod>, 
 }
 
 #[command]
-pub async fn remove_mod_from_installation(params: ModRemoveParams) -> Result<String, UiError> {
+pub async fn remove_mod_from_installation(
+    app: AppHandle,
+    params: ModRemoveParams,
+) -> Result<String, UiError> {
     log_info!("remove_mod_from_installation: {:?}", params.modpath);
+    require_managed_path(&app, Path::new(&params.path), "Installation path")?;
     let mods_path = PathBuf::from(&params.path).join("Mods");
     if !mods_path.exists() || !mods_path.is_dir() {
         return Err(UiError {

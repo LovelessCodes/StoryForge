@@ -9,7 +9,10 @@ use tauri::{command, AppHandle, State};
 use crate::modules::utils::{dir_size, format_size, move_folder};
 
 use super::errors::UiError;
-use super::utils::{versions_folder, versions_subdir};
+use super::utils::{
+    require_managed_path, require_safe_destination, safe_file_name, versions_folder,
+    versions_subdir,
+};
 use crate::{log_error, log_info};
 
 /// A version is incomplete (not fully installed) if its directory contains any sign
@@ -82,6 +85,7 @@ pub fn get_installed_versions(app: AppHandle) -> Result<Vec<VersionInfo>, UiErro
 #[command]
 pub fn remove_installed_version(version: String, app: AppHandle) -> Result<String, UiError> {
     log_info!("remove_installed_version: {}", version);
+    let version = safe_file_name(&version)?;
     let subdir = versions_subdir(app.clone());
     let versions_path = versions_folder(app.clone()).join(&subdir).join(&version);
     if !versions_path.exists() || !versions_path.is_dir() {
@@ -135,12 +139,15 @@ pub async fn fetch_versions(
 
 #[command]
 pub async fn move_versions_folder(
+    app: AppHandle,
     source: String,
     destination: String,
     subdir: String,
 ) -> Result<String, UiError> {
     let src = PathBuf::from(&source).join(&subdir);
     let dst = PathBuf::from(&destination).join(&subdir);
+    require_managed_path(&app, Path::new(&source), "Source directory")?;
+    require_safe_destination(Path::new(&destination), "Destination")?;
     log_info!("move_versions_folder: {:?} -> {:?}", src, dst);
     move_folder(src, dst)?;
     log_info!("move_versions_folder: done");
@@ -148,7 +155,12 @@ pub async fn move_versions_folder(
 }
 
 #[command]
-pub async fn remove_all_versions(source: String, subdir: String) -> Result<String, UiError> {
+pub async fn remove_all_versions(
+    app: AppHandle,
+    source: String,
+    subdir: String,
+) -> Result<String, UiError> {
+    require_managed_path(&app, Path::new(&source), "Source directory")?;
     let source_path = PathBuf::from(source).join(&subdir);
 
     if !source_path.exists() || !source_path.is_dir() {
