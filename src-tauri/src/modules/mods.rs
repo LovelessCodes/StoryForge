@@ -5,7 +5,6 @@ use std::{
     fs::{create_dir_all, read_dir, remove_file, File},
     io::{Read, Write},
     path::{Path, PathBuf},
-    str::FromStr,
     sync::Arc,
 };
 use tauri::{command, AppHandle, State};
@@ -13,54 +12,9 @@ use zip::read::ZipArchive;
 
 use super::errors::UiError;
 use super::installations::find_installation_by_id;
+use super::paths;
 use super::utils::{lock, require_managed_path, safe_file_name, safe_join};
 use crate::{log_error, log_info};
-
-#[allow(dead_code)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ModSortBy {
-    Created,
-    LastReleased,
-    Downloads,
-    Follows,
-    Comments,
-    TrendingPoints,
-}
-
-impl FromStr for ModSortBy {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "asset.created" => Ok(ModSortBy::Created),
-            "lastreleased" => Ok(ModSortBy::LastReleased),
-            "downloads" => Ok(ModSortBy::Downloads),
-            "follows" => Ok(ModSortBy::Follows),
-            "comments" => Ok(ModSortBy::Comments),
-            "trendingpoints" => Ok(ModSortBy::TrendingPoints),
-            _ => Err("unknown sort key"),
-        }
-    }
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ModSortOrder {
-    Desc,
-    Asc,
-}
-
-impl FromStr for ModSortOrder {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "desc" => Ok(ModSortOrder::Desc),
-            "asc" => Ok(ModSortOrder::Asc),
-            _ => Err("unknown sort order"),
-        }
-    }
-}
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ModRemoveParams {
@@ -223,13 +177,13 @@ pub async fn fetch_mod_info(
         .get(&url)
         .send()
         .await
-        .map_err(|e| UiError::from(format!("Request error: {e}")))?
+        .map_err(|e| UiError::new("request_error", format!("Request error: {e}")))?
         .text()
         .await
-        .map_err(|e| UiError::from(format!("Read error: {e}")))?;
+        .map_err(|e| UiError::new("io_error", format!("Read error: {e}")))?;
 
-    let json: Value =
-        from_str(&res).map_err(|e| UiError::from(format!("JSON parse error: {e}")))?;
+    let json: Value = from_str(&res)
+        .map_err(|e| UiError::new("parse_error", format!("JSON parse error: {e}")))?;
     Ok(json)
 }
 
@@ -246,13 +200,13 @@ pub async fn fetch_authors(
         .get(&url)
         .send()
         .await
-        .map_err(|e| UiError::from(format!("Request error: {e}")))?
+        .map_err(|e| UiError::new("request_error", format!("Request error: {e}")))?
         .text()
         .await
-        .map_err(|e| UiError::from(format!("Read error: {e}")))?;
+        .map_err(|e| UiError::new("io_error", format!("Read error: {e}")))?;
 
-    let json: Value =
-        from_str(&res).map_err(|e| UiError::from(format!("JSON parse error: {e}")))?;
+    let json: Value = from_str(&res)
+        .map_err(|e| UiError::new("parse_error", format!("JSON parse error: {e}")))?;
     Ok(json)
 }
 
@@ -265,7 +219,7 @@ pub async fn add_mod_to_installation(
 ) -> Result<String, UiError> {
     log_info!("add_mod_to_installation: {:?}", path);
     require_managed_path(&app, Path::new(&path), "Installation path")?;
-    let pb = PathBuf::from(path).join("Mods");
+    let pb = PathBuf::from(path).join(paths::MODS_DIR);
     if !pb.exists() {
         create_dir_all(&pb).map_err(|e| UiError {
             name: "create_dir_failed".into(),
@@ -276,7 +230,7 @@ pub async fn add_mod_to_installation(
         .get(&url)
         .send()
         .await
-        .map_err(|e| UiError::from(format!("Request error: {e}")))?;
+        .map_err(|e| UiError::new("request_error", format!("Request error: {e}")))?;
     if !response.status().is_success() {
         return Err(UiError {
             name: "http_error".into(),
@@ -312,7 +266,7 @@ pub async fn download_mod(
     version: String,
     installation_path: String,
 ) -> Result<String, UiError> {
-    let mods_dir = PathBuf::from(&installation_path).join("Mods");
+    let mods_dir = PathBuf::from(&installation_path).join(paths::MODS_DIR);
     download_mod_file(&client, &modid, &version, &mods_dir).await
 }
 
@@ -337,7 +291,7 @@ pub async fn download_mod_file(
         .get(&url)
         .send()
         .await
-        .map_err(|e| UiError::from(format!("Request error: {e}")))?;
+        .map_err(|e| UiError::new("request_error", format!("Request error: {e}")))?;
 
     if !res.status().is_success() {
         return Err(UiError {
@@ -349,7 +303,7 @@ pub async fn download_mod_file(
     let mod_info: ModInfoResponse = res
         .json()
         .await
-        .map_err(|e| UiError::from(format!("JSON error: {e}")))?;
+        .map_err(|e| UiError::new("parse_error", format!("JSON error: {e}")))?;
 
     // 2. Find the release matching the requested version
     let release = mod_info
@@ -378,7 +332,7 @@ pub async fn download_mod_file(
         .get(download_url)
         .send()
         .await
-        .map_err(|e| UiError::from(format!("Download request error: {e}")))?;
+        .map_err(|e| UiError::new("request_error", format!("Download request error: {e}")))?;
 
     if !response.status().is_success() {
         return Err(UiError {
@@ -738,7 +692,7 @@ pub fn get_mods_in_dir(mods_path: &Path) -> Result<ModsResult, UiError> {
 pub async fn get_mods(app: AppHandle, path: String) -> Result<ModsResult, UiError> {
     log_info!("get_mods: {}", path);
     require_managed_path(&app, Path::new(&path), "Installation path")?;
-    let mods_dir = PathBuf::from(path).join("Mods");
+    let mods_dir = PathBuf::from(path).join(paths::MODS_DIR);
 
     // Opens every zip in the directory: keep it off the UI thread.
     tokio::task::spawn_blocking(move || {
@@ -758,7 +712,7 @@ pub async fn get_mods(app: AppHandle, path: String) -> Result<ModsResult, UiErro
 pub fn get_mod_configs(app: AppHandle, installation_id: u64) -> Result<Vec<Value>, UiError> {
     log_info!("get_mod_configs: installation={}", installation_id);
     let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
-    let mod_config_path = pb.join("ModConfig");
+    let mod_config_path = pb.join(paths::MODCONFIG_DIR);
     if !mod_config_path.exists() || !mod_config_path.is_dir() {
         return Err(UiError {
             name: "not_found".into(),
@@ -767,10 +721,10 @@ pub fn get_mod_configs(app: AppHandle, installation_id: u64) -> Result<Vec<Value
     }
 
     let mut configs = Vec::new();
-    for entry in
-        read_dir(mod_config_path).map_err(|e| UiError::from(format!("Read dir error: {e}")))?
+    for entry in read_dir(mod_config_path)
+        .map_err(|e| UiError::new("io_error", format!("Read dir error: {e}")))?
     {
-        let entry = entry.map_err(|e| UiError::from(format!("Dir entry error: {e}")))?;
+        let entry = entry.map_err(|e| UiError::new("io_error", format!("Dir entry error: {e}")))?;
         let path = entry.path();
         if path.is_file() {
             if let Some(ext) = path.extension() {
@@ -781,12 +735,13 @@ pub fn get_mod_configs(app: AppHandle, installation_id: u64) -> Result<Vec<Value
                         .unwrap_or("")
                         .to_string();
                     let mut file = File::open(&path)
-                        .map_err(|e| UiError::from(format!("Open file error: {e}")))?;
+                        .map_err(|e| UiError::new("io_error", format!("Open file error: {e}")))?;
                     let mut content = String::new();
                     file.read_to_string(&mut content)
-                        .map_err(|e| UiError::from(format!("Read file error: {e}")))?;
-                    let json_content: Value = json5_from_str(&content)
-                        .map_err(|e| UiError::from(format!("Parse JSON error: {e}")))?;
+                        .map_err(|e| UiError::new("io_error", format!("Read file error: {e}")))?;
+                    let json_content: Value = json5_from_str(&content).map_err(|e| {
+                        UiError::new("parse_error", format!("Parse JSON error: {e}"))
+                    })?;
                     configs.push(json!({
                         "filename": filename,
                         "content": json_content
@@ -812,7 +767,7 @@ pub fn save_mod_config(
         file
     );
     let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
-    let mod_config_path = pb.join("ModConfig");
+    let mod_config_path = pb.join(paths::MODCONFIG_DIR);
     if !mod_config_path.exists() || !mod_config_path.is_dir() {
         return Err(UiError {
             name: "not_found".into(),
@@ -856,7 +811,7 @@ pub async fn get_mod_updates(
         .get(&url)
         .send()
         .await
-        .map_err(|e| UiError::from(format!("Request error: {e}")))?;
+        .map_err(|e| UiError::new("request_error", format!("Request error: {e}")))?;
     if !res.status().is_success() {
         return Err(UiError {
             name: "http_error".into(),
@@ -866,9 +821,9 @@ pub async fn get_mod_updates(
     let res_text = res
         .text()
         .await
-        .map_err(|e| UiError::from(format!("Read error: {e}")))?;
-    let json: Value =
-        from_str(&res_text).map_err(|e| UiError::from(format!("Parse error: {e}")))?;
+        .map_err(|e| UiError::new("io_error", format!("Read error: {e}")))?;
+    let json: Value = from_str(&res_text)
+        .map_err(|e| UiError::new("parse_error", format!("Parse error: {e}")))?;
     Ok(json)
 }
 
@@ -876,7 +831,7 @@ pub async fn get_mod_updates(
 pub async fn get_installation_mods(app: AppHandle, id: u64) -> Result<Vec<OutputMod>, UiError> {
     log_info!("get_installation_mods: installation={}", id);
     let (pb, _installation) = find_installation_by_id(&app, id)?;
-    let mods_dir = pb.join("Mods");
+    let mods_dir = pb.join(paths::MODS_DIR);
 
     tokio::task::spawn_blocking(move || {
         let start = std::time::Instant::now();
@@ -901,7 +856,7 @@ pub async fn remove_mod_from_installation(
 ) -> Result<String, UiError> {
     log_info!("remove_mod_from_installation: {:?}", params.modpath);
     require_managed_path(&app, Path::new(&params.path), "Installation path")?;
-    let mods_path = PathBuf::from(&params.path).join("Mods");
+    let mods_path = PathBuf::from(&params.path).join(paths::MODS_DIR);
     if !mods_path.exists() || !mods_path.is_dir() {
         return Err(UiError {
             name: "not_found".into(),

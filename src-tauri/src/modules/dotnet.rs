@@ -344,21 +344,30 @@ async fn resolve_dotnet_version(client: &Client, channel: &str) -> Result<String
     );
     let resp = client.get(&url).send().await.map_err(|e| {
         log_error!("dotnet: Failed to fetch dotnet releases: {e}");
-        UiError::from(format!("Failed to fetch dotnet releases: {e}"))
+        UiError::new(
+            "dotnet_error",
+            format!("Failed to fetch dotnet releases: {e}"),
+        )
     })?;
     if !resp.status().is_success() {
-        return Err(UiError::from(format!(
-            "Failed to fetch dotnet releases: HTTP {}",
-            resp.status()
-        )));
+        return Err(UiError::new(
+            "dotnet_error",
+            format!("Failed to fetch dotnet releases: HTTP {}", resp.status()),
+        ));
     }
     let text = resp.text().await.map_err(|e| {
         log_error!("dotnet: Failed to read dotnet releases body: {e}");
-        UiError::from(format!("Failed to read dotnet releases body: {e}"))
+        UiError::new(
+            "dotnet_error",
+            format!("Failed to read dotnet releases body: {e}"),
+        )
     })?;
     let release_index: ReleaseIndex = serde_json::from_str(&text).map_err(|e| {
         log_error!("dotnet: Failed to parse dotnet releases: {e}");
-        UiError::from(format!("Failed to parse dotnet releases: {e}"))
+        UiError::new(
+            "dotnet_error",
+            format!("Failed to parse dotnet releases: {e}"),
+        )
     })?;
     Ok(release_index.latest_runtime)
 }
@@ -409,27 +418,36 @@ async fn extract_archive(archive: &Path, dest_dir: &Path) -> Result<(), UiError>
 
     tokio::task::spawn_blocking(move || {
         if archive.extension().and_then(|e| e.to_str()) == Some("zip") {
-            let file = File::open(&archive)
-                .map_err(|e| UiError::from(format!("Failed to open dotnet zip: {e}")))?;
-            let mut archive = zip::ZipArchive::new(file)
-                .map_err(|e| UiError::from(format!("Failed to open dotnet zip: {e}")))?;
-            archive
-                .extract(&dest_dir)
-                .map_err(|e| UiError::from(format!("Failed to extract dotnet runtime: {e}")))?;
+            let file = File::open(&archive).map_err(|e| {
+                UiError::new("dotnet_error", format!("Failed to open dotnet zip: {e}"))
+            })?;
+            let mut archive = zip::ZipArchive::new(file).map_err(|e| {
+                UiError::new("dotnet_error", format!("Failed to open dotnet zip: {e}"))
+            })?;
+            archive.extract(&dest_dir).map_err(|e| {
+                UiError::new(
+                    "dotnet_error",
+                    format!("Failed to extract dotnet runtime: {e}"),
+                )
+            })?;
         } else {
-            let file = File::open(&archive)
-                .map_err(|e| UiError::from(format!("Failed to open dotnet tar: {e}")))?;
+            let file = File::open(&archive).map_err(|e| {
+                UiError::new("dotnet_error", format!("Failed to open dotnet tar: {e}"))
+            })?;
             let reader = BufReader::new(file);
             let gz = flate2::read::GzDecoder::new(reader);
             let mut archive = tar::Archive::new(gz);
-            archive
-                .unpack(&dest_dir)
-                .map_err(|e| UiError::from(format!("Failed to extract dotnet runtime: {e}")))?;
+            archive.unpack(&dest_dir).map_err(|e| {
+                UiError::new(
+                    "dotnet_error",
+                    format!("Failed to extract dotnet runtime: {e}"),
+                )
+            })?;
         }
         Ok::<(), UiError>(())
     })
     .await
-    .map_err(|e| UiError::from(format!("spawn blocking error: {e}")))?
+    .map_err(|e| UiError::new("internal_error", format!("spawn blocking error: {e}")))?
 }
 
 /// Download and extract the .NET runtime to `dest_dir`.
@@ -459,20 +477,27 @@ async fn download_dotnet_runtime(
 
     let resp = client.get(&url).send().await.map_err(|e| {
         log_error!("dotnet: Failed to download dotnet runtime: {e}");
-        UiError::from(format!("Failed to download dotnet runtime: {e}"))
+        UiError::new(
+            "dotnet_error",
+            format!("Failed to download dotnet runtime: {e}"),
+        )
     })?;
 
     if !resp.status().is_success() {
-        return Err(UiError::from(format!(
-            "Failed to download dotnet runtime: HTTP {}",
-            resp.status()
-        )));
+        return Err(UiError::new(
+            "dotnet_error",
+            format!("Failed to download dotnet runtime: HTTP {}", resp.status()),
+        ));
     }
 
     let total_size = resp.content_length().unwrap_or(0);
     let archive_path = dest_dir.join(format!("dotnet-runtime-{}.tmp", version));
-    let mut file = File::create(&archive_path)
-        .map_err(|e| UiError::from(format!("Failed to create dotnet archive temp file: {e}")))?;
+    let mut file = File::create(&archive_path).map_err(|e| {
+        UiError::new(
+            "dotnet_error",
+            format!("Failed to create dotnet archive temp file: {e}"),
+        )
+    })?;
 
     let mut stream = resp.bytes_stream();
     let mut downloaded: u64 = 0;
@@ -482,10 +507,14 @@ async fn download_dotnet_runtime(
     while let Some(chunk) = stream.next().await {
         let chunk = chunk.map_err(|e| {
             log_error!("dotnet: Download error: {e}");
-            UiError::from(format!("Download error: {e}"))
+            UiError::new("request_error", format!("Download error: {e}"))
         })?;
-        file.write_all(&chunk)
-            .map_err(|e| UiError::from(format!("Failed to write dotnet archive: {e}")))?;
+        file.write_all(&chunk).map_err(|e| {
+            UiError::new(
+                "dotnet_error",
+                format!("Failed to write dotnet archive: {e}"),
+            )
+        })?;
         downloaded += chunk.len() as u64;
         if total_size > 0 && progress.ready() {
             let percent = (downloaded as f64 / total_size as f64) * 100.0;
@@ -502,9 +531,12 @@ async fn download_dotnet_runtime(
             .map(|m| m.len())
             .unwrap_or(downloaded);
         if actual != total_size {
-            return Err(UiError::from(format!(
+            return Err(UiError::new(
+                "download_error",
+                format!(
                 "dotnet download size mismatch: expected {total_size} bytes, got {actual} bytes"
-            )));
+            ),
+            ));
         }
     }
 

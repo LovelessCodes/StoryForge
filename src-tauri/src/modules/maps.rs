@@ -10,6 +10,7 @@ use std::{
 use tauri::{command, AppHandle};
 
 use super::errors::UiError;
+use super::paths;
 use super::proto::{GameData, MapPieceDb};
 use super::utils::{generate_id, installations_folder, installations_subdir};
 use crate::{log_error, log_info};
@@ -80,7 +81,7 @@ fn open_sqlite_readonly(path: &Path) -> Result<Connection, UiError> {
     )
     .map_err(|e| {
         log_error!("maps: DB open error: {e}");
-        UiError::from(format!("DB open error: {e}"))
+        UiError::new("db_error", format!("DB open error: {e}"))
     })
 }
 
@@ -99,25 +100,25 @@ fn read_gamedata(conn: &Connection) -> Result<GameData, UiError> {
         .prepare("SELECT data FROM gamedata LIMIT 1")
         .map_err(|e| {
             log_error!("maps: DB prepare error: {e}");
-            UiError::from(format!("DB prepare error: {e}"))
+            UiError::new("db_error", format!("DB prepare error: {e}"))
         })?;
 
     let mut rows = stmt.query([]).map_err(|e| {
         log_error!("maps: DB query error: {e}");
-        UiError::from(format!("DB query error: {e}"))
+        UiError::new("db_error", format!("DB query error: {e}"))
     })?;
 
     if let Some(row) = rows.next().map_err(|e| {
         log_error!("maps: DB row error: {e}");
-        UiError::from(format!("DB row error: {e}"))
+        UiError::new("db_error", format!("DB row error: {e}"))
     })? {
         let data: Vec<u8> = row.get(0).map_err(|e| {
             log_error!("maps: DB get error: {e}");
-            UiError::from(format!("DB get error: {e}"))
+            UiError::new("db_error", format!("DB get error: {e}"))
         })?;
         GameData::decode(data.as_slice()).map_err(|e| {
             log_error!("maps: Protobuf decode error: {e}");
-            UiError::from(format!("Protobuf decode error: {e}"))
+            UiError::new("decode_error", format!("Protobuf decode error: {e}"))
         })
     } else {
         Err(UiError::from("No gamedata found"))
@@ -128,7 +129,10 @@ fn maps_db_path(world_path: &Path, savegame_identifier: &str) -> Result<PathBuf,
     world_path
         .parent()
         .and_then(|p| p.parent())
-        .map(|p| p.join("Maps").join(format!("{}.db", savegame_identifier)))
+        .map(|p| {
+            p.join(paths::MAPS_DIR)
+                .join(format!("{}.db", savegame_identifier))
+        })
         .ok_or_else(|| UiError::from("Could not determine Maps path"))
 }
 
@@ -160,16 +164,16 @@ fn checked_table_name(name: &str) -> Result<&str, UiError> {
         return Err(UiError::from("Map table name is empty"));
     }
     if name.starts_with("sqlite_") {
-        return Err(UiError::from(format!(
-            "Refusing to use internal SQLite table: {}",
-            name
-        )));
+        return Err(UiError::new(
+            "invalid_table",
+            format!("Refusing to use internal SQLite table: {}", name),
+        ));
     }
     if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
-        return Err(UiError::from(format!(
-            "Map table name contains invalid characters: {}",
-            name
-        )));
+        return Err(UiError::new(
+            "invalid_table",
+            format!("Map table name contains invalid characters: {}", name),
+        ));
     }
     Ok(name)
 }
@@ -183,7 +187,7 @@ fn find_map_table(conn: &Connection) -> Result<String, UiError> {
         )
         .map_err(|e| {
             log_error!("maps: Table query error: {e}");
-            UiError::from(format!("Table query error: {e}"))
+            UiError::new("db_error", format!("Table query error: {e}"))
         })?;
     checked_table_name(&name)?;
     Ok(name)
@@ -224,7 +228,7 @@ pub fn scan_maps(installations_dir: &Path) -> Result<Vec<MapInfo>, UiError> {
         let inst_name = entry.file_name().to_string_lossy().to_string();
         let inst_id = generate_id(&inst_name);
 
-        let maps_dir = dir.join("Maps");
+        let maps_dir = paths::maps_dir(&dir);
         if !maps_dir.is_dir() {
             continue;
         }
@@ -308,23 +312,23 @@ fn inspect_map_database_blocking(world_path: String) -> Result<MapDatabaseInfo, 
         .prepare("SELECT name, sql FROM sqlite_master WHERE type='table' ORDER BY name")
         .map_err(|e| {
             log_error!("maps: Schema query error: {e}");
-            UiError::from(format!("Schema query error: {e}"))
+            UiError::new("db_error", format!("Schema query error: {e}"))
         })?;
 
     let mut table_rows = table_stmt.query([]).map_err(|e| {
         log_error!("maps: Schema query error: {e}");
-        UiError::from(format!("Schema query error: {e}"))
+        UiError::new("db_error", format!("Schema query error: {e}"))
     })?;
 
     let mut main_table_name: Option<String> = None;
 
     while let Some(row) = table_rows.next().map_err(|e| {
         log_error!("maps: Schema row error: {e}");
-        UiError::from(format!("Schema row error: {e}"))
+        UiError::new("db_error", format!("Schema row error: {e}"))
     })? {
         let name: String = row.get(0).map_err(|e| {
             log_error!("maps: Schema name error: {e}");
-            UiError::from(format!("Schema name error: {e}"))
+            UiError::new("db_error", format!("Schema name error: {e}"))
         })?;
         let schema: Option<String> = row.get(1).ok();
 
@@ -352,18 +356,18 @@ fn inspect_map_database_blocking(world_path: String) -> Result<MapDatabaseInfo, 
             ))
             .map_err(|e| {
                 log_error!("maps: Position query error: {e}");
-                UiError::from(format!("Position query error: {e}"))
+                UiError::new("db_error", format!("Position query error: {e}"))
             })?;
 
         let mut pos_rows = pos_stmt.query([]).map_err(|e| {
             log_error!("maps: Position query error: {e}");
-            UiError::from(format!("Position query error: {e}"))
+            UiError::new("db_error", format!("Position query error: {e}"))
         })?;
 
         let mut positions = Vec::new();
         while let Some(row) = pos_rows.next().map_err(|e| {
             log_error!("maps: Position row error: {e}");
-            UiError::from(format!("Position row error: {e}"))
+            UiError::new("db_error", format!("Position row error: {e}"))
         })? {
             if let Ok(pos) = row.get::<_, i64>(0) {
                 positions.push(pos);
@@ -406,19 +410,19 @@ fn bounds_from_conn(conn: &Connection, table_name: &str) -> Result<MapBounds, Ui
         })
         .map_err(|e| {
             log_error!("maps: Count query error: {e}");
-            UiError::from(format!("Count query error: {e}"))
+            UiError::new("db_error", format!("Count query error: {e}"))
         })?;
 
     let mut stmt = conn
         .prepare(&format!("SELECT position FROM {}", table_name))
         .map_err(|e| {
             log_error!("maps: Position query error: {e}");
-            UiError::from(format!("Position query error: {e}"))
+            UiError::new("db_error", format!("Position query error: {e}"))
         })?;
 
     let mut rows = stmt.query([]).map_err(|e| {
         log_error!("maps: Position query error: {e}");
-        UiError::from(format!("Position query error: {e}"))
+        UiError::new("db_error", format!("Position query error: {e}"))
     })?;
 
     let mut min_x = i32::MAX;
@@ -428,11 +432,11 @@ fn bounds_from_conn(conn: &Connection, table_name: &str) -> Result<MapBounds, Ui
 
     while let Some(row) = rows.next().map_err(|e| {
         log_error!("maps: Position row error: {e}");
-        UiError::from(format!("Position row error: {e}"))
+        UiError::new("db_error", format!("Position row error: {e}"))
     })? {
         let position: i64 = row.get(0).map_err(|e| {
             log_error!("maps: Position get error: {e}");
-            UiError::from(format!("Position get error: {e}"))
+            UiError::new("db_error", format!("Position get error: {e}"))
         })?;
         let (x, y) = decode_position(position);
 
@@ -473,7 +477,7 @@ fn get_map_tile_blocking(world_path: String, position: i64) -> Result<MapTile, U
         )
         .map_err(|e| {
             log_error!("maps: Tile query error: {e}");
-            UiError::from(format!("Tile query error: {e}"))
+            UiError::new("db_error", format!("Tile query error: {e}"))
         })?;
 
     decode_tile(position, data)
@@ -535,26 +539,26 @@ fn get_all_map_tiles_blocking(world_path: String) -> Result<Vec<MapTile>, UiErro
         .prepare(&format!("SELECT position, data FROM {}", table_name))
         .map_err(|e| {
             log_error!("maps: Tile query error: {e}");
-            UiError::from(format!("Tile query error: {e}"))
+            UiError::new("db_error", format!("Tile query error: {e}"))
         })?;
 
     let mut rows = stmt.query([]).map_err(|e| {
         log_error!("maps: Tile query error: {e}");
-        UiError::from(format!("Tile query error: {e}"))
+        UiError::new("db_error", format!("Tile query error: {e}"))
     })?;
 
     let mut tiles = Vec::new();
     while let Some(row) = rows.next().map_err(|e| {
         log_error!("maps: Tile row error: {e}");
-        UiError::from(format!("Tile row error: {e}"))
+        UiError::new("db_error", format!("Tile row error: {e}"))
     })? {
         let position: i64 = row.get(0).map_err(|e| {
             log_error!("maps: Position get error: {e}");
-            UiError::from(format!("Position get error: {e}"))
+            UiError::new("db_error", format!("Position get error: {e}"))
         })?;
         let data: Vec<u8> = row.get(1).map_err(|e| {
             log_error!("maps: Data get error: {e}");
-            UiError::from(format!("Data get error: {e}"))
+            UiError::new("db_error", format!("Data get error: {e}"))
         })?;
         tiles.push(decode_tile(position, data)?);
     }
@@ -586,7 +590,7 @@ fn pixels_to_png(pixels: &[i32], width: u32, height: u32) -> Result<Vec<u8>, UiE
     img.write_to(&mut Cursor::new(&mut png_bytes), ImageFormat::Png)
         .map_err(|e| {
             log_error!("maps: PNG encoding error: {e}");
-            UiError::from(format!("PNG encoding error: {e}"))
+            UiError::new("image_error", format!("PNG encoding error: {e}"))
         })?;
 
     Ok(png_bytes)
@@ -635,25 +639,25 @@ fn get_all_map_tiles_by_path_blocking(map_path: String) -> Result<Vec<MapTile>, 
         .prepare(&format!("SELECT position, data FROM {}", table_name))
         .map_err(|e| {
             log_error!("maps: Tile query error: {e}");
-            UiError::from(format!("Tile query error: {e}"))
+            UiError::new("db_error", format!("Tile query error: {e}"))
         })?;
     let mut rows = stmt.query([]).map_err(|e| {
         log_error!("maps: Tile query error: {e}");
-        UiError::from(format!("Tile query error: {e}"))
+        UiError::new("db_error", format!("Tile query error: {e}"))
     })?;
 
     let mut tiles = Vec::new();
     while let Some(row) = rows.next().map_err(|e| {
         log_error!("maps: Tile row error: {e}");
-        UiError::from(format!("Tile row error: {e}"))
+        UiError::new("db_error", format!("Tile row error: {e}"))
     })? {
         let position: i64 = row.get(0).map_err(|e| {
             log_error!("maps: Position get error: {e}");
-            UiError::from(format!("Position get error: {e}"))
+            UiError::new("db_error", format!("Position get error: {e}"))
         })?;
         let data: Vec<u8> = row.get(1).map_err(|e| {
             log_error!("maps: Data get error: {e}");
-            UiError::from(format!("Data get error: {e}"))
+            UiError::new("db_error", format!("Data get error: {e}"))
         })?;
         tiles.push(decode_tile(position, data)?);
     }
