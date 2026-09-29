@@ -66,7 +66,7 @@ export function AppSidebar() {
   const { data: installedVersions } = useInstalledVersions();
   const { data: modpacks } = useModpacks();
   const downloadEntries = useDownloadStore((s) => s.entries);
-  const { servers } = useServerStore();
+  const servers = useServerStore((s) => s.servers);
 
   const { mutate: verifyAuth } = useVerifyAuth({
     onError: (error, variables) => {

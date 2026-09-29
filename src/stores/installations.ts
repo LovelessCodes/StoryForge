@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { useMemo } from "react";
 import { toast } from "sonner";
 import { create } from "zustand/react";
 
@@ -222,25 +223,26 @@ export const useInstallationsStore = create<InstallationsStore>((set) => ({
 }));
 
 export const useInstallations = () => {
-  const {
-    loadInstallations,
-    updateInstallation,
-    addInstallation,
-    removeInstallation,
-    installations,
-    moveInstallation,
-    selectedInstallation,
-    setSelectedInstallation,
-    toggleFavorite,
-    updateLastPlayed,
-    updatePlaytime,
-    updateParent,
-    removeAll,
-  } = useInstallationsStore();
+  // Field selectors instead of the whole store: with `useInstallationsStore()`
+  // every consumer re-rendered on any state change.
+  const installations = useInstallationsStore((s) => s.installations);
+  const selectedInstallation = useInstallationsStore((s) => s.selectedInstallation);
+  const addInstallation = useInstallationsStore((s) => s.addInstallation);
+  const loadInstallations = useInstallationsStore((s) => s.loadInstallations);
+  const moveInstallation = useInstallationsStore((s) => s.moveInstallation);
+  const removeAll = useInstallationsStore((s) => s.removeAll);
+  const removeInstallation = useInstallationsStore((s) => s.removeInstallation);
+  const setSelectedInstallation = useInstallationsStore((s) => s.setSelectedInstallation);
+  const toggleFavorite = useInstallationsStore((s) => s.toggleFavorite);
+  const updateInstallation = useInstallationsStore((s) => s.updateInstallation);
+  const updateLastPlayed = useInstallationsStore((s) => s.updateLastPlayed);
+  const updateParent = useInstallationsStore((s) => s.updateParent);
+  const updatePlaytime = useInstallationsStore((s) => s.updatePlaytime);
 
-  const outInstallations = [...installations]
-    .filter((i) => i !== null)
-    .sort((a, b) => a.index - b.index);
+  const outInstallations = useMemo(
+    () => [...installations].filter((i) => i !== null).sort((a, b) => a.index - b.index),
+    [installations],
+  );
 
   return {
     addInstallation,

@@ -61,7 +61,9 @@ export type ServerDialogProps = {
 export function ServerDialog({ server, installation }: ServerDialogProps) {
   const id = useId();
   const { installations } = useInstallations();
-  const { addServer, updateServer, loadServers } = useServerStore();
+  const addServer = useServerStore((s) => s.addServer);
+  const updateServer = useServerStore((s) => s.updateServer);
+  const loadServers = useServerStore((s) => s.loadServers);
   const { mutateAsync: addServerToInstallation } = useAddServerToInstallation();
   const [sniffResult, setSniffResult] = useState<SniffResult | null>(null);
 

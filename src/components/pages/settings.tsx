@@ -48,7 +48,8 @@ export function SettingsPage() {
 
   // Stores
   const settingsStore = useSettingsStore();
-  const { updateParent, removeAll } = useInstallationsStore();
+  const updateParent = useInstallationsStore((s) => s.updateParent);
+  const removeAll = useInstallationsStore((s) => s.removeAll);
 
   // States
   const [dialogOpen, setDialogOpen] = useState(false);

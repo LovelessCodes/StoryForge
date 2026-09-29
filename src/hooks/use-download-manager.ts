@@ -14,6 +14,13 @@ import { installedVersionsQueryKey } from "./use-installed-versions";
 
 const MAX_CONCURRENT = 3;
 
+/**
+ * The queue bootstrap (resume-manifest scan) only needs to run once per app
+ * session. Every component calling useDownloadManager used to scan the disk on
+ * mount - including once per visible download row.
+ */
+let bootstrapStarted = false;
+
 /** Throttle store updates to once per ~200ms to avoid flooding React renders. */
 const lastStoreUpdate = new Map<string, number>();
 
@@ -157,8 +164,11 @@ export function useDownloadManager() {
   const qcRef = useRef(queryClient);
   qcRef.current = queryClient;
 
-  // On mount: scan for orphaned .resume.json files + process any pending queue
+  // On mount: scan for orphaned .resume.json files + process any pending queue.
+  // Runs once per session, no matter how many components use this hook.
   useMountEffect(() => {
+    if (bootstrapStarted) return;
+    bootstrapStarted = true;
     const qc = qcRef.current;
 
     void (async () => {

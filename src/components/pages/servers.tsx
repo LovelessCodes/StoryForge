@@ -13,7 +13,7 @@ import { useServerStore } from "@/stores/servers";
 
 export function ServersPage() {
   // Stores
-  const { servers } = useServerStore();
+  const servers = useServerStore((s) => s.servers);
 
   return (
     <div className="grid size-full grid-rows-[min-content_auto]">

@@ -55,7 +55,7 @@ function parseMods(modsString: string): { modid: string; version: string }[] {
 export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
   const { appFolder } = useAppFolder();
   const { installationsParent, installationsSubdir } = useSettingsStore();
-  const { loadInstallations } = useInstallationsStore();
+  const loadInstallations = useInstallationsStore((s) => s.loadInstallations);
   const installedVersions = useInstalledVersionNames();
   const { mutateAsync: downloadVersion } = useDownloadVersion();
   const navigate = useNavigate();
