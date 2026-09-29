@@ -744,8 +744,6 @@ async fn resolve_launch_context(
 
     #[cfg(target_os = "macos")]
     let app_bundle = macos::resolve_app_bundle(&version_path, &combined_path).await?;
-    #[cfg(not(target_os = "macos"))]
-    let app_bundle = ();
 
     Ok(LaunchContext {
         dotnet_root,

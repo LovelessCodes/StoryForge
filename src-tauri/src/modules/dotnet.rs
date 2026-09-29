@@ -2,9 +2,11 @@ use futures_util::StreamExt;
 use reqwest::Client;
 use serde::Deserialize;
 use serde_json::json;
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+use std::io::Read;
 use std::{
     fs::{self, create_dir_all, File},
-    io::{BufReader, Read, Write},
+    io::{BufReader, Write},
     path::{Path, PathBuf},
     sync::Arc,
 };
