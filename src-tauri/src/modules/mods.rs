@@ -13,8 +13,8 @@ use zip::read::ZipArchive;
 
 use super::errors::UiError;
 use super::installations::find_installation_by_id;
-use super::utils::{require_managed_path, safe_file_name, safe_join};
-use crate::log_info;
+use super::utils::{lock, require_managed_path, safe_file_name, safe_join};
+use crate::{log_error, log_info};
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -301,6 +301,7 @@ pub async fn add_mod_to_installation(
         name: "write_file_failed".into(),
         message: format!("Failed to write file: {e}"),
     })?;
+    invalidate_mods_cache(&pb);
     Ok("added".into())
 }
 
@@ -420,7 +421,88 @@ pub async fn download_mod_file(
     })?;
 
     log_info!("download_mod_file: saved to {:?}", filepath);
+    invalidate_mods_cache(mods_dir);
     Ok(filename)
+}
+
+// ── Mods scan cache ──
+// Opening every zip and parsing modinfo.json is the expensive part of the
+// mods list; result entries are keyed by a fingerprint of the zip files.
+
+struct ModsCacheEntry {
+    fingerprint: u64,
+    result: ModsResult,
+}
+
+type ModsCacheMap = std::collections::HashMap<PathBuf, ModsCacheEntry>;
+
+static MODS_CACHE: std::sync::LazyLock<std::sync::Mutex<ModsCacheMap>> =
+    std::sync::LazyLock::new(|| std::sync::Mutex::new(std::collections::HashMap::new()));
+
+/// Cheap fingerprint of a Mods directory: path, mtime and size of every zip.
+fn mods_fingerprint(mods_dir: &Path) -> Option<u64> {
+    use std::hash::{Hash, Hasher};
+
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    mods_dir.hash(&mut hasher);
+    let mut count: u64 = 0;
+    for entry in read_dir(mods_dir).ok()?.flatten() {
+        let path = entry.path();
+        let is_zip = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .is_some_and(|e| e.eq_ignore_ascii_case("zip"));
+        if !is_zip {
+            continue;
+        }
+        path.hash(&mut hasher);
+        if let Ok(meta) = entry.metadata() {
+            if let Ok(modified) = meta.modified() {
+                if let Ok(d) = modified.duration_since(std::time::UNIX_EPOCH) {
+                    d.as_secs().hash(&mut hasher);
+                    d.subsec_nanos().hash(&mut hasher);
+                }
+            }
+            meta.len().hash(&mut hasher);
+        }
+        count += 1;
+    }
+    count.hash(&mut hasher);
+    Some(hasher.finish())
+}
+
+fn try_cached_mods(mods_dir: &Path) -> Option<ModsResult> {
+    let fingerprint = mods_fingerprint(mods_dir)?;
+    let cache = lock(&MODS_CACHE);
+    let entry = cache.get(mods_dir)?;
+    (entry.fingerprint == fingerprint).then(|| entry.result.clone())
+}
+
+fn store_mods_cache(mods_dir: &Path, result: &ModsResult) {
+    if let Some(fingerprint) = mods_fingerprint(mods_dir) {
+        lock(&MODS_CACHE).insert(
+            mods_dir.to_path_buf(),
+            ModsCacheEntry {
+                fingerprint,
+                result: result.clone(),
+            },
+        );
+    }
+}
+
+/// Drops cached scan results for `prefix` and everything below it.
+fn invalidate_mods_cache(prefix: &Path) {
+    lock(&MODS_CACHE).retain(|path, _| !path.starts_with(prefix));
+}
+
+/// Scans a Mods directory, reusing a cached result while the zips are unchanged.
+fn get_mods_cached(mods_dir: &Path) -> Result<ModsResult, UiError> {
+    if let Some(cached) = try_cached_mods(mods_dir) {
+        return Ok(cached);
+    }
+    let result = get_mods_in_dir(mods_dir)?;
+    store_mods_cache(mods_dir, &result);
+    Ok(result)
 }
 
 // ── modinfo.json helpers ──
@@ -477,7 +559,8 @@ fn read_modinfo_from_zip(
     zip_path: &Path,
     archive: &mut ZipArchive<File>,
     errors: &mut Vec<ModError>,
-) -> Option<OutputMod> {
+) -> (Option<OutputMod>, bool) {
+    let mut saw_modinfo = false;
     for i in 0..archive.len() {
         let mut file_in_zip = match archive.by_index(i) {
             Ok(f) => f,
@@ -503,6 +586,7 @@ fn read_modinfo_from_zip(
         if !filename.eq_ignore_ascii_case("modinfo.json") {
             continue;
         }
+        saw_modinfo = true;
 
         let mut contents = String::new();
         if let Err(e) = file_in_zip.read_to_string(&mut contents) {
@@ -527,13 +611,16 @@ fn read_modinfo_from_zip(
                     }
                 };
                 let version = modinfo_string(&json, "version").unwrap_or_else(|| "0.0.0".into());
-                return Some(OutputMod {
-                    modid,
-                    name,
-                    authors,
-                    version,
-                    path: zip_path.to_string_lossy().into_owned(),
-                });
+                return (
+                    Some(OutputMod {
+                        modid,
+                        name,
+                        authors,
+                        version,
+                        path: zip_path.to_string_lossy().into_owned(),
+                    }),
+                    true,
+                );
             }
             Err(e) => {
                 errors.push(ModError {
@@ -545,7 +632,7 @@ fn read_modinfo_from_zip(
         }
     }
 
-    None
+    (None, saw_modinfo)
 }
 
 /// Scan a single `Mods` directory for mod zips.
@@ -625,14 +712,9 @@ pub fn get_mods_in_dir(mods_path: &Path) -> Result<ModsResult, UiError> {
             }
         };
 
-        let had_modinfo_entry = archive.file_names().any(|name| {
-            Path::new(name).file_name().is_some_and(|f| {
-                f.to_str()
-                    .is_some_and(|s| s.eq_ignore_ascii_case("modinfo.json"))
-            })
-        });
+        let (output, had_modinfo_entry) = read_modinfo_from_zip(&path, &mut archive, &mut errors);
 
-        if let Some(output) = read_modinfo_from_zip(&path, &mut archive, &mut errors) {
+        if let Some(output) = output {
             mods.push(output);
         } else if had_modinfo_entry {
             errors.push(ModError {
@@ -653,13 +735,23 @@ pub fn get_mods_in_dir(mods_path: &Path) -> Result<ModsResult, UiError> {
 }
 
 #[command]
-pub fn get_mods(app: AppHandle, path: String) -> Result<ModsResult, UiError> {
+pub async fn get_mods(app: AppHandle, path: String) -> Result<ModsResult, UiError> {
     log_info!("get_mods: {}", path);
     require_managed_path(&app, Path::new(&path), "Installation path")?;
-    let start = std::time::Instant::now();
-    let result = get_mods_in_dir(&PathBuf::from(path).join("Mods"));
-    log_info!("get_mods completed in {}ms", start.elapsed().as_millis());
-    result
+    let mods_dir = PathBuf::from(path).join("Mods");
+
+    // Opens every zip in the directory: keep it off the UI thread.
+    tokio::task::spawn_blocking(move || {
+        let start = std::time::Instant::now();
+        let result = get_mods_cached(&mods_dir);
+        log_info!("get_mods completed in {}ms", start.elapsed().as_millis());
+        result
+    })
+    .await
+    .map_err(|e| {
+        log_error!("get_mods: scan task failed: {e}");
+        UiError::new("internal_error", format!("Mods scan failed: {e}"))
+    })?
 }
 
 #[command]
@@ -781,21 +873,25 @@ pub async fn get_mod_updates(
 }
 
 #[command]
-pub fn get_installation_mods(app: AppHandle, id: u64) -> Result<Vec<OutputMod>, UiError> {
+pub async fn get_installation_mods(app: AppHandle, id: u64) -> Result<Vec<OutputMod>, UiError> {
     log_info!("get_installation_mods: installation={}", id);
-    let start = std::time::Instant::now();
     let (pb, _installation) = find_installation_by_id(&app, id)?;
-    let result = get_mods_in_dir(&pb.join("Mods"))
-        .map(|res| res.mods)
-        .map_err(|e| UiError {
-            name: e.name,
-            message: e.message,
-        });
-    log_info!(
-        "get_installation_mods completed in {}ms",
-        start.elapsed().as_millis()
-    );
-    result
+    let mods_dir = pb.join("Mods");
+
+    tokio::task::spawn_blocking(move || {
+        let start = std::time::Instant::now();
+        let result = get_mods_cached(&mods_dir).map(|res| res.mods);
+        log_info!(
+            "get_installation_mods completed in {}ms",
+            start.elapsed().as_millis()
+        );
+        result
+    })
+    .await
+    .map_err(|e| {
+        log_error!("get_installation_mods: scan task failed: {e}");
+        UiError::new("internal_error", format!("Mods scan failed: {e}"))
+    })?
 }
 
 #[command]
@@ -833,5 +929,31 @@ pub async fn remove_mod_from_installation(
         name: "remove_failed".into(),
         message: format!("Failed to remove mod file: {e}"),
     })?;
+    invalidate_mods_cache(&mods_path);
     Ok("removed".into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn mods_cache_uses_fingerprint_and_invalidates() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().join("Mods");
+        std::fs::create_dir(&dir).unwrap();
+
+        assert!(try_cached_mods(&dir).is_none());
+
+        let first = get_mods_cached(&dir).unwrap();
+        assert!(first.mods.is_empty());
+        assert!(try_cached_mods(&dir).is_some());
+
+        // Adding a zip changes the fingerprint, so the cache misses again.
+        std::fs::write(dir.join("mod.zip"), b"not a zip").unwrap();
+        assert!(try_cached_mods(&dir).is_none());
+
+        invalidate_mods_cache(&dir);
+        assert!(try_cached_mods(&dir).is_none());
+    }
 }
