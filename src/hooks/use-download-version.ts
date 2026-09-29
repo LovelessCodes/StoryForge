@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import type { ProgressPayload } from "@/lib/types";
 import { buildVersionPath, zipfolderprefix } from "@/lib/utils";
+import { claimVersionDownload, releaseVersionDownload } from "@/lib/version-download-lock";
 import { useSettingsStore } from "@/stores/settings";
 
 import { useAppFolder } from "./use-app-folder";
@@ -18,27 +19,37 @@ export const useDownloadVersion = (props?: UseMutationOptions<string, Error, str
   const listenRef = useRef<UnlistenFn>(null);
   return useMutation({
     mutationFn: async (version: string) => {
-      const url = (await invoke("get_download_link", {
-        version,
-      })) as string;
-      if (!url) {
-        throw new Error("Download URL not found in response");
+      // The download manager can target the same version; Rust deletes the
+      // destination directory when a fresh extraction starts, so the two paths
+      // must not run concurrently for one version.
+      if (!claimVersionDownload(version)) {
+        throw new Error(`A download for version ${version} is already running`);
       }
-      const downloadUrl = url;
-      if (!appFolder) {
-        throw new Error("App folder not found");
+      try {
+        const url = (await invoke("get_download_link", {
+          version,
+        })) as string;
+        if (!url) {
+          throw new Error("Download URL not found in response");
+        }
+        const downloadUrl = url;
+        if (!appFolder) {
+          throw new Error("App folder not found");
+        }
+        const versionPath = buildVersionPath(versionsParent ?? appFolder, version, versionsSubdir);
+        return invoke("download_and_maybe_extract", {
+          params: {
+            destpath: versionPath,
+            emitevent: `download://version:${version.replace(/\./g, "_")}`,
+            extract: true,
+            extractdir: versionPath,
+            url: downloadUrl,
+            zipsubfolderprefix: zipfolderprefix(),
+          },
+        }) as Promise<string>;
+      } finally {
+        releaseVersionDownload(version);
       }
-      const versionPath = buildVersionPath(versionsParent ?? appFolder, version, versionsSubdir);
-      return invoke("download_and_maybe_extract", {
-        params: {
-          destpath: versionPath,
-          emitevent: `download://version:${version.replace(/\./g, "_")}`,
-          extract: true,
-          extractdir: versionPath,
-          url: downloadUrl,
-          zipsubfolderprefix: zipfolderprefix(),
-        },
-      }) as Promise<string>;
     },
     mutationKey: ["download-version"],
     onError: (error, v) => {
@@ -83,6 +94,10 @@ export const useDownloadVersion = (props?: UseMutationOptions<string, Error, str
     onSuccess: async (d, v) => {
       listenRef.current?.();
       if (d === "already_downloaded") {
+        // Already installed on disk: make sure the versions list shows it.
+        void queryClient.invalidateQueries({
+          queryKey: installedVersionsQueryKey(),
+        });
         toast.dismiss(`download-game-version-${v}`);
         return;
       }
