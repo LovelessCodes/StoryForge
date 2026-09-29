@@ -199,6 +199,9 @@ export const useWriteServerConfig = (
     onSuccess: async (...args) => {
       const { id } = args[1];
       void queryClient.invalidateQueries({ queryKey: serverConfigQueryKey(id) });
+      // The whitelist query derives `whitelistEnabled` by reading the same
+      // serverconfig.json, so it must be refreshed too.
+      void queryClient.invalidateQueries({ queryKey: whitelistQueryKey(id) });
       props?.onSuccess?.(...args);
     },
   });
@@ -265,6 +268,9 @@ export const useSetWhitelistMode = (
     onSuccess: async (...args) => {
       const { id } = args[1];
       void queryClient.invalidateQueries({ queryKey: whitelistQueryKey(id) });
+      // set_whitelist_mode rewrites serverconfig.json via --setconfig, so the
+      // config editor cache is stale as well.
+      void queryClient.invalidateQueries({ queryKey: serverConfigQueryKey(id) });
       props?.onSuccess?.(...args);
     },
   });
