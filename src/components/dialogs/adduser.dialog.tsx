@@ -91,7 +91,9 @@ export function AddUserDialog({ email }: { email?: string }) {
         form.getFieldMeta("email")?.errors.push("Invalid email or password");
         form.getFieldMeta("password")?.errors.push("Invalid email or password");
       } else if (error.message === "requiretotpcode") {
-        form.setFieldValue("prelogintoken", error.name);
+        // The challenge token is a dedicated error field, not error.name.
+        const { prelogintoken } = error as Error & { prelogintoken?: string };
+        form.setFieldValue("prelogintoken", prelogintoken ?? "");
         toast.info("Please enter your authenticator code to continue.");
       } else if (error.message === "wrongtotpcode") {
         form.setFieldValue("totpcode", "");
