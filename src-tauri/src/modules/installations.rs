@@ -791,7 +791,7 @@ async fn find_game_executable(version_path: &Path) -> Result<PathBuf, UiError> {
                 for entry in WalkDir::new(&version_path).min_depth(3).max_depth(4) {
                     let entry = entry.map_err(|e| {
                         log_error!("installations: walkdir error: {e}");
-                        UiError::from(format!("walkdir error: {e}"))
+                        UiError::new("io_error", format!("walkdir error: {e}"))
                     })?;
                     if entry.file_type().is_file() {
                         let fname = entry.file_name().to_string_lossy();
@@ -809,7 +809,7 @@ async fn find_game_executable(version_path: &Path) -> Result<PathBuf, UiError> {
             for entry in WalkDir::new(&version_path) {
                 let entry = entry.map_err(|e| {
                     log_error!("installations: walkdir error: {e}");
-                    UiError::from(format!("walkdir error: {e}"))
+                    UiError::new("io_error", format!("walkdir error: {e}"))
                 })?;
                 if entry.file_type().is_file() {
                     let fname = entry.file_name().to_string_lossy();
@@ -825,7 +825,7 @@ async fn find_game_executable(version_path: &Path) -> Result<PathBuf, UiError> {
         }
     })
     .await
-    .map_err(|e| UiError::from(format!("spawn blocking error: {e}")))?
+    .map_err(|e| UiError::new("internal_error", format!("spawn blocking error: {e}")))?
 }
 
 /// Write or update clientsettings.json for the launch.
@@ -842,7 +842,7 @@ async fn prepare_clientsettings(
         move || write_clientsettings(&pb, &installation, &account)
     })
     .await
-    .map_err(|e| UiError::from(format!("spawn blocking error: {e}")))?
+    .map_err(|e| UiError::new("internal_error", format!("spawn blocking error: {e}")))?
 }
 
 fn write_clientsettings(
@@ -1307,7 +1307,10 @@ pub mod macos {
             );
             restructure_into_app_bundle(version_path, &app_bundle).map_err(|e| {
                 log_error!("[play_game] macOS: failed to restructure .app bundle: {e}");
-                UiError::from(format!("Failed to restructure .app bundle: {e}"))
+                UiError::new(
+                    "io_error",
+                    format!("Failed to restructure .app bundle: {e}"),
+                )
             })?;
         } else {
             log_info!(
@@ -1437,7 +1440,7 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
                 .map_err(|e| {
                     log_error!("installations: Failed to open explorer: {e}");
 
-                    UiError::from(format!("Failed to open explorer: {e}"))
+                    UiError::new("launch_failed", format!("Failed to open explorer: {e}"))
                 })?;
         } else if path.is_dir() {
             // If it's a directory, just open it
@@ -1447,7 +1450,7 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
                 .map_err(|e| {
                     log_error!("installations: Failed to open explorer: {e}");
 
-                    UiError::from(format!("Failed to open explorer: {e}"))
+                    UiError::new("launch_failed", format!("Failed to open explorer: {e}"))
                 })?;
         } else {
             // This shouldn't happen after we created the directory, but handle it anyway
@@ -1475,7 +1478,7 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
                 .map_err(|e| {
                     log_error!("installations: Failed to open Finder: {e}");
 
-                    UiError::from(format!("Failed to open Finder: {e}"))
+                    UiError::new("launch_failed", format!("Failed to open Finder: {e}"))
                 })?;
         } else if path.is_file() {
             Command::new("open")
@@ -1484,7 +1487,7 @@ pub fn reveal_in_file_explorer(path: String) -> Result<String, UiError> {
                 .map_err(|e| {
                     log_error!("installations: Failed to open Finder: {e}");
 
-                    UiError::from(format!("Failed to open Finder: {e}"))
+                    UiError::new("launch_failed", format!("Failed to open Finder: {e}"))
                 })?;
         } else {
             return Err(UiError {

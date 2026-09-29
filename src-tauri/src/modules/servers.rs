@@ -353,7 +353,7 @@ pub async fn fetch_public_servers(
     let url = "https://masterserver.vintagestory.at/api/v1/servers/list";
     let res = client.get(url).send().await.map_err(|e| {
         log_error!("fetch_public_servers: request failed: {e}");
-        UiError::from(format!("Request error: {e}"))
+        UiError::new("request_error", format!("Request error: {e}"))
     })?;
     if !res.status().is_success() {
         log_error!("fetch_public_servers: HTTP {}", res.status());
@@ -364,11 +364,11 @@ pub async fn fetch_public_servers(
     }
     let res_text = res.text().await.map_err(|e| {
         log_error!("fetch_public_servers: read failed: {e}");
-        UiError::from(format!("Read error: {e}"))
+        UiError::new("io_error", format!("Read error: {e}"))
     })?;
     let json: Value = from_str(&res_text).map_err(|e| {
         log_error!("fetch_public_servers: parse failed: {e}");
-        UiError::from(format!("Parse error: {e}"))
+        UiError::new("parse_error", format!("Parse error: {e}"))
     })?;
     Ok(json)
 }

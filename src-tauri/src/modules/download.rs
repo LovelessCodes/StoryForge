@@ -155,7 +155,7 @@ impl DownloadContext {
     fn emit(&self, payload: ProgressPayload) -> Result<(), UiError> {
         self.app
             .emit(&self.event, payload)
-            .map_err(|e| UiError::from(format!("emit error: {e}")))
+            .map_err(|e| UiError::new("internal_error", format!("emit error: {e}")))
     }
 
     fn cancelled_payload(message: impl Into<String>) -> ProgressPayload {
@@ -318,7 +318,7 @@ async fn download_file(
 
     let resp = req.send().await.map_err(|e| {
         log_error!("download: request error: {e}");
-        UiError::from(format!("request error: {e}"))
+        UiError::new("request_error", format!("request error: {e}"))
     })?;
 
     if resume_offset > 0 {
@@ -331,18 +331,22 @@ async fn download_file(
                 resume_offset = 0;
             }
             status => {
-                return Err(UiError::from(format!(
-                    "server did not return 206 Partial Content for resume (got {status})"
-                )));
+                return Err(UiError::new(
+                    "download_error",
+                    format!("server did not return 206 Partial Content for resume (got {status})"),
+                ));
             }
         }
     } else if !resp.status().is_success() {
-        return Err(UiError::from(format!("HTTP error: {}", resp.status())));
+        return Err(UiError::new(
+            "http_error",
+            format!("HTTP error: {}", resp.status()),
+        ));
     }
 
     fs::create_dir_all(dest_dir).map_err(|e| {
         log_error!("download: create dir error: {e}");
-        UiError::from(format!("create dir error: {e}"))
+        UiError::new("io_error", format!("create dir error: {e}"))
     })?;
 
     let filename = infer_filename(url, resp.headers());
@@ -362,11 +366,11 @@ async fn download_file(
         File::options()
             .append(true)
             .open(&archive_path)
-            .map_err(|e| UiError::from(format!("file append error: {e}")))?
+            .map_err(|e| UiError::new("io_error", format!("file append error: {e}")))?
     } else {
         File::create(&archive_path).map_err(|e| {
             log_error!("download: file create error: {e}");
-            UiError::from(format!("file create error: {e}"))
+            UiError::new("io_error", format!("file create error: {e}"))
         })?
     };
 
@@ -389,10 +393,11 @@ async fn download_file(
                 filepath: archive_path.to_string_lossy().to_string(),
             };
             let manifest_path = manifest_path_for(&archive_path);
-            let manifest_json = serde_json::to_string(&manifest)
-                .map_err(|e| UiError::from(format!("resume manifest serialize: {e}")))?;
+            let manifest_json = serde_json::to_string(&manifest).map_err(|e| {
+                UiError::new("parse_error", format!("resume manifest serialize: {e}"))
+            })?;
             fs::write(&manifest_path, &manifest_json)
-                .map_err(|e| UiError::from(format!("resume manifest write: {e}")))?;
+                .map_err(|e| UiError::new("io_error", format!("resume manifest write: {e}")))?;
             log_info!(
                 "download paused at offset {} → {}",
                 downloaded,
@@ -401,9 +406,10 @@ async fn download_file(
             return Ok(archive_path);
         }
 
-        let chunk = chunk.map_err(|e| UiError::from(format!("stream error: {e}")))?;
+        let chunk =
+            chunk.map_err(|e| UiError::new("request_error", format!("stream error: {e}")))?;
         file.write_all(&chunk)
-            .map_err(|e| UiError::from(format!("file write error: {e}")))?;
+            .map_err(|e| UiError::new("io_error", format!("file write error: {e}")))?;
         downloaded += chunk.len() as u64;
 
         // Keep the global registry in sync for pause-on-exit.
@@ -432,9 +438,10 @@ async fn download_file(
             .map(|m| m.len())
             .unwrap_or(downloaded);
         if actual != expected {
-            return Err(UiError::from(format!(
-                "download size mismatch: expected {expected} bytes, got {actual} bytes"
-            )));
+            return Err(UiError::new(
+                "download_error",
+                format!("download size mismatch: expected {expected} bytes, got {actual} bytes"),
+            ));
         }
     }
 
@@ -481,7 +488,7 @@ async fn extract_zip(
         extract_zip_sync(&ctx, &archive, &extract_dir, prefix.as_deref())
     })
     .await
-    .map_err(|e| UiError::from(format!("spawn blocking error: {e}")))?
+    .map_err(|e| UiError::new("internal_error", format!("spawn blocking error: {e}")))?
 }
 
 fn extract_zip_sync(
@@ -491,16 +498,17 @@ fn extract_zip_sync(
     prefix: Option<&str>,
 ) -> Result<(), UiError> {
     fs::create_dir_all(extract_dir)
-        .map_err(|e| UiError::from(format!("create extract dir error: {e}")))?;
+        .map_err(|e| UiError::new("io_error", format!("create extract dir error: {e}")))?;
 
     let mut prefix = prefix.unwrap_or("").to_string();
     if !prefix.is_empty() && !prefix.ends_with('/') && !prefix.ends_with('\\') {
         prefix.push('/');
     }
 
-    let file = File::open(archive).map_err(|e| UiError::from(format!("open zip error: {e}")))?;
-    let mut archive =
-        zip::ZipArchive::new(file).map_err(|e| UiError::from(format!("zip open error: {e}")))?;
+    let file = File::open(archive)
+        .map_err(|e| UiError::new("archive_error", format!("open zip error: {e}")))?;
+    let mut archive = zip::ZipArchive::new(file)
+        .map_err(|e| UiError::new("archive_error", format!("zip open error: {e}")))?;
 
     let count_to_extract: u64 = (0..archive.len())
         .filter_map(|i| archive.by_index(i).ok().map(|e| e.name().to_string()))
@@ -515,7 +523,7 @@ fn extract_zip_sync(
 
         let mut entry = archive
             .by_index(i)
-            .map_err(|e| UiError::from(format!("zip index error: {e}")))?;
+            .map_err(|e| UiError::new("archive_error", format!("zip index error: {e}")))?;
         let entry_name = entry.name().to_string();
 
         if !should_extract(&entry_name, &prefix) {
@@ -523,20 +531,20 @@ fn extract_zip_sync(
         }
 
         let out_path = make_output_path(extract_dir, &entry_name, &prefix)
-            .map_err(|e| UiError::from(format!("path error: {e}")))?;
+            .map_err(|e| UiError::new("path_error", format!("path error: {e}")))?;
 
         if entry.is_dir() {
             fs::create_dir_all(&out_path)
-                .map_err(|e| UiError::from(format!("mkdir error: {e}")))?;
+                .map_err(|e| UiError::new("io_error", format!("mkdir error: {e}")))?;
         } else {
             if let Some(parent) = out_path.parent() {
                 fs::create_dir_all(parent)
-                    .map_err(|e| UiError::from(format!("mkdir parent error: {e}")))?;
+                    .map_err(|e| UiError::new("io_error", format!("mkdir parent error: {e}")))?;
             }
             let mut out_file = File::create(&out_path)
-                .map_err(|e| UiError::from(format!("create file error: {e}")))?;
+                .map_err(|e| UiError::new("io_error", format!("create file error: {e}")))?;
             io::copy(&mut entry, &mut out_file)
-                .map_err(|e| UiError::from(format!("extract write error: {e}")))?;
+                .map_err(|e| UiError::new("io_error", format!("extract write error: {e}")))?;
 
             #[cfg(unix)]
             {
@@ -606,7 +614,7 @@ async fn extract_tar(
         extract_tar_sync(&ctx, &archive, &extract_dir)
     })
     .await
-    .map_err(|e| UiError::from(format!("spawn blocking error: {e}")))?
+    .map_err(|e| UiError::new("internal_error", format!("spawn blocking error: {e}")))?
 }
 
 fn extract_tar_sync(
@@ -615,9 +623,10 @@ fn extract_tar_sync(
     extract_dir: &Path,
 ) -> Result<(), UiError> {
     fs::create_dir_all(extract_dir)
-        .map_err(|e| UiError::from(format!("create extract dir error: {e}")))?;
+        .map_err(|e| UiError::new("io_error", format!("create extract dir error: {e}")))?;
 
-    let file = File::open(archive).map_err(|e| UiError::from(format!("open tar error: {e}")))?;
+    let file = File::open(archive)
+        .map_err(|e| UiError::new("archive_error", format!("open tar error: {e}")))?;
     let reader = BufReader::new(file);
 
     // Detect gzip by extension.
@@ -649,7 +658,7 @@ fn extract_tar_archive<Rdr: io::Read>(
     let mut archive = tar::Archive::new(reader);
     let entries = archive
         .entries()
-        .map_err(|e| UiError::from(format!("tar entries error: {e}")))?;
+        .map_err(|e| UiError::new("archive_error", format!("tar entries error: {e}")))?;
 
     let strip_components: usize = if cfg!(target_os = "macos") { 0 } else { 1 };
 
@@ -658,10 +667,11 @@ fn extract_tar_archive<Rdr: io::Read>(
             return Ok(());
         }
 
-        let mut entry = entry.map_err(|e| UiError::from(format!("tar entry error: {e}")))?;
+        let mut entry =
+            entry.map_err(|e| UiError::new("archive_error", format!("tar entry error: {e}")))?;
         let path = entry
             .path()
-            .map_err(|e| UiError::from(format!("tar path error: {e}")))?
+            .map_err(|e| UiError::new("archive_error", format!("tar path error: {e}")))?
             .to_path_buf();
 
         let mut components = path.components();
@@ -686,7 +696,7 @@ fn extract_tar_archive<Rdr: io::Read>(
 
         entry
             .unpack(&out_path)
-            .map_err(|e| UiError::from(format!("tar unpack error: {e}")))?;
+            .map_err(|e| UiError::new("archive_error", format!("tar unpack error: {e}")))?;
     }
 
     Ok(())
@@ -796,12 +806,15 @@ pub async fn download_and_maybe_extract(
                 return Ok("already_downloaded".into());
             }
             fs::remove_dir_all(&destpath).map_err(|e| {
-                UiError::from(format!("Failed to clean up incomplete installation: {e}"))
+                UiError::new(
+                    "io_error",
+                    format!("Failed to clean up incomplete installation: {e}"),
+                )
             })?;
         }
         fs::create_dir_all(&destpath).map_err(|e| {
             log_error!("download: create dir error: {e}");
-            UiError::from(format!("create dir error: {e}"))
+            UiError::new("io_error", format!("create dir error: {e}"))
         })?;
     }
 
@@ -853,7 +866,7 @@ pub async fn download_and_maybe_extract(
         }
 
         fs::remove_file(&archive_path)
-            .map_err(|e| UiError::from(format!("remove file error: {e}")))?;
+            .map_err(|e| UiError::new("io_error", format!("remove file error: {e}")))?;
 
         if !is_already_installed(&destpath)? {
             fs::remove_dir_all(&destpath).ok();
@@ -919,17 +932,17 @@ pub async fn get_download_links(client: State<'_, Arc<reqwest::Client>>) -> Resu
         .await
         .map_err(|e| {
             log_error!("download: Request error: {e}");
-            UiError::from(format!("Request error: {e}"))
+            UiError::new("request_error", format!("Request error: {e}"))
         })?
         .text()
         .await
         .map_err(|e| {
             log_error!("download: Read error: {e}");
-            UiError::from(format!("Read error: {e}"))
+            UiError::new("io_error", format!("Read error: {e}"))
         })?;
     let json: Value = serde_json::from_str(&res).map_err(|e| {
         log_error!("download: JSON parse error: {e}");
-        UiError::from(format!("JSON parse error: {e}"))
+        UiError::new("parse_error", format!("JSON parse error: {e}"))
     })?;
     Ok(json)
 }
@@ -960,18 +973,18 @@ pub async fn get_download_link(
         .await
         .map_err(|e| {
             log_error!("download: Request error: {e}");
-            UiError::from(format!("Request error: {e}"))
+            UiError::new("request_error", format!("Request error: {e}"))
         })?
         .text()
         .await
         .map_err(|e| {
             log_error!("download: Read error: {e}");
-            UiError::from(format!("Read error: {e}"))
+            UiError::new("io_error", format!("Read error: {e}"))
         })?;
 
     let json: serde_json::Value = serde_json::from_str(&res).map_err(|e| {
         log_error!("download: JSON parse error: {e}");
-        UiError::from(format!("JSON parse error: {e}"))
+        UiError::new("parse_error", format!("JSON parse error: {e}"))
     })?;
     if let Some(link) = json.get("url").and_then(|v| v.as_str()) {
         Ok(link.to_string())
