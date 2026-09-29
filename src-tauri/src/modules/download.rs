@@ -12,7 +12,7 @@ use std::{
         Arc, Mutex, OnceLock,
     },
 };
-use tauri::{command, AppHandle, Emitter, Listener, State};
+use tauri::{command, AppHandle, Emitter, EventId, Listener, State};
 use tokio_util::sync::CancellationToken;
 
 use super::errors::UiError;
@@ -170,25 +170,45 @@ impl DownloadContext {
     }
 }
 
-/// Install frontend-driven cancellation AND pause listeners, returning a token and pause flag.
-fn setup_controls(app: &AppHandle, event: &str) -> (CancellationToken, Arc<AtomicBool>) {
+/// Install frontend-driven cancellation AND pause listeners.
+///
+/// Returns the cancellation token, the pause flag, and the listener IDs so the
+/// caller can remove them when the download ends.
+fn setup_controls(
+    app: &AppHandle,
+    event: &str,
+) -> (CancellationToken, Arc<AtomicBool>, Vec<EventId>) {
     let token = CancellationToken::new();
     let cancel_token = token.child_token();
     let pause_flag = Arc::new(AtomicBool::new(false));
 
     let cancel_event = format!("{}:cancel", event);
     let cancel_token_for_listener = cancel_token.clone();
-    app.listen(cancel_event, move |_evt| {
+    let cancel_id = app.listen(cancel_event, move |_evt| {
         cancel_token_for_listener.cancel();
     });
 
     let pause_flag_clone = pause_flag.clone();
     let pause_event = format!("{}:pause", event);
-    app.listen(pause_event, move |_evt| {
+    let pause_id = app.listen(pause_event, move |_evt| {
         pause_flag_clone.store(true, Ordering::SeqCst);
     });
 
-    (cancel_token, pause_flag)
+    (cancel_token, pause_flag, vec![cancel_id, pause_id])
+}
+
+/// Removes control listeners when the download scope ends, however it ends.
+struct ListenersOnDrop {
+    app: AppHandle,
+    ids: Vec<EventId>,
+}
+
+impl Drop for ListenersOnDrop {
+    fn drop(&mut self) {
+        for id in self.ids.drain(..) {
+            self.app.unlisten(id);
+        }
+    }
 }
 
 /// Path to the resume manifest for a given archive file.
@@ -281,11 +301,18 @@ async fn download_file(
     url: &str,
     dest_dir: &Path,
     resume_offset: u64,
+    resume_etag: &str,
 ) -> Result<PathBuf, UiError> {
     let mut req = client.get(url);
 
+    let mut resume_offset = resume_offset;
     if resume_offset > 0 {
         req = req.header("Range", format!("bytes={}-", resume_offset));
+        if !resume_etag.is_empty() {
+            // Guards against the remote file having changed: on mismatch the
+            // server answers 200 instead of 206 for the ranged request.
+            req = req.header(reqwest::header::IF_RANGE, resume_etag);
+        }
     }
 
     let resp = req.send().await.map_err(|e| {
@@ -294,11 +321,19 @@ async fn download_file(
     })?;
 
     if resume_offset > 0 {
-        if resp.status() != reqwest::StatusCode::PARTIAL_CONTENT {
-            return Err(UiError::from(format!(
-                "server did not return 206 Partial Content for resume (got {})",
-                resp.status()
-            )));
+        match resp.status() {
+            reqwest::StatusCode::PARTIAL_CONTENT => {}
+            reqwest::StatusCode::OK => {
+                // Server ignored the range (file changed or range unsupported):
+                // restart from scratch instead of appending to stale bytes.
+                log_info!("download: server rejected resume for {url}, restarting from scratch");
+                resume_offset = 0;
+            }
+            status => {
+                return Err(UiError::from(format!(
+                    "server did not return 206 Partial Content for resume (got {status})"
+                )));
+            }
         }
     } else if !resp.status().is_success() {
         return Err(UiError::from(format!("HTTP error: {}", resp.status())));
@@ -687,30 +722,35 @@ pub async fn download_and_maybe_extract(
         }
     }
 
-    let (token, pause_flag) = setup_controls(&app, &emitevent);
+    let (token, pause_flag, listener_ids) = setup_controls(&app, &emitevent);
+    let _listeners = ListenersOnDrop {
+        app: app.clone(),
+        ids: listener_ids,
+    };
 
     // Determine the archive filename from the URL.
     let filename_hint = url.split('/').next_back().unwrap_or("downloaded_file");
     let candidate_path = destpath.join(filename_hint);
 
     // Check for a resume manifest.
-    let resume_offset: u64 = if let Some(m) = read_resume_manifest(&candidate_path) {
-        if m.url == url {
-            log_info!(
-                "download: resuming {} from offset {}",
-                filename_hint,
-                m.offset
-            );
-            m.offset
+    let (resume_offset, resume_etag): (u64, String) =
+        if let Some(m) = read_resume_manifest(&candidate_path) {
+            if m.url == url {
+                log_info!(
+                    "download: resuming {} from offset {}",
+                    filename_hint,
+                    m.offset
+                );
+                (m.offset, m.etag)
+            } else {
+                log_info!("download: url mismatch in resume manifest, starting fresh");
+                let _ = fs::remove_file(&candidate_path);
+                let _ = fs::remove_file(manifest_path_for(&candidate_path));
+                (0, String::new())
+            }
         } else {
-            log_info!("download: url mismatch in resume manifest, starting fresh");
-            let _ = fs::remove_file(&candidate_path);
-            let _ = fs::remove_file(manifest_path_for(&candidate_path));
-            0
-        }
-    } else {
-        0
-    };
+            (0, String::new())
+        };
 
     // Build the shared tracking state so pause_all_active_downloads can write manifests on exit.
     let stored_offset = Arc::new(AtomicU64::new(resume_offset));
@@ -760,7 +800,8 @@ pub async fn download_and_maybe_extract(
         })?;
     }
 
-    let archive_path = download_file(&ctx, &client, &url, &destpath, resume_offset).await?;
+    let archive_path =
+        download_file(&ctx, &client, &url, &destpath, resume_offset, &resume_etag).await?;
 
     // Check if paused (non-cleanup exit, partial file + manifest preserved)
     if ctx.is_paused() {
