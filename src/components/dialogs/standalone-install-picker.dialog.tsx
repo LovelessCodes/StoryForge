@@ -65,10 +65,12 @@ export function StandaloneInstallPickerDialog({ modid, mod }: StandaloneInstallP
       const pathHash = hashPath(dest.path);
       const emitevent = `mod-download-${modid}-${pathHash}`;
       return invoke("download_and_maybe_extract", {
-        destpath: dest.path,
-        emitevent,
-        extract: false,
-        url: release.mainfile,
+        params: {
+          destpath: dest.path,
+          emitevent,
+          extract: false,
+          url: release.mainfile,
+        },
       }) as Promise<string>;
     },
     onError: (error, variables) => {

@@ -30,12 +30,14 @@ export const useDownloadVersion = (props?: UseMutationOptions<string, Error, str
       }
       const versionPath = buildVersionPath(versionsParent ?? appFolder, version, versionsSubdir);
       return invoke("download_and_maybe_extract", {
-        destpath: versionPath,
-        emitevent: `download://version:${version.replace(/\./g, "_")}`,
-        extract: true,
-        extractdir: versionPath,
-        url: downloadUrl,
-        zipsubfolderprefix: zipfolderprefix(),
+        params: {
+          destpath: versionPath,
+          emitevent: `download://version:${version.replace(/\./g, "_")}`,
+          extract: true,
+          extractdir: versionPath,
+          url: downloadUrl,
+          zipsubfolderprefix: zipfolderprefix(),
+        },
       }) as Promise<string>;
     },
     mutationKey: ["download-version"],

@@ -25,10 +25,12 @@ export const useAddModToInstallation = (
     ...restProps,
     mutationFn: async ({ modsDirectory, mod: { mod }, version, emitevent }) =>
       invoke("download_and_maybe_extract", {
-        destpath: `${modsDirectory}${pathDelimiter}Mods`,
-        emitevent,
-        extract: false,
-        url: mod.releases.find((r) => r.modversion === version)?.mainfile,
+        params: {
+          destpath: `${modsDirectory}${pathDelimiter}Mods`,
+          emitevent,
+          extract: false,
+          url: mod.releases.find((r) => r.modversion === version)?.mainfile,
+        },
       }) as Promise<string>,
     onSuccess: async (...args) => {
       const { modsDirectory } = args[1];
