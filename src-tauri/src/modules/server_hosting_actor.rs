@@ -396,6 +396,43 @@ pub async fn stop(instance_id: u64) -> Result<(), super::errors::UiError> {
     }
 }
 
+/// Request a graceful stop and wait until the actor has exited.
+///
+/// Used by restart, which must not start a second process while the old one
+/// is still shutting down and holding the port.
+pub async fn stop_and_wait(
+    instance_id: u64,
+    timeout: Duration,
+) -> Result<(), super::errors::UiError> {
+    let handle = match get_handle(instance_id) {
+        Some(handle) => handle,
+        None => {
+            return Err(super::errors::UiError {
+                name: "not_running".into(),
+                message: "Instance is not running.".into(),
+            })
+        }
+    };
+    handle
+        .send(ServerCommand::Stop)
+        .map_err(|_| super::errors::UiError::from("failed to send stop command"))?;
+
+    let deadline = Instant::now() + timeout;
+    while is_running(instance_id) {
+        if Instant::now() >= deadline {
+            return Err(super::errors::UiError {
+                name: "timeout".into(),
+                message: format!(
+                    "Instance {instance_id} did not stop within {}s",
+                    timeout.as_secs()
+                ),
+            });
+        }
+        tokio::time::sleep(Duration::from_millis(200)).await;
+    }
+    Ok(())
+}
+
 /// Send a command to a running server instance's stdin.
 pub async fn send_command(instance_id: u64, command: String) -> Result<(), super::errors::UiError> {
     match get_handle(instance_id) {
