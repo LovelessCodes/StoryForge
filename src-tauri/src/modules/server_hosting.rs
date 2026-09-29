@@ -10,7 +10,7 @@ use tauri::{command, AppHandle, Emitter, Manager, State};
 use tokio::process::Command;
 
 use super::errors::UiError;
-use super::utils::{dir_size, format_size, versions_folder, versions_subdir};
+use super::utils::{dir_size, format_size, normalize_path, versions_folder, versions_subdir};
 use crate::modules::server_hosting_actor;
 use crate::{log_error, log_info};
 
@@ -220,6 +220,24 @@ fn write_instance_json(dir: &Path, instance: &HostedServerInstance) -> Result<()
         message: format!("Failed to write {}: {e}", file_path.to_string_lossy()),
     })?;
     Ok(())
+}
+
+/// Reads `playerwhitelist.json`, treating a missing file as an empty list.
+///
+/// Invalid JSON is an error: silently defaulting to an empty list and then
+/// rewriting the file would destroy the user's whitelist.
+fn read_whitelist(path: &Path) -> Result<Vec<WhitelistEntry>, UiError> {
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let content = read_to_string(path).map_err(|e| UiError {
+        name: "read_failed".into(),
+        message: format!("Failed to read playerwhitelist.json: {e}"),
+    })?;
+    serde_json::from_str(&content).map_err(|e| UiError {
+        name: "whitelist_corrupt".into(),
+        message: format!("playerwhitelist.json is not valid JSON: {e}"),
+    })
 }
 
 /// Scan all instance configs from the hosted-servers directory
@@ -687,11 +705,17 @@ pub async fn create_hosted_server(
                 message: format!("Failed to serialize playerwhitelist.json: {e}"),
             })?;
         let whitelist_path = data_path.join("playerwhitelist.json");
-        write(&whitelist_path, &whitelist_json).map_err(|e| UiError {
-            name: "write_failed".into(),
-            message: format!("Failed to write playerwhitelist.json: {e}"),
-        })?;
-        log_info!("create_hosted_server: wrote playerwhitelist.json");
+        if whitelist_path.exists() {
+            log_info!(
+                "create_hosted_server: playerwhitelist.json already exists, leaving it untouched"
+            );
+        } else {
+            write(&whitelist_path, &whitelist_json).map_err(|e| UiError {
+                name: "write_failed".into(),
+                message: format!("Failed to write playerwhitelist.json: {e}"),
+            })?;
+            log_info!("create_hosted_server: wrote playerwhitelist.json");
+        }
     }
 
     log_info!("create_hosted_server: created instance id={id}");
@@ -803,12 +827,36 @@ pub async fn delete_hosted_server(
         }
     }
 
-    // Remove data directory (worlds, mods, config)
+    // Remove the data directory (worlds, mods, config) — but only when it is
+    // the instance's own directory or lives inside app data. A user-configured
+    // data dir elsewhere (other drive, network share) is kept.
     if delete_data && instance.data_dir != dir {
-        if let Err(e) = remove_dir_all(&instance.data_dir) {
+        let inside_app_data = app
+            .path()
+            .app_data_dir()
+            .map(|data_dir| {
+                normalize_path(&instance.data_dir).starts_with(normalize_path(&data_dir))
+            })
+            .unwrap_or(false);
+
+        if inside_app_data {
+            if let Err(e) = remove_dir_all(&instance.data_dir) {
+                log_error!(
+                    "delete_hosted_server: failed to remove data dir {:?}: {e}",
+                    instance.data_dir
+                );
+            }
+        } else {
             log_error!(
-                "delete_hosted_server: failed to remove data dir {:?}: {e}",
+                "delete_hosted_server: keeping data dir {:?} (outside app data); remove it manually if intended",
                 instance.data_dir
+            );
+            let _ = app.emit(
+                &format!("server-notice:{instance_id}"),
+                serde_json::json!({
+                    "message": "Instance deleted. Its data directory is outside the app data folder and has been kept.",
+                    "type": "data_kept"
+                }),
             );
         }
     }
@@ -1087,17 +1135,7 @@ pub async fn get_whitelist(
     let (_dir, instance) = find_instance(&app, instance_id)?;
     let whitelist_path = instance.data_dir.join("playerwhitelist.json");
 
-    if !whitelist_path.exists() {
-        return Ok(vec![]);
-    }
-
-    let content = read_to_string(&whitelist_path).map_err(|e| UiError {
-        name: "read_failed".into(),
-        message: format!("Failed to read playerwhitelist.json: {e}"),
-    })?;
-
-    let entries: Vec<WhitelistEntry> = serde_json::from_str(&content).unwrap_or_default();
-    Ok(entries)
+    read_whitelist(&whitelist_path)
 }
 
 #[command]
@@ -1120,16 +1158,8 @@ pub async fn add_to_whitelist(
         })?;
     }
 
-    // Read existing
-    let mut entries: Vec<WhitelistEntry> = if whitelist_path.exists() {
-        let content = read_to_string(&whitelist_path).map_err(|e| UiError {
-            name: "read_failed".into(),
-            message: format!("Failed to read playerwhitelist.json: {e}"),
-        })?;
-        serde_json::from_str(&content).unwrap_or_default()
-    } else {
-        vec![]
-    };
+    // Read existing (errors on corrupt JSON instead of clobbering it)
+    let mut entries = read_whitelist(&whitelist_path)?;
 
     // Check duplicate
     if entries.iter().any(|e| e.uid == uid) {
@@ -1192,12 +1222,7 @@ pub async fn remove_from_whitelist(
         });
     }
 
-    let content = read_to_string(&whitelist_path).map_err(|e| UiError {
-        name: "read_failed".into(),
-        message: format!("Failed to read playerwhitelist.json: {e}"),
-    })?;
-
-    let mut entries: Vec<WhitelistEntry> = serde_json::from_str(&content).unwrap_or_default();
+    let mut entries = read_whitelist(&whitelist_path)?;
 
     let before = entries.len();
     entries.retain(|e| e.uid != uid);
@@ -1461,5 +1486,25 @@ mod tests {
         assert!(ports_overlap("127.0.0.1", 42420, "127.0.0.1", 42420));
         assert!(!ports_overlap("127.0.0.1", 42420, "127.0.0.1", 42421));
         assert!(!ports_overlap("127.0.0.1", 42420, "192.168.1.5", 42420));
+    }
+
+    #[test]
+    fn read_whitelist_handles_missing_empty_corrupt_and_valid_files() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("playerwhitelist.json");
+
+        assert!(read_whitelist(&path).unwrap().is_empty());
+
+        std::fs::write(&path, "[]").unwrap();
+        assert!(read_whitelist(&path).unwrap().is_empty());
+
+        // Corrupt files must error, never silently become an empty list.
+        std::fs::write(&path, "not json").unwrap();
+        assert_eq!(read_whitelist(&path).unwrap_err().name, "whitelist_corrupt");
+
+        std::fs::write(&path, r#"[{"uid":"u1","name":"Alice"}]"#).unwrap();
+        let entries = read_whitelist(&path).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].uid, "u1");
     }
 }
