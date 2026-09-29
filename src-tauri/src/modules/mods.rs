@@ -13,6 +13,7 @@ use zip::read::ZipArchive;
 
 use super::errors::UiError;
 use super::installations::find_installation_by_id;
+use super::utils::{safe_file_name, safe_join};
 use crate::log_info;
 
 #[allow(dead_code)]
@@ -284,7 +285,8 @@ pub async fn add_mod_to_installation(
         .split('=')
         .next_back()
         .ok_or_else(|| UiError::from("Invalid URL"))?;
-    let filepath = pb.join(filename);
+    let filename = safe_file_name(filename)?;
+    let filepath = pb.join(&filename);
     let mut file = File::create(&filepath).map_err(|e| UiError {
         name: "create_file_failed".into(),
         message: format!("Failed to create file: {e}"),
@@ -395,6 +397,9 @@ pub async fn download_mod_file(
         })
         .unwrap_or_else(|| download_url.split('/').next_back().unwrap_or("mod.zip"))
         .to_string();
+    // The name comes from the remote server; reduce it to a single component
+    // so it cannot escape the Mods directory.
+    let filename = safe_file_name(&filename)?;
 
     let filepath = mods_dir.join(&filename);
     let content = response.bytes().await.map_err(|e| UiError {
@@ -720,13 +725,19 @@ pub fn save_mod_config(
         });
     }
 
-    let file_path = mod_config_path.join(&file);
+    let file_path = safe_join(&mod_config_path, &file)?;
     if !file_path.exists() || !file_path.is_file() {
         return Err(UiError {
             name: "file_not_found".into(),
             message: file_path.to_string_lossy().into_owned(),
         });
     }
+
+    // Refuse to write configs the game cannot parse.
+    json5_from_str::<Value>(&new_code).map_err(|e| UiError {
+        name: "invalid_json".into(),
+        message: format!("Refusing to save invalid JSON5: {e}"),
+    })?;
 
     let mut f = File::create(&file_path).map_err(|e| UiError {
         name: "create_file_failed".into(),

@@ -17,7 +17,7 @@ use tokio_util::sync::CancellationToken;
 
 use super::errors::UiError;
 use super::paths::vintagestory_exe;
-use super::utils::is_at_least_1_22_3;
+use super::utils::{is_at_least_1_22_3, safe_file_name, safe_join};
 use crate::{log_error, log_info};
 
 #[derive(Serialize, Clone)]
@@ -239,34 +239,37 @@ fn is_zip(path: &Path) -> bool {
 }
 
 /// Extract a filename from a Content-Disposition header, or fall back to the URL.
+/// The result is always a single path component so it cannot escape `dest_dir`.
 fn infer_filename(url: &str, headers: &reqwest::header::HeaderMap) -> String {
-    if let Some(cd) = headers
+    let from_header = headers
         .get(CONTENT_DISPOSITION)
         .and_then(|cd| cd.to_str().ok())
-    {
-        if let Some(name) = cd.split(';').find_map(|part| {
-            let part = part.trim();
-            if part.starts_with("filename=") {
-                Some(
-                    part.trim_start_matches("filename=")
-                        .trim_matches('"')
-                        .to_string(),
-                )
-            } else {
-                None
-            }
-        }) {
-            if !name.is_empty() {
-                return name;
-            }
+        .and_then(|cd| {
+            cd.split(';').find_map(|part| {
+                let part = part.trim();
+                part.strip_prefix("filename=")
+                    .map(|f| f.trim_matches('"').to_string())
+                    .filter(|f| !f.is_empty())
+            })
+        });
+
+    let candidate = match from_header.or_else(|| {
+        url.split('/')
+            .next_back()
+            .filter(|s| !s.is_empty())
+            .map(str::to_string)
+    }) {
+        Some(candidate) => candidate,
+        None => return "downloaded_file".to_string(),
+    };
+
+    match safe_file_name(&candidate) {
+        Ok(name) => name,
+        Err(_) => {
+            log_error!("download: rejected unsafe filename {candidate:?}, using fallback");
+            "downloaded_file".to_string()
         }
     }
-
-    url.split('/')
-        .next_back()
-        .filter(|s| !s.is_empty())
-        .map(|s| s.to_string())
-        .unwrap_or_else(|| "downloaded_file".to_string())
 }
 
 /// Stream a remote file to disk, returning the path to the saved archive.
@@ -842,39 +845,8 @@ fn make_output_path(base: &Path, entry_name: &str, prefix: &str) -> Result<PathB
         return Err("entry does not match prefix".into());
     };
 
-    // Prevent zip slip: normalize and ensure the candidate stays inside base.
-    let candidate = base.join(trimmed);
-    let norm_base = normalize_path(base);
-    let norm_candidate = normalize_path(&candidate);
-
-    if !norm_candidate.starts_with(&norm_base) {
-        return Err("unsafe path in zip (zip slip)".into());
-    }
-    Ok(candidate)
-}
-
-/// Normalize a path syntactically, resolving `.` and `..` without touching the
-/// filesystem. Used for zip-slip checks before extraction.
-fn normalize_path(path: &Path) -> PathBuf {
-    use std::path::Component;
-
-    let mut result = PathBuf::new();
-    for component in path.components() {
-        match component {
-            Component::Prefix(p) => result.push(p.as_os_str()),
-            Component::RootDir => result.push(component),
-            Component::CurDir => {}
-            Component::ParentDir => {
-                if !result.pop() {
-                    // Path escapes its root — preserve the marker so the caller
-                    // can detect it as unsafe.
-                    result.push("..");
-                }
-            }
-            Component::Normal(name) => result.push(name),
-        }
-    }
-    result
+    // Rejects zip-slip entries (absolute paths, `..` components).
+    safe_join(base, trimmed).map_err(|e| e.message)
 }
 
 #[command]
