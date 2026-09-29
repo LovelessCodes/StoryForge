@@ -25,7 +25,7 @@ export type DeleteInstallationDialogProps = {
 export function DeleteInstallationDialog({ installation }: DeleteInstallationDialogProps) {
   const queryClient = useQueryClient();
   const { removeInstallation } = useInstallations();
-  const { servers } = useServerStore();
+  const servers = useServerStore((s) => s.servers);
   const { data: saves } = useSavesFromInstallation(installation.id);
 
   const activeServers = servers.filter((srv) => srv.installationId === installation.id);

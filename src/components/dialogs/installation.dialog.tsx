@@ -72,7 +72,9 @@ export function InstallationDialog({ installation, version }: InstallationDialog
   const { data: gameVersions } = useQuery(gameVersionsQuery);
   const { installationsParent, installationsSubdir } = useSettingsStore();
   const { appFolder } = useAppFolder();
-  const { addInstallation, updateInstallation, loadInstallations } = useInstallationsStore();
+  const addInstallation = useInstallationsStore((s) => s.addInstallation);
+  const updateInstallation = useInstallationsStore((s) => s.updateInstallation);
+  const loadInstallations = useInstallationsStore((s) => s.loadInstallations);
   const installedVersions = useInstalledVersionNames();
   const { mutateAsync: downloadVersion } = useDownloadVersion();
   const queryClient = useQueryClient();

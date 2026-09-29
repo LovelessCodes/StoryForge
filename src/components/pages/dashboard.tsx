@@ -28,7 +28,8 @@ import { useServerStore } from "@/stores/servers";
 
 export function DashboardPage() {
   const { installations, toggleFavorite: toggleFavoriteInstallation } = useInstallations();
-  const { servers, toggleFavorite: toggleFavoriteServer } = useServerStore();
+  const servers = useServerStore((s) => s.servers);
+  const toggleFavoriteServer = useServerStore((s) => s.toggleFavorite);
   const router = useRouter();
   const { mutate: connectToServer } = useConnectToServer();
   const { mutate: playWithInstallation } = usePlayInstallation();

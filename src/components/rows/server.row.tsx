@@ -22,7 +22,7 @@ type ServerRowProps = {
 
 export function ServerRow({ server }: ServerRowProps) {
   // Stores
-  const { toggleFavorite } = useServerStore();
+  const toggleFavorite = useServerStore((s) => s.toggleFavorite);
   const { streamMode } = useSettingsStore();
   const versions = useInstalledVersionNames();
   const { installations } = useInstallations();
