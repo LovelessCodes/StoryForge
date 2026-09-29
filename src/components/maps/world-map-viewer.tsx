@@ -33,6 +33,14 @@ type WorldMapViewerProps = {
   showProspect: boolean;
 };
 
+type CursorCoords = {
+  x: number;
+  y: number;
+  z?: number;
+  screenX: number;
+  screenY: number;
+};
+
 export function WorldMapViewer({
   worldPath,
   mapPath,
@@ -84,14 +92,49 @@ export function WorldMapViewer({
   const [isPanning, setIsPanning] = useState(false);
   const lastMousePosRef = useRef({ x: 0, y: 0 });
 
-  // Cursor coordinates state
-  const [cursorCoords, setCursorCoords] = useState<{
-    x: number;
-    y: number;
-    z?: number;
-    screenX: number;
-    screenY: number;
-  } | null>(null);
+  // Cursor coordinates state. Updates are throttled to one per animation
+  // frame - mousemove fires far more often than the tooltip needs to move, and
+  // every set re-renders this component.
+  const [cursorCoords, setCursorCoords] = useState<CursorCoords | null>(null);
+  const pendingCursorRef = useRef<CursorCoords | null>(null);
+  const cursorRafRef = useRef<number | null>(null);
+  const scheduleCursorUpdate = useCallback((coords: CursorCoords) => {
+    pendingCursorRef.current = coords;
+    if (cursorRafRef.current !== null) return;
+    cursorRafRef.current = requestAnimationFrame(() => {
+      cursorRafRef.current = null;
+      setCursorCoords(pendingCursorRef.current);
+    });
+  }, []);
+  useEffect(
+    () => () => {
+      if (cursorRafRef.current !== null) cancelAnimationFrame(cursorRafRef.current);
+    },
+    [],
+  );
+
+  // Cache of colour-tinted marker icons, keyed by icon + colour + opacity + size
+  const tintedIconCacheRef = useRef<Map<string, HTMLCanvasElement>>(new Map());
+  const getTintedIcon = useCallback(
+    (icon: HTMLImageElement, color: number, opacity: number, size: number) => {
+      const key = `${icon.src}|${color}|${opacity}|${size}`;
+      const cached = tintedIconCacheRef.current.get(key);
+      if (cached) return cached;
+
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return null;
+      ctx.drawImage(icon, 0, 0, size, size);
+      ctx.globalCompositeOperation = "source-in";
+      ctx.fillStyle = `rgba(${(color >> 16) & 0xff}, ${(color >> 8) & 0xff}, ${color & 0xff}, ${Math.min(Math.max(opacity / 255, 0), 1)})`;
+      ctx.fillRect(0, 0, size, size);
+      tintedIconCacheRef.current.set(key, canvas);
+      return canvas;
+    },
+    [],
+  );
 
   // Currently hovered prospecting marker
   const [prospectingMarker, setProspectingMarker] = useState<ProspectingMarker | null>(null);
@@ -403,23 +446,22 @@ export function WorldMapViewer({
           const icon = marker.icon ? iconCacheRef.current.get(marker.icon) : null;
           let drawnSize = iconSize;
           if (icon?.complete && icon.naturalWidth > 0) {
-            ctx.save();
-            ctx.shadowColor = "rgba(0,0,0,0.5)";
-            ctx.shadowBlur = 4;
-            ctx.shadowOffsetX = 1;
-            ctx.shadowOffsetY = 1;
-            const tempCanvas = document.createElement("canvas");
-            tempCanvas.width = iconSize;
-            tempCanvas.height = iconSize;
-            const tempCtx = tempCanvas.getContext("2d");
-            if (tempCtx) {
-              tempCtx.drawImage(icon, 0, 0, iconSize, iconSize);
-              tempCtx.globalCompositeOperation = "source-in";
-              tempCtx.fillStyle = `rgba(${(marker.color >> 16) & 0xff}, ${(marker.color >> 8) & 0xff}, ${marker.color & 0xff}, ${Math.min(Math.max(marker.opacity / 255, 0), 1)})`;
-              tempCtx.fillRect(0, 0, iconSize, iconSize);
-              ctx.drawImage(tempCanvas, screenX - iconSize / 2, screenY - iconSize / 2);
+            const tinted = getTintedIcon(icon, marker.color, marker.opacity, Math.round(iconSize));
+            if (tinted) {
+              ctx.save();
+              ctx.shadowColor = "rgba(0,0,0,0.5)";
+              ctx.shadowBlur = 4;
+              ctx.shadowOffsetX = 1;
+              ctx.shadowOffsetY = 1;
+              ctx.drawImage(
+                tinted,
+                screenX - iconSize / 2,
+                screenY - iconSize / 2,
+                iconSize,
+                iconSize,
+              );
+              ctx.restore();
             }
-            ctx.restore();
           } else {
             const markerSize = Math.max(4, Math.min(10, 5 * viewportRef.current.zoom));
             drawnSize = markerSize;
@@ -490,7 +532,7 @@ export function WorldMapViewer({
         }
       }
     }
-  }, [mapMarkers, prospectingLogs, selectedPlayer, showProspect, tiles]);
+  }, [mapMarkers, prospectingLogs, selectedPlayer, showProspect, tiles, getTintedIcon]);
 
   // Schedule redraw (throttled)
   const scheduleRedraw = useCallback(() => {
@@ -650,9 +692,9 @@ export function WorldMapViewer({
         setProspectingMarker(null);
       }
 
-      // Update cursor coordinates
+      // Update cursor coordinates (rAF-throttled)
       if (hoveredMarker?.position) {
-        setCursorCoords({
+        scheduleCursorUpdate({
           screenX: e.clientX,
           screenY: e.clientY,
           x: Math.round(hoveredMarker.position.x - spawnOffsetX),
@@ -660,7 +702,7 @@ export function WorldMapViewer({
           z: Math.round(hoveredMarker.position.y - spawnOffsetY),
         });
       } else {
-        setCursorCoords({
+        scheduleCursorUpdate({
           screenX: e.clientX,
           screenY: e.clientY,
           x: vsX,
@@ -705,6 +747,7 @@ export function WorldMapViewer({
       showProspect,
       drawBase,
       drawOverlay,
+      scheduleCursorUpdate,
     ],
   );
 
@@ -714,6 +757,11 @@ export function WorldMapViewer({
 
   const handleMouseLeave = useCallback(() => {
     setIsPanning(false);
+    if (cursorRafRef.current !== null) {
+      cancelAnimationFrame(cursorRafRef.current);
+      cursorRafRef.current = null;
+    }
+    pendingCursorRef.current = null;
     setCursorCoords(null);
   }, []);
 
