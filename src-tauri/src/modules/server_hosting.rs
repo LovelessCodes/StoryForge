@@ -9,6 +9,7 @@ use std::{
 use tauri::{command, AppHandle, Emitter, Manager, State};
 use tokio::process::Command;
 
+use super::dotnet;
 use super::errors::UiError;
 use super::utils::{dir_size, format_size, normalize_path, versions_folder, versions_subdir};
 use crate::modules::server_hosting_actor;
@@ -654,9 +655,18 @@ pub async fn create_hosted_server(
 
     // --setconfig uses = syntax: --setconfig="{ key: 3, foo: 'value' }"
     let setconfig_arg = format!("--setconfig={}", setconfig_value);
+
+    // The server is a .NET apphost: it needs DOTNET_ROOT like the game client.
+    let dotnet_root =
+        dotnet::ensure_dotnet(&app, &app_data_dir, &instance.version, id, true).await?;
+    log_info!("create_hosted_server: DOTNET_ROOT={dotnet_root:?}");
+
     log_info!("create_hosted_server: running --setconfig: exe={:?} dataPath={data_dir_str} arg={setconfig_arg}", exe_path);
 
     let setconfig_output = Command::new(exe_path.to_string_lossy().as_ref())
+        .env("DOTNET_ROOT", &dotnet_root)
+        .env("DOTNET_ROLL_FORWARD", "LatestMinor")
+        .env("DOTNET_ROLL_FORWARD_TO_PRERELEASE", "0")
         .arg("--dataPath")
         .arg(&data_dir_str)
         .arg(&setconfig_arg)
@@ -900,7 +910,15 @@ pub async fn start_hosted_server(app: AppHandle, instance_id: u64) -> Result<(),
         })?;
     }
 
-    server_hosting_actor::spawn(app, instance).await
+    // The server is a .NET apphost: resolve the same runtime the client uses.
+    let app_data = app.path().app_data_dir().map_err(|e| UiError {
+        name: "path_error".into(),
+        message: format!("Failed to resolve app data dir: {e}"),
+    })?;
+    let dotnet_root =
+        dotnet::ensure_dotnet(&app, &app_data, &instance.version, instance_id, true).await?;
+
+    server_hosting_actor::spawn(app, instance, dotnet_root).await
 }
 
 #[command]
@@ -1307,12 +1325,23 @@ pub async fn set_whitelist_mode(
     };
     let setconfig_arg = format!("--setconfig={{ WhitelistMode: {} }}", mode.as_u8());
 
+    // The server is a .NET apphost: it needs DOTNET_ROOT like the game client.
+    let app_data = app.path().app_data_dir().map_err(|e| UiError {
+        name: "path_error".into(),
+        message: format!("Failed to resolve app data dir: {e}"),
+    })?;
+    let dotnet_root =
+        dotnet::ensure_dotnet(&app, &app_data, &instance.version, instance_id, true).await?;
+
     log_info!(
         "set_whitelist_mode: exe={:?} dataPath={data_dir_str} arg={setconfig_arg}",
         exe_path
     );
 
     let output = Command::new(exe_path.to_string_lossy().as_ref())
+        .env("DOTNET_ROOT", &dotnet_root)
+        .env("DOTNET_ROLL_FORWARD", "LatestMinor")
+        .env("DOTNET_ROLL_FORWARD_TO_PRERELEASE", "0")
         .arg("--dataPath")
         .arg(&data_dir_str)
         .arg(&setconfig_arg)

@@ -8,6 +8,7 @@
 //! removes the need for `unsafe { libc::kill(...) }`.
 
 use std::{
+    path::PathBuf,
     process::Stdio,
     sync::{Arc, LazyLock, Mutex},
     time::{Duration, Instant},
@@ -92,16 +93,22 @@ pub fn get_handle(instance_id: u64) -> Option<ServerActorHandle> {
 pub async fn spawn(
     app: tauri::AppHandle,
     instance: HostedServerInstance,
+    dotnet_root: PathBuf,
 ) -> Result<(), super::errors::UiError> {
     let instance_id = instance.id;
 
     // Resolve server exe path
     let exe_path = server_exe_path(&app, &instance.version)?;
 
-    // Build command
+    // Build command. The server binary is a .NET apphost, so it needs the
+    // same DOTNET_ROOT resolution as the game client.
     let data_dir_str = instance.data_dir.to_string_lossy().to_string();
     let mut cmd = Command::new(exe_path.to_string_lossy().as_ref());
-    cmd.arg("--dataPath").arg(&data_dir_str);
+    cmd.env("DOTNET_ROOT", &dotnet_root)
+        .env("DOTNET_ROLL_FORWARD", "LatestMinor")
+        .env("DOTNET_ROLL_FORWARD_TO_PRERELEASE", "0")
+        .arg("--dataPath")
+        .arg(&data_dir_str);
 
     // Add extra start params
     if !instance.start_params.is_empty() {
