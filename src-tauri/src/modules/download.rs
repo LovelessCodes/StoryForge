@@ -11,6 +11,7 @@ use std::{
         atomic::{AtomicBool, AtomicU64, Ordering},
         Arc, Mutex, OnceLock,
     },
+    time::Duration,
 };
 use tauri::{command, AppHandle, Emitter, EventId, Listener, State};
 use tokio_util::sync::CancellationToken;
@@ -19,7 +20,7 @@ use super::errors::UiError;
 use super::paths::vintagestory_exe;
 use super::utils::{
     is_at_least_1_22_3, lock, normalize_path, require_managed_path, safe_file_name, safe_join,
-    versions_folder, versions_subdir,
+    versions_folder, versions_subdir, Throttle,
 };
 use crate::{log_error, log_info};
 
@@ -371,6 +372,8 @@ async fn download_file(
 
     let mut stream = resp.bytes_stream();
     let mut downloaded: u64 = resume_offset;
+    // Emitting per chunk floods the webview on fast connections.
+    let mut progress = Throttle::new(Duration::from_millis(100));
 
     while let Some(chunk) = stream.next().await {
         if ctx.is_cancelled() {
@@ -406,16 +409,18 @@ async fn download_file(
         // Keep the global registry in sync for pause-on-exit.
         ctx.stored_offset.store(downloaded, Ordering::SeqCst);
 
-        let percent = total.map(|t| (downloaded as f64 / t as f64) * 100.0);
-        ctx.emit(ProgressPayload {
-            phase: "download",
-            downloaded: Some(downloaded),
-            total,
-            percent,
-            current: None,
-            count: None,
-            message: None,
-        })?;
+        if progress.ready() {
+            let percent = total.map(|t| (downloaded as f64 / t as f64) * 100.0);
+            ctx.emit(ProgressPayload {
+                phase: "download",
+                downloaded: Some(downloaded),
+                total,
+                percent,
+                current: None,
+                count: None,
+                message: None,
+            })?;
+        }
     }
 
     // Done — remove any stale resume manifest.

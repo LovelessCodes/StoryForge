@@ -155,6 +155,33 @@ pub fn dir_name(path: &Path) -> String {
         .unwrap_or_default()
 }
 
+/// Rate limiter for progress callbacks: allows at most one call per interval.
+#[derive(Debug)]
+pub struct Throttle {
+    last: Option<Instant>,
+    interval: Duration,
+}
+
+impl Throttle {
+    pub fn new(interval: Duration) -> Self {
+        Self {
+            last: None,
+            interval,
+        }
+    }
+
+    /// Returns `true` at most once per interval (the first call always passes).
+    pub fn ready(&mut self) -> bool {
+        match self.last {
+            Some(at) if at.elapsed() < self.interval => false,
+            _ => {
+                self.last = Some(Instant::now());
+                true
+            }
+        }
+    }
+}
+
 /// Locks a mutex, recovering the guarded value if another thread panicked
 /// while holding it. Poisoning must not turn one bug into an app-wide panic.
 pub fn lock<T>(mutex: &std::sync::Mutex<T>) -> std::sync::MutexGuard<'_, T> {
@@ -449,6 +476,15 @@ mod tests {
             panic!("poison the mutex");
         });
         assert_eq!(*lock(&mutex), 42);
+    }
+
+    #[test]
+    fn throttle_limits_call_rate() {
+        let mut throttle = Throttle::new(Duration::from_millis(50));
+        assert!(throttle.ready());
+        assert!(!throttle.ready());
+        std::thread::sleep(Duration::from_millis(60));
+        assert!(throttle.ready());
     }
 
     #[test]
