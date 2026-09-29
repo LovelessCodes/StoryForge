@@ -8,3 +8,11 @@ pre-commit:
       glob: "*.{rs}"
       run: cd src-tauri && cargo fmt
       stage_fixed: true
+    branch-guard:
+      run: |
+        branch=$(git rev-parse --abbrev-ref HEAD)
+        case "$branch" in
+          release|main|master)
+            echo "⚠️  Committing directly to '$branch' — this repo merges via pull requests."
+            ;;
+        esac
