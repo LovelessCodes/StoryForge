@@ -71,6 +71,16 @@ export const isWindows = platform() === "windows";
 export const pathDelimiter = isWindows ? "\\" : "/";
 
 /**
+ * Returns the final component of a native path, handling both separators.
+ *
+ * Tauri returns platform-native paths (`C:\...` on Windows), so splitting on
+ * "/" alone silently returns the whole path there.
+ */
+export function pathBasename(path: string): string {
+  return path.split(/[/\\]/).filter(Boolean).pop() ?? "";
+}
+
+/**
  * Builds the full installations directory path
  * @param parentPath - The parent directory (from settings or app folder)
  * @param subdir - The subdirectory name (from settings, default: "installations")

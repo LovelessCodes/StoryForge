@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { useSaves } from "@/hooks/use-saves";
 import { useAllMaps } from "@/hooks/use-world-map";
-import { cn } from "@/lib/utils";
+import { cn, pathBasename } from "@/lib/utils";
 import { useInstallations } from "@/stores/installations";
 
 export function WorldsPage() {
@@ -33,7 +33,7 @@ export function WorldsPage() {
       .includes(searchText.toLowerCase());
     const matchesInstallation = selectedInstallationId
       ? installations.find(
-          (installation) => installation.path.split("/").pop() === world.installation_name,
+          (installation) => pathBasename(installation.path) === world.installation_name,
         )?.id === selectedInstallationId
       : true;
     return matchesSearchText && matchesInstallation;
