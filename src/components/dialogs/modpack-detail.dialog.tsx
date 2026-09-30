@@ -57,6 +57,7 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
   const { installationsParent, installationsSubdir } = useSettingsStore();
   const loadInstallations = useInstallationsStore((s) => s.loadInstallations);
   const installedVersions = useInstalledVersionNames();
+  const installedVersionsSet = new Set(installedVersions);
   const { mutateAsync: downloadVersion } = useDownloadVersion();
   const navigate = useNavigate();
   const { user } = useAuthSession();
@@ -104,7 +105,7 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
     setImportProgress(null);
 
     try {
-      if (!installedVersions.includes(version.gameVersion)) {
+      if (!installedVersionsSet.has(version.gameVersion)) {
         await downloadVersion(version.gameVersion);
       }
 
@@ -245,7 +246,7 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
               )}
 
             {sortedVersions.map((v) => {
-              const vsInstalled = installedVersions.includes(v.gameVersion);
+              const vsInstalled = installedVersionsSet.has(v.gameVersion);
               const isNaming = installingVersionId === v.id;
               const isEditing = editingVersionId === v.id;
 

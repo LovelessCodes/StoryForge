@@ -32,6 +32,7 @@ export function CreateHostedServerDialog({ onSuccess }: Props) {
   const [lookingUp, setLookingUp] = useState(false);
 
   const allVersions = (gameVersions ?? []).toSorted(compareSemverDesc);
+  const installedVersionsSet = new Set(installedVersions);
   const firstVersion = allVersions[0] ?? "";
 
   const form = useForm({
@@ -151,7 +152,7 @@ export function CreateHostedServerDialog({ onSuccess }: Props) {
                 </SelectTrigger>
                 <SelectContent>
                   {allVersions.map((v) => {
-                    const isInstalled = installedVersions.includes(v);
+                    const isInstalled = installedVersionsSet.has(v);
                     return (
                       <SelectItem key={v} value={v}>
                         <span className="flex items-center gap-2">

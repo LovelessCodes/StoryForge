@@ -76,6 +76,7 @@ export function InstallationDialog({ installation, version }: InstallationDialog
   const updateInstallation = useInstallationsStore((s) => s.updateInstallation);
   const loadInstallations = useInstallationsStore((s) => s.loadInstallations);
   const installedVersions = useInstalledVersionNames();
+  const installedVersionsSet = new Set(installedVersions);
   const { mutateAsync: downloadVersion } = useDownloadVersion();
   const queryClient = useQueryClient();
 
@@ -134,7 +135,7 @@ export function InstallationDialog({ installation, version }: InstallationDialog
           version: defaultVersion,
         },
     onSubmit: async ({ value }) => {
-      if (!installedVersions.includes(value.version)) {
+      if (!installedVersionsSet.has(value.version)) {
         await downloadVersion(value.version);
       }
 
@@ -374,7 +375,7 @@ export function InstallationDialog({ installation, version }: InstallationDialog
                   <SelectTrigger className="flex w-full gap-1 truncate">
                     <p>
                       {field.state.value ?? "Game version"}
-                      {installedVersions.includes(field.state.value) ? (
+                      {installedVersionsSet.has(field.state.value) ? (
                         <span className="text-muted-foreground ml-2 text-xs opacity-50">
                           (installed)
                         </span>
@@ -388,12 +389,12 @@ export function InstallationDialog({ installation, version }: InstallationDialog
                   <SelectContent align="start" alignItemWithTrigger={false}>
                     {gameVersions?.toSorted(compareSemverDesc).map((v) => (
                       <SelectItem
-                        className={installedVersions.includes(v) ? "bg-success/5" : ""}
+                        className={installedVersionsSet.has(v) ? "bg-success/5" : ""}
                         key={v}
                         value={v}
                       >
                         {v}
-                        {installedVersions.includes(v) && (
+                        {installedVersionsSet.has(v) && (
                           <span className="text-muted-foreground ml-2 text-xs opacity-50">
                             (installed)
                           </span>

@@ -27,8 +27,10 @@ export function AddVersionDialog() {
   const { startDownload } = useDownloadManager();
   const entries = useDownloadStore((s) => s.entries);
 
+  const installedVersionsSet = new Set(installedVersions);
+  const downloadingVersions = new Set(Object.keys(entries));
   const availableVersions = gameVersions?.filter(
-    (v) => !installedVersions.includes(v) && !Object.keys(entries).includes(v),
+    (v) => !installedVersionsSet.has(v) && !downloadingVersions.has(v),
   );
 
   const sortedVersions = availableVersions?.sort(compareSemverDesc);

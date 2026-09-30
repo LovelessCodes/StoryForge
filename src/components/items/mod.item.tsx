@@ -55,8 +55,9 @@ export function ModItem({
   const pathHash = modsDirectory ? hashPath(modsDirectory) : "standalone";
   const emitevent = `mod-download-${mod.modid}-${pathHash}`;
 
+  const modIdStrings = new Set(mod.modidstrs);
   const installedMod = installedMods.find(
-    (i) => i.modid === String(mod.modid) || mod.modidstrs.includes(i.modid),
+    (i) => i.modid === String(mod.modid) || modIdStrings.has(i.modid),
   );
   const updateMod =
     modUpdates?.updates[mod.modidstrs[0]] ??

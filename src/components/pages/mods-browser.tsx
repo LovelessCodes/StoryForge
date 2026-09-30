@@ -85,6 +85,7 @@ function relevanceRank(mod: Mod, query: string): number {
   if (name === q) return 0;
   if (name.startsWith(q)) return 1;
   if (name.includes(q)) return 2;
+  // react-doctor-disable-next-line js-set-map-lookups -- string search, not an array lookup
   if (mod.tags.some((tag) => stripped(tag).includes(q))) return 3;
   if (stripped(mod.summary).includes(q)) return 4;
   return 5;
@@ -95,6 +96,10 @@ export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
   const [searchText, setSearchText] = useState("");
   const [selectedModTags, setSelectedModTags] = useState<ModTag[]>([]);
   const [selectedGameVersions, setSelectedGameVersions] = useState<string[]>([]);
+  const selectedGameVersionsSet = useMemo(
+    () => new Set(selectedGameVersions),
+    [selectedGameVersions],
+  );
   const defaultModSortBy = useSettingsStore((state) => state.defaultModSortBy);
   const [sortBy, setSortBy] = useState<SortBy>(defaultModSortBy);
   const [orderDirection, setOrderDirection] = useState<OrderDirection>("ascending");
@@ -288,7 +293,7 @@ export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
               <SelectItem
                 key={version}
                 onClick={() =>
-                  selectedGameVersions.includes(version)
+                  selectedGameVersionsSet.has(version)
                     ? removeGameVersion(version)
                     : addGameVersion(version)
                 }
