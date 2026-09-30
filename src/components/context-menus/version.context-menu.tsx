@@ -71,4 +71,11 @@ export const VersionContextMenu = ({
   );
 };
 
-export const MotionVersionContextMenu = m.create(VersionContextMenu);
+const MotionVersionContextMenuBase = m.create(VersionContextMenu);
+
+/** Motion wrapper so list rows can animate in and out. */
+export function MotionVersionContextMenu(
+  props: React.ComponentProps<typeof MotionVersionContextMenuBase>,
+) {
+  return <MotionVersionContextMenuBase {...props} />;
+}

@@ -33,4 +33,11 @@ export const InstallationContextMenu = ({
   );
 };
 
-export const MotionInstallationContextMenu = m.create(InstallationContextMenu);
+const MotionInstallationContextMenuBase = m.create(InstallationContextMenu);
+
+/** Motion wrapper so list rows can animate in and out. */
+export function MotionInstallationContextMenu(
+  props: React.ComponentProps<typeof MotionInstallationContextMenuBase>,
+) {
+  return <MotionInstallationContextMenuBase {...props} />;
+}

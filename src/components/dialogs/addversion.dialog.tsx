@@ -16,7 +16,7 @@ import { gameVersionsQuery } from "@/lib/queries";
 import { compareSemverDesc } from "@/lib/utils";
 import { useDownloadStore } from "@/stores/downloads";
 
-export const versionSchema = z.object({
+const versionSchema = z.object({
   version: z.string().min(1),
 });
 

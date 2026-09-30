@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { useInstalledMods } from "@/hooks/use-installed-mods";
 import { useModUpdates } from "@/hooks/use-mod-updates";
+import { type SortBy, sortOptions } from "@/lib/mod-sort";
 import { gameVersionsQuery, modTagsQuery } from "@/lib/queries";
 import type { ModTag } from "@/lib/types";
 import { cn, compareSemverDesc, stripped } from "@/lib/utils";
@@ -34,29 +35,9 @@ export type OutputMod = {
   path: string;
 };
 
-export type SortBy =
-  | "relevance"
-  | "created"
-  | "name"
-  | "trending"
-  | "downloads"
-  | "follows"
-  | "comments"
-  | "updated";
 type OrderDirection = "ascending" | "descending";
 type Side = "any" | "client" | "server" | "both" | "installed";
 type Category = "mod" | "externaltool" | "other";
-
-export const sortOptions: Record<SortBy, string> = {
-  comments: "Comments",
-  created: "Created",
-  downloads: "Downloads",
-  follows: "Follows",
-  name: "Name",
-  relevance: "Relevance",
-  trending: "Trending",
-  updated: "Last Updated",
-};
 
 const categoryOptions: Record<Category, string> = {
   externaltool: "External Tool",

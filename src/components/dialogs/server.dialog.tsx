@@ -32,7 +32,7 @@ type SniffResult = {
   disconnect_message: string | null;
 };
 
-export const serverSchema = z.object({
+const serverSchema = z.object({
   favorite: z.boolean(),
   id: z.number(),
   index: z.number(),

@@ -21,7 +21,7 @@ interface NewsItem {
   pubDate: string;
 }
 
-export const newsQueryOptions = {
+const newsQueryOptions = {
   queryFn: () => invoke("fetch_news") as Promise<NewsItem[]>,
   queryKey: ["news"],
 };

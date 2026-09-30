@@ -7,7 +7,6 @@ import z from "zod";
 
 import { AccountSettings } from "@/components/account-settings";
 import { LogViewer } from "@/components/log-viewer";
-import { type SortBy, sortOptions } from "@/components/pages/mods-browser";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -27,6 +26,7 @@ import { rootTooltipHandle } from "@/handles";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { installedVersionsQueryKey } from "@/hooks/use-installed-versions";
 import { logToFile } from "@/lib/logger";
+import { type SortBy, sortOptions } from "@/lib/mod-sort";
 import { cn } from "@/lib/utils";
 import { useInstallationsStore } from "@/stores/installations";
 import { type SetParentConfigProps, useSettingsStore } from "@/stores/settings";

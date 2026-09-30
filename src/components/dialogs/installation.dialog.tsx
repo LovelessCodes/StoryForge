@@ -28,7 +28,7 @@ import { buildInstallationPath, compareSemverDesc, makeStringFolderSafe } from "
 import { type Installation, useInstallationsStore } from "@/stores/installations";
 import { useSettingsStore } from "@/stores/settings";
 
-export const installationSchema = z.object({
+const installationSchema = z.object({
   envVars: z.array(z.object({ key: z.string(), value: z.string() })),
   favorite: z.boolean(),
   icon: z.string(),
