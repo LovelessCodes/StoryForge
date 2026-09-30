@@ -4,9 +4,9 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { ModVersionSelect } from "@/components/pickers/mod-version.picker";
 import { Button } from "@/components/ui/button";
 import { DialogClose, DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { rootDialogHandle } from "@/handles";
 import { useAddModToInstallation } from "@/hooks/use-add-mod-to-installation";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
@@ -91,50 +91,11 @@ export function AddModDialog({ modid, modsDirectory }: AddModDialogProps) {
       </DialogDescription>
       {/* We need a select, incase the installation version is not compatible */}
       <div className="mt-2 w-full overflow-hidden">
-        <Select
-          onValueChange={(value) => {
-            const release = modInfo?.mod.releases.find((r) => r.modversion === value) || null;
-            setUserSelectedVersion(release);
-          }}
-          value={selectedVersion?.modversion || undefined}
-        >
-          <SelectTrigger className="w-full truncate">
-            <span>
-              {selectedVersion?.modversion ? (
-                <span>
-                  {selectedVersion.modversion}{" "}
-                  <span className="text-muted-foreground">
-                    for {selectedVersion.tags[0]}{" "}
-                    {selectedVersion.tags.length > 1
-                      ? `(+${selectedVersion.tags.length - 1} more)`
-                      : ""}
-                  </span>
-                </span>
-              ) : (
-                "Select Version"
-              )}
-            </span>
-          </SelectTrigger>
-          <SelectContent alignItemWithTrigger={false}>
-            {modInfo?.mod.releases.map((release) => (
-              <SelectItem key={release.fileid} value={release.modversion}>
-                <div className="flex flex-col">
-                  <span>
-                    {release.modversion}
-                    <span className="text-muted-foreground">
-                      {" "}
-                      for {release.tags[0]}{" "}
-                      {release.tags.length > 1 ? `(+${release.tags.length - 1} more)` : ""}
-                    </span>
-                  </span>
-                  <span className="text-muted-foreground text-xs">
-                    {release.downloads} downloads
-                  </span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <ModVersionSelect
+          onSelect={setUserSelectedVersion}
+          releases={modInfo?.mod.releases}
+          selected={selectedVersion}
+        />
       </div>
       <DialogFooter>
         <Button
