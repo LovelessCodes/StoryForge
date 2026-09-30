@@ -145,9 +145,8 @@ export function AuthPage() {
                       type="text"
                       value={field.state.value}
                     />
-                    {field.state.meta.errors.map((err, i) => (
-                      // react-doctor-disable-next-line react-doctor/no-array-index-as-key
-                      <FieldError error={err} key={i} />
+                    {uniqueErrors(field.state.meta.errors).map((err) => (
+                      <FieldError error={err} key={errorMessage(err)} />
                     ))}
                   </div>
                 )}
