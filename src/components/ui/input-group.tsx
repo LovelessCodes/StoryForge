@@ -50,11 +50,11 @@ export function InputGroupAddon({
   ...props
 }: React.ComponentProps<"div"> & VariantProps<typeof inputGroupAddonVariants>): React.ReactElement {
   return (
-    // react-doctor-disable-next-line no-static-element-interactions -- wrapper that forwards bubbled mouse events to its input
     <div
       className={cn(inputGroupAddonVariants({ align }), className)}
       data-align={align}
       data-slot="input-group-addon"
+      role="presentation"
       onMouseDown={(e: React.MouseEvent<HTMLDivElement>) => {
         const target = e.target as HTMLElement;
         const isInteractive = target.closest(
