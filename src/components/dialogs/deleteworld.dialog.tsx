@@ -23,6 +23,8 @@ export type DeleteWorldDialogProps = {
 
 export function DeleteWorldDialog({ world }: DeleteWorldDialogProps) {
   const id = useId();
+  // Captured once per dialog: new Date() during render is impure.
+  const [now] = useState(() => new Date());
   const queryClient = useQueryClient();
   const { mutate: removeWorld, isPending } = useMutation({
     mutationFn: (world: World) => invoke("remove_world", { worldPath: world.path }),
@@ -104,7 +106,7 @@ export function DeleteWorldDialog({ world }: DeleteWorldDialogProps) {
           <li>
             Last session:{" "}
             <b suppressHydrationWarning>
-              {formatDistance(new Date(), addSeconds(new Date(), world.data.total_seconds_played))}
+              {formatDistance(now, addSeconds(now, world.data.total_seconds_played))}
             </b>
           </li>
           <li>

@@ -250,19 +250,19 @@ function ServerHostingSettings({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteData, setDeleteData] = useState(false);
 
-  const [name, setName] = useState(instance?.name ?? "");
-  const [port, setPort] = useState(String(instance?.port ?? ""));
-  const [bindIp, setBindIp] = useState(instance?.bind_ip ?? "");
-
-  useEffect(() => {
-    setName(instance?.name ?? "");
-    setPort(String(instance?.port ?? ""));
-    setBindIp(instance?.bind_ip ?? "");
-  }, [instance]);
+  // Edits are nullable overrides of the fetched instance, so no effect has to
+  // copy server values into state after the query resolves.
+  const [editedName, setEditedName] = useState<string | null>(null);
+  const [editedPort, setEditedPort] = useState<string | null>(null);
+  const [editedBindIp, setEditedBindIp] = useState<string | null>(null);
 
   if (!instance) {
     return <p className="text-muted-foreground py-8 text-center text-sm">Instance not found.</p>;
   }
+
+  const name = editedName ?? instance.name;
+  const port = editedPort ?? String(instance.port ?? "");
+  const bindIp = editedBindIp ?? instance.bind_ip;
 
   const handleSave = async () => {
     updateInstance.mutate(
@@ -276,6 +276,9 @@ function ServerHostingSettings({
       },
       {
         onSuccess: () => {
+          setEditedName(null);
+          setEditedPort(null);
+          setEditedBindIp(null);
           toast.success("Settings saved");
         },
       },
@@ -301,15 +304,15 @@ function ServerHostingSettings({
         <div className="grid max-w-md gap-3">
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium">Name</span>
-            <Input onChange={(e) => setName(e.target.value)} value={name} />
+            <Input onChange={(e) => setEditedName(e.target.value)} value={name} />
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium">Port</span>
-            <Input onChange={(e) => setPort(e.target.value)} type="number" value={port} />
+            <Input onChange={(e) => setEditedPort(e.target.value)} type="number" value={port} />
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium">Bind IP</span>
-            <Input onChange={(e) => setBindIp(e.target.value)} value={bindIp} />
+            <Input onChange={(e) => setEditedBindIp(e.target.value)} value={bindIp} />
           </label>
           <div className="flex gap-2 pt-2">
             <Button size="sm" disabled={updateInstance.isPending} onClick={handleSave}>

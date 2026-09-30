@@ -52,6 +52,7 @@ export function WorldMapViewer({
   const {
     attachContainer,
     baseCanvasRef,
+    canvasRect,
     cursorCoords,
     handleMouseDown,
     handleMouseLeave,
@@ -131,22 +132,12 @@ export function WorldMapViewer({
           ref={overlayCanvasRef}
         />
         {/* Cursor coordinates display */}
-        {cursorCoords && overlayCanvasRef.current && (
+        {cursorCoords && canvasRect && (
           <div
             className="bg-background/95 pointer-events-none absolute rounded border px-2 py-1 font-mono text-xs shadow-lg backdrop-blur-sm"
             style={{
-              left: (() => {
-                const canvasRect = overlayCanvasRef.current?.getBoundingClientRect();
-                if (!canvasRect) return 0;
-                const rawLeft = cursorCoords.screenX - canvasRect.left + 12;
-                return `${Math.min(rawLeft, canvasRect.width - 160)}px`;
-              })(),
-              top: (() => {
-                const canvasRect = overlayCanvasRef.current?.getBoundingClientRect();
-                if (!canvasRect) return 0;
-                const rawTop = cursorCoords.screenY - canvasRect.top - 12;
-                return `${Math.min(Math.max(rawTop, 4), canvasRect.height - 4)}px`;
-              })(),
+              left: `${Math.min(cursorCoords.screenX - canvasRect.left + 12, canvasRect.width - 160)}px`,
+              top: `${Math.min(Math.max(cursorCoords.screenY - canvasRect.top - 12, 4), canvasRect.height - 4)}px`,
             }}
           >
             {cursorCoords.z !== undefined
@@ -324,12 +315,24 @@ function useWorldMapViewer({
   // observer was never registered.
   const scheduleRedrawRef = useRef<() => void>(undefined);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  // Canvas rect for the cursor tooltip, captured in the resize callback so the
+  // render never has to read the canvas ref.
+  const [canvasRect, setCanvasRect] = useState<{
+    height: number;
+    left: number;
+    top: number;
+    width: number;
+  } | null>(null);
   const attachContainer = useCallback((node: HTMLDivElement | null) => {
     resizeObserverRef.current?.disconnect();
     containerRef.current = node;
-    if (!node) return;
+    if (!node) {
+      setCanvasRect(null);
+      return;
+    }
 
     const resizeObserver = new ResizeObserver((entries) => {
+      setCanvasRect(node.getBoundingClientRect());
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
         containerSizeRef.current = { height, width };
@@ -648,9 +651,7 @@ function useWorldMapViewer({
     }
     // Prospecting markers
     if (prospectingLogs && showProspect) {
-      for (const [_playerUid, log] of prospectingLogs.filter(
-        ([playerUid]) => playerUid === selectedPlayer,
-      )) {
+      for (const [, log] of prospectingLogs.filter(([playerUid]) => playerUid === selectedPlayer)) {
         for (const marker of log.markers) {
           if (!marker.position) continue;
           const mapChunkSize = 32;
@@ -825,8 +826,8 @@ function useWorldMapViewer({
 
       // Check prospecting markers if no waypoint hovered
       if (!hoveredMarker && prospectingLogs && showProspect) {
-        for (const [_playerUid, log] of prospectingLogs.filter(
-          ([playerUid, _]) => playerUid === selectedPlayer,
+        for (const [, log] of prospectingLogs.filter(
+          ([playerUid]) => playerUid === selectedPlayer,
         )) {
           for (const marker of log.markers) {
             if (!marker.position) continue;
@@ -924,6 +925,7 @@ function useWorldMapViewer({
   return {
     attachContainer,
     baseCanvasRef,
+    canvasRect,
     cursorCoords,
     handleMouseDown,
     handleMouseLeave,
