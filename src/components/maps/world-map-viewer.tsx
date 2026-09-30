@@ -49,6 +49,162 @@ export function WorldMapViewer({
   selectedPlayer,
   showProspect,
 }: WorldMapViewerProps) {
+  const {
+    attachContainer,
+    baseCanvasRef,
+    cursorCoords,
+    handleMouseDown,
+    handleMouseLeave,
+    handleMouseMove,
+    handleMouseUp,
+    hasTiles,
+    isLoading,
+    isPanning,
+    overlayCanvasRef,
+    prospectingMarker,
+    tilesError,
+  } = useWorldMapViewer({
+    mapMarkers,
+    mapPath,
+    prospectingLogs,
+    selectedPlayer,
+    showProspect,
+    worldPath,
+  });
+
+  if (isLoading) {
+    return (
+      <Card className="flex h-full min-h-100 items-center justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2Icon className="text-muted-foreground size-8 animate-spin" />
+          <p className="text-muted-foreground text-sm">Loading map…</p>
+        </div>
+      </Card>
+    );
+  }
+
+  if (tilesError) {
+    return (
+      <Card className="flex h-full min-h-100 items-center justify-center">
+        <div className="flex flex-col items-center gap-2 p-4 text-center">
+          <MapIcon className="text-muted-foreground size-12 opacity-50" />
+          <p className="text-muted-foreground text-sm">
+            {tilesError.message.includes("maps_not_found")
+              ? "No map data available yet. Explore the world in-game to generate the map!"
+              : `Error loading map: ${tilesError.message}`}
+          </p>
+        </div>
+      </Card>
+    );
+  }
+
+  if (!hasTiles) {
+    return (
+      <Card className="flex h-full min-h-100 items-center justify-center">
+        <div className="flex flex-col items-center gap-2 p-4 text-center">
+          <MapIcon className="text-muted-foreground size-12 opacity-50" />
+          <p className="text-muted-foreground text-sm">
+            No map tiles found. Explore the world in-game to generate the map!
+          </p>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="relative h-full min-h-100 overflow-hidden">
+      <div
+        className="h-full w-full"
+        ref={attachContainer}
+        style={{ cursor: isPanning ? "grabbing" : "grab" }}
+      >
+        <canvas
+          className="pointer-events-none absolute inset-0 h-full w-full"
+          ref={baseCanvasRef}
+        />
+        <canvas
+          className="absolute inset-0 h-full w-full"
+          onMouseDown={handleMouseDown}
+          onMouseLeave={handleMouseLeave}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          ref={overlayCanvasRef}
+        />
+        {/* Cursor coordinates display */}
+        {cursorCoords && overlayCanvasRef.current && (
+          <div
+            className="bg-background/95 pointer-events-none absolute rounded border px-2 py-1 font-mono text-xs shadow-lg backdrop-blur-sm"
+            style={{
+              left: (() => {
+                const canvasRect = overlayCanvasRef.current?.getBoundingClientRect();
+                if (!canvasRect) return 0;
+                const rawLeft = cursorCoords.screenX - canvasRect.left + 12;
+                return `${Math.min(rawLeft, canvasRect.width - 160)}px`;
+              })(),
+              top: (() => {
+                const canvasRect = overlayCanvasRef.current?.getBoundingClientRect();
+                if (!canvasRect) return 0;
+                const rawTop = cursorCoords.screenY - canvasRect.top - 12;
+                return `${Math.min(Math.max(rawTop, 4), canvasRect.height - 4)}px`;
+              })(),
+            }}
+          >
+            {cursorCoords.z !== undefined
+              ? `${cursorCoords.x}, ${cursorCoords.y}, ${cursorCoords.z}`
+              : `${cursorCoords.x}, ${cursorCoords.y}`}
+            {prospectingMarker && (
+              <div className="mt-1">
+                <strong>Prospecting Results:</strong>
+                <ul className="list-inside list-disc">
+                  {prospectingMarker.results.toSorted(sortByQuality).map((result) => {
+                    const stableKey = `${result.ore_code}-${result.readings?.depth ?? 0}-${result.readings?.quality ?? 0}`;
+                    return (
+                      <li className="flex gap-2 text-xs" key={stableKey}>
+                        <p>
+                          {result.ore_code.charAt(0).toUpperCase() + result.ore_code.slice(1)} -
+                        </p>
+                        <p className="flex gap-1">
+                          <SparkleIcon
+                            className={cn(
+                              "size-3 text-muted-foreground",
+                              (result.readings?.quality ?? 0) > 10
+                                ? "fill-success"
+                                : (result.readings?.quality ?? 0) > 5
+                                  ? "fill-warning"
+                                  : "fill-destructive",
+                            )}
+                          />
+                          {result.readings?.quality.toFixed(2) ?? 0} -
+                        </p>
+                        <p className="flex gap-1">
+                          <ArrowDownToDotIcon className="size-3 opacity-50" />
+                          {result.readings?.depth.toFixed(2) ?? 0}
+                        </p>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <div className="bg-background/90 text-muted-foreground pointer-events-none absolute right-1 bottom-1 border px-3 py-2 text-xs backdrop-blur-sm">
+        <p>🖱️ Drag to pan • 🔍 Scroll to zoom</p>
+      </div>
+    </Card>
+  );
+}
+
+/** All map loading, rendering and interaction state for WorldMapViewer. */
+function useWorldMapViewer({
+  mapMarkers,
+  mapPath,
+  prospectingLogs,
+  selectedPlayer,
+  showProspect,
+  worldPath,
+}: WorldMapViewerProps) {
   // Use direct path if provided, otherwise world path
   const effectivePath = mapPath ?? worldPath ?? "";
   const isDirectPath = !!mapPath;
@@ -765,126 +921,19 @@ export function WorldMapViewer({
     setCursorCoords(null);
   }, []);
 
-  if (tilesLoading || boundsLoading) {
-    return (
-      <Card className="flex h-full min-h-100 items-center justify-center">
-        <div className="flex flex-col items-center gap-2">
-          <Loader2Icon className="text-muted-foreground size-8 animate-spin" />
-          <p className="text-muted-foreground text-sm">Loading map…</p>
-        </div>
-      </Card>
-    );
-  }
-
-  if (tilesError) {
-    return (
-      <Card className="flex h-full min-h-100 items-center justify-center">
-        <div className="flex flex-col items-center gap-2 p-4 text-center">
-          <MapIcon className="text-muted-foreground size-12 opacity-50" />
-          <p className="text-muted-foreground text-sm">
-            {tilesError.message.includes("maps_not_found")
-              ? "No map data available yet. Explore the world in-game to generate the map!"
-              : `Error loading map: ${tilesError.message}`}
-          </p>
-        </div>
-      </Card>
-    );
-  }
-
-  if (!tiles || tiles.length === 0) {
-    return (
-      <Card className="flex h-full min-h-100 items-center justify-center">
-        <div className="flex flex-col items-center gap-2 p-4 text-center">
-          <MapIcon className="text-muted-foreground size-12 opacity-50" />
-          <p className="text-muted-foreground text-sm">
-            No map tiles found. Explore the world in-game to generate the map!
-          </p>
-        </div>
-      </Card>
-    );
-  }
-
-  return (
-    <Card className="relative h-full min-h-100 overflow-hidden">
-      <div
-        className="h-full w-full"
-        ref={attachContainer}
-        style={{ cursor: isPanning ? "grabbing" : "grab" }}
-      >
-        <canvas
-          className="pointer-events-none absolute inset-0 h-full w-full"
-          ref={baseCanvasRef}
-        />
-        <canvas
-          className="absolute inset-0 h-full w-full"
-          onMouseDown={handleMouseDown}
-          onMouseLeave={handleMouseLeave}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          ref={overlayCanvasRef}
-        />
-        {/* Cursor coordinates display */}
-        {cursorCoords && overlayCanvasRef.current && (
-          <div
-            className="bg-background/95 pointer-events-none absolute rounded border px-2 py-1 font-mono text-xs shadow-lg backdrop-blur-sm"
-            style={{
-              left: (() => {
-                const canvasRect = overlayCanvasRef.current?.getBoundingClientRect();
-                if (!canvasRect) return 0;
-                const rawLeft = cursorCoords.screenX - canvasRect.left + 12;
-                return `${Math.min(rawLeft, canvasRect.width - 160)}px`;
-              })(),
-              top: (() => {
-                const canvasRect = overlayCanvasRef.current?.getBoundingClientRect();
-                if (!canvasRect) return 0;
-                const rawTop = cursorCoords.screenY - canvasRect.top - 12;
-                return `${Math.min(Math.max(rawTop, 4), canvasRect.height - 4)}px`;
-              })(),
-            }}
-          >
-            {cursorCoords.z !== undefined
-              ? `${cursorCoords.x}, ${cursorCoords.y}, ${cursorCoords.z}`
-              : `${cursorCoords.x}, ${cursorCoords.y}`}
-            {prospectingMarker && (
-              <div className="mt-1">
-                <strong>Prospecting Results:</strong>
-                <ul className="list-inside list-disc">
-                  {prospectingMarker.results.toSorted(sortByQuality).map((result) => {
-                    const stableKey = `${result.ore_code}-${result.readings?.depth ?? 0}-${result.readings?.quality ?? 0}`;
-                    return (
-                      <li className="flex gap-2 text-xs" key={stableKey}>
-                        <p>
-                          {result.ore_code.charAt(0).toUpperCase() + result.ore_code.slice(1)} -
-                        </p>
-                        <p className="flex gap-1">
-                          <SparkleIcon
-                            className={cn(
-                              "size-3 text-muted-foreground",
-                              (result.readings?.quality ?? 0) > 10
-                                ? "fill-success"
-                                : (result.readings?.quality ?? 0) > 5
-                                  ? "fill-warning"
-                                  : "fill-destructive",
-                            )}
-                          />
-                          {result.readings?.quality.toFixed(2) ?? 0} -
-                        </p>
-                        <p className="flex gap-1">
-                          <ArrowDownToDotIcon className="size-3 opacity-50" />
-                          {result.readings?.depth.toFixed(2) ?? 0}
-                        </p>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-      <div className="bg-background/90 text-muted-foreground pointer-events-none absolute right-1 bottom-1 border px-3 py-2 text-xs backdrop-blur-sm">
-        <p>🖱️ Drag to pan • 🔍 Scroll to zoom</p>
-      </div>
-    </Card>
-  );
+  return {
+    attachContainer,
+    baseCanvasRef,
+    cursorCoords,
+    handleMouseDown,
+    handleMouseLeave,
+    handleMouseMove,
+    handleMouseUp,
+    hasTiles: Boolean(tiles && tiles.length > 0),
+    isLoading: tilesLoading || boundsLoading,
+    isPanning,
+    overlayCanvasRef,
+    prospectingMarker,
+    tilesError,
+  };
 }
