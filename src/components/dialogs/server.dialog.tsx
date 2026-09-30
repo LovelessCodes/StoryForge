@@ -1,20 +1,18 @@
-import { useForm } from "@tanstack/react-form";
+import { type ReactFormExtendedApi, useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import clsx from "clsx";
 import { Loader2Icon } from "lucide-react";
 import { useId, useState } from "react";
 import { toast } from "sonner";
 import z from "zod";
 
+import { FieldLabelTooltip } from "@/components/inputs/field-label.tooltip";
+import { FormTextField } from "@/components/inputs/form-text.field";
 import { PasswordInput } from "@/components/inputs/password.input";
+import { InstallationSelect } from "@/components/pickers/installation.picker";
 import { Button } from "@/components/ui/button";
 import { DialogClose } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-import { TooltipTrigger } from "@/components/ui/tooltip";
-import { rootDialogHandle, rootTooltipHandle } from "@/handles";
+import { rootDialogHandle } from "@/handles";
 import { useAddServerToInstallation } from "@/hooks/use-add-server-to-installation";
 import { type Installation, useInstallations } from "@/stores/installations";
 import { type Server, useServerStore } from "@/stores/servers";
@@ -51,12 +49,35 @@ const serverSchema = z.object({
     }),
 });
 
+type AnyReactFormApi = ReactFormExtendedApi<
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any
+>;
+
 export type ServerDialogProps = {
   /** Pass an existing server to edit, or omit to add a new one. */
   server?: Server;
   /** Pre-select an installation (add mode only). */
   installation?: Installation;
 };
+
+/** True when both versions share major and minor parts ("1.21.3" vs "1.21.0"). */
+function sameMinorVersion(a: string | undefined, b: string | undefined): boolean {
+  if (!a || !b) return false;
+  const [aMajor, aMinor] = a.split(".");
+  const [bMajor, bMinor] = b.split(".");
+  return aMajor === bMajor && aMinor === bMinor;
+}
 
 export function ServerDialog({ server, installation }: ServerDialogProps) {
   const id = useId();
@@ -201,241 +222,7 @@ export function ServerDialog({ server, installation }: ServerDialogProps) {
       <DialogClose />
 
       <div className="space-y-5">
-        <div className="space-y-4">
-          <form.Field name="name">
-            {(field) => (
-              <div className="grid gap-2">
-                <TooltipTrigger
-                  render={
-                    <Label
-                      className={clsx([
-                        field.state.meta.errors.length ? "text-destructive" : "",
-                        "w-fit",
-                      ])}
-                      htmlFor="name"
-                    />
-                  }
-                  handle={rootTooltipHandle}
-                  payload={() => (
-                    <>
-                      <p className="text-xs">Enter server name</p>
-                      {field.state.meta.errors.length > 0 &&
-                        field.state.meta.errors.map((error) => (
-                          <p className="text-destructive text-xs" key={error?.message}>
-                            {error?.message}
-                          </p>
-                        ))}
-                    </>
-                  )}
-                >
-                  Name
-                  <span className="text-destructive">*</span>
-                </TooltipTrigger>
-                <Input
-                  className={field.state.meta.errors.length ? "text-destructive" : ""}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onKeyUp={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void form.handleSubmit();
-                    }
-                  }}
-                  value={field.state.value}
-                />
-              </div>
-            )}
-          </form.Field>
-          <form.Field name="password">
-            {(field) => (
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <TooltipTrigger
-                    render={
-                      <Label
-                        className={clsx([
-                          field.state.meta.errors.length ? "text-destructive" : "",
-                          "w-fit",
-                        ])}
-                        htmlFor="password"
-                      />
-                    }
-                    handle={rootTooltipHandle}
-                    payload={() => (
-                      <>
-                        <p className="text-xs">Enter password</p>
-                        {field.state.meta.errors.length > 0 &&
-                          field.state.meta.errors.map((error) => (
-                            <p className="text-destructive text-xs" key={error?.message}>
-                              {error?.message}
-                            </p>
-                          ))}
-                      </>
-                    )}
-                  >
-                    Password
-                    <span className="text-muted-foreground text-xs">(optional)</span>
-                  </TooltipTrigger>
-                </div>
-                <PasswordInput
-                  id={`${id}-password`}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onKeyUp={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void form.handleSubmit();
-                    }
-                  }}
-                  value={field.state.value}
-                />
-              </div>
-            )}
-          </form.Field>
-          <div className="grid grid-cols-2 gap-2">
-            <form.Field name="ip">
-              {(field) => (
-                <div className="grid w-full gap-2">
-                  <TooltipTrigger
-                    render={
-                      <Label
-                        className={clsx([
-                          field.state.meta.errors.length ? "text-destructive" : "",
-                          "w-fit",
-                        ])}
-                        htmlFor="ip"
-                      />
-                    }
-                    handle={rootTooltipHandle}
-                    payload={() => (
-                      <>
-                        <p className="text-xs">Enter server IP address</p>
-                        {field.state.meta.errors.length > 0 &&
-                          field.state.meta.errors.map((error) => (
-                            <p className="text-destructive text-xs" key={error?.message}>
-                              {error?.message}
-                            </p>
-                          ))}
-                      </>
-                    )}
-                  >
-                    IP Address
-                    <span className="text-destructive">*</span>
-                  </TooltipTrigger>
-                  <Input
-                    className={field.state.meta.errors.length ? "text-destructive" : ""}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onKeyUp={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        void form.handleSubmit();
-                      }
-                    }}
-                    value={field.state.value}
-                  />
-                </div>
-              )}
-            </form.Field>
-            <form.Field name="port">
-              {(field) => (
-                <div className="grid w-full gap-2">
-                  <TooltipTrigger
-                    render={
-                      <Label
-                        className={clsx([
-                          field.state.meta.errors.length ? "text-destructive" : "",
-                          "w-fit",
-                        ])}
-                        htmlFor="port"
-                      />
-                    }
-                    handle={rootTooltipHandle}
-                    payload={() => (
-                      <>
-                        <p className="text-xs">Enter server port</p>
-                        {field.state.meta.errors.length > 0 &&
-                          field.state.meta.errors.map((error) => (
-                            <p className="text-destructive text-xs" key={error?.message}>
-                              {error?.message}
-                            </p>
-                          ))}
-                      </>
-                    )}
-                  >
-                    Port
-                    <span className="text-destructive">*</span>
-                  </TooltipTrigger>
-                  <Input
-                    className={field.state.meta.errors.length ? "text-destructive" : ""}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onKeyUp={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        void form.handleSubmit();
-                      }
-                    }}
-                    value={field.state.value ?? ""}
-                  />
-                </div>
-              )}
-            </form.Field>
-          </div>
-          <form.Field
-            name="installationId"
-            validators={{
-              onSubmit: ({ value }) => {
-                if (!installations.find((inst) => inst.id.toString() === value)) {
-                  return Error("You must select an installation");
-                }
-              },
-            }}
-          >
-            {(field) => (
-              <div className="grid gap-2">
-                <TooltipTrigger
-                  render={
-                    <Label
-                      className={clsx([
-                        field.state.meta.errors.length ? "text-destructive" : "",
-                        "w-fit",
-                      ])}
-                      htmlFor="installationId"
-                    />
-                  }
-                  handle={rootTooltipHandle}
-                  payload={() => (
-                    <>
-                      <p className="text-xs">Pick game installation</p>
-                      {field.state.meta.errors.length > 0 &&
-                        field.state.meta.errors.map((error) => (
-                          <p className="text-destructive text-xs" key={error?.message}>
-                            {error?.message}
-                          </p>
-                        ))}
-                    </>
-                  )}
-                >
-                  Installation
-                  <span className="text-destructive">*</span>
-                </TooltipTrigger>
-                <Select onValueChange={(v) => v && field.handleChange(v)} value={field.state.value}>
-                  <SelectTrigger className="flex w-full gap-1 truncate">
-                    {installations.find((inst) => inst.id.toString() === field.state.value)
-                      ? `${installations.find((inst) => inst.id.toString() === field.state.value)?.name} (${installations.find((inst) => inst.id.toString() === field.state.value)?.version})`
-                      : "Game installation"}
-                  </SelectTrigger>
-                  <SelectContent align="start" alignItemWithTrigger={false}>
-                    {installations
-                      ?.toSorted((a, b) => a.index - b.index)
-                      .map((inst) => (
-                        <SelectItem key={inst.id} value={inst.id.toString()}>
-                          {inst.name} ({inst.version})
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </form.Field>
-        </div>
+        <ServerFormFields form={form} id={id} installations={installations} />
         <div className="flex gap-2">
           <Button
             className="flex-1"
@@ -463,51 +250,177 @@ export function ServerDialog({ server, installation }: ServerDialogProps) {
           </Button>
         </div>
         {sniffResult && (
-          <div className="bg-muted space-y-1 rounded border p-3 text-xs">
-            {sniffResult.server_game_version && (
-              <p>
-                <span className="text-muted-foreground">Version:</span>{" "}
-                <span className="font-mono">v{sniffResult.server_game_version}</span>
-                {(() => {
-                  const instId = form.getFieldValue("installationId");
-                  const inst = installations.find((i) => i.id.toString() === instId);
-                  if (inst && sniffResult.server_game_version) {
-                    const [instMajor, instMinor] = inst.version.split(".");
-                    const [resultMajor, resultMinor] = sniffResult.server_game_version.split(".");
-                    const match = instMajor === resultMajor && instMinor === resultMinor;
-                    return (
-                      <span className={match ? "text-success ml-1" : "text-destructive ml-1"}>
-                        {match ? "✓ matches your installation" : "✗ differs from your installation"}
-                      </span>
-                    );
-                  }
-                  return null;
-                })()}
-              </p>
-            )}
-            {sniffResult.password_protected && (
-              <p>
-                <span className="text-muted-foreground">Password:</span>{" "}
-                {sniffResult.password_valid === true ? (
-                  <span className="text-success">Correct</span>
-                ) : sniffResult.password_valid === false ? (
-                  <span className="text-destructive">Incorrect</span>
-                ) : (
-                  <span className="text-warning-foreground">Required (enter password to test)</span>
-                )}
-              </p>
-            )}
-            {sniffResult.whitelisted && (
-              <p className="text-warning-foreground">Server is whitelisted</p>
-            )}
-            {sniffResult.server_full && <p className="text-destructive">Server is full</p>}
-            {sniffResult.banned && <p className="text-destructive">You are banned</p>}
-            {sniffResult.disconnect_message && (
-              <p className="text-muted-foreground truncate">{sniffResult.disconnect_message}</p>
-            )}
-          </div>
+          <SniffResultPanel
+            installationId={form.getFieldValue("installationId")}
+            installations={installations}
+            result={sniffResult}
+          />
         )}
       </div>
     </>
+  );
+}
+
+/** Name, password, address, port and installation fields of the server form. */
+function ServerFormFields({
+  form,
+  id,
+  installations,
+}: {
+  form: AnyReactFormApi;
+  id: string;
+  installations: Installation[];
+}) {
+  const submitOnEnter = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      void form.handleSubmit();
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <form.Field name="name">
+        {(field) => (
+          <FormTextField
+            field={field}
+            hint="Enter server name"
+            htmlFor="name"
+            label="Name"
+            onEnter={submitOnEnter}
+            required
+          />
+        )}
+      </form.Field>
+      <form.Field name="password">
+        {(field) => (
+          <div className="grid gap-2">
+            <div className="flex items-center">
+              <FieldLabelTooltip
+                errors={field.state.meta.errors}
+                hint="Enter password"
+                htmlFor="password"
+              >
+                Password
+                <span className="text-muted-foreground text-xs">(optional)</span>
+              </FieldLabelTooltip>
+            </div>
+            <PasswordInput
+              id={`${id}-password`}
+              onChange={(e) => field.handleChange(e.target.value)}
+              onKeyUp={submitOnEnter}
+              value={field.state.value}
+            />
+          </div>
+        )}
+      </form.Field>
+      <div className="grid grid-cols-2 gap-2">
+        <form.Field name="ip">
+          {(field) => (
+            <FormTextField
+              className="grid w-full gap-2"
+              field={field}
+              hint="Enter server IP address"
+              htmlFor="ip"
+              label="IP Address"
+              onEnter={submitOnEnter}
+              required
+            />
+          )}
+        </form.Field>
+        <form.Field name="port">
+          {(field) => (
+            <FormTextField
+              className="grid w-full gap-2"
+              field={field}
+              hint="Enter server port"
+              htmlFor="port"
+              label="Port"
+              onEnter={submitOnEnter}
+              required
+            />
+          )}
+        </form.Field>
+      </div>
+      <form.Field
+        name="installationId"
+        validators={{
+          onSubmit: ({ value }) => {
+            if (!installations.find((inst) => inst.id.toString() === value)) {
+              return Error("You must select an installation");
+            }
+          },
+        }}
+      >
+        {(field) => (
+          <div className="grid gap-2">
+            <FieldLabelTooltip
+              errors={field.state.meta.errors}
+              hint="Pick game installation"
+              htmlFor="installationId"
+            >
+              Installation
+              <span className="text-destructive">*</span>
+            </FieldLabelTooltip>
+            <InstallationSelect
+              installations={installations}
+              onChange={field.handleChange}
+              value={field.state.value}
+            />
+          </div>
+        )}
+      </form.Field>
+    </div>
+  );
+}
+
+/** Result of the Test Server probe. */
+function SniffResultPanel({
+  installationId,
+  installations,
+  result,
+}: {
+  installationId: string;
+  installations: Installation[];
+  result: SniffResult;
+}) {
+  const installation = installations.find((i) => i.id.toString() === installationId);
+  const versionMatches = sameMinorVersion(
+    installation?.version,
+    result.server_game_version ?? undefined,
+  );
+
+  return (
+    <div className="bg-muted space-y-1 rounded border p-3 text-xs">
+      {result.server_game_version && (
+        <p>
+          <span className="text-muted-foreground">Version:</span>{" "}
+          <span className="font-mono">v{result.server_game_version}</span>
+          {installation && (
+            <span className={versionMatches ? "text-success ml-1" : "text-destructive ml-1"}>
+              {versionMatches ? "✓ matches your installation" : "✗ differs from your installation"}
+            </span>
+          )}
+        </p>
+      )}
+      {result.password_protected && (
+        <p>
+          <span className="text-muted-foreground">Password:</span>{" "}
+          {result.password_valid === true ? (
+            <span className="text-success">Correct</span>
+          ) : result.password_valid === false ? (
+            <span className="text-destructive">Incorrect</span>
+          ) : (
+            <span className="text-warning-foreground">Required (enter password to test)</span>
+          )}
+        </p>
+      )}
+      {result.whitelisted && <p className="text-warning-foreground">Server is whitelisted</p>}
+      {result.server_full && <p className="text-destructive">Server is full</p>}
+      {result.banned && <p className="text-destructive">You are banned</p>}
+      {result.disconnect_message && (
+        <p className="text-muted-foreground truncate">{result.disconnect_message}</p>
+      )}
+    </div>
   );
 }

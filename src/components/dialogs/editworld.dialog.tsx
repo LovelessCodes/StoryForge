@@ -4,10 +4,10 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { FieldLabelTooltip } from "@/components/inputs/field-label.tooltip";
+import { FormTextField } from "@/components/inputs/form-text.field";
+import { InstallationSelect } from "@/components/pickers/installation.picker";
 import { Button } from "@/components/ui/button";
 import { DialogClose, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { rootDialogHandle } from "@/handles";
 import { useUpdateWorld } from "@/hooks/use-update-world";
 import type { World } from "@/lib/types";
@@ -74,27 +74,19 @@ export function EditWorldDialog({ world }: EditWorldDialogProps) {
         <div className="space-y-4">
           <form.Field name="name">
             {(field) => (
-              <div className="grid gap-2">
-                <FieldLabelTooltip
-                  errors={field.state.meta.errors}
-                  hint="Enter world name"
-                  htmlFor="name"
-                >
-                  Name
-                  <span className="text-destructive">*</span>
-                </FieldLabelTooltip>
-                <Input
-                  className={field.state.meta.errors.length ? "text-destructive" : ""}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onKeyUp={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void form.handleSubmit();
-                    }
-                  }}
-                  value={field.state.value}
-                />
-              </div>
+              <FormTextField
+                field={field}
+                hint="Enter world name"
+                htmlFor="name"
+                label="Name"
+                onEnter={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void form.handleSubmit();
+                  }
+                }}
+                required
+              />
             )}
           </form.Field>
           <form.Field name="installationId">
@@ -108,22 +100,11 @@ export function EditWorldDialog({ world }: EditWorldDialogProps) {
                   Installation
                   <span className="text-destructive">*</span>
                 </FieldLabelTooltip>
-                <Select onValueChange={(v) => v && field.handleChange(v)} value={field.state.value}>
-                  <SelectTrigger className="flex w-full gap-1 truncate">
-                    {installations.find((inst) => inst.id.toString() === field.state.value)
-                      ? `${installations.find((inst) => inst.id.toString() === field.state.value)?.name} (${installations.find((inst) => inst.id.toString() === field.state.value)?.version})`
-                      : "Game installation"}
-                  </SelectTrigger>
-                  <SelectContent align="start" alignItemWithTrigger={false}>
-                    {installations
-                      ?.toSorted((a, b) => a.index - b.index)
-                      .map((installation) => (
-                        <SelectItem key={installation.id} value={installation.id.toString()}>
-                          {installation.name} ({installation.version})
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                <InstallationSelect
+                  installations={installations}
+                  onChange={field.handleChange}
+                  value={field.state.value}
+                />
               </div>
             )}
           </form.Field>
