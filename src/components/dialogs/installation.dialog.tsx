@@ -1,12 +1,12 @@
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import clsx from "clsx";
 import { useId } from "react";
 import { toast } from "sonner";
 import z from "zod";
 
 import { EnvVarsEditor, type EnvVarEntry } from "@/components/env-vars-editor";
+import { FieldLabelTooltip } from "@/components/inputs/field-label.tooltip";
 import { InstallationIconPicker } from "@/components/pickers/installation-icon.picker";
 import { Button } from "@/components/ui/button";
 import { DialogClose } from "@/components/ui/dialog";
@@ -14,8 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTab } from "@/components/ui/tabs";
-import { TooltipTrigger } from "@/components/ui/tooltip";
-import { rootDialogHandle, rootTooltipHandle } from "@/handles";
+import { rootDialogHandle } from "@/handles";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import {
@@ -254,32 +253,14 @@ export function InstallationDialog({ installation, version }: InstallationDialog
           <form.Field name="name">
             {(field) => (
               <div className="grid gap-2">
-                <TooltipTrigger
-                  render={
-                    <Label
-                      className={clsx([
-                        field.state.meta.errors.length ? "text-destructive" : "",
-                        "w-fit",
-                      ])}
-                      htmlFor="name"
-                    />
-                  }
-                  handle={rootTooltipHandle}
-                  payload={() => (
-                    <>
-                      <p className="text-xs">Enter server name</p>
-                      {field.state.meta.errors.length > 0 &&
-                        field.state.meta.errors.map((error, index) => (
-                          <p className="text-destructive text-xs" key={index}>
-                            {error?.message}
-                          </p>
-                        ))}
-                    </>
-                  )}
+                <FieldLabelTooltip
+                  errors={field.state.meta.errors}
+                  hint="Enter server name"
+                  htmlFor="name"
                 >
                   Name
                   <span className="text-destructive">*</span>
-                </TooltipTrigger>
+                </FieldLabelTooltip>
                 <Input
                   className={field.state.meta.errors.length ? "text-destructive" : ""}
                   onChange={(e) => {
@@ -312,32 +293,14 @@ export function InstallationDialog({ installation, version }: InstallationDialog
           <form.Field name="icon">
             {(field) => (
               <div className="grid gap-2">
-                <TooltipTrigger
-                  render={
-                    <Label
-                      className={clsx([
-                        field.state.meta.errors.length ? "text-destructive" : "",
-                        "w-fit",
-                      ])}
-                      htmlFor="icon"
-                    />
-                  }
-                  handle={rootTooltipHandle}
-                  payload={() => (
-                    <>
-                      <p className="text-xs">Pick an icon</p>
-                      {field.state.meta.errors.length > 0 &&
-                        field.state.meta.errors.map((error, index) => (
-                          <p className="text-destructive text-xs" key={index}>
-                            {error?.message}
-                          </p>
-                        ))}
-                    </>
-                  )}
+                <FieldLabelTooltip
+                  errors={field.state.meta.errors}
+                  hint="Pick an icon"
+                  htmlFor="icon"
                 >
                   Icon
                   <span className="text-muted-foreground text-xs">(optional)</span>
-                </TooltipTrigger>
+                </FieldLabelTooltip>
                 <InstallationIconPicker
                   onChange={(icon) => field.handleChange(icon ?? "")}
                   value={field.state.value || null}
@@ -348,28 +311,10 @@ export function InstallationDialog({ installation, version }: InstallationDialog
           <form.Field name="version">
             {(field) => (
               <div className="grid gap-2">
-                <TooltipTrigger
-                  render={
-                    <Label
-                      className={clsx([
-                        field.state.meta.errors.length ? "text-destructive" : "",
-                        "w-fit",
-                      ])}
-                      htmlFor="version"
-                    />
-                  }
-                  handle={rootTooltipHandle}
-                  payload={() => (
-                    <>
-                      <p className="text-xs">Pick game version</p>
-                      {field.state.meta.errors.length > 0 &&
-                        field.state.meta.errors.map((error, index) => (
-                          <p className="text-destructive text-xs" key={index}>
-                            {error?.message}
-                          </p>
-                        ))}
-                    </>
-                  )}
+                <FieldLabelTooltip
+                  errors={field.state.meta.errors}
+                  hint="Pick game version"
+                  htmlFor="version"
                 />
                 <Select onValueChange={(v) => v && field.handleChange(v)} value={field.state.value}>
                   <SelectTrigger className="flex w-full gap-1 truncate">
@@ -412,32 +357,14 @@ export function InstallationDialog({ installation, version }: InstallationDialog
             {(field) => (
               <div className="grid gap-2">
                 <div className="flex items-center">
-                  <TooltipTrigger
-                    render={
-                      <Label
-                        className={clsx([
-                          field.state.meta.errors.length ? "text-destructive" : "",
-                          "w-fit",
-                        ])}
-                        htmlFor="startParams"
-                      />
-                    }
-                    handle={rootTooltipHandle}
-                    payload={() => (
-                      <>
-                        <p className="text-xs">Enter start parameters</p>
-                        {field.state.meta.errors.length > 0 &&
-                          field.state.meta.errors.map((error, index) => (
-                            <p className="text-destructive text-xs" key={index}>
-                              {error?.message}
-                            </p>
-                          ))}
-                      </>
-                    )}
+                  <FieldLabelTooltip
+                    errors={field.state.meta.errors}
+                    hint="Enter start parameters"
+                    htmlFor="startParams"
                   >
                     Start parameters
                     <span className="text-muted-foreground text-xs">(optional)</span>
-                  </TooltipTrigger>
+                  </FieldLabelTooltip>
                 </div>
                 <Input
                   id={`${id}-start-params`}
@@ -472,32 +399,14 @@ export function InstallationDialog({ installation, version }: InstallationDialog
           <form.Field name="path">
             {(field) => (
               <div className="grid gap-2">
-                <TooltipTrigger
-                  render={
-                    <Label
-                      className={clsx([
-                        field.state.meta.errors.length ? "text-destructive" : "",
-                        "w-fit",
-                      ])}
-                      htmlFor="path"
-                    />
-                  }
-                  handle={rootTooltipHandle}
-                  payload={() => (
-                    <>
-                      <p className="text-xs">Enter installation path</p>
-                      {field.state.meta.errors.length > 0 &&
-                        field.state.meta.errors.map((error, index) => (
-                          <p className="text-destructive text-xs" key={index}>
-                            {error?.message}
-                          </p>
-                        ))}
-                    </>
-                  )}
+                <FieldLabelTooltip
+                  errors={field.state.meta.errors}
+                  hint="Enter installation path"
+                  htmlFor="path"
                 >
                   Path
                   <span className="text-destructive">*</span>
-                </TooltipTrigger>
+                </FieldLabelTooltip>
                 <Input
                   className={field.state.meta.errors.length ? "text-destructive" : ""}
                   disabled

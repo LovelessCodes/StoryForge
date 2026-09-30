@@ -1,15 +1,13 @@
 import { useForm, useStore } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
 import { platform } from "@tauri-apps/plugin-os";
-import clsx from "clsx";
 import z from "zod";
 
+import { FieldLabelTooltip } from "@/components/inputs/field-label.tooltip";
 import { Button } from "@/components/ui/button";
 import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-import { TooltipTrigger } from "@/components/ui/tooltip";
-import { rootDialogHandle, rootTooltipHandle } from "@/handles";
+import { rootDialogHandle } from "@/handles";
 import { useDownloadManager } from "@/hooks/use-download-manager";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { gameVersionsQuery } from "@/lib/queries";
@@ -80,36 +78,14 @@ export function AddVersionDialog() {
           <form.Field name="version">
             {(field) => (
               <div className="grid gap-2">
-                <TooltipTrigger
-                  render={
-                    <Label
-                      className={clsx([
-                        field.state.meta.errors.length ? "text-destructive" : "",
-                        "w-fit",
-                      ])}
-                      htmlFor="version"
-                    />
-                  }
-                  handle={rootTooltipHandle}
-                  payload={() => (
-                    <>
-                      <p className="text-xs">Pick game version</p>
-                      {field.state.meta.errors.length > 0 &&
-                        field.state.meta.errors.map((error, index) => (
-                          <p
-                            className="text-destructive text-xs"
-                            // biome-ignore lint/suspicious/noArrayIndexKey: Needed
-                            key={index}
-                          >
-                            {error?.message}
-                          </p>
-                        ))}
-                    </>
-                  )}
+                <FieldLabelTooltip
+                  errors={field.state.meta.errors}
+                  hint="Pick game version"
+                  htmlFor="version"
                 >
                   Version
                   <span className="text-destructive">*</span>
-                </TooltipTrigger>
+                </FieldLabelTooltip>
                 <Select onValueChange={(v) => v && field.handleChange(v)} value={field.state.value}>
                   <SelectTrigger className="flex w-full gap-1 truncate">
                     {field.state.value ?? "Game version"}
