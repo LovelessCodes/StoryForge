@@ -1,5 +1,6 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use std::fs;
+use std::hint::black_box;
 use story_forge_lib::modules::maps::decode_position;
 use story_forge_lib::modules::utils::{dir_size, format_size, generate_id};
 use tempfile::TempDir;

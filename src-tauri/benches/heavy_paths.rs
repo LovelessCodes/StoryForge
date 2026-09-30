@@ -1,6 +1,7 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use prost::Message;
 use rusqlite::Connection;
+use std::hint::black_box;
 use std::{fs, io::Write, path::Path, sync::OnceLock};
 use story_forge_lib::modules::{
     maps::scan_maps,
