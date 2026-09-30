@@ -1,7 +1,8 @@
 "use client";
 
 import type { Transition } from "motion/react";
-import { motion, useAnimation } from "motion/react";
+import { useAnimation } from "motion/react";
+import * as m from "motion/react-m";
 import type { HTMLAttributes } from "react";
 import { forwardRef, useCallback, useImperativeHandle, useRef } from "react";
 
@@ -73,7 +74,7 @@ const MaximizeIcon = forwardRef<MaximizeIconHandle, MaximizeIconProps>(
           width={size}
           xmlns="http://www.w3.org/2000/svg"
         >
-          <motion.path
+          <m.path
             animate={controls}
             d="M8 3H5a2 2 0 0 0-2 2v3"
             transition={DEFAULT_TRANSITION}
@@ -83,7 +84,7 @@ const MaximizeIcon = forwardRef<MaximizeIconHandle, MaximizeIconProps>(
             }}
           />
 
-          <motion.path
+          <m.path
             animate={controls}
             d="M21 8V5a2 2 0 0 0-2-2h-3"
             transition={DEFAULT_TRANSITION}
@@ -93,7 +94,7 @@ const MaximizeIcon = forwardRef<MaximizeIconHandle, MaximizeIconProps>(
             }}
           />
 
-          <motion.path
+          <m.path
             animate={controls}
             d="M3 16v3a2 2 0 0 0 2 2h3"
             transition={DEFAULT_TRANSITION}
@@ -103,7 +104,7 @@ const MaximizeIcon = forwardRef<MaximizeIconHandle, MaximizeIconProps>(
             }}
           />
 
-          <motion.path
+          <m.path
             animate={controls}
             d="M16 21h3a2 2 0 0 0 2-2v-3"
             transition={DEFAULT_TRANSITION}

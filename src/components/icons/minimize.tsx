@@ -1,7 +1,8 @@
 "use client";
 
 import type { Transition } from "motion/react";
-import { motion, useAnimation } from "motion/react";
+import { useAnimation } from "motion/react";
+import * as m from "motion/react-m";
 import type { HTMLAttributes } from "react";
 import { forwardRef, useCallback, useImperativeHandle, useRef } from "react";
 
@@ -76,7 +77,7 @@ const MinimizeIcon = forwardRef<MinimizeIconHandle, MinimizeIconProps>(
           width={size}
           xmlns="http://www.w3.org/2000/svg"
         >
-          <motion.path
+          <m.path
             animate={controls}
             d="M8 3v3a2 2 0 0 1-2 2H3"
             transition={DEFAULT_TRANSITION}
@@ -85,7 +86,7 @@ const MinimizeIcon = forwardRef<MinimizeIconHandle, MinimizeIconProps>(
               animate: { translateX: "2px", translateY: "2px" },
             }}
           />
-          <motion.path
+          <m.path
             animate={controls}
             d="M21 8h-3a2 2 0 0 1-2-2V3"
             transition={DEFAULT_TRANSITION}
@@ -94,7 +95,7 @@ const MinimizeIcon = forwardRef<MinimizeIconHandle, MinimizeIconProps>(
               animate: { translateX: "-2px", translateY: "2px" },
             }}
           />
-          <motion.path
+          <m.path
             animate={controls}
             d="M3 16h3a2 2 0 0 1 2 2v3"
             transition={DEFAULT_TRANSITION}
@@ -103,7 +104,7 @@ const MinimizeIcon = forwardRef<MinimizeIconHandle, MinimizeIconProps>(
               animate: { translateX: "2px", translateY: "-2px" },
             }}
           />
-          <motion.path
+          <m.path
             animate={controls}
             d="M16 21v-3a2 2 0 0 1 2-2h3"
             transition={DEFAULT_TRANSITION}
