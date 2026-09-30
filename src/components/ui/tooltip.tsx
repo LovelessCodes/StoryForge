@@ -5,9 +5,6 @@ import type React from "react";
 
 import { cn } from "@/lib/utils";
 
-export const TooltipCreateHandle: typeof TooltipPrimitive.createHandle =
-  TooltipPrimitive.createHandle;
-
 export const TooltipProvider: typeof TooltipPrimitive.Provider = TooltipPrimitive.Provider;
 
 export const Tooltip: typeof TooltipPrimitive.Root = TooltipPrimitive.Root;
@@ -62,4 +59,4 @@ export function TooltipPopup({
   );
 }
 
-export { TooltipPrimitive, TooltipPopup as TooltipContent };
+export { TooltipPopup as TooltipContent };

@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import type React from "react";
 
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button.variants";
 import { cn } from "@/lib/utils";
 
 const TOAST_ICONS = {
@@ -235,9 +235,9 @@ function AnchoredToasts({
   );
 }
 
-export const toastManager: ReturnType<typeof Toast.createToastManager> = Toast.createToastManager();
+const toastManager: ReturnType<typeof Toast.createToastManager> = Toast.createToastManager();
 
-export const anchoredToastManager: ReturnType<typeof Toast.createToastManager> =
+const anchoredToastManager: ReturnType<typeof Toast.createToastManager> =
   Toast.createToastManager();
 
 export type ToastPosition =
@@ -283,5 +283,3 @@ export function AnchoredToastProvider({
     </Toast.Provider>
   );
 }
-
-export { Toast as ToastPrimitive };

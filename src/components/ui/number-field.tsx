@@ -7,7 +7,7 @@ import * as React from "react";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-export const NumberFieldContext: React.Context<{
+const NumberFieldContext: React.Context<{
   fieldId: string;
 } | null> = React.createContext<{
   fieldId: string;
@@ -153,5 +153,3 @@ export function CursorGrowIcon(props: React.ComponentProps<"svg">): React.ReactE
     </svg>
   );
 }
-
-export { NumberFieldPrimitive };

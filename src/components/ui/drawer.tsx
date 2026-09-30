@@ -29,8 +29,6 @@ const directionMap: Record<DrawerPosition, DrawerPrimitive.Root.Props["swipeDire
   top: "up",
 };
 
-export const DrawerCreateHandle: typeof DrawerPrimitive.createHandle = DrawerPrimitive.createHandle;
-
 export function Drawer<Payload>({
   swipeDirection,
   position = "bottom",
@@ -596,5 +594,3 @@ export function DrawerMenuRadioItem({
     </RadioPrimitive.Root>
   );
 }
-
-export { DrawerPrimitive };

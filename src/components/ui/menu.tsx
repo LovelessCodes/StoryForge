@@ -6,8 +6,6 @@ import type * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-export const MenuCreateHandle: typeof MenuPrimitive.createHandle = MenuPrimitive.createHandle;
-
 export const Menu: typeof MenuPrimitive.Root = MenuPrimitive.Root;
 
 export const MenuPortal: typeof MenuPrimitive.Portal = MenuPrimitive.Portal;
@@ -294,8 +292,6 @@ export function MenuSubPopup({
 }
 
 export {
-  MenuPrimitive,
-  MenuCreateHandle as DropdownMenuCreateHandle,
   Menu as DropdownMenu,
   MenuPortal as DropdownMenuPortal,
   MenuTrigger as DropdownMenuTrigger,

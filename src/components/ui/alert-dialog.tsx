@@ -5,9 +5,6 @@ import type React from "react";
 
 import { cn } from "@/lib/utils";
 
-export const AlertDialogCreateHandle: typeof AlertDialogPrimitive.createHandle =
-  AlertDialogPrimitive.createHandle;
-
 export const AlertDialog: typeof AlertDialogPrimitive.Root = AlertDialogPrimitive.Root;
 
 export const AlertDialogPortal: typeof AlertDialogPrimitive.Portal = AlertDialogPrimitive.Portal;
@@ -142,8 +139,4 @@ export function AlertDialogClose(props: AlertDialogPrimitive.Close.Props): React
   return <AlertDialogPrimitive.Close data-slot="alert-dialog-close" {...props} />;
 }
 
-export {
-  AlertDialogPrimitive,
-  AlertDialogBackdrop as AlertDialogOverlay,
-  AlertDialogPopup as AlertDialogContent,
-};
+export { AlertDialogBackdrop as AlertDialogOverlay, AlertDialogPopup as AlertDialogContent };

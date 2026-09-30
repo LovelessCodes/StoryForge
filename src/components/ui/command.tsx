@@ -22,9 +22,6 @@ export const CommandDialog: typeof CommandDialogPrimitive.Root = CommandDialogPr
 export const CommandDialogPortal: typeof CommandDialogPrimitive.Portal =
   CommandDialogPrimitive.Portal;
 
-export const CommandCreateHandle: typeof CommandDialogPrimitive.createHandle =
-  CommandDialogPrimitive.createHandle;
-
 export function CommandDialogTrigger(
   props: CommandDialogPrimitive.Trigger.Props,
 ): React.ReactElement {
@@ -244,5 +241,3 @@ export function CommandFooter({
     />
   );
 }
-
-export { CommandDialogPrimitive };
