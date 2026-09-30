@@ -47,6 +47,16 @@ function upsertReplayClassName(toast: { type?: string; updateKey?: number }): st
   return isEven ? "animate-toast-success-even" : "animate-toast-success-odd";
 }
 
+/** Title + description pair shared by the default and anchored toasts. */
+function ToastTitleAndDescription(): React.ReactElement {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <Toast.Title className="font-medium" data-slot="toast-title" />
+      <Toast.Description className="text-muted-foreground" data-slot="toast-description" />
+    </div>
+  );
+}
+
 function Toasts({
   position,
   portalProps,
@@ -136,13 +146,7 @@ function Toasts({
                     </div>
                   )}
 
-                  <div className="flex flex-col gap-0.5">
-                    <Toast.Title className="font-medium" data-slot="toast-title" />
-                    <Toast.Description
-                      className="text-muted-foreground"
-                      data-slot="toast-description"
-                    />
-                  </div>
+                  <ToastTitleAndDescription />
                 </div>
                 {toast.actionProps && (
                   <Toast.Action className={buttonVariants({ size: "xs" })} data-slot="toast-action">
@@ -210,13 +214,7 @@ function AnchoredToasts({
                         </div>
                       )}
 
-                      <div className="flex flex-col gap-0.5">
-                        <Toast.Title className="font-medium" data-slot="toast-title" />
-                        <Toast.Description
-                          className="text-muted-foreground"
-                          data-slot="toast-description"
-                        />
-                      </div>
+                      <ToastTitleAndDescription />
                     </div>
                     {toast.actionProps && (
                       <Toast.Action
