@@ -73,7 +73,65 @@ function relevanceRank(mod: Mod, query: string): number {
 }
 
 export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
-  // ── Local filter state (replaces zustand useModsFilters) ──
+  const defaultModSortBy = useSettingsStore((state) => state.defaultModSortBy);
+  const filters = useModFilters(defaultModSortBy);
+  const { gameVersions, instMods, modTags, modUpdates, modsList, tagByName, tagColorMap } =
+    useModsData({
+      author: filters.author,
+      category: filters.category,
+      modsDirectory,
+      orderDirection: filters.orderDirection,
+      searchText: filters.searchText,
+      selectedGameVersions: filters.selectedGameVersions,
+      selectedModTags: filters.selectedModTags,
+      side: filters.side,
+      sortBy: filters.sortBy,
+    });
+
+  const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
+  const scrollAreaViewportRef = useCallback((element: HTMLDivElement | null) => {
+    setScrollElement(element);
+  }, []);
+
+  const showInstalledTab = !!modsDirectory;
+
+  return (
+    <div className="grid size-full grid-rows-[min-content_auto] gap-2">
+      {/* Filter bar */}
+      <ModFiltersBar
+        filters={filters}
+        gameVersions={gameVersions}
+        instMods={instMods}
+        modsDirectory={modsDirectory}
+        modTags={modTags}
+        modUpdates={modUpdates}
+        showInstalledTab={showInstalledTab}
+      />
+      <ScrollArea viewportRef={scrollAreaViewportRef} className="h-full w-full px-4" scrollFade>
+        <ModList
+          modsDirectory={modsDirectory}
+          scrollElement={scrollElement}
+          mods={modsList}
+          installedMods={showInstalledTab ? (instMods?.mods ?? []) : []}
+          modUpdates={showInstalledTab ? modUpdates : undefined}
+          tagColorMap={tagColorMap}
+          tagByName={tagByName}
+          onAuthorClick={filters.setAuthor}
+          onTagClick={filters.handleTagClick}
+          selectedTagNames={filters.selectedTagNames}
+        />
+      </ScrollArea>
+      {modsDirectory && (
+        <p className="text-muted-foreground absolute bottom-0 left-4 p-1 text-xs backdrop-blur-sm">
+          {modsDirectory.split(/[/\\]/).pop() || modsDirectory}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Filter state shared by the filter bar and the mod data hook. */
+function useModFilters(defaultSortBy: SortBy) {
   const [searchText, setSearchText] = useState("");
   const [selectedModTags, setSelectedModTags] = useState<ModTag[]>([]);
   const [selectedGameVersions, setSelectedGameVersions] = useState<string[]>([]);
@@ -81,13 +139,11 @@ export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
     () => new Set(selectedGameVersions),
     [selectedGameVersions],
   );
-  const defaultModSortBy = useSettingsStore((state) => state.defaultModSortBy);
-  const [sortBy, setSortBy] = useState<SortBy>(defaultModSortBy);
+  const [sortBy, setSortBy] = useState<SortBy>(defaultSortBy);
   const [orderDirection, setOrderDirection] = useState<OrderDirection>("ascending");
   const [author, setAuthor] = useState("");
   const [side, setSide] = useState<Side>("any");
   const [category, setCategory] = useState<Category>("mod");
-
   // ── Filter helpers ──
   const addGameVersion = (version: string) => setSelectedGameVersions((prev) => [...prev, version]);
   const removeGameVersion = (version: string) =>
@@ -95,8 +151,66 @@ export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
   const addModTag = (tag: ModTag) => setSelectedModTags((prev) => [...prev, tag]);
   const removeModTag = (tag: ModTag) =>
     setSelectedModTags((prev) => prev.filter((t) => t.tagid !== tag.tagid));
+  const selectedTagNames = useMemo(
+    () => new Set(selectedModTags.map((t) => t.name)),
+    [selectedModTags],
+  );
 
-  // ── Queries ──
+  const handleTagClick = (tag: ModTag, isActive: boolean) => {
+    if (isActive) {
+      removeModTag(tag);
+    } else {
+      addModTag(tag);
+    }
+  };
+
+  return {
+    addGameVersion,
+    addModTag,
+    author,
+    category,
+    handleTagClick,
+    orderDirection,
+    removeGameVersion,
+    removeModTag,
+    searchText,
+    selectedGameVersions,
+    selectedGameVersionsSet,
+    selectedModTags,
+    selectedTagNames,
+    setAuthor,
+    setCategory,
+    setOrderDirection,
+    setSearchText,
+    setSide,
+    setSortBy,
+    side,
+    sortBy,
+  };
+}
+
+/** Mods, tags and the filtered/sorted list for the browser. */
+function useModsData({
+  author,
+  category,
+  modsDirectory,
+  orderDirection,
+  searchText,
+  selectedGameVersions,
+  selectedModTags,
+  side,
+  sortBy,
+}: {
+  author: string;
+  category: Category;
+  modsDirectory: string | undefined;
+  orderDirection: OrderDirection;
+  searchText: string;
+  selectedGameVersions: string[];
+  selectedModTags: ModTag[];
+  side: Side;
+  sortBy: SortBy;
+}) {
   const { data: gameVersions } = useQuery(gameVersionsQuery);
   const { data: modTags } = useQuery(modTagsQuery);
   const { data: mods } = useQuery(
@@ -203,7 +317,6 @@ export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
     searchText,
   ]);
 
-  // ── Tag lookup tables for ModItem ──
   const tagColorMap = useMemo(() => {
     if (!modTags) return {} as Record<string, string>;
     const map: Record<string, string> = {};
@@ -218,193 +331,187 @@ export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
     return map;
   }, [modTags]);
 
-  const selectedTagNames = useMemo(
-    () => new Set(selectedModTags.map((t) => t.name)),
-    [selectedModTags],
-  );
+  return { gameVersions, instMods, modTags, modsList, modUpdates, tagByName, tagColorMap };
+}
 
-  // ── Tag click handler ──
-  const handleTagClick = (tag: ModTag, isActive: boolean) => {
-    if (isActive) {
-      removeModTag(tag);
-    } else {
-      addModTag(tag);
-    }
-  };
-
-  const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
-  const scrollAreaViewportRef = useCallback((element: HTMLDivElement | null) => {
-    setScrollElement(element);
-  }, []);
-
-  const showInstalledTab = !!modsDirectory;
+/** Search, tag/version pickers, sort and side controls above the mod list. */
+function ModFiltersBar({
+  filters,
+  gameVersions,
+  instMods,
+  modsDirectory,
+  modTags,
+  modUpdates,
+  showInstalledTab,
+}: {
+  filters: ReturnType<typeof useModFilters>;
+  gameVersions: string[] | undefined;
+  instMods: ReturnType<typeof useModsData>["instMods"];
+  modsDirectory: string | undefined;
+  modTags: ReturnType<typeof useModsData>["modTags"];
+  modUpdates: ReturnType<typeof useModsData>["modUpdates"];
+  showInstalledTab: boolean;
+}) {
+  const {
+    addGameVersion,
+    addModTag,
+    author,
+    category,
+    orderDirection,
+    removeGameVersion,
+    removeModTag,
+    searchText,
+    selectedGameVersions,
+    selectedGameVersionsSet,
+    selectedModTags,
+    setAuthor,
+    setCategory,
+    setOrderDirection,
+    setSearchText,
+    setSide,
+    setSortBy,
+    side,
+    sortBy,
+  } = filters;
 
   return (
-    <div className="grid size-full grid-rows-[min-content_auto] gap-2">
-      {/* Filter bar */}
-      <div className="flex h-fit flex-wrap items-center gap-2 px-2 pt-0.5 pb-2 max-md:pl-9">
-        <SearchInput
-          className="h-9"
-          onChange={(e) => setSearchText(e.target.value)}
-          placeholder="Search mods..."
-          value={searchText}
-        />
-        <Select multiple value={selectedGameVersions}>
-          <SelectTrigger className="h-9 w-40">
-            <span
-              className={cn(
-                "pointer-events-none absolute inset-s-1 z-10 -translate-y-1/2 inline-flex text-muted-foreground px-2 transition-all",
-                selectedGameVersions.length > 0
-                  ? "top-0 bg-background text-xs"
-                  : "top-1/2 bg-transparent",
-              )}
+    <div className="flex h-fit flex-wrap items-center gap-2 px-2 pt-0.5 pb-2 max-md:pl-9">
+      <SearchInput
+        className="h-9"
+        onChange={(e) => setSearchText(e.target.value)}
+        placeholder="Search mods..."
+        value={searchText}
+      />
+      <Select multiple value={selectedGameVersions}>
+        <SelectTrigger className="h-9 w-40">
+          <span
+            className={cn(
+              "pointer-events-none absolute inset-s-1 z-10 -translate-y-1/2 inline-flex text-muted-foreground px-2 transition-all",
+              selectedGameVersions.length > 0
+                ? "top-0 bg-background text-xs"
+                : "top-1/2 bg-transparent",
+            )}
+          >
+            Game Version(s)
+          </span>
+          <SelectValue>
+            {selectedGameVersions.length > 0
+              ? selectedGameVersions.length > 1
+                ? `${selectedGameVersions.length} versions`
+                : selectedGameVersions[0]
+              : null}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent align="start" alignItemWithTrigger={false}>
+          {gameVersions?.toSorted(compareSemverDesc).map((version) => (
+            <SelectItem
+              key={version}
+              onClick={() =>
+                selectedGameVersionsSet.has(version)
+                  ? removeGameVersion(version)
+                  : addGameVersion(version)
+              }
+              value={version}
             >
-              Game Version(s)
-            </span>
-            <SelectValue>
-              {selectedGameVersions.length > 0
-                ? selectedGameVersions.length > 1
-                  ? `${selectedGameVersions.length} versions`
-                  : selectedGameVersions[0]
-                : null}
-            </SelectValue>
+              {version}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select multiple value={selectedModTags}>
+        <SelectTrigger className="h-9 w-40">
+          <span
+            className={cn(
+              "pointer-events-none absolute inset-s-1 z-10 -translate-y-1/2 inline-flex text-muted-foreground px-2 transition-all",
+              selectedModTags.length > 0 ? "top-0 bg-background text-xs" : "top-1/2 bg-transparent",
+            )}
+          >
+            Mod Tag(s)
+          </span>
+          <SelectValue>
+            {selectedModTags.length > 0
+              ? selectedModTags.length > 1
+                ? `${selectedModTags.length} tags`
+                : selectedModTags[0].name
+              : null}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent align="start" alignItemWithTrigger={false}>
+          {modTags
+            ?.toSorted((a, b) => stripped(a.name).localeCompare(stripped(b.name)))
+            .map((tag) => (
+              <SelectItem
+                key={tag.tagid}
+                onClick={() =>
+                  selectedModTags.some((t) => t.tagid === tag.tagid)
+                    ? removeModTag(tag)
+                    : addModTag(tag)
+                }
+                value={tag}
+              >
+                {tag.name}
+              </SelectItem>
+            ))}
+        </SelectContent>
+      </Select>
+      <div className="group relative">
+        <Label className="bg-background text-muted-foreground pointer-events-none absolute inset-s-1 top-0 z-10 block -translate-y-1/2 px-2 text-xs font-medium group-has-disabled:opacity-50">
+          Sort by
+        </Label>
+        <Select onValueChange={(value) => setSortBy(value as SortBy)} value={sortBy}>
+          <SelectTrigger>
+            {sortBy ? `${sortOptions[sortBy as keyof typeof sortOptions]}` : "Sort by"}
           </SelectTrigger>
           <SelectContent align="start" alignItemWithTrigger={false}>
-            {gameVersions?.toSorted(compareSemverDesc).map((version) => (
-              <SelectItem
-                key={version}
-                onClick={() =>
-                  selectedGameVersionsSet.has(version)
-                    ? removeGameVersion(version)
-                    : addGameVersion(version)
-                }
-                value={version}
-              >
-                {version}
+            {Object.entries(sortOptions).map(([key, value]) => (
+              <SelectItem key={key} value={key}>
+                {value}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Select multiple value={selectedModTags}>
-          <SelectTrigger className="h-9 w-40">
-            <span
-              className={cn(
-                "pointer-events-none absolute inset-s-1 z-10 -translate-y-1/2 inline-flex text-muted-foreground px-2 transition-all",
-                selectedModTags.length > 0
-                  ? "top-0 bg-background text-xs"
-                  : "top-1/2 bg-transparent",
-              )}
-            >
-              Mod Tag(s)
-            </span>
-            <SelectValue>
-              {selectedModTags.length > 0
-                ? selectedModTags.length > 1
-                  ? `${selectedModTags.length} tags`
-                  : selectedModTags[0].name
-                : null}
-            </SelectValue>
+      </div>
+      <div className="group relative">
+        <Label className="bg-background text-muted-foreground pointer-events-none absolute inset-s-1 top-0 z-10 block -translate-y-1/2 px-2 text-xs font-medium group-has-disabled:opacity-50">
+          Category
+        </Label>
+        <Select onValueChange={(value) => setCategory(value as Category)} value={category}>
+          <SelectTrigger>
+            {category ? `${categoryOptions[category as keyof typeof categoryOptions]}` : "Category"}
           </SelectTrigger>
           <SelectContent align="start" alignItemWithTrigger={false}>
-            {modTags
-              ?.toSorted((a, b) => stripped(a.name).localeCompare(stripped(b.name)))
-              .map((tag) => (
-                <SelectItem
-                  key={tag.tagid}
-                  onClick={() =>
-                    selectedModTags.some((t) => t.tagid === tag.tagid)
-                      ? removeModTag(tag)
-                      : addModTag(tag)
-                  }
-                  value={tag}
-                >
-                  {tag.name}
-                </SelectItem>
-              ))}
+            {Object.entries(categoryOptions).map(([key, value]) => (
+              <SelectItem key={key} value={key}>
+                {value}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
-        <div className="group relative">
-          <Label className="bg-background text-muted-foreground pointer-events-none absolute inset-s-1 top-0 z-10 block -translate-y-1/2 px-2 text-xs font-medium group-has-disabled:opacity-50">
-            Sort by
-          </Label>
-          <Select onValueChange={(value) => setSortBy(value as SortBy)} value={sortBy}>
-            <SelectTrigger>
-              {sortBy ? `${sortOptions[sortBy as keyof typeof sortOptions]}` : "Sort by"}
-            </SelectTrigger>
-            <SelectContent align="start" alignItemWithTrigger={false}>
-              {Object.entries(sortOptions).map(([key, value]) => (
-                <SelectItem key={key} value={key}>
-                  {value}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="group relative">
-          <Label className="bg-background text-muted-foreground pointer-events-none absolute inset-s-1 top-0 z-10 block -translate-y-1/2 px-2 text-xs font-medium group-has-disabled:opacity-50">
-            Category
-          </Label>
-          <Select onValueChange={(value) => setCategory(value as Category)} value={category}>
-            <SelectTrigger>
-              {category
-                ? `${categoryOptions[category as keyof typeof categoryOptions]}`
-                : "Category"}
-            </SelectTrigger>
-            <SelectContent align="start" alignItemWithTrigger={false}>
-              {Object.entries(categoryOptions).map(([key, value]) => (
-                <SelectItem key={key} value={key}>
-                  {value}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <TextSwitch
-          checked={orderDirection === "descending"}
-          onCheckedChange={(checked) => setOrderDirection(checked ? "descending" : "ascending")}
-          textChecked="Desc"
-          textUnchecked="Asc"
-        />
-        <AuthorAutocomplete
-          onChange={(e) => setAuthor(e.target.value)}
-          value={author}
-          searchText={searchText}
-          selectedGameVersions={selectedGameVersions}
-        />
-        {/* Only show SideToggleGroup with "Installed" tab when we have a modsDirectory */}
-        {showInstalledTab && (
-          <SideToggleGroup side={side} onSideChange={(v) => setSide(v as Side)} />
-        )}
-        {!showInstalledTab && (
-          // Side filter without "Installed" tab for standalone mode
-          <SideToggleGroup side={side} onSideChange={(v) => setSide(v as Side)} hideInstalled />
-        )}
-        {showInstalledTab && modUpdates && instMods && (
-          <UpdateAllButton
-            modsDirectory={modsDirectory!}
-            installedMods={instMods.mods}
-            updates={modUpdates}
-          />
-        )}
       </div>
-      <ScrollArea viewportRef={scrollAreaViewportRef} className="h-full w-full px-4" scrollFade>
-        <ModList
-          modsDirectory={modsDirectory}
-          scrollElement={scrollElement}
-          mods={modsList}
-          installedMods={showInstalledTab ? (instMods?.mods ?? []) : []}
-          modUpdates={showInstalledTab ? modUpdates : undefined}
-          tagColorMap={tagColorMap}
-          tagByName={tagByName}
-          selectedTagNames={selectedTagNames}
-          onTagClick={handleTagClick}
-          onAuthorClick={setAuthor}
+      <TextSwitch
+        checked={orderDirection === "descending"}
+        onCheckedChange={(checked) => setOrderDirection(checked ? "descending" : "ascending")}
+        textChecked="Desc"
+        textUnchecked="Asc"
+      />
+      <AuthorAutocomplete
+        onChange={(e) => setAuthor(e.target.value)}
+        value={author}
+        searchText={searchText}
+        selectedGameVersions={selectedGameVersions}
+      />
+      {/* Only show SideToggleGroup with "Installed" tab when we have a modsDirectory */}
+      {showInstalledTab && <SideToggleGroup side={side} onSideChange={(v) => setSide(v as Side)} />}
+      {!showInstalledTab && (
+        // Side filter without "Installed" tab for standalone mode
+        <SideToggleGroup side={side} onSideChange={(v) => setSide(v as Side)} hideInstalled />
+      )}
+      {showInstalledTab && modUpdates && instMods && (
+        <UpdateAllButton
+          modsDirectory={modsDirectory!}
+          installedMods={instMods.mods}
+          updates={modUpdates}
         />
-      </ScrollArea>
-      {modsDirectory && (
-        <p className="text-muted-foreground absolute bottom-0 left-4 p-1 text-xs backdrop-blur-sm">
-          {modsDirectory.split(/[/\\]/).pop() || modsDirectory}
-        </p>
       )}
     </div>
   );
