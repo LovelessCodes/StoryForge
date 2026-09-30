@@ -1,4 +1,5 @@
 import { MinusIcon, PlusIcon } from "lucide-react";
+import { useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,14 @@ interface EnvVarsEditorProps {
 }
 
 export function EnvVarsEditor({ entries, onChange }: EnvVarsEditorProps) {
+  // The rows round-trip to the backend as plain key/value pairs, so they carry
+  // no id of their own; this keeps one stable React key per row anyway.
+  const rowIds = useRef<string[]>([]);
+  while (rowIds.current.length < entries.length) {
+    rowIds.current.push(crypto.randomUUID());
+  }
+  rowIds.current.length = entries.length;
+
   const setEntry = (index: number, field: "key" | "value", text: string) => {
     const next = entries.map((e, i) => (i === index ? { ...e, [field]: text } : e));
     onChange(next);
@@ -18,12 +27,15 @@ export function EnvVarsEditor({ entries, onChange }: EnvVarsEditorProps) {
 
   const add = () => onChange([...entries, { key: "", value: "" }]);
 
-  const remove = (index: number) => onChange(entries.filter((_, i) => i !== index));
+  const remove = (index: number) => {
+    rowIds.current.splice(index, 1);
+    onChange(entries.filter((_, i) => i !== index));
+  };
 
   return (
     <div className="flex flex-col gap-2">
       {entries.map(({ key, value }, i) => (
-        <div className="flex items-center gap-2" key={i}>
+        <div className="flex items-center gap-2" key={rowIds.current[i]}>
           <Input
             className="flex-1"
             onChange={(e) => setEntry(i, "key", e.target.value)}

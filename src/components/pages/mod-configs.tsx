@@ -153,6 +153,9 @@ export function LiveBlock({
   // with stale local state.
   const [dirty, setDirty] = useState(false);
   const onSaveRef = useRef(onSave);
+  // Stable React keys for array rows: the editor addresses items by index, so
+  // ids live per array path and follow add/remove operations.
+  const rowIds = useRef(new Map<string, string[]>());
 
   // Keep the callback ref current without writing it during render.
   useEffect(() => {
@@ -196,6 +199,18 @@ export function LiveBlock({
     updateAtPath(path, value);
   }
 
+  function arrayItemKey(path: (string | number)[], index: number, count: number) {
+    const key = pathKey(path);
+    let ids = rowIds.current.get(key);
+    if (!ids) {
+      ids = [];
+      rowIds.current.set(key, ids);
+    }
+    while (ids.length < count) ids.push(crypto.randomUUID());
+    ids.length = count;
+    return ids[index] ?? key;
+  }
+
   function addArrayItem(path: (string | number)[]) {
     updateData((prev) => {
       const arr = getAtPath(prev, path);
@@ -206,6 +221,7 @@ export function LiveBlock({
   }
 
   function removeArrayItem(path: (string | number)[], index: number) {
+    rowIds.current.get(pathKey(path))?.splice(index, 1);
     updateData((prev) => {
       const arr = getAtPath(prev, path);
       if (!Array.isArray(arr)) return prev;
@@ -251,9 +267,11 @@ export function LiveBlock({
           {!isCol && (
             <div className="ml-4 space-y-2 border-l pl-3">
               {value.map((item, idx) => {
-                const itemKey = `${kKey}-idx-${idx}`;
                 return (
-                  <div className="relative flex flex-col gap-1" key={itemKey}>
+                  <div
+                    className="relative flex flex-col gap-1"
+                    key={arrayItemKey(path, idx, value.length)}
+                  >
                     {renderValue(item, [...path, idx], idx)}
                     <Button
                       className="mt-1"
