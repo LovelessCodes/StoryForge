@@ -62,6 +62,7 @@ export function ModList({
 }) {
   const estimateSize = useCallback(() => 100, []);
 
+  // react-doctor-disable-next-line react/incompatible-library -- external virtualizer API; this repo does not run React Compiler, so the memoization-skip advisory does not apply
   const rowVirtualizer = useVirtualizer({
     count: mods.length,
     estimateSize,

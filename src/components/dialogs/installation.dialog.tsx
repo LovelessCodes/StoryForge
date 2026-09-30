@@ -1,7 +1,7 @@
 import { type ReactFormExtendedApi, useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { useId } from "react";
+import { useId, useState } from "react";
 import { toast } from "sonner";
 import z from "zod";
 
@@ -57,7 +57,7 @@ type InstallationFormApi = ReactFormExtendedApi<
 >;
 
 const installationSchema = z.object({
-  envVars: z.array(z.object({ key: z.string(), value: z.string() })),
+  envVars: z.array(z.object({ id: z.string(), key: z.string(), value: z.string() })),
   favorite: z.boolean(),
   icon: z.string(),
   id: z.number(),
@@ -133,10 +133,14 @@ export function InstallationDialog({ installation, version }: InstallationDialog
   const defaultVersion =
     version ?? gameVersions?.toSorted(compareSemverDesc).filter((v) => !v.includes("rc"))[0] ?? "";
 
+  // One timestamp per dialog instance: Date.now() during render is impure.
+  const [createdAt] = useState(() => Date.now());
+
   const form = useForm({
     defaultValues: isEdit
       ? {
           envVars: Object.entries(installation.environmentVariables ?? {}).map(([k, v]) => ({
+            id: crypto.randomUUID(),
             key: k,
             value: v,
           })) as EnvVarEntry[],
@@ -153,8 +157,8 @@ export function InstallationDialog({ installation, version }: InstallationDialog
           envVars: [] as EnvVarEntry[],
           favorite: false,
           icon: "",
-          id: Date.now(),
-          index: Date.now(),
+          id: createdAt,
+          index: createdAt,
           name: "",
           path: appFolder
             ? buildInstallationPath(installationsParent ?? appFolder, "new", installationsSubdir)

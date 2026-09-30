@@ -70,6 +70,7 @@ export const AuthorAutocomplete = ({
 
   const shouldRenderPopup = actualValue !== "";
 
+  // react-doctor-disable-next-line react/incompatible-library -- external virtualizer API; this repo does not run React Compiler, so the memoization-skip advisory does not apply
   const virtualizer = useVirtualizer({
     count: filteredItems.length,
     enabled: shouldRenderPopup,

@@ -98,6 +98,9 @@ export function ServerDialog({ server, installation }: ServerDialogProps) {
     },
   });
 
+  // One timestamp per dialog instance: Date.now() during render is impure.
+  const [createdAt] = useState(() => Date.now());
+
   const form = useForm({
     defaultValues: isEdit
       ? {
@@ -112,8 +115,8 @@ export function ServerDialog({ server, installation }: ServerDialogProps) {
         }
       : {
           favorite: false,
-          id: Date.now(),
-          index: Date.now(),
+          id: createdAt,
+          index: createdAt,
           installationId: installation?.id.toString() ?? "0",
           ip: "",
           name: "",

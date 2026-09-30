@@ -7,7 +7,9 @@
   "options": {
     "typeAware": true
   },
-  "rules": {},
+  "rules": {
+    "react/incompatible-library": "warn"
+  },
   "env": {
     "builtin": true
   }
