@@ -1,7 +1,7 @@
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { open } from "@tauri-apps/plugin-dialog";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import z from "zod";
 
@@ -53,10 +53,9 @@ export function SettingsPage() {
 
   // States
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [pendingField, setPendingField] = useState<
-    "installationsParent" | "versionsParent" | "both" | null
-  >(null);
-  const [pendingPath, setPendingPath] = useState<string | null>(null);
+  // Only read by handleDialogChoice, never rendered: refs avoid a redraw.
+  const pendingFieldRef = useRef<"installationsParent" | "versionsParent" | "both" | null>(null);
+  const pendingPathRef = useRef<string | null>(null);
   const [configs, setConfigs] = useState<{
     installationsParent: {
       moveCurrentData: boolean;
@@ -247,12 +246,14 @@ export function SettingsPage() {
       title: `Select ${fieldName === "installationsParent" ? "Installations" : fieldName === "versionsParent" ? "Versions" : "All"} Parent Directory`,
     });
     if (typeof selected === "string") {
-      setPendingField(fieldName);
-      setPendingPath(selected);
+      pendingFieldRef.current = fieldName;
+      pendingPathRef.current = selected;
       setDialogOpen(true);
     }
   };
   const handleDialogChoice = async (choice: "keep" | "delete" | "move") => {
+    const pendingField = pendingFieldRef.current;
+    const pendingPath = pendingPathRef.current;
     if (!pendingField || !pendingPath) return;
     await logToFile(
       "INFO ",
@@ -291,8 +292,8 @@ export function SettingsPage() {
       form.setFieldValue("versionsParent", pendingPath ?? "");
     }
     setDialogOpen(false);
-    setPendingField(null);
-    setPendingPath(null);
+    pendingFieldRef.current = null;
+    pendingPathRef.current = null;
   };
 
   return (
@@ -316,8 +317,8 @@ export function SettingsPage() {
                     (settingsStore.installationsParent !== null ||
                       settingsStore.versionsParent !== null)
                   ) {
-                    setPendingField("both");
-                    setPendingPath(appFolder);
+                    pendingFieldRef.current = "both";
+                    pendingPathRef.current = appFolder;
                     setDialogOpen(true);
                   }
                 }}

@@ -69,20 +69,21 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
           computer as well as all its data.
         </AlertDialogDescription>
 
-        {/* Warning for active servers */}
-        {activeServers.length > 0 && (
-          <m.div
-            animate={{ opacity: 1, y: 0 }}
-            className="border-destructive bg-destructive/10 text-destructive mb-4 border p-3"
-            exit={{ opacity: 0, y: -10 }}
-            initial={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3 }}
-          >
-            <strong>Warning:</strong>
-            <br />
-            The following servers are using this installation and must be removed first:
-            <ul className="mt-2 space-y-1">
-              <AnimatePresence>
+        {/* Warning for active servers. AnimatePresence stays outside the
+            condition so it can animate the warning leaving. */}
+        <AnimatePresence>
+          {activeServers.length > 0 && (
+            <m.div
+              animate={{ opacity: 1, y: 0 }}
+              className="border-destructive bg-destructive/10 text-destructive mb-4 border p-3"
+              exit={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              <strong>Warning:</strong>
+              <br />
+              The following servers are using this installation and must be removed first:
+              <ul className="mt-2 space-y-1">
                 {activeServers.map((srv) => (
                   <m.li
                     animate={{ opacity: 1, x: 0 }}
@@ -96,25 +97,25 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
                     {srv.name || `Server #${srv.id}`}
                   </m.li>
                 ))}
-              </AnimatePresence>
-            </ul>
-          </m.div>
-        )}
+              </ul>
+            </m.div>
+          )}
+        </AnimatePresence>
 
         {/* List saves if present */}
-        {Array.isArray(saves) && saves.length > 0 && (
-          <m.div
-            animate={{ opacity: 1, y: 0 }}
-            className="border-warning bg-warning/10 text-warning-foreground mb-4 border p-3"
-            exit={{ opacity: 0, y: 10 }}
-            initial={{ opacity: 0, y: 10 }}
-            transition={{ delay: 0.1, duration: 0.3 }}
-          >
-            <strong>Saves:</strong>
-            <br />
-            The following saves will be deleted:
-            <ul className="mt-2 space-y-1">
-              <AnimatePresence>
+        <AnimatePresence>
+          {Array.isArray(saves) && saves.length > 0 && (
+            <m.div
+              animate={{ opacity: 1, y: 0 }}
+              className="border-warning bg-warning/10 text-warning-foreground mb-4 border p-3"
+              exit={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 10 }}
+              transition={{ delay: 0.1, duration: 0.3 }}
+            >
+              <strong>Saves:</strong>
+              <br />
+              The following saves will be deleted:
+              <ul className="mt-2 space-y-1">
                 {saves.map((save) => (
                   <m.li
                     animate={{ opacity: 1, x: 0 }}
@@ -128,10 +129,10 @@ export function DeleteInstallationDialog({ installation }: DeleteInstallationDia
                     {save}
                   </m.li>
                 ))}
-              </AnimatePresence>
-            </ul>
-          </m.div>
-        )}
+              </ul>
+            </m.div>
+          )}
+        </AnimatePresence>
       </AlertDialogHeader>
       <AlertDialogFooter>
         <AlertDialogClose disabled={isPending} render={<Button variant="outline" />}>
