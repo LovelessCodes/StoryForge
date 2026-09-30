@@ -65,6 +65,8 @@ export function AddUserDialog({ email }: { email?: string }) {
     mutate: signInMutate,
     error: signInError,
     isPending,
+    // login writes the account store; there is no query cache to invalidate
+    // react-doctor-disable-next-line query-mutation-missing-invalidation
   } = useMutation({
     mutationFn: ({
       email,

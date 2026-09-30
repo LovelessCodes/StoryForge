@@ -137,6 +137,9 @@ export const useStopServer = (props?: UseMutationOptions<void, Error, number>) =
 };
 
 export const useRestartServer = (props?: UseMutationOptions<void, Error, number>) => {
+  // status is event-driven (staleTime Infinity); invalidating would refetch the
+  // synthetic "stopped" default and wipe the real status
+  // react-doctor-disable-next-line query-mutation-missing-invalidation
   return useMutation({
     ...props,
     mutationFn: (id: number) =>
@@ -150,6 +153,8 @@ export const useRestartServer = (props?: UseMutationOptions<void, Error, number>
 export const useSendCommand = (
   props?: UseMutationOptions<void, Error, { id: number; command: string }>,
 ) => {
+  // console commands have no deterministic cache effect
+  // react-doctor-disable-next-line query-mutation-missing-invalidation
   return useMutation({
     ...props,
     mutationFn: ({ id, command }: { id: number; command: string }) =>

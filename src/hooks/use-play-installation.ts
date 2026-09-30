@@ -23,6 +23,8 @@ export const usePlayInstallation = (
     },
     [],
   );
+  // launch/game-quit events update the installation store; no query cache
+  // react-doctor-disable-next-line query-mutation-missing-invalidation
   return useMutation({
     ...props,
     mutationFn: ({ id, save }) => {

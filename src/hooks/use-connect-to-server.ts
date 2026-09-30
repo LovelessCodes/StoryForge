@@ -50,6 +50,8 @@ export const useConnectToServer = (
     [],
   );
 
+  // the flow composes the probe, the server store and play_game; no query cache
+  // react-doctor-disable-next-line query-mutation-missing-invalidation
   return useMutation({
     ...props,
     mutationFn: async ({ name, ip, password, installationId, pub }) => {

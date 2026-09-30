@@ -9,6 +9,8 @@ export type AddServerToInstallationProps = {
 export const useAddServerToInstallation = (
   props?: UseMutationOptions<unknown, Error, AddServerToInstallationProps, unknown>,
 ) =>
+  // callers refresh the server store; no query cache is involved
+  // react-doctor-disable-next-line query-mutation-missing-invalidation
   useMutation({
     mutationFn: ({ server, installationId }: { server: string; installationId: number }) =>
       invoke("add_server_to_installation", {

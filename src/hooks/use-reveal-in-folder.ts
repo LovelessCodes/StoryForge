@@ -5,6 +5,8 @@ import { toast } from "sonner";
 
 export const useRevealInFolder = (props?: UseMutationOptions<string, Error, string>) => {
   const currentPlatform = platform();
+  // opens the OS file manager; caches nothing
+  // react-doctor-disable-next-line query-mutation-missing-invalidation
   return useMutation({
     ...props,
     mutationFn: (path: string) =>

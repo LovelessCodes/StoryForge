@@ -69,6 +69,8 @@ export function ServerDialog({ server, installation }: ServerDialogProps) {
 
   const isEdit = server != null;
 
+  // sniff_server only fills the local Test-result state; nothing is cached
+  // react-doctor-disable-next-line query-mutation-missing-invalidation
   const { mutate: testServer, isPending: isTesting } = useMutation({
     mutationFn: async () => {
       const ip = form.getFieldValue("ip");
