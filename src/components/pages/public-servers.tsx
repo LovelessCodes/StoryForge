@@ -41,6 +41,7 @@ export function PublicServersPage() {
 
   // Queries
   const { data: gameVersions } = useQuery(gameVersionsQuery);
+  const selectedGameVersionsSet = new Set(selectedGameVersions);
   const { data: publicServers } = usePublicServers();
   return (
     <div className="grid size-full grid-rows-[min-content_auto] gap-2">
@@ -63,7 +64,7 @@ export function PublicServersPage() {
               <SelectItem
                 key={version}
                 onClick={() =>
-                  selectedGameVersions.includes(version)
+                  selectedGameVersionsSet.has(version)
                     ? removeGameVersion(version)
                     : addGameVersion(version)
                 }

@@ -25,6 +25,10 @@ export const authClient = createAuthClient({
     onSuccess: (ctx) => {
       const newToken = ctx.response.headers.get("set-auth-token");
       if (newToken) {
+        // Stored in localStorage for now: moving it to the OS keychain is part
+        // of the parked accounts.json secure-storage work. The Bearer token is
+        // cleared on sign-out and on an empty set-auth-token response.
+        // react-doctor-disable-next-line auth-token-in-web-storage
         localStorage.setItem(BEARER_TOKEN_KEY, newToken);
       } else if (ctx.response.headers.has("set-auth-token")) {
         // Header present but empty — session ended

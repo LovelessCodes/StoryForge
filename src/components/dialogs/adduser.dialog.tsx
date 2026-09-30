@@ -1,19 +1,17 @@
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import clsx from "clsx";
 import { OTPInput, type SlotProps } from "input-otp";
 import { useId } from "react";
 import { toast } from "sonner";
 import z from "zod";
 
 import { EmailInput } from "@/components/inputs/email.input";
+import { FieldLabelTooltip } from "@/components/inputs/field-label.tooltip";
 import { PasswordInput } from "@/components/inputs/password.input";
 import { Button } from "@/components/ui/button";
 import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { TooltipTrigger } from "@/components/ui/tooltip";
-import { rootDialogHandle, rootTooltipHandle } from "@/handles";
+import { rootDialogHandle } from "@/handles";
 import { cn } from "@/lib/utils";
 import { useAccountStore } from "@/stores/accounts";
 
@@ -65,6 +63,8 @@ export function AddUserDialog({ email }: { email?: string }) {
     mutate: signInMutate,
     error: signInError,
     isPending,
+    // login writes the account store; there is no query cache to invalidate
+    // react-doctor-disable-next-line query-mutation-missing-invalidation
   } = useMutation({
     mutationFn: ({
       email,
@@ -158,36 +158,14 @@ export function AddUserDialog({ email }: { email?: string }) {
               <form.Field name="email">
                 {(field) => (
                   <div className="grid gap-2">
-                    <TooltipTrigger
-                      render={
-                        <Label
-                          className={clsx([
-                            field.state.meta.errors.length ? "text-destructive" : "",
-                            "w-fit",
-                          ])}
-                          htmlFor="email"
-                        />
-                      }
-                      handle={rootTooltipHandle}
-                      payload={() => (
-                        <>
-                          <p className="text-xs">Enter email address</p>
-                          {field.state.meta.errors.length > 0 &&
-                            field.state.meta.errors.map((error, index) => (
-                              <p
-                                className="text-destructive text-xs"
-                                // biome-ignore lint/suspicious/noArrayIndexKey: Needed
-                                key={index}
-                              >
-                                {error?.message}
-                              </p>
-                            ))}
-                        </>
-                      )}
+                    <FieldLabelTooltip
+                      errors={field.state.meta.errors}
+                      hint="Enter email address"
+                      htmlFor="email"
                     >
                       Email
                       <span className="text-destructive">*</span>
-                    </TooltipTrigger>
+                    </FieldLabelTooltip>
                     <EmailInput
                       className={field.state.meta.errors.length ? "text-destructive" : ""}
                       disabled={isPending}
@@ -215,36 +193,14 @@ export function AddUserDialog({ email }: { email?: string }) {
                 {(field) => (
                   <div className="grid gap-2">
                     <div className="flex items-center">
-                      <TooltipTrigger
-                        render={
-                          <Label
-                            className={clsx([
-                              field.state.meta.errors.length ? "text-destructive" : "",
-                              "w-fit",
-                            ])}
-                            htmlFor="password"
-                          />
-                        }
-                        handle={rootTooltipHandle}
-                        payload={() => (
-                          <>
-                            <p className="text-xs">Enter password</p>
-                            {field.state.meta.errors.length > 0 &&
-                              field.state.meta.errors.map((error, index) => (
-                                <p
-                                  className="text-destructive text-xs"
-                                  // biome-ignore lint/suspicious/noArrayIndexKey: Needed
-                                  key={index}
-                                >
-                                  {error?.message}
-                                </p>
-                              ))}
-                          </>
-                        )}
+                      <FieldLabelTooltip
+                        errors={field.state.meta.errors}
+                        hint="Enter password"
+                        htmlFor="password"
                       >
                         Password
                         <span className="text-destructive">*</span>
-                      </TooltipTrigger>
+                      </FieldLabelTooltip>
                       <a
                         className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
                         href="https://account.vintagestory.at/requestresetpwd"

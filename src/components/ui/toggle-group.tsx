@@ -2,18 +2,17 @@
 
 import type { Toggle as TogglePrimitive } from "@base-ui/react/toggle";
 import { ToggleGroup as ToggleGroupPrimitive } from "@base-ui/react/toggle-group";
-import type { VariantProps } from "class-variance-authority";
 import * as React from "react";
 
 import { Separator } from "@/components/ui/separator";
-import { Toggle as ToggleComponent, type toggleVariants } from "@/components/ui/toggle";
+import { Toggle as ToggleComponent } from "@/components/ui/toggle";
+import type { ToggleVariants } from "@/components/ui/toggle.variants";
 import { cn } from "@/lib/utils";
 
-export const ToggleGroupContext: React.Context<VariantProps<typeof toggleVariants>> =
-  React.createContext<VariantProps<typeof toggleVariants>>({
-    size: "default",
-    variant: "default",
-  });
+const ToggleGroupContext: React.Context<ToggleVariants> = React.createContext<ToggleVariants>({
+  size: "default",
+  variant: "default",
+});
 
 export function ToggleGroup({
   className,
@@ -22,7 +21,9 @@ export function ToggleGroup({
   orientation = "horizontal",
   children,
   ...props
-}: ToggleGroupPrimitive.Props & VariantProps<typeof toggleVariants>): React.ReactElement {
+}: ToggleGroupPrimitive.Props & ToggleVariants): React.ReactElement {
+  const contextValue = React.useMemo(() => ({ size, variant }), [size, variant]);
+
   return (
     <ToggleGroupPrimitive
       className={cn(
@@ -43,9 +44,7 @@ export function ToggleGroup({
       orientation={orientation}
       {...props}
     >
-      <ToggleGroupContext.Provider value={{ size, variant }}>
-        {children}
-      </ToggleGroupContext.Provider>
+      <ToggleGroupContext.Provider value={contextValue}>{children}</ToggleGroupContext.Provider>
     </ToggleGroupPrimitive>
   );
 }
@@ -56,7 +55,7 @@ export function ToggleGroupItem({
   variant,
   size,
   ...props
-}: TogglePrimitive.Props & VariantProps<typeof toggleVariants>): React.ReactElement {
+}: TogglePrimitive.Props & ToggleVariants): React.ReactElement {
   const context = React.useContext(ToggleGroupContext);
 
   const resolvedVariant = context.variant || variant;
@@ -94,5 +93,3 @@ export function ToggleGroupSeparator({
     />
   );
 }
-
-export { ToggleGroupPrimitive };

@@ -57,6 +57,7 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
   const { installationsParent, installationsSubdir } = useSettingsStore();
   const loadInstallations = useInstallationsStore((s) => s.loadInstallations);
   const installedVersions = useInstalledVersionNames();
+  const installedVersionsSet = new Set(installedVersions);
   const { mutateAsync: downloadVersion } = useDownloadVersion();
   const navigate = useNavigate();
   const { user } = useAuthSession();
@@ -104,7 +105,7 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
     setImportProgress(null);
 
     try {
-      if (!installedVersions.includes(version.gameVersion)) {
+      if (!installedVersionsSet.has(version.gameVersion)) {
         await downloadVersion(version.gameVersion);
       }
 
@@ -182,37 +183,7 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
     <>
       <DialogClose />
       <div className="flex flex-col gap-4 px-1">
-        {/* Header */}
-        <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start">
-          <img
-            alt={modpack.name}
-            className="bg-muted aspect-video w-full shrink-0 object-cover sm:w-48"
-            src={
-              modpack.imageUrl?.length
-                ? modpack.imageUrl
-                : "https://mods.vintagestory.at/web/img/mod-default.png"
-            }
-          />
-          <div className="flex min-w-0 flex-col gap-1">
-            <DialogHeader>
-              <DialogTitle className="truncate">{modpack.name}</DialogTitle>
-              <DialogDescription className="flex items-center gap-1.5">
-                by{" "}
-                {modpack.owner.image ? (
-                  <img alt={modpack.owner.name} className="size-4" src={modpack.owner.image} />
-                ) : null}
-                <span>{modpack.owner.name}</span>
-              </DialogDescription>
-            </DialogHeader>
-            <p className="text-muted-foreground text-sm">
-              {modpack.description || "No description"}
-            </p>
-            <p className="text-muted-foreground/60 text-xs">
-              {modpack.downloads.toLocaleString()} download
-              {modpack.downloads !== 1 ? "s" : ""}
-            </p>
-          </div>
-        </div>
+        <ModpackDetailHeader modpack={modpack} />
 
         <Separator />
 
@@ -245,7 +216,7 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
               )}
 
             {sortedVersions.map((v) => {
-              const vsInstalled = installedVersions.includes(v.gameVersion);
+              const vsInstalled = installedVersionsSet.has(v.gameVersion);
               const isNaming = installingVersionId === v.id;
               const isEditing = editingVersionId === v.id;
 
@@ -318,103 +289,22 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
                     )}
                   </div>
 
-                  {/* Collapsible mod list */}
-                  {v.modsString && (
-                    <Collapsible
-                      onOpenChange={(open) => setExpandedModsVersionId(open ? v.id : null)}
-                      open={expandedModsVersionId === v.id}
-                    >
-                      <CollapsibleTrigger className="text-muted-foreground hover:text-foreground flex cursor-pointer items-center gap-1 text-xs transition-colors">
-                        <ChevronDownIcon className="size-3.5 transition-transform duration-200 data-panel-open:rotate-180" />
-                        <span>
-                          {(() => {
-                            const count = v.modsString.split(",").filter(Boolean).length;
-                            return `${count} mod${count !== 1 ? "s" : ""}`;
-                          })()}
-                        </span>
-                      </CollapsibleTrigger>
-                      <CollapsiblePanel>
-                        <div className="space-y-1 px-2 py-2">
-                          {parseMods(v.modsString).map((mod) => (
-                            <ModpackModItem
-                              key={mod.modid}
-                              modid={mod.modid}
-                              version={mod.version}
-                            />
-                          ))}
-                        </div>
-                      </CollapsiblePanel>
-                    </Collapsible>
-                  )}
+                  <ModpackModsList
+                    modsString={v.modsString}
+                    onOpenChange={(open) => setExpandedModsVersionId(open ? v.id : null)}
+                    open={expandedModsVersionId === v.id}
+                  />
 
-                  {/* Name prompt — shown only after clicking Install */}
                   {isNaming && (
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-end gap-2">
-                        <div className="flex flex-1 flex-col gap-1.5">
-                          <label
-                            className="text-muted-foreground text-xs font-medium"
-                            htmlFor={`install-name-${v.id}`}
-                          >
-                            Installation name
-                          </label>
-                          <Input
-                            autoFocus
-                            className="h-8 text-sm"
-                            disabled={importing}
-                            id={`install-name-${v.id}`}
-                            onChange={(e) => setInstallName(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" && !importing) void handleConfirmInstall(v);
-                              if (e.key === "Escape") handleCancelInstall();
-                            }}
-                            placeholder="My installation"
-                            value={installName}
-                          />
-                        </div>
-                        <Button
-                          aria-label="Install this version"
-                          className="shrink-0"
-                          disabled={importing || !installName.trim()}
-                          onClick={() => handleConfirmInstall(v)}
-                          size="icon-sm"
-                        >
-                          <CheckIcon className="size-4" />
-                        </Button>
-                        <Button
-                          aria-label="Cancel install"
-                          className="shrink-0"
-                          disabled={importing}
-                          onClick={handleCancelInstall}
-                          size="icon-sm"
-                          variant="ghost"
-                        >
-                          <XIcon className="size-4" />
-                        </Button>
-                      </div>
-
-                      {/* Progress bar during import */}
-                      {importProgress && (
-                        <div className="space-y-1">
-                          <p className="text-muted-foreground text-xs">
-                            Downloading mod {importProgress.current} of {importProgress.total}:{" "}
-                            <span className="text-foreground font-medium">
-                              {importProgress.modid}
-                            </span>
-                            <span className="text-muted-foreground">@{importProgress.version}</span>
-                          </p>
-                          <Progress
-                            value={Math.round(
-                              (importProgress.current / importProgress.total) * 100,
-                            )}
-                          >
-                            <ProgressTrack>
-                              <ProgressIndicator />
-                            </ProgressTrack>
-                          </Progress>
-                        </div>
-                      )}
-                    </div>
+                    <InstallNamingPrompt
+                      importProgress={importProgress}
+                      importing={importing}
+                      installName={installName}
+                      onCancel={handleCancelInstall}
+                      onConfirm={() => handleConfirmInstall(v)}
+                      onNameChange={setInstallName}
+                      versionId={v.id}
+                    />
                   )}
                 </div>
               );
@@ -423,5 +313,155 @@ export function ModpackDetailDialog({ modpack }: { modpack: ModpackItem }) {
         </div>
       </div>
     </>
+  );
+}
+
+function ModpackDetailHeader({ modpack }: { modpack: ModpackItem }) {
+  return (
+    <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start">
+      <img
+        alt={modpack.name}
+        className="bg-muted aspect-video w-full shrink-0 object-cover sm:w-48"
+        src={
+          modpack.imageUrl?.length
+            ? modpack.imageUrl
+            : "https://mods.vintagestory.at/web/img/mod-default.png"
+        }
+      />
+      <div className="flex min-w-0 flex-col gap-1">
+        <DialogHeader>
+          <DialogTitle className="truncate">{modpack.name}</DialogTitle>
+          <DialogDescription className="flex items-center gap-1.5">
+            by{" "}
+            {modpack.owner.image ? (
+              <img alt={modpack.owner.name} className="size-4" src={modpack.owner.image} />
+            ) : null}
+            <span>{modpack.owner.name}</span>
+          </DialogDescription>
+        </DialogHeader>
+        <p className="text-muted-foreground text-sm">{modpack.description || "No description"}</p>
+        <p className="text-muted-foreground/60 text-xs">
+          {modpack.downloads.toLocaleString()} download
+          {modpack.downloads !== 1 ? "s" : ""}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/** Collapsible list of the mods a modpack version contains. */
+function ModpackModsList({
+  modsString,
+  onOpenChange,
+  open,
+}: {
+  modsString: string;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+}) {
+  if (!modsString) return null;
+
+  const count = modsString.split(",").filter(Boolean).length;
+
+  return (
+    <Collapsible onOpenChange={onOpenChange} open={open}>
+      <CollapsibleTrigger className="text-muted-foreground hover:text-foreground flex cursor-pointer items-center gap-1 text-xs transition-colors">
+        <ChevronDownIcon className="size-3.5 transition-transform duration-200 data-panel-open:rotate-180" />
+        <span>{`${count} mod${count !== 1 ? "s" : ""}`}</span>
+      </CollapsibleTrigger>
+      <CollapsiblePanel>
+        <div className="space-y-1 px-2 py-2">
+          {parseMods(modsString).map((mod) => (
+            <ModpackModItem key={mod.modid} modid={mod.modid} version={mod.version} />
+          ))}
+        </div>
+      </CollapsiblePanel>
+    </Collapsible>
+  );
+}
+
+/** Import progress shown while a modpack version is being installed. */
+function ImportProgressBar({ progress }: { progress: ImportProgress }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-muted-foreground text-xs">
+        Downloading mod {progress.current} of {progress.total}:{" "}
+        <span className="text-foreground font-medium">{progress.modid}</span>
+        <span className="text-muted-foreground">@{progress.version}</span>
+      </p>
+      <Progress value={Math.round((progress.current / progress.total) * 100)}>
+        <ProgressTrack>
+          <ProgressIndicator />
+        </ProgressTrack>
+      </Progress>
+    </div>
+  );
+}
+
+/** Name input plus confirm/cancel shown after clicking Install. */
+function InstallNamingPrompt({
+  importProgress,
+  importing,
+  installName,
+  onCancel,
+  onConfirm,
+  onNameChange,
+  versionId,
+}: {
+  importProgress: ImportProgress | null;
+  importing: boolean;
+  installName: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+  onNameChange: (name: string) => void;
+  versionId: string;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-end gap-2">
+        <div className="flex flex-1 flex-col gap-1.5">
+          <label
+            className="text-muted-foreground text-xs font-medium"
+            htmlFor={`install-name-${versionId}`}
+          >
+            Installation name
+          </label>
+          <Input
+            autoFocus
+            className="h-8 text-sm"
+            disabled={importing}
+            id={`install-name-${versionId}`}
+            onChange={(e) => onNameChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !importing) onConfirm();
+              if (e.key === "Escape") onCancel();
+            }}
+            placeholder="My installation"
+            value={installName}
+          />
+        </div>
+        <Button
+          aria-label="Install this version"
+          className="shrink-0"
+          disabled={importing || !installName.trim()}
+          onClick={onConfirm}
+          size="icon-sm"
+        >
+          <CheckIcon className="size-4" />
+        </Button>
+        <Button
+          aria-label="Cancel install"
+          className="shrink-0"
+          disabled={importing}
+          onClick={onCancel}
+          size="icon-sm"
+          variant="ghost"
+        >
+          <XIcon className="size-4" />
+        </Button>
+      </div>
+
+      {importProgress && <ImportProgressBar progress={importProgress} />}
+    </div>
   );
 }

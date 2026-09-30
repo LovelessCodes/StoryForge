@@ -7,7 +7,7 @@ import * as React from "react";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-export const NumberFieldContext: React.Context<{
+const NumberFieldContext: React.Context<{
   fieldId: string;
 } | null> = React.createContext<{
   fieldId: string;
@@ -23,9 +23,10 @@ export function NumberField({
 }): React.ReactElement {
   const generatedId = React.useId();
   const fieldId = id ?? generatedId;
+  const contextValue = React.useMemo(() => ({ fieldId }), [fieldId]);
 
   return (
-    <NumberFieldContext.Provider value={{ fieldId }}>
+    <NumberFieldContext.Provider value={contextValue}>
       <NumberFieldPrimitive.Root
         className={cn("flex w-full flex-col items-start gap-2", className)}
         data-size={size}
@@ -152,5 +153,3 @@ export function CursorGrowIcon(props: React.ComponentProps<"svg">): React.ReactE
     </svg>
   );
 }
-
-export { NumberFieldPrimitive };

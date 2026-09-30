@@ -8,7 +8,7 @@ import {
   RotateCcwIcon,
   SquareIcon,
 } from "lucide-react";
-import { motion } from "motion/react";
+import * as m from "motion/react-m";
 
 import { Button } from "@/components/ui/button";
 import { Group, GroupSeparator } from "@/components/ui/group";
@@ -68,7 +68,7 @@ export function ServerInstanceRow({ instance, index, className }: Props) {
   const statusColor = statusColors[status.status] ?? "text-muted-foreground";
 
   return (
-    <motion.div
+    <m.div
       animate="show"
       className={cn("flex items-center gap-2 p-2", className)}
       custom={index}
@@ -94,7 +94,9 @@ export function ServerInstanceRow({ instance, index, className }: Props) {
           </p>
           <p className="text-muted-foreground text-left text-xs">
             v{instance.version}{" "}
-            {dirSize && <span className="text-muted-foreground/60">{dirSize.size_display}</span>}
+            {dirSize ? (
+              <span className="text-muted-foreground/60">{dirSize.size_display}</span>
+            ) : null}
           </p>
           <p className={cn("text-left text-xs", statusColor)}>
             {statusLabels[status.status] ?? status.status}
@@ -199,6 +201,6 @@ export function ServerInstanceRow({ instance, index, className }: Props) {
           payload={() => "Manage"}
         />
       </Group>
-    </motion.div>
+    </m.div>
   );
 }

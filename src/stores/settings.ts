@@ -3,8 +3,8 @@ import { appDataDir } from "@tauri-apps/api/path";
 import { createTauriStore } from "@tauri-store/zustand";
 import { create } from "zustand";
 
-import type { SortBy } from "@/components/pages/mods-browser";
 import { logToFile } from "@/lib/logger";
+import type { SortBy } from "@/lib/mod-sort";
 
 export type SetParentConfigProps = {
   deleteCurrentData: boolean;

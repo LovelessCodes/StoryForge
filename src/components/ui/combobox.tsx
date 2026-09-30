@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
-export const ComboboxContext: React.Context<{
+const ComboboxContext: React.Context<{
   chipsRef: React.RefObject<Element | null> | null;
   multiple: boolean;
 }> = React.createContext<{
@@ -23,8 +23,12 @@ export function Combobox<Value, Multiple extends boolean | undefined = false>(
   props: ComboboxPrimitive.Root.Props<Value, Multiple>,
 ): React.ReactElement {
   const chipsRef = React.useRef<Element | null>(null);
+  const contextValue = React.useMemo(
+    () => ({ chipsRef, multiple: !!props.multiple }),
+    [props.multiple],
+  );
   return (
-    <ComboboxContext.Provider value={{ chipsRef, multiple: !!props.multiple }}>
+    <ComboboxContext.Provider value={contextValue}>
       <ComboboxPrimitive.Root {...props} />
     </ComboboxContext.Provider>
   );
@@ -406,5 +410,3 @@ export function ComboboxChipRemove(props: ComboboxPrimitive.ChipRemove.Props): R
 }
 
 export const useComboboxFilter: typeof ComboboxPrimitive.useFilter = ComboboxPrimitive.useFilter;
-
-export { ComboboxPrimitive };

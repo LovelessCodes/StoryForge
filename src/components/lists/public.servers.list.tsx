@@ -32,9 +32,12 @@ export function PublicServerList({
   publicServers: PublicServer[];
 }) {
   const installedVersions = useInstalledVersionNames();
+  const installedVersionsSet = new Set(installedVersions);
   const { installations } = useInstallations();
   const { mutate: downloadVersion } = useDownloadVersion();
   const { searchText, selectedGameVersions, sortBy, orderDirection } = useServersFilters();
+
+  const selectedGameVersionsSet = new Set(selectedGameVersions);
 
   const filteredServers = publicServers
     .filter((server) => {
@@ -44,7 +47,7 @@ export function PublicServerList({
         server.gameDescription.toLowerCase().includes(searchText.toLowerCase()) ||
         server.serverIP.toLowerCase().includes(searchText.toLowerCase());
       const matchesVersion =
-        selectedGameVersions.length === 0 || selectedGameVersions.includes(server.gameVersion);
+        selectedGameVersions.length === 0 || selectedGameVersionsSet.has(server.gameVersion);
       return matchesSearch && matchesVersion;
     })
     .sort((a, b) => {
@@ -142,7 +145,7 @@ export function PublicServerList({
                   <div className="text-muted-foreground mt-1 flex items-center gap-2 text-xs">
                     <Badge
                       className={
-                        installedVersions.includes(server?.gameVersion)
+                        installedVersionsSet.has(server?.gameVersion)
                           ? "text-emerald-700"
                           : "text-red-900"
                       }
@@ -173,7 +176,7 @@ export function PublicServerList({
                     )}
                   </div>
                 </div>
-                {installedVersions.includes(server.gameVersion) ? (
+                {installedVersionsSet.has(server.gameVersion) ? (
                   <TooltipTrigger
                     render={
                       <Button

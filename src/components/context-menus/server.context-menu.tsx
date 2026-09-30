@@ -154,4 +154,11 @@ export const ServerContextMenu = ({
   );
 };
 
-export const MotionServerContextMenu = m.create(ServerContextMenu);
+const MotionServerContextMenuBase = m.create(ServerContextMenu);
+
+/** Motion wrapper so list rows can animate in and out. */
+export function MotionServerContextMenu(
+  props: React.ComponentProps<typeof MotionServerContextMenuBase>,
+) {
+  return <MotionServerContextMenuBase {...props} />;
+}

@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import type React from "react";
 
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button.variants";
 import { cn } from "@/lib/utils";
 
 const TOAST_ICONS = {
@@ -45,6 +45,16 @@ function upsertReplayClassName(toast: { type?: string; updateKey?: number }): st
     return isEven ? "animate-toast-error-even" : "animate-toast-error-odd";
   }
   return isEven ? "animate-toast-success-even" : "animate-toast-success-odd";
+}
+
+/** Title + description pair shared by the default and anchored toasts. */
+function ToastTitleAndDescription(): React.ReactElement {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <Toast.Title className="font-medium" data-slot="toast-title" />
+      <Toast.Description className="text-muted-foreground" data-slot="toast-description" />
+    </div>
+  );
 }
 
 function Toasts({
@@ -136,13 +146,7 @@ function Toasts({
                     </div>
                   )}
 
-                  <div className="flex flex-col gap-0.5">
-                    <Toast.Title className="font-medium" data-slot="toast-title" />
-                    <Toast.Description
-                      className="text-muted-foreground"
-                      data-slot="toast-description"
-                    />
-                  </div>
+                  <ToastTitleAndDescription />
                 </div>
                 {toast.actionProps && (
                   <Toast.Action className={buttonVariants({ size: "xs" })} data-slot="toast-action">
@@ -210,13 +214,7 @@ function AnchoredToasts({
                         </div>
                       )}
 
-                      <div className="flex flex-col gap-0.5">
-                        <Toast.Title className="font-medium" data-slot="toast-title" />
-                        <Toast.Description
-                          className="text-muted-foreground"
-                          data-slot="toast-description"
-                        />
-                      </div>
+                      <ToastTitleAndDescription />
                     </div>
                     {toast.actionProps && (
                       <Toast.Action
@@ -237,9 +235,9 @@ function AnchoredToasts({
   );
 }
 
-export const toastManager: ReturnType<typeof Toast.createToastManager> = Toast.createToastManager();
+const toastManager: ReturnType<typeof Toast.createToastManager> = Toast.createToastManager();
 
-export const anchoredToastManager: ReturnType<typeof Toast.createToastManager> =
+const anchoredToastManager: ReturnType<typeof Toast.createToastManager> =
   Toast.createToastManager();
 
 export type ToastPosition =
@@ -285,5 +283,3 @@ export function AnchoredToastProvider({
     </Toast.Provider>
   );
 }
-
-export { Toast as ToastPrimitive };

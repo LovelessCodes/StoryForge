@@ -161,4 +161,11 @@ export const WorldContextMenu = ({
   );
 };
 
-export const MotionWorldContextMenu = m.create(WorldContextMenu);
+const MotionWorldContextMenuBase = m.create(WorldContextMenu);
+
+/** Motion wrapper so list rows can animate in and out. */
+export function MotionWorldContextMenu(
+  props: React.ComponentProps<typeof MotionWorldContextMenuBase>,
+) {
+  return <MotionWorldContextMenuBase {...props} />;
+}

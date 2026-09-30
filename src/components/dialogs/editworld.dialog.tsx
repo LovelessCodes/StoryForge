@@ -1,16 +1,14 @@
 import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
-import clsx from "clsx";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { FieldLabelTooltip } from "@/components/inputs/field-label.tooltip";
+import { FormTextField } from "@/components/inputs/form-text.field";
+import { InstallationSelect } from "@/components/pickers/installation.picker";
 import { Button } from "@/components/ui/button";
 import { DialogClose, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-import { TooltipTrigger } from "@/components/ui/tooltip";
-import { rootDialogHandle, rootTooltipHandle } from "@/handles";
+import { rootDialogHandle } from "@/handles";
 import { useUpdateWorld } from "@/hooks/use-update-world";
 import type { World } from "@/lib/types";
 import { pathBasename } from "@/lib/utils";
@@ -76,100 +74,37 @@ export function EditWorldDialog({ world }: EditWorldDialogProps) {
         <div className="space-y-4">
           <form.Field name="name">
             {(field) => (
-              <div className="grid gap-2">
-                <TooltipTrigger
-                  render={
-                    <Label
-                      className={clsx([
-                        field.state.meta.errors.length ? "text-destructive" : "",
-                        "w-fit",
-                      ])}
-                      htmlFor="name"
-                    />
+              <FormTextField
+                field={field}
+                hint="Enter world name"
+                htmlFor="name"
+                label="Name"
+                onEnter={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void form.handleSubmit();
                   }
-                  handle={rootTooltipHandle}
-                  payload={() => (
-                    <>
-                      <p className="text-xs">Enter world name</p>
-                      {field.state.meta.errors.length > 0 &&
-                        field.state.meta.errors.map((error, index) => (
-                          <p
-                            className="text-destructive text-xs"
-                            // biome-ignore lint/suspicious/noArrayIndexKey: Needed
-                            key={index}
-                          >
-                            {error?.message}
-                          </p>
-                        ))}
-                    </>
-                  )}
-                >
-                  Name
-                  <span className="text-destructive">*</span>
-                </TooltipTrigger>
-                <Input
-                  className={field.state.meta.errors.length ? "text-destructive" : ""}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onKeyUp={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void form.handleSubmit();
-                    }
-                  }}
-                  value={field.state.value}
-                />
-              </div>
+                }}
+                required
+              />
             )}
           </form.Field>
           <form.Field name="installationId">
             {(field) => (
               <div className="grid gap-2">
-                <TooltipTrigger
-                  render={
-                    <Label
-                      className={clsx([
-                        field.state.meta.errors.length ? "text-destructive" : "",
-                        "w-fit",
-                      ])}
-                      htmlFor="installationId"
-                    />
-                  }
-                  handle={rootTooltipHandle}
-                  payload={() => (
-                    <>
-                      <p className="text-xs">Pick game installation</p>
-                      {field.state.meta.errors.length > 0 &&
-                        field.state.meta.errors.map((error, index) => (
-                          <p
-                            className="text-destructive text-xs"
-                            // biome-ignore lint/suspicious/noArrayIndexKey: Needed
-                            key={index}
-                          >
-                            {error?.message}
-                          </p>
-                        ))}
-                    </>
-                  )}
+                <FieldLabelTooltip
+                  errors={field.state.meta.errors}
+                  hint="Pick game installation"
+                  htmlFor="installationId"
                 >
                   Installation
                   <span className="text-destructive">*</span>
-                </TooltipTrigger>
-                <Select onValueChange={(v) => v && field.handleChange(v)} value={field.state.value}>
-                  <SelectTrigger className="flex w-full gap-1 truncate">
-                    {installations.find((inst) => inst.id.toString() === field.state.value)
-                      ? `${installations.find((inst) => inst.id.toString() === field.state.value)?.name} (${installations.find((inst) => inst.id.toString() === field.state.value)?.version})`
-                      : "Game installation"}
-                  </SelectTrigger>
-                  <SelectContent align="start" alignItemWithTrigger={false}>
-                    {installations
-                      ?.toSorted((a, b) => a.index - b.index)
-                      .map((installation) => (
-                        <SelectItem key={installation.id} value={installation.id.toString()}>
-                          {installation.name} ({installation.version})
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                </FieldLabelTooltip>
+                <InstallationSelect
+                  installations={installations}
+                  onChange={field.handleChange}
+                  value={field.state.value}
+                />
               </div>
             )}
           </form.Field>

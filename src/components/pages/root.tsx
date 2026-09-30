@@ -198,20 +198,23 @@ export function RootComponent() {
   );
 }
 
+// Module scope: defining these inside Devtools created new component types on
+// every render, remounting the panels and resetting their state.
+const TanStackDevtools = React.lazy(() =>
+  import("@tanstack/react-devtools").then((m) => ({ default: m.TanStackDevtools })),
+);
+const ReactQueryDevtoolsPanel = React.lazy(() =>
+  import("@tanstack/react-query-devtools").then((m) => ({
+    default: m.ReactQueryDevtoolsPanel,
+  })),
+);
+const TanStackRouterDevtoolsPanel = React.lazy(() =>
+  import("@tanstack/react-router-devtools").then((m) => ({
+    default: m.TanStackRouterDevtoolsPanel,
+  })),
+);
+
 function Devtools() {
-  const TanStackDevtools = React.lazy(() =>
-    import("@tanstack/react-devtools").then((m) => ({ default: m.TanStackDevtools })),
-  );
-  const ReactQueryDevtoolsPanel = React.lazy(() =>
-    import("@tanstack/react-query-devtools").then((m) => ({
-      default: m.ReactQueryDevtoolsPanel,
-    })),
-  );
-  const TanStackRouterDevtoolsPanel = React.lazy(() =>
-    import("@tanstack/react-router-devtools").then((m) => ({
-      default: m.TanStackRouterDevtoolsPanel,
-    })),
-  );
   return (
     <React.Suspense>
       <TanStackDevtools

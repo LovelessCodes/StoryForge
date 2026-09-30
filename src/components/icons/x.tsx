@@ -1,7 +1,8 @@
 "use client";
 
 import type { Variants } from "motion/react";
-import { motion, useAnimation } from "motion/react";
+import { useAnimation } from "motion/react";
+import * as m from "motion/react-m";
 import type { HTMLAttributes } from "react";
 import { forwardRef, useCallback, useImperativeHandle, useRef } from "react";
 
@@ -80,8 +81,8 @@ const XIcon = forwardRef<XIconHandle, XIconProps>(
           width={size}
           xmlns="http://www.w3.org/2000/svg"
         >
-          <motion.path animate={controls} d="M18 6 6 18" variants={PATH_VARIANTS} />
-          <motion.path
+          <m.path animate={controls} d="M18 6 6 18" variants={PATH_VARIANTS} />
+          <m.path
             animate={controls}
             d="m6 6 12 12"
             transition={{ delay: 0.2 }}

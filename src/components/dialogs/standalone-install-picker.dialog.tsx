@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import type { Mod } from "@/components/lists/mod.list";
+import { ModVersionSelect } from "@/components/pickers/mod-version.picker";
 import { Button } from "@/components/ui/button";
 import { DialogClose, DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
 import {
@@ -190,51 +191,12 @@ export function StandaloneInstallPickerDialog({ modid, mod }: StandaloneInstallP
 
         {/* Version picker */}
         <div className="flex flex-col gap-1">
-          <Select
-            onValueChange={(value) => {
-              const release = modInfo?.mod.releases.find((r) => r.modversion === value) || null;
-              setUserSelectedVersion(release);
-            }}
-            value={selectedVersion?.modversion ?? undefined}
-          >
-            <SelectLabel className="text-muted-foreground text-xs font-medium">Version</SelectLabel>
-            <SelectTrigger className="w-full truncate">
-              <span>
-                {selectedVersion?.modversion ? (
-                  <span>
-                    {selectedVersion.modversion}{" "}
-                    <span className="text-muted-foreground">
-                      for {selectedVersion.tags[0]}{" "}
-                      {selectedVersion.tags.length > 1
-                        ? `(+${selectedVersion.tags.length - 1} more)`
-                        : ""}
-                    </span>
-                  </span>
-                ) : (
-                  "Select Version"
-                )}
-              </span>
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false}>
-              {modInfo?.mod.releases.map((release) => (
-                <SelectItem key={release.fileid} value={release.modversion}>
-                  <div className="flex flex-col">
-                    <span>
-                      {release.modversion}
-                      <span className="text-muted-foreground">
-                        {" "}
-                        for {release.tags[0]}{" "}
-                        {release.tags.length > 1 ? `(+${release.tags.length - 1} more)` : ""}
-                      </span>
-                    </span>
-                    <span className="text-muted-foreground text-xs">
-                      {release.downloads} downloads
-                    </span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <ModVersionSelect
+            label="Version"
+            onSelect={setUserSelectedVersion}
+            releases={modInfo?.mod.releases}
+            selected={selectedVersion}
+          />
         </div>
       </div>
 

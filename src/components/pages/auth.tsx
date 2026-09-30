@@ -18,10 +18,27 @@ const authSchema = z.object({
   name: z.string(),
 });
 
+/** Message of a field error, which may be a string or an issue object. */
+function errorMessage(error: unknown) {
+  return typeof error === "string"
+    ? error
+    : ((error as { message?: string })?.message ?? String(error));
+}
+
+/** Drop duplicate messages so each can be used as a stable React key. */
+function uniqueErrors(errors: unknown[]) {
+  const seen = new Set<string>();
+  return errors.filter((error) => {
+    const message = errorMessage(error);
+    if (seen.has(message)) return false;
+    seen.add(message);
+    return true;
+  });
+}
+
 /** Display a field-level validation error message regardless of its shape. */
 function FieldError({ error }: { error: unknown }) {
-  const message =
-    typeof error === "string" ? error : ((error as { message?: string })?.message ?? String(error));
+  const message = errorMessage(error);
   if (!message) return null;
   return <p className="text-destructive text-xs">{message}</p>;
 }
@@ -128,9 +145,8 @@ export function AuthPage() {
                       type="text"
                       value={field.state.value}
                     />
-                    {field.state.meta.errors.map((err, i) => (
-                      // react-doctor-disable-next-line react-doctor/no-array-index-as-key
-                      <FieldError error={err} key={i} />
+                    {uniqueErrors(field.state.meta.errors).map((err) => (
+                      <FieldError error={err} key={errorMessage(err)} />
                     ))}
                   </div>
                 )}
@@ -148,8 +164,8 @@ export function AuthPage() {
                     required
                     value={field.state.value}
                   />
-                  {field.state.meta.errors.map((err, i) => (
-                    <FieldError error={err} key={i} />
+                  {uniqueErrors(field.state.meta.errors).map((err) => (
+                    <FieldError error={err} key={errorMessage(err)} />
                   ))}
                 </div>
               )}
@@ -167,8 +183,8 @@ export function AuthPage() {
                     required
                     value={field.state.value}
                   />
-                  {field.state.meta.errors.map((err, i) => (
-                    <FieldError error={err} key={i} />
+                  {uniqueErrors(field.state.meta.errors).map((err) => (
+                    <FieldError error={err} key={errorMessage(err)} />
                   ))}
                 </div>
               )}

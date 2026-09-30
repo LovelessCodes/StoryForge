@@ -146,19 +146,15 @@ function ServerHostingConsole({ instanceId }: { instanceId: number }) {
 }
 
 function ServerHostingConfig({ instanceId }: { instanceId: number }) {
-  const [config, setConfig] = useState("");
-  const [original, setOriginal] = useState("");
-  const [loading, setLoading] = useState(true);
-  const { data: serverConfig, isPending } = useServerConfig(instanceId);
+  const { data: serverConfig } = useServerConfig(instanceId);
   const writeConfig = useWriteServerConfig();
 
-  useEffect(() => {
-    if (serverConfig !== undefined) {
-      setConfig(serverConfig);
-      setOriginal(serverConfig);
-      setLoading(false);
-    }
-  }, [serverConfig]);
+  // Unsaved edits are a nullable override of the fetched value, so no effect
+  // has to sync state when serverConfig arrives (or is refetched).
+  const [edited, setEdited] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
+  const config = edited ?? serverConfig ?? "";
+  const original = saved ?? serverConfig ?? "";
 
   const handleSave = async () => {
     if (config === original) {
@@ -175,7 +171,7 @@ function ServerHostingConfig({ instanceId }: { instanceId: number }) {
       { id: instanceId, json: config },
       {
         onSuccess: () => {
-          setOriginal(config);
+          setSaved(config);
           toast.success("serverconfig.json saved. Restart the server to apply changes.");
         },
         onError: (e) => {
@@ -187,7 +183,7 @@ function ServerHostingConfig({ instanceId }: { instanceId: number }) {
 
   const hasChanges = config !== original;
 
-  if (loading || isPending) {
+  if (serverConfig === undefined) {
     return (
       <div className="flex h-full flex-col gap-3">
         <Skeleton className="h-8 w-48" />
@@ -207,7 +203,7 @@ function ServerHostingConfig({ instanceId }: { instanceId: number }) {
             disabled={!hasChanges}
             size="sm"
             variant="outline"
-            onClick={() => setConfig(original)}
+            onClick={() => setEdited(original)}
           >
             Reset
           </Button>
@@ -220,7 +216,7 @@ function ServerHostingConfig({ instanceId }: { instanceId: number }) {
         <Editor
           language="json"
           loading={<Skeleton className="h-full min-h-0" />}
-          onChange={(v) => setConfig(v ?? "")}
+          onChange={(v) => setEdited(v ?? "")}
           options={{
             fontSize: 14,
             lineNumbers: "off",
@@ -449,7 +445,9 @@ export function ServerHostingDetailPage() {
               <span className="text-muted-foreground font-mono">
                 {instance.bind_ip}:{instance.port}
               </span>
-              {dirSize && <span className="text-muted-foreground/60">{dirSize.size_display}</span>}
+              {dirSize ? (
+                <span className="text-muted-foreground/60">{dirSize.size_display}</span>
+              ) : null}
             </p>
           </div>
         </div>
@@ -510,7 +508,7 @@ export function ServerHostingDetailPage() {
           <ServerHostingConsole instanceId={instanceId} />
         </TabsContent>
         <TabsContent className="mt-4 min-h-0 flex-1 px-2" value="config">
-          <ServerHostingConfig instanceId={instanceId} />
+          <ServerHostingConfig instanceId={instanceId} key={instanceId} />
         </TabsContent>
         <TabsContent className="mt-4 min-h-0 flex-1 px-2" value="whitelist">
           <ServerHostingWhitelist instanceId={instanceId} />

@@ -1,4 +1,4 @@
-import { useForm } from "@tanstack/react-form";
+import { type AnyFieldApi, useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2Icon, SearchIcon } from "lucide-react";
 import { useState } from "react";
@@ -13,9 +13,10 @@ import { Switch } from "@/components/ui/switch";
 import { rootDialogHandle } from "@/handles";
 import { useCreateInstance } from "@/hooks/queries/server-hosting";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
+import type { AnyReactFormApi } from "@/lib/form";
 import { gameVersionsQuery } from "@/lib/queries";
 import { compareSemverDesc } from "@/lib/utils";
-import { useAccountStore } from "@/stores/accounts";
+import { type User, useAccountStore } from "@/stores/accounts";
 
 type Props = {
   onSuccess?: () => void;
@@ -28,10 +29,8 @@ export function CreateHostedServerDialog({ onSuccess }: Props) {
   const { data: gameVersions } = useQuery(gameVersionsQuery);
   const installedVersions = useInstalledVersionNames();
 
-  const [lookupInput, setLookupInput] = useState("");
-  const [lookingUp, setLookingUp] = useState(false);
-
   const allVersions = (gameVersions ?? []).toSorted(compareSemverDesc);
+  const installedVersionsSet = new Set(installedVersions);
   const firstVersion = allVersions[0] ?? "";
 
   const form = useForm({
@@ -75,41 +74,6 @@ export function CreateHostedServerDialog({ onSuccess }: Props) {
     },
   });
 
-  const handleNameLookup = async () => {
-    if (!lookupInput.trim()) return;
-    setLookingUp(true);
-    try {
-      const { invoke } = await import("@tauri-apps/api/core");
-      const result = await invoke<{ uid: string; name: string } | null>("lookup_player_uid", {
-        accountName: lookupInput.trim(),
-      });
-      if (result) {
-        form.setFieldValue("defaultWhitelistUid", result.uid);
-        form.setFieldValue("defaultWhitelistName", result.name);
-        toast.success(`Found: ${result.name} (UID: ${result.uid})`);
-      } else {
-        toast.error(`Player "${lookupInput.trim()}" not found`);
-      }
-    } catch (e) {
-      toast.error(`Lookup failed: ${String(e)}`);
-    } finally {
-      setLookingUp(false);
-    }
-  };
-
-  const handleUidLookup = async (uid: string) => {
-    if (!uid.trim()) return;
-    try {
-      const { invoke } = await import("@tauri-apps/api/core");
-      const name = await invoke<string | null>("lookup_player_name", { uid: uid.trim() });
-      if (name) {
-        form.setFieldValue("defaultWhitelistName", name);
-      }
-    } catch {
-      // silent — name is informational only
-    }
-  };
-
   return (
     <>
       <DialogHeader>
@@ -143,31 +107,11 @@ export function CreateHostedServerDialog({ onSuccess }: Props) {
         {/* Version */}
         <form.Field name="version">
           {(field) => (
-            <div className="grid gap-2">
-              <Label htmlFor="version">Version</Label>
-              <Select onValueChange={(v) => v && field.handleChange(v)} value={field.state.value}>
-                <SelectTrigger className="w-full">
-                  {field.state.value || "Select version"}
-                </SelectTrigger>
-                <SelectContent>
-                  {allVersions.map((v) => {
-                    const isInstalled = installedVersions.includes(v);
-                    return (
-                      <SelectItem key={v} value={v}>
-                        <span className="flex items-center gap-2">
-                          {v}
-                          {isInstalled ? (
-                            <span className="text-muted-foreground text-xs">(installed)</span>
-                          ) : (
-                            <span className="text-muted-foreground text-xs">(not installed)</span>
-                          )}
-                        </span>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
+            <HostedServerVersionField
+              allVersions={allVersions}
+              field={field}
+              installedVersions={installedVersionsSet}
+            />
           )}
         </form.Field>
 
@@ -267,87 +211,7 @@ export function CreateHostedServerDialog({ onSuccess }: Props) {
         <form.Subscribe selector={(s) => s.values.whitelistEnabled}>
           {(whitelistEnabled) =>
             whitelistEnabled ? (
-              <>
-                <p className="text-muted-foreground text-xs font-medium">Default Whitelist User</p>
-
-                {/* Account name → UID lookup */}
-                <div className="grid gap-2">
-                  <Label>Look up by account name</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      onChange={(e) => setLookupInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") void handleNameLookup();
-                      }}
-                      placeholder="Vintage Story account name"
-                      value={lookupInput}
-                    />
-                    <Button
-                      disabled={!lookupInput.trim() || lookingUp}
-                      onClick={handleNameLookup}
-                      size="sm"
-                      type="button"
-                      variant="outline"
-                    >
-                      {lookingUp ? (
-                        <Loader2Icon className="size-3 animate-spin" />
-                      ) : (
-                        <SearchIcon className="size-3" />
-                      )}
-                      Look up
-                    </Button>
-                  </div>
-                </div>
-
-                <p className="text-muted-foreground text-center text-xs">— or enter manually —</p>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <form.Field name="defaultWhitelistUid">
-                    {(field) => (
-                      <div className="grid gap-2">
-                        <Label htmlFor="defaultWhitelistUid">Player UID</Label>
-                        <Input
-                          id="defaultWhitelistUid"
-                          onBlur={() => {
-                            void handleUidLookup(field.state.value);
-                          }}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          placeholder="Player UID"
-                          value={field.state.value}
-                        />
-                      </div>
-                    )}
-                  </form.Field>
-                  <form.Field name="defaultWhitelistName">
-                    {(field) => (
-                      <div className="grid gap-2">
-                        <Label htmlFor="defaultWhitelistName">Player Name</Label>
-                        <Input
-                          id="defaultWhitelistName"
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          placeholder="Player name"
-                          value={field.state.value}
-                        />
-                      </div>
-                    )}
-                  </form.Field>
-                </div>
-                <Button
-                  className="self-start"
-                  disabled={!selectedUser?.uid}
-                  onClick={() => {
-                    if (selectedUser?.uid && selectedUser?.playername) {
-                      form.setFieldValue("defaultWhitelistUid", selectedUser.uid);
-                      form.setFieldValue("defaultWhitelistName", selectedUser.playername);
-                    }
-                  }}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  + Add me
-                </Button>
-              </>
+              <DefaultWhitelistFields form={form} selectedUser={selectedUser} />
             ) : null
           }
         </form.Subscribe>
@@ -373,6 +237,169 @@ export function CreateHostedServerDialog({ onSuccess }: Props) {
           </form.Subscribe>
         </div>
       </form>
+    </>
+  );
+}
+
+/** Version picker marking which game versions are installed. */
+function HostedServerVersionField({
+  allVersions,
+  field,
+  installedVersions,
+}: {
+  allVersions: string[];
+  field: AnyFieldApi;
+  installedVersions: Set<string>;
+}) {
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor="version">Version</Label>
+      <Select onValueChange={(v) => v && field.handleChange(v)} value={field.state.value}>
+        <SelectTrigger className="w-full">{field.state.value || "Select version"}</SelectTrigger>
+        <SelectContent>
+          {allVersions.map((v) => (
+            <SelectItem key={v} value={v}>
+              <span className="flex items-center gap-2">
+                {v}
+                <span className="text-muted-foreground text-xs">
+                  {installedVersions.has(v) ? "(installed)" : "(not installed)"}
+                </span>
+              </span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+/** Default whitelist player: account-name or UID lookup plus the manual fields. */
+function DefaultWhitelistFields({
+  form,
+  selectedUser,
+}: {
+  form: AnyReactFormApi;
+  selectedUser: User | null | undefined;
+}) {
+  const [lookupInput, setLookupInput] = useState("");
+  const [lookingUp, setLookingUp] = useState(false);
+
+  const handleNameLookup = async () => {
+    if (!lookupInput.trim()) return;
+    setLookingUp(true);
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      const result = await invoke<{ uid: string; name: string } | null>("lookup_player_uid", {
+        accountName: lookupInput.trim(),
+      });
+      if (result) {
+        form.setFieldValue("defaultWhitelistUid", result.uid);
+        form.setFieldValue("defaultWhitelistName", result.name);
+        toast.success(`Found: ${result.name} (UID: ${result.uid})`);
+      } else {
+        toast.error(`Player "${lookupInput.trim()}" not found`);
+      }
+    } catch (e) {
+      toast.error(`Lookup failed: ${String(e)}`);
+    } finally {
+      setLookingUp(false);
+    }
+  };
+
+  const handleUidLookup = async (uid: string) => {
+    if (!uid.trim()) return;
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      const name = await invoke<string | null>("lookup_player_name", { uid: uid.trim() });
+      if (name) {
+        form.setFieldValue("defaultWhitelistName", name);
+      }
+    } catch {
+      // silent — name is informational only
+    }
+  };
+
+  return (
+    <>
+      <p className="text-muted-foreground text-xs font-medium">Default Whitelist User</p>
+
+      {/* Account name → UID lookup */}
+      <div className="grid gap-2">
+        <Label>Look up by account name</Label>
+        <div className="flex gap-2">
+          <Input
+            onChange={(e) => setLookupInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void handleNameLookup();
+            }}
+            placeholder="Vintage Story account name"
+            value={lookupInput}
+          />
+          <Button
+            disabled={!lookupInput.trim() || lookingUp}
+            onClick={handleNameLookup}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            {lookingUp ? (
+              <Loader2Icon className="size-3 animate-spin" />
+            ) : (
+              <SearchIcon className="size-3" />
+            )}
+            Look up
+          </Button>
+        </div>
+      </div>
+
+      <p className="text-muted-foreground text-center text-xs">— or enter manually —</p>
+
+      <div className="grid grid-cols-2 gap-2">
+        <form.Field name="defaultWhitelistUid">
+          {(field) => (
+            <div className="grid gap-2">
+              <Label htmlFor="defaultWhitelistUid">Player UID</Label>
+              <Input
+                id="defaultWhitelistUid"
+                onBlur={() => {
+                  void handleUidLookup(field.state.value);
+                }}
+                onChange={(e) => field.handleChange(e.target.value)}
+                placeholder="Player UID"
+                value={field.state.value}
+              />
+            </div>
+          )}
+        </form.Field>
+        <form.Field name="defaultWhitelistName">
+          {(field) => (
+            <div className="grid gap-2">
+              <Label htmlFor="defaultWhitelistName">Player Name</Label>
+              <Input
+                id="defaultWhitelistName"
+                onChange={(e) => field.handleChange(e.target.value)}
+                placeholder="Player name"
+                value={field.state.value}
+              />
+            </div>
+          )}
+        </form.Field>
+      </div>
+      <Button
+        className="self-start"
+        disabled={!selectedUser?.uid}
+        onClick={() => {
+          if (selectedUser?.uid && selectedUser?.playername) {
+            form.setFieldValue("defaultWhitelistUid", selectedUser.uid);
+            form.setFieldValue("defaultWhitelistName", selectedUser.playername);
+          }
+        }}
+        size="sm"
+        type="button"
+        variant="outline"
+      >
+        + Add me
+      </Button>
     </>
   );
 }

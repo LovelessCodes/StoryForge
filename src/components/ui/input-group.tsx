@@ -54,7 +54,7 @@ export function InputGroupAddon({
       className={cn(inputGroupAddonVariants({ align }), className)}
       data-align={align}
       data-slot="input-group-addon"
-      // react-doctor-disable-next-line react-doctor/no-static-element-interactions — this is a wrapper that catches bubbled events from interactive descendants
+      role="presentation"
       onMouseDown={(e: React.MouseEvent<HTMLDivElement>) => {
         const target = e.target as HTMLElement;
         const isInteractive = target.closest(
