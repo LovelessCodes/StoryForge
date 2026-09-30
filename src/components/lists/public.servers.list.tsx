@@ -91,6 +91,7 @@ export function PublicServerList({
 
   const estimateSize = useCallback(() => 81, []);
 
+  // react-doctor-disable-next-line react/incompatible-library -- external virtualizer API; this repo does not run React Compiler, so the memoization-skip advisory does not apply
   const rowVirtualizer = useVirtualizer({
     count: filteredServers?.length || 0,
     estimateSize,
