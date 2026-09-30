@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { useInstalledMods } from "@/hooks/use-installed-mods";
 import { useModUpdates } from "@/hooks/use-mod-updates";
-import { type SortBy, sortOptions } from "@/lib/mod-sort";
+import { type SortBy, relevanceRank, sortOptions } from "@/lib/mod-sort";
 import { gameVersionsQuery, modTagsQuery } from "@/lib/queries";
 import type { ModTag } from "@/lib/types";
 import { cn, compareSemverDesc, stripped } from "@/lib/utils";
@@ -57,20 +57,6 @@ const modsQuery = (params: ModsParams) => ({
   refetchOnWindowFocus: false,
   staleTime: Infinity,
 });
-
-/** Ranks match quality: exact name > name starts-with > name contains > tag match > description match. */
-function relevanceRank(mod: Mod, query: string): number {
-  const q = stripped(query);
-  if (!q) return 5;
-  const name = stripped(mod.name);
-  if (name === q) return 0;
-  if (name.startsWith(q)) return 1;
-  if (name.includes(q)) return 2;
-  // react-doctor-disable-next-line js-set-map-lookups -- string search, not an array lookup
-  if (mod.tags.some((tag) => stripped(tag).includes(q))) return 3;
-  if (stripped(mod.summary).includes(q)) return 4;
-  return 5;
-}
 
 export function ModBrowser({ modsDirectory }: { modsDirectory?: string }) {
   const defaultModSortBy = useSettingsStore((state) => state.defaultModSortBy);
