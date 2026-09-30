@@ -1,4 +1,4 @@
-import { type ReactFormExtendedApi, useForm } from "@tanstack/react-form";
+import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { Loader2Icon } from "lucide-react";
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { DialogClose } from "@/components/ui/dialog";
 import { rootDialogHandle } from "@/handles";
 import { useAddServerToInstallation } from "@/hooks/use-add-server-to-installation";
+import type { AnyReactFormApi } from "@/lib/form";
 import { type Installation, useInstallations } from "@/stores/installations";
 import { type Server, useServerStore } from "@/stores/servers";
 
@@ -48,21 +49,6 @@ const serverSchema = z.object({
       message: "Port must be a number",
     }),
 });
-
-type AnyReactFormApi = ReactFormExtendedApi<
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any
->;
 
 export type ServerDialogProps = {
   /** Pass an existing server to edit, or omit to add a new one. */
