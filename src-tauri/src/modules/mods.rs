@@ -2,6 +2,7 @@ use json5::from_str as json5_from_str;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, json, Value};
 use std::{
+    collections::HashMap,
     fs::{create_dir_all, read_dir, remove_file, File},
     io::{Read, Write},
     path::{Path, PathBuf},
@@ -508,6 +509,71 @@ fn modinfo_modid(value: &Value) -> String {
         .unwrap_or_else(|| "0".to_string())
 }
 
+/// Extracts the `dependencies` map (modid -> version requirement) from a
+/// parsed `modinfo.json`.
+fn dependencies_from_modinfo(value: &Value) -> HashMap<String, String> {
+    modinfo_field(value, "dependencies")
+        .and_then(Value::as_object)
+        .map(|map| {
+            map.iter()
+                .filter_map(|(modid, version)| {
+                    let modid = modid.trim();
+                    if modid.is_empty() {
+                        return None;
+                    }
+                    let version = version.as_str().unwrap_or_default().trim().to_string();
+                    Some((modid.to_string(), version))
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// The `dependencies` map of a mod zip's `modinfo.json` (modid -> version).
+///
+/// Dependency data is not part of the ModDB API, so it has to be read from the
+/// archive. A missing or unreadable `modinfo.json` yields an empty map: the
+/// install itself succeeded either way.
+#[command]
+pub fn get_mod_dependencies(path: String) -> Result<HashMap<String, String>, UiError> {
+    let zip_path = PathBuf::from(&path);
+    let file = File::open(&zip_path).map_err(|e| UiError {
+        name: "io_error".into(),
+        message: format!("Failed to open {}: {e}", zip_path.display()),
+    })?;
+    let mut archive = ZipArchive::new(file).map_err(|e| UiError {
+        name: "archive_error".into(),
+        message: format!("Failed to read {}: {e}", zip_path.display()),
+    })?;
+
+    for i in 0..archive.len() {
+        let Ok(mut entry) = archive.by_index(i) else {
+            continue;
+        };
+        if entry.is_dir() {
+            continue;
+        }
+        let name_in_zip = entry.name().to_string();
+        let filename = Path::new(&name_in_zip)
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("");
+        if !filename.eq_ignore_ascii_case("modinfo.json") {
+            continue;
+        }
+        let mut contents = String::new();
+        if entry.read_to_string(&mut contents).is_err() {
+            continue;
+        }
+        let Ok(json) = json5_from_str::<Value>(&contents) else {
+            continue;
+        };
+        return Ok(dependencies_from_modinfo(&json));
+    }
+
+    Ok(HashMap::new())
+}
+
 /// Try to read a single `modinfo.json` entry from an already-opened zip archive.
 fn read_modinfo_from_zip(
     zip_path: &Path,
@@ -926,5 +992,27 @@ mod tests {
 
         invalidate_mods_cache(&dir);
         assert!(try_cached_mods(&dir).is_none());
+    }
+
+    #[test]
+    fn reads_dependencies_from_modinfo() {
+        let info = serde_json::json!({
+            "modID": "aculinaryartillery",
+            "dependencies": {
+                "game": "1.22.3",
+                "expandedfoods": "2.0.0",
+                "someother": ""
+            }
+        });
+        let deps = dependencies_from_modinfo(&info);
+        assert_eq!(deps.get("game").map(String::as_str), Some("1.22.3"));
+        assert_eq!(deps.get("expandedfoods").map(String::as_str), Some("2.0.0"));
+        assert_eq!(deps.get("someother").map(String::as_str), Some(""));
+
+        // Missing or non-object dependencies yield an empty map.
+        assert!(dependencies_from_modinfo(&serde_json::json!({})).is_empty());
+        assert!(
+            dependencies_from_modinfo(&serde_json::json!({ "dependencies": "nope" })).is_empty()
+        );
     }
 }

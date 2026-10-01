@@ -43,7 +43,8 @@ the look & feel of Macheim (see `../macheim`). The core domain concept is the **
   re-downloading. Unlinking never touches the files.
 - **Versions** — browse all Vintage Story releases, download with a resumable, pausable queue.
 - **Mods** — search the mod database, filter by version/side/tags/author, install, update,
-  downgrade, remove, and update everything at once.
+  downgrade, remove, and update everything at once. Installs read each mod's `modinfo.json`
+  and queue its missing dependencies (recursively) in the downloads sheet.
 - **Modpacks** — browse/install community modpacks (optional cloud login via Better Auth),
   create and publish your own.
 - **Worlds** — list saves across profiles, edit/delete, launch straight into a world, and view

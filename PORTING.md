@@ -270,6 +270,22 @@ deleting.
 | `link_external_versions`      | `{ versions: [{ name, path, source? }] }` | `{ linked, skipped }` |
 | `unregister_external_version` | `{ name }`                                | `()`                  |
 
+**Mod dependencies** — dependency data is not part of the ModDB API; it lives in each mod
+zip's `modinfo.json` (`dependencies`, modid -> version requirement, with the special `game`
+entry for the game version). `get_mod_dependencies` reads that map from an installed zip:
+
+| Command                | Args       | Returns                |
+| ---------------------- | ---------- | ---------------------- |
+| `get_mod_dependencies` | `{ path }` | `{ [modid]: version }` |
+
+After a mod download finishes, the downloads manager resolves the missing ones: the profile's
+installed modids come from `get_mods`, each missing dependency is looked up through
+`fetch_mod_info` (the API accepts a modid string), `lib/mod-dependencies.ts` picks the newest
+release satisfying the version requirement (falling back to the newest), and the download is
+queued in the same downloads sheet with the same destination. Dependency installs resolve
+their own dependencies the same way when they finish; cycles terminate because installed
+modids are checked before queueing.
+
 **Servers**: `fetch_all_servers` returns an address-scoped `id` (name|ip|port hash —
 favorites and status probes are stored against it) plus a profile-scoped `row_key`
 (`<profile_id>:<id>`). The frontend uses `rowKey` for React keys and list/store

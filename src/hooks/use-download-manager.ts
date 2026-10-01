@@ -5,9 +5,10 @@ import { appDataDir } from "@tauri-apps/api/path";
 import { useCallback } from "react";
 
 import { useMountEffect } from "@/hooks/use-mount-effect";
-import { buildVersionPath, pathDelimiter, zipfolderprefix } from "@/lib/helpers";
+import { buildVersionPath, hashPath, pathDelimiter, zipfolderprefix } from "@/lib/helpers";
+import { pickDependencyRelease } from "@/lib/mod-dependencies";
 import { toast } from "@/lib/notify";
-import type { PausedDownload, ProgressPayload } from "@/lib/types";
+import type { ModInfo, OutputMod, PausedDownload, ProgressPayload } from "@/lib/types";
 import { claimVersionDownload, releaseVersionDownload } from "@/lib/version-download-lock";
 import { useDownloadStore, type DownloadEntry } from "@/stores/downloads";
 import { useSettingsStore } from "@/stores/settings";
@@ -119,6 +120,109 @@ function invalidateQueriesFor(
       queryKey: modUpdatesQueryKey(entry.modsDirectory),
     });
   }
+}
+
+async function fetchInstalledModIds(
+  queryClient: ReturnType<typeof useQueryClient>,
+  modsDirectory: string,
+): Promise<Set<string>> {
+  const result = await queryClient.fetchQuery({
+    queryKey: installedModsQueryKey(modsDirectory),
+    queryFn: () => invoke("get_mods", { path: modsDirectory }) as Promise<{ mods: OutputMod[] }>,
+    staleTime: 0,
+  });
+  return new Set((result.mods ?? []).map((mod) => mod.modid.toLowerCase()));
+}
+
+/**
+ * Reads a finished mod's `modinfo.json` dependencies and queues the missing
+ * ones. The queued mods' own dependencies are resolved the same way once their
+ * downloads finish.
+ *
+ * Dependency data only exists inside the mod zip, and the game merely warns
+ * about missing dependencies, so this is best effort: failures stay visible as
+ * entries in the downloads sheet and never fail the original download.
+ */
+async function installMissingDependencies(
+  queryClient: ReturnType<typeof useQueryClient>,
+  entry: DownloadEntry,
+): Promise<void> {
+  const modsDirectory = entry.modsDirectory;
+  const filePath = entry.savedPath;
+  if (!modsDirectory || !filePath) return;
+
+  let dependencies: Record<string, string>;
+  try {
+    dependencies = await invoke<Record<string, string>>("get_mod_dependencies", {
+      path: filePath,
+    });
+  } catch {
+    return;
+  }
+
+  const installedIds = await fetchInstalledModIds(queryClient, modsDirectory);
+
+  for (const [rawId, constraint] of Object.entries(dependencies)) {
+    const id = rawId.trim().toLowerCase();
+    // `game` is the Vintage Story version requirement, not a mod.
+    if (!id || id === "game" || installedIds.has(id)) continue;
+
+    try {
+      const info = (await invoke("fetch_mod_info", { modid: id })) as ModInfo;
+      const release = pickDependencyRelease(info.mod.releases, constraint);
+      if (!release?.mainfile) continue;
+
+      const destpath = entry.destpath ?? `${modsDirectory}${pathDelimiter}Mods`;
+      const token = `mod:${info.mod.modid}:${release.modversion}:${hashPath(destpath)}`;
+      queueModDownload(queryClient, {
+        token,
+        label: `${info.mod.name} v${release.modversion}`,
+        detail: entry.detail,
+        url: release.mainfile,
+        destpath,
+        modsDirectory,
+      });
+    } catch {
+      // Keep going with the remaining dependencies.
+    }
+  }
+}
+
+/** Starts dependency resolution for a freshly installed mod. */
+async function resolveDependencies(
+  queryClient: ReturnType<typeof useQueryClient>,
+  entry: DownloadEntry,
+): Promise<void> {
+  if (entry.kind !== "mod" || !entry.modsDirectory) return;
+  await installMissingDependencies(queryClient, entry);
+}
+
+function queueModDownload(
+  queryClient: ReturnType<typeof useQueryClient>,
+  request: ModDownloadRequest,
+): void {
+  const store = useDownloadStore.getState();
+  const existing = store.entries[request.token];
+
+  if (existing) {
+    // A finished or failed entry from an earlier attempt would make the
+    // enqueue a no-op; drop it and start fresh. Anything else is already
+    // queued or running and is reused as-is.
+    if (existing.status !== "done" && existing.status !== "error") return;
+    store.removeEntry(request.token);
+  }
+  pauseRequests.delete(request.token);
+  store.addEntry({
+    token: request.token,
+    label: request.label,
+    detail: request.detail ?? null,
+    status: "pending",
+    kind: "mod",
+    url: request.url,
+    destpath: request.destpath,
+    modsDirectory: request.modsDirectory ?? null,
+  });
+  processQueue(queryClient);
 }
 
 async function doDownload(
@@ -235,6 +339,12 @@ async function doDownload(
       store.updateEntry(token, { status: "done", percent: 100 });
       settleWaiters(token);
       invalidateQueriesFor(entry, queryClient);
+      if (entry.kind === "mod") {
+        const finished = useDownloadStore.getState().entries[token];
+        if (finished) {
+          void resolveDependencies(queryClient, finished).catch(() => {});
+        }
+      }
     } else if (result === "already_downloaded") {
       store.removeEntry(token);
       settleWaiters(token);
@@ -318,30 +428,7 @@ export function useDownloadManager() {
   );
 
   const startModDownload = useCallback(
-    (request: ModDownloadRequest) => {
-      const store = useDownloadStore.getState();
-      const existing = store.entries[request.token];
-
-      if (existing) {
-        // A finished or failed entry from an earlier attempt would make the
-        // enqueue a no-op; drop it and start fresh. Anything else is already
-        // queued or running and is reused as-is.
-        if (existing.status !== "done" && existing.status !== "error") return;
-        store.removeEntry(request.token);
-      }
-      pauseRequests.delete(request.token);
-      store.addEntry({
-        token: request.token,
-        label: request.label,
-        detail: request.detail ?? null,
-        status: "pending",
-        kind: "mod",
-        url: request.url,
-        destpath: request.destpath,
-        modsDirectory: request.modsDirectory ?? null,
-      });
-      processQueue(queryClient);
-    },
+    (request: ModDownloadRequest) => queueModDownload(queryClient, request),
     [queryClient],
   );
 

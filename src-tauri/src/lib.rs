@@ -351,6 +351,7 @@ pub fn run() {
             mods::fetch_mod_info,
             mods::fetch_authors,
             mods::get_mods,
+            mods::get_mod_dependencies,
             mods::get_mod_configs,
             mods::get_mod_updates,
             mods::get_profile_mods,
