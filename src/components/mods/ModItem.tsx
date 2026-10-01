@@ -32,6 +32,9 @@ import { useSettingsStore } from "@/stores/settings";
 
 const DEFAULT_LOGO = "https://mods.vintagestory.at/web/img/mod-default.png";
 
+/** Tag chips shown per mod row before the rest collapse into a `+N` badge. */
+const MAX_VISIBLE_TAGS = 4;
+
 export function ModItem({
   destinationLabel,
   installedMods,
@@ -386,7 +389,7 @@ function ModSummary({
         </div>
         {mod.tags.length > 0 && (
           <div className="mt-1.5 flex flex-wrap gap-1">
-            {mod.tags.map((tagName) => (
+            {mod.tags.slice(0, MAX_VISIBLE_TAGS).map((tagName) => (
               <ModTagChip
                 isActive={selectedTagNames.has(tagName)}
                 key={tagName}
@@ -396,6 +399,24 @@ function ModSummary({
                 tagName={tagName}
               />
             ))}
+            {mod.tags.length > MAX_VISIBLE_TAGS && (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <span className="text-muted-foreground inline-flex cursor-default items-center border border-dashed px-1.5 py-px text-[10px] leading-relaxed font-medium" />
+                  }
+                >
+                  +{mod.tags.length - MAX_VISIBLE_TAGS}
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span className="grid gap-0.5">
+                    {mod.tags.slice(MAX_VISIBLE_TAGS).map((tagName) => (
+                      <span key={tagName}>{tagName}</span>
+                    ))}
+                  </span>
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
         )}
       </div>
