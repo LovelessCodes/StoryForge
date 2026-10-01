@@ -32,6 +32,7 @@ macro_rules! log_error {
     }};
 }
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use tauri::Manager;
@@ -77,6 +78,89 @@ fn clamp_window_to_min(window: &tauri::WebviewWindow, min: (f64, f64)) -> bool {
     true
 }
 
+/// Minimum overlap a restored window must keep on a monitor before it is
+/// considered visible (logical pixels; scaled by the window's factor below).
+const MIN_VISIBLE_ON_SCREEN: f64 = 100.0;
+/// How long after startup position corrections are applied. The window-state
+/// plugin restores within the first frames; afterwards the user must be able
+/// to place the window freely.
+const STARTUP_POSITION_WINDOW: Duration = Duration::from_millis(2000);
+
+/// True when `window` overlaps `monitor` by at least the given margins
+/// (`x, y, width, height` in the same coordinate space).
+fn rects_overlap(
+    window: (f64, f64, f64, f64),
+    monitor: (f64, f64, f64, f64),
+    margin_w: f64,
+    margin_h: f64,
+) -> bool {
+    let (wx, wy, ww, wh) = window;
+    let (mx, my, mw, mh) = monitor;
+    let overlap_w = (wx + ww).min(mx + mw) - wx.max(mx);
+    let overlap_h = (wy + wh).min(my + mh) - wy.max(my);
+    overlap_w >= margin_w && overlap_h >= margin_h
+}
+
+/// Moves a restored window back onto a monitor when its saved position leaves
+/// almost none of it visible (the window-state plugin only requires a 1px
+/// intersection, which a changed monitor layout can still satisfy). Returns
+/// `true` when the window was moved.
+fn ensure_window_on_screen(window: &tauri::WebviewWindow) -> bool {
+    let (Ok(position), Ok(size), Ok(monitors)) = (
+        window.outer_position(),
+        window.outer_size(),
+        window.available_monitors(),
+    ) else {
+        return false;
+    };
+    let win = (
+        position.x as f64,
+        position.y as f64,
+        size.width as f64,
+        size.height as f64,
+    );
+    let scale = window.scale_factor().unwrap_or(1.0);
+    let margin = MIN_VISIBLE_ON_SCREEN * scale;
+
+    let visible = monitors.iter().any(|monitor| {
+        let m_pos = monitor.position();
+        let m_size = monitor.size();
+        rects_overlap(
+            win,
+            (
+                m_pos.x as f64,
+                m_pos.y as f64,
+                m_size.width as f64,
+                m_size.height as f64,
+            ),
+            margin,
+            margin,
+        )
+    });
+    if visible {
+        return false;
+    }
+
+    // Fall back to the primary monitor (or the first one available), centered.
+    let target = window
+        .primary_monitor()
+        .ok()
+        .flatten()
+        .or_else(|| monitors.first().cloned());
+    let Some(monitor) = target else {
+        return false;
+    };
+    let m_pos = monitor.position();
+    let m_size = monitor.size();
+    let x = m_pos.x as f64 + ((m_size.width as f64 - win.2) / 2.0).max(0.0);
+    let y = m_pos.y as f64 + ((m_size.height as f64 - win.3) / 2.0).max(0.0);
+    let _ = window.set_position(tauri::PhysicalPosition::new(
+        x.round() as i32,
+        y.round() as i32,
+    ));
+    true
+}
+
 /// Returns `true` if the application is running inside a Flatpak sandbox.
 /// Flatpak manages updates via Flathub; our bundled updater must be disabled.
 #[tauri::command]
@@ -118,20 +202,42 @@ pub fn run() {
         .setup(|app| {
             let app_handle = app.handle();
 
-            // ── Window minimum size ──
-            // The window-state plugin restores the previous inner size, which
-            // can predate the configured minimum (or come from a smaller
-            // display); clamp it and keep enforcing the minimum afterwards.
+            // ── Window placement ──
+            // The window-state plugin restores the previous size and position
+            // verbatim: the size can predate the configured minimum, and the
+            // position can land almost entirely offscreen after a monitor
+            // layout change. Clamp the size, pull a hidden window back onto a
+            // monitor, and keep checking briefly while the restore lands.
             if let Some(window) = app.get_webview_window("main") {
                 let min = configured_min_window_size(app);
                 if clamp_window_to_min(&window, min) {
                     log_info!("startup: clamped the window to the configured minimum");
                 }
+                if ensure_window_on_screen(&window) {
+                    log_info!("startup: moved the window back onto a monitor");
+                }
+
+                // Stop correcting positions shortly after startup: the
+                // restore lands within the first frames, and afterwards the
+                // user must be able to place the window freely.
+                let positioning = Arc::new(AtomicBool::new(true));
+                {
+                    let positioning = positioning.clone();
+                    std::thread::spawn(move || {
+                        std::thread::sleep(STARTUP_POSITION_WINDOW);
+                        positioning.store(false, Ordering::SeqCst);
+                    });
+                }
+
                 let window_for_events = window.clone();
-                window.on_window_event(move |event| {
-                    if matches!(event, tauri::WindowEvent::Resized(_)) {
+                window.on_window_event(move |event| match event {
+                    tauri::WindowEvent::Resized(_) => {
                         clamp_window_to_min(&window_for_events, min);
                     }
+                    tauri::WindowEvent::Moved(_) if positioning.load(Ordering::SeqCst) => {
+                        ensure_window_on_screen(&window_for_events);
+                    }
+                    _ => {}
                 });
             }
 
@@ -417,5 +523,39 @@ mod tests {
             clamped_logical_size(tauri::LogicalSize::new(1600.0, 1000.0), min),
             None
         );
+    }
+
+    #[test]
+    fn requires_a_visible_area_on_a_monitor() {
+        let monitor = (0.0, 0.0, 1920.0, 1080.0);
+
+        // Fully inside, or partially inside with enough overlap.
+        assert!(rects_overlap(
+            (100.0, 100.0, 900.0, 600.0),
+            monitor,
+            100.0,
+            100.0
+        ));
+        assert!(rects_overlap(
+            (1870.0, 1030.0, 900.0, 600.0),
+            monitor,
+            40.0,
+            40.0
+        ));
+
+        // A 1px intersection is technically "on screen" but unusable.
+        assert!(!rects_overlap(
+            (1919.0, 500.0, 900.0, 600.0),
+            monitor,
+            100.0,
+            100.0
+        ));
+        // Saved coordinates of a monitor that is no longer connected.
+        assert!(!rects_overlap(
+            (2560.0, 200.0, 900.0, 600.0),
+            monitor,
+            100.0,
+            100.0
+        ));
     }
 }
