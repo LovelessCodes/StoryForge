@@ -321,7 +321,8 @@ marks them in the UI (delete = unregister + keep the data).
   `queries/server-hosting/*`, `use-active-profile`, `use-app-version`, `use-app-folder`,
   `use-reveal-in-folder`, `use-updater`…).
 - `stores/`: `useProfiles`/`useProfilesStore`, `useServerStore`, `useAccountStore`,
-  `useDownloadStore`, `useSettingsStore`, filter stores.
+  `useDownloadStore`, `useSettingsStore` (incl. per-profile pinned mods, which are excluded
+  from the update-check params so "Update All" skips them), filter stores.
 
 ## Verification
 

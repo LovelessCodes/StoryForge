@@ -10,6 +10,8 @@ import {
   PackageMinusIcon,
   PackagePlusIcon,
   PackageSearchIcon,
+  Pin,
+  PinOff,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +28,7 @@ import {
 import { compareSemverAsc, hashPath, pathDelimiter } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
 import type { Mod, ModTag, OutputMod } from "@/lib/types";
+import { useSettingsStore } from "@/stores/settings";
 
 const DEFAULT_LOGO = "https://mods.vintagestory.at/web/img/mod-default.png";
 
@@ -121,6 +124,12 @@ export function ModItem({
     compareSemverAsc(updateMod.modversion, installedMod.version) > 0,
   );
   const showInstalled = Boolean(installedMod && modsDirectory);
+  const pinned = useSettingsStore((s) =>
+    modsDirectory && installedMod
+      ? (s.pinnedMods[modsDirectory]?.includes(installedMod.modid.toLowerCase()) ?? false)
+      : false,
+  );
+  const toggleModPin = useSettingsStore((s) => s.toggleModPin);
 
   return (
     <div
@@ -206,6 +215,25 @@ export function ModItem({
 
         {modsDirectory && installedMod ? (
           <>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    aria-label={pinned ? "Unpin mod" : "Pin mod"}
+                    onClick={() => toggleModPin(modsDirectory, installedMod.modid)}
+                    size="icon-sm"
+                    variant={pinned ? "outline-amber" : "outline"}
+                  />
+                }
+              >
+                {pinned ? <PinOff aria-hidden="true" /> : <Pin aria-hidden="true" />}
+              </TooltipTrigger>
+              <TooltipContent>
+                {pinned
+                  ? `Pinned to v${installedMod.version} — Update All skips it`
+                  : `Pin to v${installedMod.version} (excluded from Update All)`}
+              </TooltipContent>
+            </Tooltip>
             <Tooltip>
               <TooltipTrigger
                 render={

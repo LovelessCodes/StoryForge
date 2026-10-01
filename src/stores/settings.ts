@@ -48,6 +48,12 @@ type SettingsStore = {
   /** User hid the "import instances from Yelloowstone" banner. */
   yelloowstoneDismissed: boolean;
   dismissYelloowstone: () => void;
+  /**
+   * Mods pinned to their installed version, keyed by profile/server path.
+   * Pinned mods are excluded from update checks and "Update All".
+   */
+  pinnedMods: Record<string, string[]>;
+  toggleModPin: (path: string, modid: string) => void;
   defaultModSortBy: SortBy;
   setDefaultModSortBy: (sortBy: SortBy) => void;
   profilesParent: string | null;
@@ -87,6 +93,19 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
   dismissLithic: () => set(() => ({ lithicDismissed: true })),
   yelloowstoneDismissed: false,
   dismissYelloowstone: () => set(() => ({ yelloowstoneDismissed: true })),
+  pinnedMods: {},
+  toggleModPin: (path, modid) =>
+    set((state) => {
+      const id = modid.toLowerCase();
+      const current = state.pinnedMods[path] ?? [];
+      const next = current.includes(id)
+        ? current.filter((pinned) => pinned !== id)
+        : [...current, id];
+      const pinnedMods = { ...state.pinnedMods };
+      if (next.length > 0) pinnedMods[path] = next;
+      else delete pinnedMods[path];
+      return { pinnedMods };
+    }),
   defaultModSortBy: "trending",
   setDefaultModSortBy: (sortBy) => set(() => ({ defaultModSortBy: sortBy })),
   profilesParent: null,

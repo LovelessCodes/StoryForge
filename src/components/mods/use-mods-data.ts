@@ -5,9 +5,14 @@ import { useMemo, useState } from "react";
 import { useInstalledMods } from "@/hooks/use-installed-mods";
 import { useModUpdates } from "@/hooks/use-mod-updates";
 import { stripped } from "@/lib/helpers";
+import { updateCheckParams } from "@/lib/mod-pins";
 import { relevanceRank, type SortBy } from "@/lib/mod-sort";
 import { gameVersionsQuery, modTagsQuery } from "@/lib/queries";
 import type { Mod, ModTag } from "@/lib/types";
+import { useSettingsStore } from "@/stores/settings";
+
+/** Stable empty array so the pin selector doesn't churn identities. */
+const NO_PINS: string[] = [];
 
 export type OrderDirection = "ascending" | "descending";
 export type Side = "any" | "client" | "server" | "both" | "installed";
@@ -132,13 +137,22 @@ export function useModsData({
     enabled: !!modsDirectory,
     staleTime: Infinity,
   });
+  const pinnedMods = useSettingsStore((s) =>
+    modsDirectory ? (s.pinnedMods[modsDirectory] ?? NO_PINS) : NO_PINS,
+  );
+  // Pinned mods are left out of the update check entirely, so they never show
+  // an update badge and "Update All" skips them.
+  const updateParams = useMemo(
+    () => updateCheckParams(instMods?.mods, pinnedMods),
+    [instMods, pinnedMods],
+  );
   const { data: modUpdates } = useModUpdates(
     {
       path: modsDirectory ?? "",
-      params: instMods?.mods?.map((mod) => `${mod.modid}@${mod.version}`).join(",") ?? "",
+      params: updateParams,
     },
     {
-      enabled: !!modsDirectory && !!instMods?.mods?.length,
+      enabled: !!modsDirectory && updateParams.length > 0,
       staleTime: Infinity,
     },
   );
