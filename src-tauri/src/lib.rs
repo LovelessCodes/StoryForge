@@ -1,7 +1,7 @@
 pub mod modules;
 use modules::{
     auth, download, game_data, legacy, maps, mods, mvl, news, profile_ops, profiles, saves,
-    server_hosting, servers, sniffer, versions, vs_launcher,
+    server_hosting, servers, sniffer, versions, vs_launcher, waxlight,
 };
 use tauri::RunEvent;
 
@@ -250,6 +250,9 @@ pub fn run() {
             // MVL (scgm0) modpack import
             mvl::detect_mvl_modpacks,
             mvl::import_mvl_modpacks,
+            // Waxlight Launcher (AmadoMuerte) instance import
+            waxlight::detect_waxlight_instances,
+            waxlight::import_waxlight_instances,
             // Servers
             servers::fetch_public_servers,
             servers::fetch_all_servers,

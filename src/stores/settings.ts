@@ -27,6 +27,9 @@ type SettingsStore = {
   /** User hid the "import modpacks from MVL" banner. */
   mvlDismissed: boolean;
   dismissMvl: () => void;
+  /** User hid the "import instances from Waxlight Launcher" banner. */
+  waxlightDismissed: boolean;
+  dismissWaxlight: () => void;
   defaultModSortBy: SortBy;
   setDefaultModSortBy: (sortBy: SortBy) => void;
   profilesParent: string | null;
@@ -52,6 +55,8 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
   dismissVsLauncher: () => set(() => ({ vsLauncherDismissed: true })),
   mvlDismissed: false,
   dismissMvl: () => set(() => ({ mvlDismissed: true })),
+  waxlightDismissed: false,
+  dismissWaxlight: () => set(() => ({ waxlightDismissed: true })),
   defaultModSortBy: "trending",
   setDefaultModSortBy: (sortBy) => set(() => ({ defaultModSortBy: sortBy })),
   profilesParent: null,

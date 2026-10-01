@@ -159,6 +159,21 @@ An MVL modpack folder _is_ the game data path (VSRun launches the game with the 
 `<app data>/mvl-migration.json`. MVL's `command`/`mainAssembly` (its VSRun wiring) and
 `modpackIcon.*` artwork have no Story Forge equivalent and are not carried over.
 
+**Waxlight Launcher (AmadoMuerte) import** — reads the SQLite database at
+`<data root>/waxlight.db` (the fixed home `<OS config dir>/waxlight` holds only a plain-text
+`data-root` pointer to the movable data root):
+
+| Command                     | Args                                | Returns                 |
+| --------------------------- | ----------------------------------- | ----------------------- |
+| `detect_waxlight_instances` | —                                   | `WaxlightInstance[]`    |
+| `import_waxlight_instances` | `{ paths, mode: "move" \| "copy" }` | `{ migrated, skipped }` |
+
+Instances come from the `instances` table (directories may be data-root relative since schema
+v11), the game version from `game_versions.name`, and playtime from the summed
+`play_sessions.duration_sec`. Only columns that exist are selected, so older schemas still
+work. Launch arguments are re-quoted so shell-word parsing round-trips them; imports are
+recorded in `<app data>/waxlight-migration.json`. Covers (`cover_path`) are not carried over.
+
 **Servers**: `fetch_all_servers` returns an address-scoped `id` (name|ip|port hash —
 favorites and status probes are stored against it) plus a profile-scoped `row_key`
 (`<profile_id>:<id>`). The frontend uses `rowKey` for React keys and list/store
