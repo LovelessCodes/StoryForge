@@ -36,6 +36,47 @@ use std::sync::Arc;
 use std::time::Duration;
 use tauri::Manager;
 
+/// Configured `minWidth`/`minHeight` of the main window (`900x600` fallback).
+fn configured_min_window_size(app: &tauri::App) -> (f64, f64) {
+    app.config()
+        .app
+        .windows
+        .iter()
+        .find(|window| window.label == "main")
+        .and_then(|window| Some((window.min_width?, window.min_height?)))
+        .unwrap_or((900.0, 600.0))
+}
+
+/// A size grown to `min` when it is below either dimension, otherwise `None`.
+fn clamped_logical_size(
+    size: tauri::LogicalSize<f64>,
+    min: (f64, f64),
+) -> Option<tauri::LogicalSize<f64>> {
+    if size.width >= min.0 && size.height >= min.1 {
+        return None;
+    }
+    Some(tauri::LogicalSize::new(
+        size.width.max(min.0),
+        size.height.max(min.1),
+    ))
+}
+
+/// Grows a window back to the minimum when its size (usually a restored state)
+/// is below it. Returns `true` when a resize was applied.
+fn clamp_window_to_min(window: &tauri::WebviewWindow, min: (f64, f64)) -> bool {
+    let Ok(scale) = window.scale_factor() else {
+        return false;
+    };
+    let Ok(size) = window.inner_size() else {
+        return false;
+    };
+    let Some(target) = clamped_logical_size(size.to_logical::<f64>(scale), min) else {
+        return false;
+    };
+    let _ = window.set_size(target);
+    true
+}
+
 /// Returns `true` if the application is running inside a Flatpak sandbox.
 /// Flatpak manages updates via Flathub; our bundled updater must be disabled.
 #[tauri::command]
@@ -76,6 +117,23 @@ pub fn run() {
         .plugin(tauri_plugin_os::init())
         .setup(|app| {
             let app_handle = app.handle();
+
+            // ── Window minimum size ──
+            // The window-state plugin restores the previous inner size, which
+            // can predate the configured minimum (or come from a smaller
+            // display); clamp it and keep enforcing the minimum afterwards.
+            if let Some(window) = app.get_webview_window("main") {
+                let min = configured_min_window_size(app);
+                if clamp_window_to_min(&window, min) {
+                    log_info!("startup: clamped the window to the configured minimum");
+                }
+                let window_for_events = window.clone();
+                window.on_window_event(move |event| {
+                    if matches!(event, tauri::WindowEvent::Resized(_)) {
+                        clamp_window_to_min(&window_for_events, min);
+                    }
+                });
+            }
 
             // ── Step 0: Init logger ──
             // Use app_data_dir()/logs/ so the LogViewer can find the file.
@@ -330,4 +388,34 @@ pub fn run() {
             download::pause_all_active_downloads();
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn clamps_only_sizes_below_the_minimum() {
+        let min = (900.0, 600.0);
+
+        // Smaller than the minimum in both/one dimension: grown.
+        assert_eq!(
+            clamped_logical_size(tauri::LogicalSize::new(800.0, 500.0), min),
+            Some(tauri::LogicalSize::new(900.0, 600.0))
+        );
+        assert_eq!(
+            clamped_logical_size(tauri::LogicalSize::new(800.0, 900.0), min),
+            Some(tauri::LogicalSize::new(900.0, 900.0))
+        );
+
+        // At or above the minimum: untouched.
+        assert_eq!(
+            clamped_logical_size(tauri::LogicalSize::new(900.0, 600.0), min),
+            None
+        );
+        assert_eq!(
+            clamped_logical_size(tauri::LogicalSize::new(1600.0, 1000.0), min),
+            None
+        );
+    }
 }
