@@ -3,10 +3,10 @@ import { invoke } from "@tauri-apps/api/core";
 
 import type { JSONValue } from "@/lib/types";
 
-export const modConfigsQueryKey = (installationId: number) => ["mod-configs", installationId];
+export const modConfigsQueryKey = (profileId: number) => ["mod-configs", profileId];
 
 export const useModConfigs = (
-  installationId: number,
+  profileId: number,
   props?: Omit<
     UseQueryOptions<
       { filename: string; content: JSONValue }[],
@@ -18,10 +18,10 @@ export const useModConfigs = (
 ) =>
   useQuery({
     queryFn: () =>
-      invoke("get_mod_configs", { installationId }) as Promise<
+      invoke("get_mod_configs", { profileId }) as Promise<
         { filename: string; content: JSONValue }[]
       >,
-    queryKey: modConfigsQueryKey(installationId),
+    queryKey: modConfigsQueryKey(profileId),
     staleTime: Infinity,
     placeholderData: keepPreviousData,
     ...props,

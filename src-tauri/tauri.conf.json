@@ -1,80 +1,14 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "app": {
-    "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
-      "devCsp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost ws://localhost:1420 http://localhost:1420; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
-    },
-    "windows": [],
-    "macOSPrivateApi": true
-  },
+  "productName": "Story Forge",
+  "version": "1.2.2",
+  "identifier": "StoryForge",
   "build": {
-    "beforeBuildCommand": "bun run build",
     "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "bun run build",
     "frontendDist": "../dist"
   },
-  "bundle": {
-    "active": true,
-    "createUpdaterArtifacts": true,
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ],
-    "license": "GNU General Public License (GPL) v3",
-    "linux": {
-      "appimage": {
-        "bundleMediaFramework": true,
-        "files": {}
-      },
-      "deb": {
-        "files": {}
-      },
-      "rpm": {
-        "epoch": 0,
-        "files": {},
-        "release": "1"
-      }
-    },
-    "macOS": {
-      "dmg": {
-        "applicationFolderPosition": {
-          "x": 480,
-          "y": 170
-        },
-        "appPosition": {
-          "x": 180,
-          "y": 170
-        },
-        "background": "backgrounds/dmg_background.png",
-        "windowSize": {
-          "height": 400,
-          "width": 660
-        }
-      },
-      "signingIdentity": "-"
-    },
-    "targets": "all",
-    "windows": {
-      "certificateThumbprint": null,
-      "digestAlgorithm": "sha256",
-      "nsis": {
-        "installerIcon": "icons/icon.ico"
-      },
-      "timestampUrl": "",
-      "webviewInstallMode": {
-        "silent": true,
-        "type": "embedBootstrapper"
-      },
-      "wix": {
-        "version": "1.2.1.0"
-      }
-    }
-  },
-  "identifier": "StoryForge",
   "plugins": {
     "updater": {
       "endpoints": [
@@ -88,6 +22,61 @@
       }
     }
   },
-  "productName": "Story Forge",
-  "version": "1.2.1"
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Story Forge",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+      "devCsp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost ws://localhost:1420 http://localhost:1420; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "createUpdaterArtifacts": true,
+    "license": "GNU General Public License (GPL) v3",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": true
+      },
+      "deb": {},
+      "rpm": {
+        "epoch": 0,
+        "release": "1"
+      }
+    },
+    "macOS": {
+      "signingIdentity": "-"
+    },
+    "windows": {
+      "digestAlgorithm": "sha256",
+      "nsis": {
+        "installerIcon": "icons/icon.ico"
+      },
+      "webviewInstallMode": {
+        "silent": true,
+        "type": "embedBootstrapper"
+      },
+      "wix": {
+        "version": "1.2.2.0"
+      }
+    }
+  }
 }

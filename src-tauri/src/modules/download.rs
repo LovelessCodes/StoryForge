@@ -733,7 +733,7 @@ pub async fn download_and_maybe_extract(
     let destpath = PathBuf::from(&destpath);
     log_info!("download: url={} dest={:?}", url, destpath);
 
-    // Downloads may only target app-managed directories: version/installation
+    // Downloads may only target app-managed directories: version/profile
     // folders, app data, or a hosted server's data directory.
     require_managed_path(&app, &destpath, "Download destination")?;
 
@@ -824,7 +824,7 @@ pub async fn download_and_maybe_extract(
             fs::remove_dir_all(&destpath).map_err(|e| {
                 UiError::new(
                     "io_error",
-                    format!("Failed to clean up incomplete installation: {e}"),
+                    format!("Failed to clean up incomplete profile: {e}"),
                 )
             })?;
         }

@@ -1,9 +1,9 @@
 pub mod modules;
 use modules::{
-    auth, download, installations, maps, mods, news, saves, server_hosting, servers, sniffer,
-    versions,
+    auth, download, game_data, legacy, maps, mods, news, profile_ops, profiles, saves,
+    server_hosting, servers, sniffer, versions,
 };
-use tauri::{RunEvent, WebviewUrl, WebviewWindowBuilder};
+use tauri::RunEvent;
 
 // ── Logging macros (crate root so accessible everywhere) ──
 
@@ -144,16 +144,9 @@ pub fn run() {
             log_info!("Setup step 2 done: zustand plugin initialized");
             modules::logger::log_elapsed("Setup step 2 elapsed", t2);
 
-            // ── Step 2.5: Run data migrations ──
-            log_info!("Setup step 2.5: running data migrations...");
+            // ── Step 2.5: Shared HTTP client ──
+            log_info!("Setup step 2.5: initializing shared HTTP client...");
             let t2_5 = std::time::Instant::now();
-            modules::migrations::run_all(app_handle);
-            log_info!("Setup step 2.5 done: migrations complete");
-            modules::logger::log_elapsed("Setup step 2.5 elapsed", t2_5);
-
-            // ── Step 2.75: Shared HTTP client ──
-            log_info!("Setup step 2.75: initializing shared HTTP client...");
-            let t2_75 = std::time::Instant::now();
             let http_client = Arc::new(
                 reqwest::Client::builder()
                     .connect_timeout(Duration::from_secs(10))
@@ -165,48 +158,13 @@ pub fn run() {
                     })?,
             );
             app_handle.manage(http_client);
-            log_info!("Setup step 2.75 done: shared HTTP client ready");
-            modules::logger::log_elapsed("Setup step 2.75 elapsed", t2_75);
+            log_info!("Setup step 2.5 done: shared HTTP client ready");
+            modules::logger::log_elapsed("Setup step 2.5 elapsed", t2_5);
 
-            // ── Step 3: Build main window ──
-            log_info!("Setup step 3: building main window...");
-            let t3 = std::time::Instant::now();
+            // The main window is declared in tauri.conf.json (overlay titlebar
+            // style on macOS, matching the app's custom title bar).
 
-            let win_builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
-                .title("Story Forge")
-                .inner_size(800.0, 600.0)
-                .transparent(cfg!(target_os = "macos"))
-                .decorations(!cfg!(target_os = "linux"));
-
-            #[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
-            let window = match win_builder.build() {
-                Ok(w) => {
-                    log_info!("Setup step 3 done: window created");
-                    w
-                }
-                Err(e) => {
-                    log_error!("Failed to build main window: {}", e);
-                    panic!("Failed to build main window: {}", e);
-                }
-            };
-
-            modules::logger::log_elapsed("Setup step 3 elapsed", t3);
-
-            // ── Step 4: Platform-specific window config ──
-            log_info!(
-                "Setup step 4: platform-specific window config (OS: {})",
-                std::env::consts::OS
-            );
-            let t4 = std::time::Instant::now();
-
-            #[cfg(target_os = "macos")]
-            {
-                modules::platform::macos::apply_window_styling(&window);
-            }
-            log_info!("Setup step 4 done: platform-specific config applied");
-            modules::logger::log_elapsed("Setup step 4 elapsed", t4);
-
-            // ── Step 5: Setup complete ──
+            // ── Step 3: Setup complete ──
             log_info!("Setup complete – app is running");
             modules::logger::log_elapsed("Total Rust setup elapsed", startup_start);
             modules::logger::mark_webview_start();
@@ -230,10 +188,10 @@ pub fn run() {
             mods::get_mods,
             mods::get_mod_configs,
             mods::get_mod_updates,
-            mods::get_installation_mods,
-            mods::add_mod_to_installation,
+            mods::get_profile_mods,
+            mods::add_mod_to_profile,
             mods::download_mod,
-            mods::remove_mod_from_installation,
+            mods::remove_mod_from_profile,
             mods::save_mod_config,
             // Download
             download::get_download_links,
@@ -251,32 +209,52 @@ pub fn run() {
             modules::logger::log_startup_time,
             modules::logger::log_webview_gap,
             modules::logger::get_logs,
-            // Installations
-            installations::get_all_installations,
-            installations::save_installation,
-            installations::import_installation,
-            installations::play_game,
-            installations::confirm_vintage_story_exe,
-            installations::initialize_game,
-            installations::reveal_in_file_explorer,
-            installations::remove_installation,
-            installations::move_installations_folder,
-            installations::remove_all_installations,
-            installations::rename_installations_folder,
-            installations::get_installation_logs,
-            installations::read_installation_log,
-            installations::zip_modconfig,
+            // Profiles
+            profiles::get_all_profiles,
+            profiles::save_profile,
+            profiles::import_profile,
+            profiles::play_game,
+            profiles::confirm_vintage_story_exe,
+            profiles::initialize_game,
+            profiles::reveal_in_file_explorer,
+            profiles::remove_profile,
+            profiles::move_profiles_folder,
+            profiles::remove_all_profiles,
+            profiles::rename_profiles_folder,
+            profiles::get_profile_logs,
+            profiles::read_profile_log,
+            profiles::zip_modconfig,
+            // Profile lifecycle (Macheim-style)
+            profile_ops::clone_profile,
+            profile_ops::rename_profile,
+            profile_ops::soft_delete_profile,
+            profile_ops::list_deleted_profiles,
+            profile_ops::restore_deleted_profile,
+            profile_ops::purge_deleted_profile,
+            profile_ops::purge_deleted_profiles,
+            profile_ops::export_profile,
+            profile_ops::export_profile_file,
+            profile_ops::export_profile_code,
+            profile_ops::import_profile_code,
+            profile_ops::read_profile_file,
+            // Legacy installations migration (previous Story Forge release)
+            legacy::detect_legacy_installations,
+            legacy::migrate_legacy_installations,
+            // Existing game data adoption
+            game_data::detect_default_game_data,
+            game_data::adopt_game_data,
+            game_data::unregister_external_profile,
             // Servers
             servers::fetch_public_servers,
             servers::fetch_all_servers,
             // Sniffer
             sniffer::sniff_server,
-            servers::add_server_to_installation,
-            servers::remove_server_from_installation,
-            servers::check_server_in_installation,
+            servers::add_server_to_profile,
+            servers::remove_server_from_profile,
+            servers::check_server_in_profile,
             servers::set_server_favorite,
             // Saves
-            saves::get_installation_saves,
+            saves::get_profile_saves,
             saves::get_all_saves,
             saves::update_world,
             saves::remove_world,

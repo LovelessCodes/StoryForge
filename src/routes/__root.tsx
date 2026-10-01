@@ -1,11 +1,21 @@
-import "@/App.css";
 import type { QueryClient } from "@tanstack/react-query";
-import { createRootRouteWithContext } from "@tanstack/react-router";
+import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 
-import { RootComponent } from "@/components/pages/root";
+import RouteError from "@/components/common/RouteError";
+import RouteNotFound from "@/components/common/RouteNotFound";
+import { Toaster } from "@/components/ui/toast";
 
-export const Route = createRootRouteWithContext<{
-  queryClient: QueryClient;
-}>()({
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   component: RootComponent,
+  errorComponent: RouteError,
+  notFoundComponent: RouteNotFound,
 });
+
+function RootComponent() {
+  return (
+    <>
+      <Outlet />
+      <Toaster />
+    </>
+  );
+}

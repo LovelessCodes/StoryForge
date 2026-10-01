@@ -11,8 +11,8 @@ use tauri::{command, AppHandle, State};
 use zip::read::ZipArchive;
 
 use super::errors::UiError;
-use super::installations::find_installation_by_id;
 use super::paths;
+use super::profiles::find_profile_by_id;
 use super::utils::{lock, require_managed_path, safe_file_name, safe_join};
 use crate::{log_error, log_info};
 
@@ -211,14 +211,14 @@ pub async fn fetch_authors(
 }
 
 #[command]
-pub async fn add_mod_to_installation(
+pub async fn add_mod_to_profile(
     client: State<'_, Arc<reqwest::Client>>,
     app: AppHandle,
     path: String,
     url: String,
 ) -> Result<String, UiError> {
-    log_info!("add_mod_to_installation: {:?}", path);
-    require_managed_path(&app, Path::new(&path), "Installation path")?;
+    log_info!("add_mod_to_profile: {:?}", path);
+    require_managed_path(&app, Path::new(&path), "Profile path")?;
     let pb = PathBuf::from(path).join(paths::MODS_DIR);
     if !pb.exists() {
         create_dir_all(&pb).map_err(|e| UiError {
@@ -264,9 +264,9 @@ pub async fn download_mod(
     client: State<'_, Arc<reqwest::Client>>,
     modid: String,
     version: String,
-    installation_path: String,
+    profile_path: String,
 ) -> Result<String, UiError> {
-    let mods_dir = PathBuf::from(&installation_path).join(paths::MODS_DIR);
+    let mods_dir = PathBuf::from(&profile_path).join(paths::MODS_DIR);
     download_mod_file(&client, &modid, &version, &mods_dir).await
 }
 
@@ -691,7 +691,7 @@ pub fn get_mods_in_dir(mods_path: &Path) -> Result<ModsResult, UiError> {
 #[command]
 pub async fn get_mods(app: AppHandle, path: String) -> Result<ModsResult, UiError> {
     log_info!("get_mods: {}", path);
-    require_managed_path(&app, Path::new(&path), "Installation path")?;
+    require_managed_path(&app, Path::new(&path), "Profile path")?;
     let mods_dir = PathBuf::from(path).join(paths::MODS_DIR);
 
     // Opens every zip in the directory: keep it off the UI thread.
@@ -709,9 +709,9 @@ pub async fn get_mods(app: AppHandle, path: String) -> Result<ModsResult, UiErro
 }
 
 #[command]
-pub fn get_mod_configs(app: AppHandle, installation_id: u64) -> Result<Vec<Value>, UiError> {
-    log_info!("get_mod_configs: installation={}", installation_id);
-    let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
+pub fn get_mod_configs(app: AppHandle, profile_id: u64) -> Result<Vec<Value>, UiError> {
+    log_info!("get_mod_configs: profile={}", profile_id);
+    let (pb, _profile) = find_profile_by_id(&app, profile_id)?;
     let mod_config_path = pb.join(paths::MODCONFIG_DIR);
     if !mod_config_path.exists() || !mod_config_path.is_dir() {
         return Err(UiError {
@@ -757,16 +757,12 @@ pub fn get_mod_configs(app: AppHandle, installation_id: u64) -> Result<Vec<Value
 #[command]
 pub fn save_mod_config(
     app: AppHandle,
-    installation_id: u64,
+    profile_id: u64,
     file: String,
     new_code: String,
 ) -> Result<(), UiError> {
-    log_info!(
-        "save_mod_config: installation={} file={}",
-        installation_id,
-        file
-    );
-    let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
+    log_info!("save_mod_config: profile={} file={}", profile_id, file);
+    let (pb, _profile) = find_profile_by_id(&app, profile_id)?;
     let mod_config_path = pb.join(paths::MODCONFIG_DIR);
     if !mod_config_path.exists() || !mod_config_path.is_dir() {
         return Err(UiError {
@@ -828,34 +824,34 @@ pub async fn get_mod_updates(
 }
 
 #[command]
-pub async fn get_installation_mods(app: AppHandle, id: u64) -> Result<Vec<OutputMod>, UiError> {
-    log_info!("get_installation_mods: installation={}", id);
-    let (pb, _installation) = find_installation_by_id(&app, id)?;
+pub async fn get_profile_mods(app: AppHandle, id: u64) -> Result<Vec<OutputMod>, UiError> {
+    log_info!("get_profile_mods: profile={}", id);
+    let (pb, _profile) = find_profile_by_id(&app, id)?;
     let mods_dir = pb.join(paths::MODS_DIR);
 
     tokio::task::spawn_blocking(move || {
         let start = std::time::Instant::now();
         let result = get_mods_cached(&mods_dir).map(|res| res.mods);
         log_info!(
-            "get_installation_mods completed in {}ms",
+            "get_profile_mods completed in {}ms",
             start.elapsed().as_millis()
         );
         result
     })
     .await
     .map_err(|e| {
-        log_error!("get_installation_mods: scan task failed: {e}");
+        log_error!("get_profile_mods: scan task failed: {e}");
         UiError::new("internal_error", format!("Mods scan failed: {e}"))
     })?
 }
 
 #[command]
-pub async fn remove_mod_from_installation(
+pub async fn remove_mod_from_profile(
     app: AppHandle,
     params: ModRemoveParams,
 ) -> Result<String, UiError> {
-    log_info!("remove_mod_from_installation: {:?}", params.modpath);
-    require_managed_path(&app, Path::new(&params.path), "Installation path")?;
+    log_info!("remove_mod_from_profile: {:?}", params.modpath);
+    require_managed_path(&app, Path::new(&params.path), "Profile path")?;
     let mods_path = PathBuf::from(&params.path).join(paths::MODS_DIR);
     if !mods_path.exists() || !mods_path.is_dir() {
         return Err(UiError {

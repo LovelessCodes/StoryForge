@@ -5,8 +5,8 @@ import { appDataDir } from "@tauri-apps/api/path";
 import { useCallback } from "react";
 
 import { useMountEffect } from "@/hooks/use-mount-effect";
+import { buildVersionPath, zipfolderprefix } from "@/lib/helpers";
 import type { PausedDownload, ProgressPayload } from "@/lib/types";
-import { buildVersionPath, zipfolderprefix } from "@/lib/utils";
 import { claimVersionDownload, releaseVersionDownload } from "@/lib/version-download-lock";
 import { useDownloadStore } from "@/stores/downloads";
 import { useSettingsStore } from "@/stores/settings";

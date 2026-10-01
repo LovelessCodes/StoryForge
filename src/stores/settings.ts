@@ -12,13 +12,20 @@ export type SetParentConfigProps = {
 };
 
 type SettingsStore = {
-  darkMode: boolean;
-  toggleDarkMode: () => void;
+  /** Id of the profile the UI (and the sidebar Play button) targets. */
+  activeProfileId: number | null;
+  setActiveProfileId: (id: number | null) => void;
+  /** User hid the "import installations from the previous app" banner. */
+  legacyMigrationDismissed: boolean;
+  dismissLegacyMigration: () => void;
+  /** User hid the "use your existing Vintage Story data" banner. */
+  gameDataDismissed: boolean;
+  dismissGameData: () => void;
   defaultModSortBy: SortBy;
   setDefaultModSortBy: (sortBy: SortBy) => void;
-  installationsParent: string | null;
-  installationsSubdir: string;
-  setInstallationsParent: (path: string | null, config?: SetParentConfigProps) => Promise<void>;
+  profilesParent: string | null;
+  profilesSubdir: string;
+  setProfilesParent: (path: string | null, config?: SetParentConfigProps) => Promise<void>;
   versionsParent: string | null;
   versionsSubdir: string;
   setVersionsParent: (path: string | null, config?: SetParentConfigProps) => Promise<void>;
@@ -29,39 +36,41 @@ type SettingsStore = {
 };
 
 export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
-  darkMode: window.matchMedia?.("(prefers-color-scheme: dark)").matches,
+  activeProfileId: null,
+  setActiveProfileId: (id) => set(() => ({ activeProfileId: id })),
+  legacyMigrationDismissed: false,
+  dismissLegacyMigration: () => set(() => ({ legacyMigrationDismissed: true })),
+  gameDataDismissed: false,
+  dismissGameData: () => set(() => ({ gameDataDismissed: true })),
   defaultModSortBy: "trending",
   setDefaultModSortBy: (sortBy) => set(() => ({ defaultModSortBy: sortBy })),
-  installationsParent: null,
-  installationsSubdir: "installations",
-  setInstallationsParent: async (path, config) => {
+  profilesParent: null,
+  profilesSubdir: "profiles",
+  setProfilesParent: async (path, config) => {
     const appFolder = await appDataDir();
-    const { installationsParent, installationsSubdir } = store.getState();
+    const { profilesParent, profilesSubdir } = store.getState();
     const dest = path ?? appFolder;
-    const src = installationsParent ?? appFolder;
+    const src = profilesParent ?? appFolder;
     if (config?.moveCurrentData) {
       await logToFile(
         "INFO ",
-        `[settings] move_installations: ${src}/${installationsSubdir} -> ${dest}/${installationsSubdir}`,
+        `[settings] move_profiles: ${src}/${profilesSubdir} -> ${dest}/${profilesSubdir}`,
       );
-      await invoke("move_installations_folder", {
+      await invoke("move_profiles_folder", {
         destination: dest,
         source: src,
-        subdir: installationsSubdir,
+        subdir: profilesSubdir,
       });
     } else if (config?.deleteCurrentData) {
-      await logToFile(
-        "INFO ",
-        `[settings] remove_all_installations: ${src}/${installationsSubdir}`,
-      );
-      await invoke("remove_all_installations", {
+      await logToFile("INFO ", `[settings] remove_all_profiles: ${src}/${profilesSubdir}`);
+      await invoke("remove_all_profiles", {
         source: src,
-        subdir: installationsSubdir,
+        subdir: profilesSubdir,
       });
     } else {
-      await logToFile("INFO ", `[settings] set_installations_parent: ${dest}`);
+      await logToFile("INFO ", `[settings] set_profiles_parent: ${dest}`);
     }
-    set(() => ({ installationsParent: path }));
+    set(() => ({ profilesParent: path }));
   },
   setVersionsParent: async (path, config) => {
     const appFolder = await appDataDir();
@@ -93,15 +102,6 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
   toggleUseSystemDotnet: () => set((state) => ({ useSystemDotnet: !state.useSystemDotnet })),
   toggleStreamMode: () => set((state) => ({ streamMode: !state.streamMode })),
   useSystemDotnet: true,
-  toggleDarkMode: () =>
-    set((state) => {
-      if (state.darkMode) {
-        document.body.classList.remove("dark");
-      } else {
-        document.body.classList.add("dark");
-      }
-      return { darkMode: !state.darkMode };
-    }),
   versionsParent: null,
   versionsSubdir: "versions",
 }));

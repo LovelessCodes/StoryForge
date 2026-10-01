@@ -1,7 +1,7 @@
 import { type UseMutationOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { toast } from "sonner";
 
+import { toast } from "@/lib/notify";
 import type {
   CreateInstanceParams,
   HostedServerInstance,

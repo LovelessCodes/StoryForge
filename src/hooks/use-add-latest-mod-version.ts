@@ -2,11 +2,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useEffect, useRef } from "react";
-import { toast } from "sonner";
 
-import type { Mod } from "@/components/lists/mod.list";
+import { hashPath, latestRelease, pathDelimiter } from "@/lib/helpers";
+import { toast } from "@/lib/notify";
+import type { Mod } from "@/lib/types";
 import type { ModInfo, ProgressPayload } from "@/lib/types";
-import { hashPath, latestRelease, pathDelimiter } from "@/lib/utils";
 
 import { installedModsQueryKey } from "./use-installed-mods";
 import { modUpdatesQueryKey } from "./use-mod-updates";

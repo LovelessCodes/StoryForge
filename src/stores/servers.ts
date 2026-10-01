@@ -1,46 +1,60 @@
 import { invoke } from "@tauri-apps/api/core";
-import { toast } from "sonner";
 import { create } from "zustand";
+
+import { toast } from "@/lib/notify";
 
 type ServerStore = {
   servers: Server[];
   loadServers: () => Promise<void>;
   addServer: (server: Server, cb?: (status: boolean) => void) => void;
   removeAllServers: () => void;
-  removeServer: (id: number) => void;
-  moveServer: (id: number, newIndex: number) => void;
-  toggleFavorite: (id: number) => void;
+  removeServer: (rowKey: string) => void;
+  moveServer: (rowKey: string, newIndex: number) => void;
+  toggleFavorite: (rowKey: string) => void;
   updateServer: (server: Server, cb?: (status: boolean) => void) => void;
 };
 
 export type Server = {
+  /** Address-scoped id (favorites are stored against it). */
   id: number;
+  /**
+   * Row identity: the same server can exist in several profiles, so store
+   * operations and React keys use the profile-scoped row key.
+   */
+  rowKey: string;
   index: number;
   name: string;
   ip: string;
   port: number | null;
   password: string;
   favorite: boolean;
-  installationId: number;
-  installationName: string;
+  profileId: number;
+  profileName: string;
 };
 
 type SavedServer = {
   id: number;
+  row_key: string;
   name: string;
   ip: string;
   port: number | null;
   password: string;
-  installation_id: number;
-  installation_name: string;
+  profile_id: number;
+  profile_name: string;
   favorite: boolean;
 };
 
 export const useServerStore = create<ServerStore>()((set) => ({
   addServer: (server, cb) =>
     set((state) => {
-      if (state.servers.find((s) => s.name === server.name && s.ip === server.ip)) {
-        toast.error(`Server "${server.name}" already exists`);
+      // The same server may legitimately exist in several profiles; only a
+      // duplicate within the same profile is rejected.
+      if (
+        state.servers.find(
+          (s) => s.name === server.name && s.ip === server.ip && s.profileId === server.profileId,
+        )
+      ) {
+        toast.error(`Server "${server.name}" already exists in this profile`);
         cb?.(false);
         return state;
       }
@@ -54,19 +68,20 @@ export const useServerStore = create<ServerStore>()((set) => ({
       set((state) => {
         // Merge with existing servers to preserve row indexes; favorites come
         // from Rust, which owns server_favorites.json.
-        const existingById = new Map(state.servers.map((s) => [s.id, s]));
+        const existingByRowKey = new Map(state.servers.map((s) => [s.rowKey, s]));
         const servers: Server[] = raw.map((r, idx) => {
-          const existing = existingById.get(r.id);
+          const existing = existingByRowKey.get(r.row_key);
           return {
             id: r.id,
+            rowKey: r.row_key,
             index: existing?.index ?? idx,
             name: r.name,
             ip: r.ip,
             port: r.port,
             password: r.password,
             favorite: r.favorite ?? false,
-            installationId: r.installation_id,
-            installationName: r.installation_name,
+            profileId: r.profile_id,
+            profileName: r.profile_name,
           };
         });
         return { servers };
@@ -75,10 +90,10 @@ export const useServerStore = create<ServerStore>()((set) => ({
       console.error("Failed to load servers:", e);
     }
   },
-  moveServer: (id, newIndex) =>
+  moveServer: (rowKey, newIndex) =>
     set((state) => {
       const servers = [...state.servers];
-      const oldIndex = servers.findIndex((s) => s.id === id);
+      const oldIndex = servers.findIndex((s) => s.rowKey === rowKey);
       if (oldIndex === -1 || newIndex < 0 || newIndex >= servers.length) return state;
 
       const [moved] = servers.splice(oldIndex, 1);
@@ -91,39 +106,45 @@ export const useServerStore = create<ServerStore>()((set) => ({
       return { ...state, servers: reindexed };
     }),
   removeAllServers: () => set((state) => ({ ...state, servers: [] })),
-  removeServer: (id) =>
+  removeServer: (rowKey) =>
     set((state) => {
       toast.success("Server removed successfully");
       return {
         ...state,
-        servers: state.servers.filter((server) => server.id !== id),
+        servers: state.servers.filter((server) => server.rowKey !== rowKey),
       };
     }),
   servers: [],
-  toggleFavorite: (id) =>
+  toggleFavorite: (rowKey) =>
     set((state) => {
-      const server = state.servers.find((s) => s.id === id);
+      const server = state.servers.find((s) => s.rowKey === rowKey);
       if (server) {
         const nextFavorite = !server.favorite;
-        invoke("set_server_favorite", { favorite: nextFavorite, id }).catch((e) => {
+        // Favorites are address-scoped, so Rust gets the server id; the
+        // optimistic update only touches the clicked row.
+        invoke("set_server_favorite", { favorite: nextFavorite, id: server.id }).catch((e) => {
           console.error("Failed to save server favorite:", e);
           toast.error("Failed to save favorite");
           // Roll the optimistic flip back; server_favorites.json is authoritative.
           set((state) => ({
             servers: state.servers.map((s) =>
-              s.id === id && s.favorite === nextFavorite ? { ...s, favorite: !nextFavorite } : s,
+              s.rowKey === rowKey && s.favorite === nextFavorite
+                ? { ...s, favorite: !nextFavorite }
+                : s,
             ),
           }));
         });
       }
       return {
         ...state,
-        servers: state.servers.map((s) => (s.id === id ? { ...s, favorite: !s.favorite } : s)),
+        servers: state.servers.map((s) =>
+          s.rowKey === rowKey ? { ...s, favorite: !s.favorite } : s,
+        ),
       };
     }),
   updateServer: (updatedServer, cb) =>
     set((state) => {
-      if (!state.servers.find((s) => s.id === updatedServer.id)) {
+      if (!state.servers.find((s) => s.rowKey === updatedServer.rowKey)) {
         toast.error("Server not found");
         cb?.(false);
         return state;
@@ -133,7 +154,7 @@ export const useServerStore = create<ServerStore>()((set) => ({
       return {
         ...state,
         servers: state.servers.map((server) =>
-          server.id === updatedServer.id ? { ...server, ...updatedServer } : server,
+          server.rowKey === updatedServer.rowKey ? { ...server, ...updatedServer } : server,
         ),
       };
     }),

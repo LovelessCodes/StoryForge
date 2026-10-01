@@ -38,16 +38,16 @@ pub fn versions_subdir(app: AppHandle) -> String {
         .unwrap_or_else(|_| paths::DEFAULT_VERSIONS_SUBDIR.to_string())
 }
 
-/// Root folder that holds StoryForge installations.
+/// Root folder that holds StoryForge profiles.
 ///
 /// Returns an error instead of panicking when the app data dir cannot be resolved.
-pub fn installations_folder(app: AppHandle) -> Result<PathBuf, UiError> {
-    let installations_parent: Option<String> = app
+pub fn profiles_folder(app: AppHandle) -> Result<PathBuf, UiError> {
+    let profiles_parent: Option<String> = app
         .zustand()
-        .get::<Option<String>>("settings", "installationsParent")
+        .get::<Option<String>>("settings", "profilesParent")
         .ok()
         .flatten();
-    match installations_parent {
+    match profiles_parent {
         Some(ip) => Ok(PathBuf::from(ip)),
         None => app.path().app_data_dir().map_err(|e| UiError {
             name: "path_error".into(),
@@ -56,10 +56,10 @@ pub fn installations_folder(app: AppHandle) -> Result<PathBuf, UiError> {
     }
 }
 
-pub fn installations_subdir(app: AppHandle) -> String {
+pub fn profiles_subdir(app: AppHandle) -> String {
     app.zustand()
-        .get::<String>("settings", "installationsSubdir")
-        .unwrap_or_else(|_| paths::DEFAULT_INSTALLATIONS_SUBDIR.to_string())
+        .get::<String>("settings", "profilesSubdir")
+        .unwrap_or_else(|_| paths::DEFAULT_PROFILES_SUBDIR.to_string())
 }
 
 /// Moves a directory, falling back to copy+delete across filesystems.
@@ -129,7 +129,7 @@ pub fn dir_size(path: &Path) -> u64 {
 
 /// Cache for `dir_size` results, keyed by directory path.
 ///
-/// A game installation is hundreds of megabytes across thousands of files, and
+/// A game profile is hundreds of megabytes across thousands of files, and
 /// the frontend asks for sizes on every visit; re-walking each time blocked the
 /// UI thread. Entries expire after [`DIR_SIZE_TTL`].
 static DIR_SIZE_CACHE: LazyLock<Mutex<HashMap<PathBuf, (Instant, u64)>>> =
@@ -259,16 +259,14 @@ pub fn normalize_path(path: &Path) -> PathBuf {
 }
 
 /// Directories the app manages on disk: app data, the configured versions and
-/// installations parents, and every hosted server's data directory.
+/// profiles parents, and every hosted server's data directory.
 fn managed_roots(app: &AppHandle) -> Result<Vec<PathBuf>, UiError> {
-    let mut roots = vec![
-        versions_folder(app.clone())?,
-        installations_folder(app.clone())?,
-    ];
+    let mut roots = vec![versions_folder(app.clone())?, profiles_folder(app.clone())?];
     if let Ok(data_dir) = app.path().app_data_dir() {
         roots.push(data_dir);
     }
     roots.extend(super::server_hosting::data_dirs(app));
+    roots.extend(super::profiles::external_profile_paths(app));
     Ok(roots)
 }
 
@@ -355,7 +353,7 @@ pub fn find_dir_by_id(parent_dir: &Path, id: u64) -> Result<Option<PathBuf>, UiE
         _ => Err(UiError {
             name: "id_collision".into(),
             message: format!(
-                "Multiple installations share the same generated ID {}: {:?}",
+                "Multiple profiles share the same generated ID {}: {:?}",
                 id, matches
             ),
         }),

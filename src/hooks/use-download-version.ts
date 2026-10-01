@@ -2,10 +2,10 @@ import { type UseMutationOptions, useMutation, useQueryClient } from "@tanstack/
 import { invoke } from "@tauri-apps/api/core";
 import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useRef } from "react";
-import { toast } from "sonner";
 
+import { buildVersionPath, zipfolderprefix } from "@/lib/helpers";
+import { toast } from "@/lib/notify";
 import type { ProgressPayload } from "@/lib/types";
-import { buildVersionPath, zipfolderprefix } from "@/lib/utils";
 import { claimVersionDownload, releaseVersionDownload } from "@/lib/version-download-lock";
 import { useSettingsStore } from "@/stores/settings";
 

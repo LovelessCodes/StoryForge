@@ -1,5 +1,5 @@
 import { authClient } from "@/lib/auth";
-import { stripped } from "@/lib/utils";
+import { stripped } from "@/lib/helpers";
 import { useModpacksFilters } from "@/stores/modpacksFilters";
 
 export type ModpackItem = {

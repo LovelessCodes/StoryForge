@@ -1,129 +1,75 @@
-<p align="center">
-   <a href="https://getstoryforge.app/">
-      <img src="/public/StoryForge.png" style="height: 200px;" alt="Story Forge" />
-   </a>
-   <br />
-   <br />
-   <a href="/actions">
-      <img src="https://img.shields.io/github/actions/workflow/status/lovelesscodes/storyforge/publish.yml?branch=release&label=build&style=flat-square" alt="Build Status" />
-   </a>
-   <a href="/LICENSE">
-      <img src="https://img.shields.io/github/license/lovelesscodes/storyforge?color=brightgreen&style=flat-square" alt="License" />
-   </a><br />
-   <a href="https://discord.gg/gByx63peUC">
-      <img src="https://img.shields.io/badge/join-discord-5865F2?style=flat-square&logo=discord&logoColor=fff" alt="Join Discord" />
-   </a>
-   <a href="https://getstoryforge.app/">
-      <img src="https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=flat-square" alt="Platforms" />
-   </a><br />
-   <a href="https://biomejs.dev/" target="_blank">
-      <img src="https://img.shields.io/badge/checked_with-Biome-60a5fa?style=flat-square&logo=biome" alt="Checked with Biome" />
-   </a>
-   <a href="/releases/latest">
-      <img src="https://img.shields.io/github/downloads/lovelesscodes/storyforge/total?color=fff&style=flat-square&logo=github" alt="Download total" />
-   </a>
-</p>
-
 # Story Forge
 
-**Story Forge** is a modern desktop app for Vintage Story players, designed to make switching between game versions, modpacks, servers, and accounts effortless.
+A modern desktop manager for [Vintage Story](https://www.vintagestory.at/): install and switch
+game versions, manage **profiles** (isolated data folders with their own mods, worlds and
+settings), browse and update mods, join servers, host dedicated servers, and edit mod configs.
 
----
+This is a remake of the original Story Forge (see `../test-app`) with the interface rebuilt in
+the look & feel of Macheim (see `../macheim`). The core domain concept is the **profile**:
 
-## ✨ Features
+- a profile is a full Vintage Story data directory (`Mods/`, `Saves/`, `Maps/`, `ModConfig/`,
+  `Logs/`, `clientsettings.json`) pinned to a game version,
+- game binaries live once per version in a shared versions folder — profiles only reference
+  them,
+- profiles can be created, switched, renamed, cloned, exported/imported (file or `SF1.` share
+  code), and soft-deleted with undo.
 
-- **Version Management**: Easily install, switch, and launch different Vintage Story versions.
-- **Modpack Handling**: Import, export, and swap modpacks with a click.
-- **Server Browser**: Favorite, connect, and organize your servers with drag-and-drop.
-- **Account Switching**: Manage multiple accounts and switch between them instantly.
-- **Minimal & Fast**: Built with Tauri (Rust) for a lightweight, secure, and fast experience.
-- **Beautiful UI**: Powered by Vite + React for a snappy, modern interface.
-- **Updater**: Install once, update forever - with the built-in auto updater.
+## Features
 
-> [!WARNING]
-> **macOS Users:** Story Forge is not notarized yet, so macOS Gatekeeper may block it from launching. After installing, run the following in your terminal to allow the app:
->
-> ```sh
-> sudo xattr -rd com.apple.quarantine /Applications/Story\ Forge.app
-> ```
+- **Profiles** — a `Default` profile is created automatically on first run (pinned to the
+  newest installed version, or the newest release), the active profile can't be deleted,
+  and at least one profile always remains. Create/switch/clone/rename, soft delete with
+  undo, export to file or copy a share code, import from file/code with automatic mod
+  downloads. Installations from the previous Story Forge release are detected and can be
+  imported in one click (move or copy — same data, converted manifest).
+- **Adopt existing game data** — if Vintage Story data already exists in the game's default
+  location (`VintagestoryData`), Story Forge offers to use it as a profile in one click.
+  Nothing is copied or moved; removing the profile only unregisters the folder.
+- **Versions** — browse all Vintage Story releases, download with a resumable, pausable queue.
+- **Mods** — search the mod database, filter by version/side/tags/author, install, update,
+  downgrade, remove, and update everything at once.
+- **Modpacks** — browse/install community modpacks (optional cloud login via Better Auth),
+  create and publish your own.
+- **Worlds** — list saves across profiles, edit/delete, launch straight into a world, and view
+  the in-game map with markers and prospecting data.
+- **Servers** — save servers, probe them (version/password/whitelist checks), connect, and
+  browse the public server list.
+- **Server hosting** — run dedicated Vintage Story servers with console, config editor,
+  whitelist management and port checks.
+- **Mod configs** — live JSON editor and Monaco code editor for `ModConfig/*.json`.
+- **Accounts** — multiple Vintage Story accounts with TOTP support.
+- **Light & dark theme**, command palette (⌘K), keyboard shortcuts, auto-updater.
 
----
+## Development
 
-## 🧰 Prerequisites
+```sh
+bun install
+bun tauri dev     # run the desktop app
+bun run build     # typecheck + frontend build
+bun tauri build   # bundle the app
+```
 
-Set up the following tooling before running Story Forge locally:
+Requires Bun, Rust (1.85+) and the [Tauri prerequisites](https://tauri.app/start/prerequisites/).
 
-- [Bun](https://bun.sh/) (v1.0+)
-- [Rust](https://www.rust-lang.org/tools/install) (v1.70+)
-- [Tauri Prerequisites](https://tauri.app/start/prerequisites/)
+### Layout
 
----
+```
+src/                  React 19 + TanStack Router/Query + Zustand frontend
+  components/ui/      Base UI primitives (Macheim design system)
+  components/layout/  titlebar, sidebar, header, main layout
+  components/<area>/  feature pages and sheets
+  hooks/ stores/      data layer (ported from the original app, renamed to profiles)
+  lib/                helpers, types, notify, query client
+src-tauri/            Rust backend (Tauri v2)
+  src/modules/        profiles, versions, mods, servers, hosting, saves, maps, auth, dotnet…
+```
 
-## 🚀 Getting Started
+App data lives in the platform app-data directory (macOS: `~/Library/Application Support/StoryForge`),
+with `profiles/`, `versions/`, `hosted-servers/`, logs and settings inside. Both the profiles
+and versions folders can be relocated in Settings.
 
-1. **Install dependencies**
+### Notes
 
-   ```sh
-   bun install
-   ```
-
-2. **Run the app in development**
-
-   ```sh
-   bun tauri dev
-   ```
-
-3. **Build for release**
-
-   ```sh
-   bun tauri build
-   ```
-
----
-
-## 🛠 Tech Stack
-
-- **Frontend**: [Vite](https://vitejs.dev/) + [React](https://react.dev/)
-- **Backend**: [Tauri](https://tauri.app/) (Rust)
-- **State Management**: [Zustand](https://zustand-demo.pmnd.rs/)
-- **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
-
----
-
-## 💡 Why Story Forge?
-
-Vintage Story is a sandbox game with a vibrant modding and multiplayer community. Story Forge helps you:
-
-- Keep your installations organized
-- Quickly switch between modpacks and servers
-- Manage multiple accounts for family or friends
-- Spend less time on setup, more time playing
-
----
-
-## 📦 Packaging & Distribution
-
-Story Forge uses Tauri to package the app into a minimal, secure binary for Windows, macOS, and Linux. No Electron bloat—just fast, native performance.
-
----
-
-## 📝 Contributing
-
-Pull requests and suggestions are welcome! If you have ideas for new features or improvements, open an issue or join the discussion.
-
----
-
-## 📸 Screenshots
-
-![Overview page](/screenshots/Overview.png)  
-![Public servers page](/screenshots/Public_Servers.png)  
-![Installations page](/screenshots/Installations.png)  
-![Servers page](/screenshots/Servers.png)  
-![Mod browser](/screenshots/Mod_Browser.png)  
-![Adding mod](/screenshots/Adding_Mod.png)  
-![Update mod](/screenshots/Update_Mod.png)  
-![User management](/screenshots/User_Management.png)  
-![Mod configurations](/screenshots/Mod_Configs.png)  
-![Mod configurations code editor](/screenshots/Mod_Configs_Code.png)  
-![World Map](/screenshots/World_Map.png)  
-![Settings](/screenshots/Settings.png)
+- `PORTING.md` documents how the remake maps onto the original app (may be deleted later).
+- The updater endpoint still points at the original project's release feed; the version is ahead
+  of it so no downgrade is offered.
