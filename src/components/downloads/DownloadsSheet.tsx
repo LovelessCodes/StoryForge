@@ -1,4 +1,4 @@
-import { Loader2, Pause, RotateCcw, X } from "lucide-react";
+import { Loader2, Pause, RotateCcw, Undo2, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ interface DownloadsSheetProps {
 
 export default function DownloadsSheet({ open, onOpenChange }: DownloadsSheetProps) {
   const entries = useDownloadStore((s) => s.entries);
-  const { pause, resume, cancel, retry } = useDownloadManager();
+  const { pause, resume, cancel, retry, undo } = useDownloadManager();
   const list = Object.values(entries);
 
   return (
@@ -86,6 +86,11 @@ export default function DownloadsSheet({ open, onOpenChange }: DownloadsSheetPro
                     {entry.status === "error" && (
                       <Button variant="outline" size="xs" onClick={() => retry(entry.token)}>
                         <RotateCcw /> Retry
+                      </Button>
+                    )}
+                    {entry.status === "done" && (entry.kind === "version" || entry.savedPath) && (
+                      <Button variant="outline" size="xs" onClick={() => undo(entry.token)}>
+                        <Undo2 /> Undo
                       </Button>
                     )}
                     <Button

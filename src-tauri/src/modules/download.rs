@@ -944,6 +944,10 @@ pub async fn download_and_maybe_extract(
         }
     }
 
+    // Plain downloads report where the file landed so the UI can undo the
+    // download later; extractions delete their archive and leave nothing to
+    // point at.
+    let saved_path = (!extract).then(|| archive_path.to_string_lossy().to_string());
     ctx.emit(ProgressPayload {
         phase: "done",
         downloaded: None,
@@ -951,7 +955,7 @@ pub async fn download_and_maybe_extract(
         percent: None,
         current: None,
         count: None,
-        message: None,
+        message: saved_path,
     })?;
 
     Ok("success".into())

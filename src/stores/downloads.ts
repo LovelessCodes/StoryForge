@@ -16,6 +16,8 @@ export interface DownloadEntry {
   destpath: string | null;
   /** Profile root whose mod lists are refreshed after the download. */
   modsDirectory: string | null;
+  /** Where a finished plain download saved its file (used to undo it). */
+  savedPath: string | null;
   bytesDownloaded: number;
   totalBytes: number | null;
   percent: number | null;
@@ -48,6 +50,7 @@ export const useDownloadStore = create<DownloadState & DownloadActions>((set) =>
           url: null,
           destpath: null,
           modsDirectory: null,
+          savedPath: null,
           ...entry,
           bytesDownloaded: 0,
           totalBytes: null,

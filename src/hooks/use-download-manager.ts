@@ -5,7 +5,8 @@ import { appDataDir } from "@tauri-apps/api/path";
 import { useCallback } from "react";
 
 import { useMountEffect } from "@/hooks/use-mount-effect";
-import { buildVersionPath, zipfolderprefix } from "@/lib/helpers";
+import { buildVersionPath, pathDelimiter, zipfolderprefix } from "@/lib/helpers";
+import { toast } from "@/lib/notify";
 import type { PausedDownload, ProgressPayload } from "@/lib/types";
 import { claimVersionDownload, releaseVersionDownload } from "@/lib/version-download-lock";
 import { useDownloadStore, type DownloadEntry } from "@/stores/downloads";
@@ -174,7 +175,7 @@ async function doDownload(
 
     // Set up progress listener
     unlisten = await listen<ProgressPayload>(evt, (event) => {
-      const { phase, downloaded, total, percent } = event.payload;
+      const { phase, downloaded, total, percent, message } = event.payload;
 
       if (phase === "download") {
         const bytesDownloaded = downloaded ?? 0;
@@ -198,7 +199,13 @@ async function doDownload(
       } else if (phase === "paused") {
         store.updateEntry(token, { status: "paused" });
       } else if (phase === "done") {
-        store.updateEntry(token, { status: "done", percent: 100, speedBps: null });
+        store.updateEntry(token, {
+          status: "done",
+          percent: 100,
+          speedBps: null,
+          // Plain downloads report the saved file, which Undo removes later.
+          ...(message ? { savedPath: message } : {}),
+        });
       }
     });
 
@@ -402,7 +409,67 @@ export function useDownloadManager() {
     [queryClient],
   );
 
-  return { startDownload, startModDownload, pause, resume, cancel, retry };
+  /**
+   * Reverses a finished download: removes the installed mod file (or the game
+   * version) and drops the entry from the sheet.
+   */
+  const undo = useCallback(
+    (token: string) => {
+      const store = useDownloadStore.getState();
+      const entry = store.entries[token];
+      if (!entry || entry.status !== "done") return;
+
+      store.removeEntry(token);
+
+      if (entry.kind === "version") {
+        void invoke("remove_installed_version", { version: token })
+          .then(() => {
+            void queryClient.invalidateQueries({ queryKey: installedVersionsQueryKey() });
+            toast.success(`Removed game version ${token}`);
+          })
+          .catch((error: unknown) => {
+            toast.error(`Could not remove game version ${token}`, {
+              description: String(error),
+            });
+          });
+        return;
+      }
+
+      if (!entry.savedPath) {
+        toast.error("This download no longer points at a file");
+        return;
+      }
+      // The destination is the profile/server `Mods` folder; removal commands
+      // expect the root path that contains it.
+      const modsSuffix = `${pathDelimiter}Mods`;
+      const modsDirectory =
+        entry.modsDirectory ??
+        (entry.destpath?.endsWith(modsSuffix)
+          ? entry.destpath.slice(0, -modsSuffix.length)
+          : entry.destpath) ??
+        "";
+      void invoke("remove_mod_from_profile", {
+        params: { modpath: entry.savedPath, path: modsDirectory },
+      })
+        .then(() => {
+          if (entry.modsDirectory) {
+            void queryClient.invalidateQueries({
+              queryKey: installedModsQueryKey(entry.modsDirectory),
+            });
+            void queryClient.invalidateQueries({
+              queryKey: modUpdatesQueryKey(entry.modsDirectory),
+            });
+          }
+          toast.success(`Removed ${entry.label}`);
+        })
+        .catch((error: unknown) => {
+          toast.error(`Could not remove ${entry.label}`, { description: String(error) });
+        });
+    },
+    [queryClient],
+  );
+
+  return { startDownload, startModDownload, pause, resume, cancel, retry, undo };
 }
 
 /** A mod (or other file) download queued into the shared sheet. */
