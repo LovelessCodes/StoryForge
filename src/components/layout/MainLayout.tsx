@@ -38,7 +38,10 @@ export default function MainLayout() {
 
   // Pages with their own scroll containers (virtualized lists, editors).
   const managesOwnScroll =
-    pathname === PAGE_PATHS.mods || pathname === PAGE_PATHS.config || pathname.endsWith("/mods");
+    pathname === PAGE_PATHS.mods ||
+    pathname === PAGE_PATHS.servers ||
+    pathname === PAGE_PATHS.config ||
+    pathname.endsWith("/mods");
 
   return (
     <SidebarProvider className="h-svh overflow-hidden">

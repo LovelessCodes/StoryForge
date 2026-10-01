@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+import VirtualList from "@/components/common/VirtualList";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -120,8 +121,8 @@ export default function PublicServersTab() {
     });
 
   return (
-    <div className="grid gap-4">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="flex h-full min-h-0 flex-col gap-4">
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
         <div className="relative w-full max-w-xs">
           <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2" />
           <Input
@@ -200,101 +201,37 @@ export default function PublicServersTab() {
         <div className="flex items-center gap-2 border border-dashed p-10 text-center">
           <Loader2 className="text-muted-foreground mx-auto animate-spin" />
         </div>
-      ) : filteredServers.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 border border-dashed p-10 text-center">
-          <Search className="text-muted-foreground size-6" />
-          <div>
-            <p className="text-sm font-medium">No public servers match</p>
-            <p className="text-muted-foreground text-xs">
-              Clear the search or version filters and try again.
-            </p>
-          </div>
-        </div>
       ) : (
-        <div className="divide-y border">
-          {filteredServers.map((server, index) => {
-            const versionInstalled = installedVersionsSet.has(server.gameVersion);
-            const hasProfile = profiles.some((p) => p.version === server.gameVersion);
-            return (
-              <div
-                key={`${server.serverIP}-${server.serverName}-${index}`}
-                className="bg-card hover:bg-muted/40 flex items-center gap-3 p-3 transition-colors"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{server.serverName}</p>
-                  <p className="text-muted-foreground mt-0.5 font-mono text-[11px]">
-                    {server.serverIP}
-                  </p>
-                  <p className="text-muted-foreground mt-0.5 line-clamp-1 text-xs break-all">
-                    {server.gameDescription.replace(/<\/?[^>]+(>|$)/g, "")}
-                  </p>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    <Badge
-                      className={
-                        versionInstalled ? "text-[var(--color-success)]" : "text-destructive"
-                      }
-                      variant="outline"
-                    >
-                      Version {server.gameVersion}
-                    </Badge>
-                    <Badge className="text-muted-foreground" variant="outline">
-                      {server.players}/{server.maxPlayers}
-                      <Users2 className="size-3" />
-                    </Badge>
-                    {server.mods.length > 0 && (
-                      <Badge className="text-muted-foreground" variant="outline">
-                        Mods {server.mods.length}
-                      </Badge>
-                    )}
-                    {server.whitelisted && (
-                      <Badge className="text-muted-foreground" variant="outline">
-                        Whitelisted
-                        <ListCheck className="size-3" />
-                      </Badge>
-                    )}
-                    {server.hasPassword && (
-                      <Badge className="text-muted-foreground" variant="outline">
-                        Protected
-                        <Lock className="size-3" />
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-
-                {versionInstalled ? (
-                  <Button
-                    size="sm"
-                    variant="outline-success"
-                    onClick={() => setConnectServer(server)}
-                  >
-                    <Plug /> Connect
-                  </Button>
-                ) : hasProfile ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={downloadVersion.isPending}
-                    onClick={() => downloadVersion.mutate(server.gameVersion)}
-                    title={`Download game version ${server.gameVersion}`}
-                  >
-                    <DownloadCloud /> Download
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      void navigate({ to: "/profiles" });
-                    }}
-                    title={`Create a profile with v${server.gameVersion} to connect`}
-                  >
-                    <FolderPlus /> Add profile
-                  </Button>
-                )}
+        <VirtualList
+          empty={
+            <div className="flex flex-col items-center justify-center gap-3 border border-dashed p-10 text-center">
+              <Search className="text-muted-foreground size-6" />
+              <div>
+                <p className="text-sm font-medium">No public servers match</p>
+                <p className="text-muted-foreground text-xs">
+                  Clear the search or version filters and try again.
+                </p>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          }
+          estimateRowHeight={120}
+          items={filteredServers}
+          keyOf={(server, index) => `${server.serverIP}-${server.serverName}-${index}`}
+          renderItem={(server) => (
+            <PublicServerRow
+              downloading={downloadVersion.isPending}
+              hasProfile={profiles.some((p) => p.version === server.gameVersion)}
+              onAddProfile={() => {
+                void navigate({ to: "/profiles" });
+              }}
+              onConnect={() => setConnectServer(server)}
+              onDownload={() => downloadVersion.mutate(server.gameVersion)}
+              server={server}
+              versionInstalled={installedVersionsSet.has(server.gameVersion)}
+            />
+          )}
+          scrollButtonAlign="center"
+        />
       )}
 
       <PublicServerConnectSheet
@@ -302,6 +239,91 @@ export default function PublicServersTab() {
         open={connectServer !== null}
         server={connectServer}
       />
+    </div>
+  );
+}
+
+/** One public server row, rendered by the virtualized list. */
+function PublicServerRow({
+  server,
+  versionInstalled,
+  hasProfile,
+  downloading,
+  onConnect,
+  onDownload,
+  onAddProfile,
+}: {
+  server: PublicServer;
+  versionInstalled: boolean;
+  hasProfile: boolean;
+  downloading: boolean;
+  onConnect: () => void;
+  onDownload: () => void;
+  onAddProfile: () => void;
+}) {
+  return (
+    <div className="bg-card hover:bg-muted/40 flex items-center gap-3 border p-3 transition-colors">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">{server.serverName}</p>
+        <p className="text-muted-foreground mt-0.5 font-mono text-[11px]">{server.serverIP}</p>
+        <p className="text-muted-foreground mt-0.5 line-clamp-1 text-xs break-all">
+          {server.gameDescription.replace(/<\/?[^>]+(>|$)/g, "")}
+        </p>
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          <Badge
+            className={versionInstalled ? "text-[var(--color-success)]" : "text-destructive"}
+            variant="outline"
+          >
+            Version {server.gameVersion}
+          </Badge>
+          <Badge className="text-muted-foreground" variant="outline">
+            {server.players}/{server.maxPlayers}
+            <Users2 className="size-3" />
+          </Badge>
+          {server.mods.length > 0 && (
+            <Badge className="text-muted-foreground" variant="outline">
+              Mods {server.mods.length}
+            </Badge>
+          )}
+          {server.whitelisted && (
+            <Badge className="text-muted-foreground" variant="outline">
+              Whitelisted
+              <ListCheck className="size-3" />
+            </Badge>
+          )}
+          {server.hasPassword && (
+            <Badge className="text-muted-foreground" variant="outline">
+              Protected
+              <Lock className="size-3" />
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      {versionInstalled ? (
+        <Button size="sm" variant="outline-success" onClick={onConnect}>
+          <Plug /> Connect
+        </Button>
+      ) : hasProfile ? (
+        <Button
+          disabled={downloading}
+          onClick={onDownload}
+          size="sm"
+          title={`Download game version ${server.gameVersion}`}
+          variant="outline"
+        >
+          <DownloadCloud /> Download
+        </Button>
+      ) : (
+        <Button
+          onClick={onAddProfile}
+          size="sm"
+          title={`Create a profile with v${server.gameVersion} to connect`}
+          variant="outline"
+        >
+          <FolderPlus /> Add profile
+        </Button>
+      )}
     </div>
   );
 }

@@ -44,8 +44,8 @@ export default function ServersPage() {
   }
 
   return (
-    <div className="grid gap-6">
-      <div className="flex items-center justify-end gap-2">
+    <div className="flex h-full min-h-0 flex-col gap-6">
+      <div className="flex shrink-0 items-center justify-end gap-2">
         <ToggleGroup
           aria-label="Server view"
           onValueChange={(value) => value[0] && selectTab(parseTab(value[0]) ?? "mine")}
@@ -65,9 +65,11 @@ export default function ServersPage() {
         </ToggleGroup>
       </div>
 
-      {tab === "mine" && <MyServersTab />}
-      {tab === "public" && <PublicServersTab />}
-      {tab === "hosting" && <HostingTab />}
+      <div className="min-h-0 flex-1">
+        {tab === "mine" && <MyServersTab />}
+        {tab === "public" && <PublicServersTab />}
+        {tab === "hosting" && <HostingTab />}
+      </div>
     </div>
   );
 }

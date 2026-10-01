@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { ListSkeleton } from "@/components/common/LoadingSkeleton";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { hostedServersQueryKey, useHostedServers } from "@/hooks/queries/server-hosting";
 
 import CreateHostedServerSheet from "./CreateHostedServerSheet";
@@ -16,8 +17,8 @@ export default function HostingTab() {
   const refreshing = useIsFetching({ queryKey: hostedServersQueryKey() }) > 0;
 
   return (
-    <div className="grid gap-4">
-      <div className="flex items-center justify-between gap-4">
+    <div className="flex h-full min-h-0 flex-col gap-4">
+      <div className="flex shrink-0 items-center justify-between gap-4">
         <p className="text-muted-foreground text-xs">
           Self-hosted Vintage Story instances managed by Story Forge.
         </p>
@@ -39,28 +40,30 @@ export default function HostingTab() {
         </div>
       </div>
 
-      {isPending && !instances ? (
-        <ListSkeleton rows={3} />
-      ) : (instances ?? []).length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 border border-dashed p-10 text-center">
-          <Server className="text-muted-foreground size-6" />
-          <div>
-            <p className="text-sm font-medium">No server instances yet</p>
-            <p className="text-muted-foreground text-xs">
-              Create an instance to run a dedicated Vintage Story server from this machine.
-            </p>
+      <ScrollArea scrollFade className="min-h-0 flex-1">
+        {isPending && !instances ? (
+          <ListSkeleton rows={3} />
+        ) : (instances ?? []).length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-3 border border-dashed p-10 text-center">
+            <Server className="text-muted-foreground size-6" />
+            <div>
+              <p className="text-sm font-medium">No server instances yet</p>
+              <p className="text-muted-foreground text-xs">
+                Create an instance to run a dedicated Vintage Story server from this machine.
+              </p>
+            </div>
+            <Button size="sm" variant="accent-primary" onClick={() => setCreateOpen(true)}>
+              <HardDrive /> Create your first instance
+            </Button>
           </div>
-          <Button size="sm" variant="accent-primary" onClick={() => setCreateOpen(true)}>
-            <HardDrive /> Create your first instance
-          </Button>
-        </div>
-      ) : (
-        <div className="divide-y border">
-          {(instances ?? []).map((instance) => (
-            <HostedInstanceRow instance={instance} key={instance.id} />
-          ))}
-        </div>
-      )}
+        ) : (
+          <div className="divide-y border">
+            {(instances ?? []).map((instance) => (
+              <HostedInstanceRow instance={instance} key={instance.id} />
+            ))}
+          </div>
+        )}
+      </ScrollArea>
 
       <CreateHostedServerSheet open={createOpen} onOpenChange={setCreateOpen} />
     </div>
