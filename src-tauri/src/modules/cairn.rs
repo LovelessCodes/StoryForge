@@ -20,10 +20,8 @@
 use std::{
     fs::{create_dir_all, read_dir, read_to_string, remove_dir_all, rename, write},
     path::{Path, PathBuf},
-    time::{SystemTime, UNIX_EPOCH},
 };
 
-use fs_extra::dir::{copy, CopyOptions};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::{command, AppHandle, Manager};
@@ -35,7 +33,8 @@ use super::profiles::{
     is_external_profile_dir, read_profile_json, write_profile_json, ProfileInfo,
 };
 use super::utils::{
-    dir_size_cached, format_size, normalize_path, profiles_folder, profiles_subdir, safe_file_name,
+    copy_dir_contents, dir_size_cached, format_size, home_dir, normalize_path, now_nanos,
+    profiles_folder, profiles_subdir, safe_file_name,
 };
 use crate::log_info;
 
@@ -80,18 +79,8 @@ struct CairnMigrationLog {
     migrations: Vec<CairnMigrationEntry>,
 }
 
-fn now_nanos() -> u128 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_nanos())
-        .unwrap_or(0)
-}
-
 fn default_root() -> Option<PathBuf> {
-    std::env::var_os("HOME")
-        .or_else(|| std::env::var_os("USERPROFILE"))
-        .map(PathBuf::from)
-        .map(|home| home.join(CAIRN_DIR))
+    home_dir().map(|home| home.join(CAIRN_DIR))
 }
 
 /// CAIRN_HOME, then the `home` pointer inside the default root, then the
@@ -407,32 +396,6 @@ fn import_blocking(
     }
 
     Ok(report)
-}
-
-/// Copies the entries of `from` into the existing directory `to`
-/// (fs_extra's `copy_inside` flips behaviour when the destination exists, so
-/// the entries are handled explicitly instead).
-fn copy_dir_contents(from: &Path, to: &Path) -> Result<(), String> {
-    create_dir_all(to).map_err(|e| format!("failed to create {}: {e}", to.display()))?;
-    let entries = read_dir(from).map_err(|e| format!("failed to read {}: {e}", from.display()))?;
-
-    let mut options = CopyOptions::new();
-    options.overwrite = false;
-    options.copy_inside = false;
-
-    for entry in entries {
-        let entry = entry.map_err(|e| format!("failed to read {}: {e}", from.display()))?;
-        let source = entry.path();
-        if source.is_dir() {
-            copy(&source, to, &options)
-                .map_err(|e| format!("failed to copy {}: {e}", source.display()))?;
-        } else {
-            let target = to.join(entry.file_name());
-            std::fs::copy(&source, &target)
-                .map_err(|e| format!("failed to copy {}: {e}", source.display()))?;
-        }
-    }
-    Ok(())
 }
 
 /// Copies `data/` (the pack's game data) and `Mods/` (its mods) into a fresh

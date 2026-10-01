@@ -1,7 +1,8 @@
 pub mod modules;
 use modules::{
-    auth, cairn, download, game_data, legacy, maps, mods, mvl, news, profile_ops, profiles, saves,
-    server_hosting, servers, sniffer, versions, vs_launcher, waxlight,
+    auth, cairn, download, game_data, gruntlauncher, legacy, lithic, maps, mods, mvl, news,
+    profile_ops, profiles, rustory, saves, server_hosting, servers, sniffer, versions, vs_launcher,
+    waxlight, yelloowstone,
 };
 use tauri::RunEvent;
 
@@ -259,6 +260,18 @@ pub fn run() {
             // Cairn (cairns-gg) pack import
             cairn::detect_cairn_packs,
             cairn::import_cairn_packs,
+            // Rustory (XurxoMF) instance import
+            rustory::detect_rustory_instances,
+            rustory::import_rustory_instances,
+            // GruntLauncher (renarin-kholin) instance import
+            gruntlauncher::detect_gruntlauncher_instances,
+            gruntlauncher::import_gruntlauncher_instances,
+            // Lithic (NotAShelf) instance import
+            lithic::detect_lithic_instances,
+            lithic::import_lithic_instances,
+            // Yelloowstone (jgwoolley/vintage-story-launcher) instance import
+            yelloowstone::detect_yelloowstone_instances,
+            yelloowstone::import_yelloowstone_instances,
             // Servers
             servers::fetch_public_servers,
             servers::fetch_all_servers,

@@ -40,6 +40,7 @@ dependencies = [
  "thiserror 2.0.21",
  "tokio",
  "tokio-util",
+ "toml 0.8.2",
  "walkdir",
  "which",
  "zip 8.6.0",

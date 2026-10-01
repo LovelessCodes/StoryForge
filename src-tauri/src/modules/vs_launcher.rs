@@ -129,33 +129,9 @@ struct VsMigrationLog {
     migrations: Vec<VsMigrationEntry>,
 }
 
-/// `<OS app-data dir>` on this platform.
-fn config_base_dirs() -> Vec<PathBuf> {
-    let mut dirs: Vec<PathBuf> = Vec::new();
-
-    #[cfg(target_os = "macos")]
-    if let Some(home) = std::env::var_os("HOME").map(PathBuf::from) {
-        dirs.push(home.join("Library/Application Support"));
-    }
-
-    #[cfg(target_os = "windows")]
-    if let Some(appdata) = std::env::var_os("APPDATA").map(PathBuf::from) {
-        dirs.push(appdata);
-    }
-
-    #[cfg(all(unix, not(target_os = "macos")))]
-    if let Some(config) = std::env::var_os("XDG_CONFIG_HOME").map(PathBuf::from) {
-        dirs.push(config);
-    } else if let Some(home) = std::env::var_os("HOME").map(PathBuf::from) {
-        dirs.push(home.join(".config"));
-    }
-
-    dirs
-}
-
-/// `<appData>/<launcher>/config.json` for every family member.
+/// `<OS app-config dir>/<launcher>/config.json` for every family member.
 fn family_config_paths() -> Vec<(PathBuf, &'static str)> {
-    config_base_dirs()
+    super::utils::platform_config_dirs()
         .into_iter()
         .flat_map(|base| {
             FAMILY
@@ -173,6 +149,11 @@ fn read_family_configs() -> Vec<(PathBuf, &'static str, VsConfig)> {
                 return None;
             }
             let content = read_to_string(&path).ok()?;
+            // On Linux Yelloowstone keeps a JSON array at the same path (its
+            // own importer reads that shape); skip it without a parse error.
+            if content.trim_start().starts_with('[') {
+                return None;
+            }
             match serde_json::from_str::<VsConfig>(&content) {
                 Ok(config) => Some((path, source, config)),
                 Err(error) => {

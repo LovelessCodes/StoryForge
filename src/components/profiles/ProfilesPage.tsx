@@ -9,13 +9,17 @@ import { useProfiles, type Profile } from "@/stores/profiles";
 import CairnBanner from "./CairnBanner";
 import DeletedProfilesSection from "./DeletedProfilesSection";
 import GameDataBanner from "./GameDataBanner";
+import GruntLauncherBanner from "./GruntLauncherBanner";
 import ImportProfileSheet from "./ImportProfileSheet";
 import LegacyMigrationBanner from "./LegacyMigrationBanner";
+import LithicBanner from "./LithicBanner";
 import MvlBanner from "./MvlBanner";
 import ProfileDialog from "./ProfileDialog";
 import ProfileRow from "./ProfileRow";
+import RustoryBanner from "./RustoryBanner";
 import VsLauncherBanner from "./VsLauncherBanner";
 import WaxlightBanner from "./WaxlightBanner";
+import YelloowstoneBanner from "./YelloowstoneBanner";
 
 export default function ProfilesPage() {
   const { activeProfile } = useActiveProfile();
@@ -59,6 +63,10 @@ export default function ProfilesPage() {
       <GameDataBanner />
       <LegacyMigrationBanner />
       <VsLauncherBanner />
+      <RustoryBanner />
+      <GruntLauncherBanner />
+      <LithicBanner />
+      <YelloowstoneBanner />
       <MvlBanner />
       <WaxlightBanner />
       <CairnBanner />

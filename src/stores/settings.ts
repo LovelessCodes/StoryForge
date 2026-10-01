@@ -36,6 +36,18 @@ type SettingsStore = {
   /** User hid the "import packs from Cairn" banner. */
   cairnDismissed: boolean;
   dismissCairn: () => void;
+  /** User hid the "import instances from Rustory" banner. */
+  rustoryDismissed: boolean;
+  dismissRustory: () => void;
+  /** User hid the "import instances from GruntLauncher" banner. */
+  gruntLauncherDismissed: boolean;
+  dismissGruntLauncher: () => void;
+  /** User hid the "import instances from Lithic" banner. */
+  lithicDismissed: boolean;
+  dismissLithic: () => void;
+  /** User hid the "import instances from Yelloowstone" banner. */
+  yelloowstoneDismissed: boolean;
+  dismissYelloowstone: () => void;
   defaultModSortBy: SortBy;
   setDefaultModSortBy: (sortBy: SortBy) => void;
   profilesParent: string | null;
@@ -67,6 +79,14 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
   dismissLinkVersions: () => set(() => ({ linkVersionsDismissed: true })),
   cairnDismissed: false,
   dismissCairn: () => set(() => ({ cairnDismissed: true })),
+  rustoryDismissed: false,
+  dismissRustory: () => set(() => ({ rustoryDismissed: true })),
+  gruntLauncherDismissed: false,
+  dismissGruntLauncher: () => set(() => ({ gruntLauncherDismissed: true })),
+  lithicDismissed: false,
+  dismissLithic: () => set(() => ({ lithicDismissed: true })),
+  yelloowstoneDismissed: false,
+  dismissYelloowstone: () => set(() => ({ yelloowstoneDismissed: true })),
   defaultModSortBy: "trending",
   setDefaultModSortBy: (sortBy) => set(() => ({ defaultModSortBy: sortBy })),
   profilesParent: null,

@@ -365,6 +365,103 @@ pub fn find_dir_by_id(parent_dir: &Path, id: u64) -> Result<Option<PathBuf>, UiE
     }
 }
 
+/// The user's home directory.
+pub fn home_dir() -> Option<PathBuf> {
+    std::env::var_os("HOME")
+        .or_else(|| std::env::var_os("USERPROFILE"))
+        .map(PathBuf::from)
+}
+
+/// `<OS app-config dir>` on this platform, most specific first.
+///
+/// This is the base other launchers keep their configs under: Linux
+/// `$XDG_CONFIG_HOME` (default `~/.config`), macOS
+/// `~/Library/Application Support`, Windows `%APPDATA%`.
+pub fn platform_config_dirs() -> Vec<PathBuf> {
+    let mut dirs: Vec<PathBuf> = Vec::new();
+
+    #[cfg(target_os = "macos")]
+    if let Some(home) = home_dir() {
+        dirs.push(home.join("Library/Application Support"));
+    }
+
+    #[cfg(target_os = "windows")]
+    if let Some(appdata) = std::env::var_os("APPDATA").map(PathBuf::from) {
+        dirs.push(appdata);
+    }
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    if let Some(config) = std::env::var_os("XDG_CONFIG_HOME").map(PathBuf::from) {
+        dirs.push(config);
+    } else if let Some(home) = home_dir() {
+        dirs.push(home.join(".config"));
+    }
+
+    dirs
+}
+
+/// `<OS app-data dir>` on this platform, most specific first.
+///
+/// Linux `$XDG_DATA_HOME` (default `~/.local/share`), macOS
+/// `~/Library/Application Support`, Windows `%APPDATA%`.
+pub fn platform_data_dirs() -> Vec<PathBuf> {
+    let mut dirs: Vec<PathBuf> = Vec::new();
+
+    #[cfg(target_os = "macos")]
+    if let Some(home) = home_dir() {
+        dirs.push(home.join("Library/Application Support"));
+    }
+
+    #[cfg(target_os = "windows")]
+    if let Some(appdata) = std::env::var_os("APPDATA").map(PathBuf::from) {
+        dirs.push(appdata);
+    }
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    if let Some(data) = std::env::var_os("XDG_DATA_HOME").map(PathBuf::from) {
+        dirs.push(data);
+    } else if let Some(home) = home_dir() {
+        dirs.push(home.join(".local/share"));
+    }
+
+    dirs
+}
+
+/// Current time in nanoseconds, for staging folder names.
+pub fn now_nanos() -> u128 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0)
+}
+
+/// Copies the entries of `from` into the existing directory `to`.
+///
+/// `fs_extra`'s `copy_inside` flips behaviour when the destination exists, so
+/// the entries are handled explicitly instead.
+pub fn copy_dir_contents(from: &Path, to: &Path) -> Result<(), String> {
+    std::fs::create_dir_all(to).map_err(|e| format!("failed to create {}: {e}", to.display()))?;
+    let entries = read_dir(from).map_err(|e| format!("failed to read {}: {e}", from.display()))?;
+
+    let mut options = CopyOptions::new();
+    options.overwrite = false;
+    options.copy_inside = false;
+
+    for entry in entries {
+        let entry = entry.map_err(|e| format!("failed to read {}: {e}", from.display()))?;
+        let source = entry.path();
+        if source.is_dir() {
+            copy(&source, to, &options)
+                .map_err(|e| format!("failed to copy {}: {e}", source.display()))?;
+        } else {
+            let target = to.join(entry.file_name());
+            std::fs::copy(&source, &target)
+                .map_err(|e| format!("failed to copy {}: {e}", source.display()))?;
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

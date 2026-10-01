@@ -189,6 +189,74 @@ profile root and `Mods/` into the profile's `Mods/`. Imports are recorded in
 `<app data>/cairn-migration.json`; game builds Cairn installed under `<root>/games/<version>`
 can be linked in place.
 
+**Rustory (XurxoMF) import** — reads `<appConfigDir>/xyz.rustory.app/config.json` for
+`vsInstancesPath`/`vsVersionsPath` (defaults `<appDataDir>/VSInstances` and
+`<appDataDir>/VSVersions`), then every instance folder with an `instance.json`:
+
+| Command                    | Args        | Returns                 |
+| -------------------------- | ----------- | ----------------------- |
+| `detect_rustory_instances` | —           | `RustoryInstance[]`     |
+| `import_rustory_instances` | `{ paths }` | `{ migrated, skipped }` |
+
+Rustory (the `VS Launcher 2.0` successor by the same author) nests the game data as
+`Data/` inside the instance folder next to its `instance.json` and `Backups/`, so import is
+**copy-only**: `Data/` is copied into the profile root. Playtime (milliseconds → seconds),
+launch parameters, env vars (comma/newline-separated `KEY=value`, `mesaGlThread` →
+`MESA_GLTHREAD`) are preserved; imports are recorded in `<app data>/rustory-migration.json`.
+Game builds under `vsVersionsPath` can be linked in place.
+
+**GruntLauncher (renarin-kholin) import** — reads `config.toml` from
+`ProjectDirs("com", "renarin", "gruntlauncher")` (`~/.config/gruntlauncher`,
+`~/Library/Application Support/com.renarin.gruntlauncher`,
+`%APPDATA%\renarin\gruntlauncher\config`) for `instances_folder`/`installations_folder`
+(defaults under the platform data dir), then every `<instances_folder>/<uuid>/instance.toml`:
+
+| Command                          | Args                                | Returns                   |
+| -------------------------------- | ----------------------------------- | ------------------------- |
+| `detect_gruntlauncher_instances` | —                                   | `GruntLauncherInstance[]` |
+| `import_gruntlauncher_instances` | `{ paths, mode: "move" \| "copy" }` | `{ migrated, skipped }`   |
+
+The instance folder is the game data path (mods in `Mods/`, settings in
+`clientsettings.json`), so import moves or copies the whole folder; GruntLauncher's
+`instance.toml` and `Logos/` cache are removed from the imported profile. Imports are
+recorded in `<app data>/gruntlauncher-migration.json`. Game builds under
+`<installations_folder>/<version>` and the local install paths named by instances can be
+linked in place.
+
+**Lithic (NotAShelf) import** — resolves the data root like Lithic does
+(`LITHIC_DATA_DIR`, else `<platform data dir>/lithic`) and reads
+`<data>/instances/<id>/instance.toml`:
+
+| Command                   | Args        | Returns                 |
+| ------------------------- | ----------- | ----------------------- |
+| `detect_lithic_instances` | —           | `LithicInstance[]`      |
+| `import_lithic_instances` | `{ paths }` | `{ migrated, skipped }` |
+
+An instance's data is `<instance>/data` (or the external `data_dir` it names — often the
+stock `VintagestoryData`, flagged in the UI), mods come from `mods_dir` or `<data>/Mods`, and
+mods switched off live in `<instance>/disabled-mods`. Import is **copy-only** (the instance
+folder also holds Lithic's settings, lock and logs): data is copied into the profile root,
+an external mods folder into the profile's `Mods/`, and disabled mods into
+`mods-disabled/` (kept but not loaded). Playtime, launch arguments and env vars are
+preserved; wrappers (`gamemoderun`, `prime-run`) have no equivalent and are dropped. Imports
+are recorded in `<app data>/lithic-migration.json`; builds registered in
+`<data>/game/installs.toml` can be linked in place.
+
+**Yelloowstone (jgwoolley/vintage-story-launcher) import** — reads the JSON array in
+`~/.config/VSLauncher/config.json` (all platforms; VS Launcher's object config at the same
+Linux path is skipped by both importers) with `{ name, runtimePath, dataPath }` entries:
+
+| Command                         | Args                                | Returns                  |
+| ------------------------------- | ----------------------------------- | ------------------------ |
+| `detect_yelloowstone_instances` | —                                   | `YelloowstoneInstance[]` |
+| `import_yelloowstone_instances` | `{ paths, mode: "move" \| "copy" }` | `{ migrated, skipped }`  |
+
+`dataPath` is the game data folder (profile-shaped), so import moves or copies it;
+`runtimePath` is a full game install whose version comes from
+`assets/version-<version>.txt` (`--dataPath` is how Yelloowstone runs it). The last-open time
+(`clientsettings.json` modified at) becomes the profile's playtime. Imports are recorded in
+`<app data>/yelloowstone-migration.json`; runtime folders can be linked in place.
+
 **Linked (external) game versions** — builds installed by those launchers (or any folder) are
 registered in `<app data>/external-versions.json` and resolved by
 `versions::resolve_version_dir` (managed versions folder first, then linked folders), so

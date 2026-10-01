@@ -27,9 +27,13 @@ the look & feel of Macheim (see `../macheim`). The core domain concept is the **
   Nothing is copied or moved; removing the profile only unregisters the folder.
 - **Import from other launchers** — installations from
   [VS Launcher](https://github.com/XurxoMF/vs-launcher) and its continuation
-  [RiftLauncher](https://github.com/StratumServer/RiftLauncher), modpacks from
-  [MVL](https://github.com/scgm0/MVL), instances from
-  [Waxlight Launcher](https://github.com/AmadoMuerte/Waxlight-launcher) and packs from
+  [RiftLauncher](https://github.com/StratumServer/RiftLauncher), instances from
+  [Rustory](https://github.com/XurxoMF/rustory),
+  [GruntLauncher](https://github.com/renarin-kholin/gruntlauncher),
+  [Lithic](https://github.com/NotAShelf/lithic),
+  [Yelloowstone](https://github.com/jgwoolley/vintage-story-launcher) and
+  [Waxlight Launcher](https://github.com/AmadoMuerte/Waxlight-launcher), modpacks from
+  [MVL](https://github.com/scgm0/MVL) and packs from
   [Cairn](https://github.com/cairns-gg/cairn-app) are detected and imported as profiles
   (move or copy), preserving the game version, mods and worlds. Launch parameters,
   environment variables, pin state and playtime are carried over where the source stores
