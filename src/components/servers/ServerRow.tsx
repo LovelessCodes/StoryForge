@@ -117,14 +117,7 @@ export default function ServerRow({ server, onEdit }: ServerRowProps) {
 
   return (
     <div className="bg-card hover:bg-muted/40 flex items-center gap-3 p-3 transition-colors">
-      <div className="flex shrink-0 flex-col items-center gap-1">
-        <span
-          className={cn(
-            "size-2 rounded-full",
-            versionInstalled ? "bg-success" : "bg-muted-foreground/40",
-          )}
-          title={versionInstalled ? "Matching version installed" : "Matching version not installed"}
-        />
+      <div className="flex shrink-0 items-center">
         {isChecking ? (
           <Wifi className="text-muted-foreground/40 size-3" aria-label="Checking server status" />
         ) : isOnline ? (
