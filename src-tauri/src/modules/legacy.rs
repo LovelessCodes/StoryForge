@@ -171,7 +171,7 @@ fn count_zips(dir: &Path) -> usize {
 }
 
 /// Returns a free folder inside the profiles root, suffixing on collisions.
-fn free_profile_dir(root: &Path, folder: &str) -> PathBuf {
+pub(crate) fn free_profile_dir(root: &Path, folder: &str) -> PathBuf {
     let candidate = root.join(folder);
     if !candidate.exists() {
         return candidate;
@@ -187,7 +187,11 @@ fn free_profile_dir(root: &Path, folder: &str) -> PathBuf {
 
 /// Copies `source` to a freshly chosen target folder via a hidden staging dir,
 /// so a collision or a partial copy can never touch an existing profile.
-fn copy_profile_dir(root: &Path, source: &Path, folder: &str) -> Result<PathBuf, UiError> {
+pub(crate) fn copy_profile_dir(
+    root: &Path,
+    source: &Path,
+    folder: &str,
+) -> Result<PathBuf, UiError> {
     let target = free_profile_dir(root, folder);
     let staging = root.join(format!(".staging-{}", now_nanos()));
     create_dir_all(&staging).map_err(|e| {

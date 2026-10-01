@@ -21,6 +21,9 @@ type SettingsStore = {
   /** User hid the "use your existing Vintage Story data" banner. */
   gameDataDismissed: boolean;
   dismissGameData: () => void;
+  /** User hid the "import installations from VS Launcher" banner. */
+  vsLauncherDismissed: boolean;
+  dismissVsLauncher: () => void;
   defaultModSortBy: SortBy;
   setDefaultModSortBy: (sortBy: SortBy) => void;
   profilesParent: string | null;
@@ -42,6 +45,8 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
   dismissLegacyMigration: () => set(() => ({ legacyMigrationDismissed: true })),
   gameDataDismissed: false,
   dismissGameData: () => set(() => ({ gameDataDismissed: true })),
+  vsLauncherDismissed: false,
+  dismissVsLauncher: () => set(() => ({ vsLauncherDismissed: true })),
   defaultModSortBy: "trending",
   setDefaultModSortBy: (sortBy) => set(() => ({ defaultModSortBy: sortBy })),
   profilesParent: null,

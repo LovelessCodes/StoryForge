@@ -131,6 +131,19 @@ Migration converts `installation.json` → `profile.json` and records completed 
 `<app data>/legacy-migration.json`; name collisions import under a suffixed folder
 (e.g. `default-2`).
 
+**VS Launcher (XurxoMF) import** — reads `<appData>/VSLauncher/config.json` (VS Launcher pins
+Electron's userData to that folder):
+
+| Command                            | Args                                | Returns                    |
+| ---------------------------------- | ----------------------------------- | -------------------------- |
+| `detect_vs_launcher_installations` | —                                   | `VsLauncherInstallation[]` |
+| `import_vs_launcher_installations` | `{ paths, mode: "move" \| "copy" }` | `{ migrated, skipped }`    |
+
+Only paths listed in the VS Launcher config are accepted; completed imports are recorded in
+`<app data>/vs-launcher-migration.json`. VS Launcher stores env vars as a comma-separated
+`KEY=value` string, playtime in milliseconds (converted to seconds) and uses its own icon
+artwork (icons are not carried over).
+
 **Servers**: `fetch_all_servers` returns an address-scoped `id` (name|ip|port hash —
 favorites and status probes are stored against it) plus a profile-scoped `row_key`
 (`<profile_id>:<id>`). The frontend uses `rowKey` for React keys and list/store

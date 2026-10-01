@@ -40,7 +40,7 @@ fn home_dir() -> Option<PathBuf> {
 }
 
 /// Default `VintagestoryData` locations, most likely first.
-fn default_data_candidates() -> Vec<PathBuf> {
+pub(crate) fn default_data_candidates() -> Vec<PathBuf> {
     let mut candidates: Vec<PathBuf> = Vec::new();
 
     #[cfg(target_os = "macos")]

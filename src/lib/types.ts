@@ -360,3 +360,20 @@ export type DetectedGameData = {
   has_saves: boolean;
   registered: boolean;
 };
+
+// ── VS Launcher (XurxoMF) installations ──
+
+export type VsLauncherInstallation = {
+  id: string;
+  name: string;
+  version: string;
+  path: string;
+  mod_count: number;
+  size_bytes: number;
+  size_display: string;
+  has_saves: boolean;
+  last_time_played: number | null;
+  /** Points at the game's own default data folder. */
+  is_default_game_data: boolean;
+  already_imported: boolean;
+};
