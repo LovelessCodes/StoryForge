@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { DownloadIcon, MoonIcon, RefreshCwIcon, ZapIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { useAppVersion } from "@/hooks/use-app-version";
 import { type SortBy, sortOptions } from "@/lib/mod-sort";
 import { toast } from "@/lib/notify";
+import { elementCenter, switchTheme } from "@/lib/theme-transition";
 import { useSettingsStore } from "@/stores/settings";
 
 import AccountCard from "./AccountCard";
@@ -53,6 +54,7 @@ function SettingRow({
 function AppearanceCard() {
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
+  const switchRef = useRef<HTMLSpanElement>(null);
 
   return (
     <Card>
@@ -64,11 +66,18 @@ function AppearanceCard() {
       </CardHeader>
       <CardContent className="grid gap-3">
         <SettingRow description="Use the dark theme across the app." label="Dark mode">
-          <Switch
-            aria-label="Dark mode"
-            checked={isDark}
-            onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
-          />
+          <span ref={switchRef} className="inline-flex">
+            <Switch
+              aria-label="Dark mode"
+              checked={isDark}
+              onCheckedChange={(checked) =>
+                switchTheme(checked ? "dark" : "light", {
+                  origin: elementCenter(switchRef.current),
+                  setTheme,
+                })
+              }
+            />
+          </span>
         </SettingRow>
       </CardContent>
     </Card>
