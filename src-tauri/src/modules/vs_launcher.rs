@@ -441,3 +441,67 @@ fn import_blocking(
 
     Ok(report)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_vs_launcher_env_vars() {
+        let parsed = parse_env_vars("KEY=value, OTHER = spaced ,EMPTY=,NOEQUALS,=novalue");
+        assert_eq!(parsed.get("KEY").map(String::as_str), Some("value"));
+        assert_eq!(parsed.get("OTHER").map(String::as_str), Some("spaced"));
+        assert_eq!(parsed.get("EMPTY").map(String::as_str), Some(""));
+        // `NOEQUALS` and `=novalue` are dropped. Unlike VS Launcher we keep
+        // entries with empty values (e.g. a variable intentionally blanked).
+        assert_eq!(parsed.len(), 3);
+    }
+
+    #[test]
+    fn deserializes_vs_launcher_config() {
+        let config: VsConfig = serde_json::from_str(
+            r#"{
+                "version": 1.6,
+                "installations": [{
+                    "id": "123e4567-e89b-12d3-a456-426614174000",
+                    "name": "My World",
+                    "icon": "basalt",
+                    "path": "/tmp/vsl-install",
+                    "version": "1.21.3",
+                    "startParams": "--foo bar",
+                    "backupsLimit": 3,
+                    "backupsAuto": false,
+                    "compressionLevel": 4,
+                    "backups": [],
+                    "lastTimePlayed": 1700000000000,
+                    "totalTimePlayed": 3600000,
+                    "mesaGlThread": true,
+                    "envVars": "A=1,B=2"
+                }],
+                "gameVersions": [{ "version": "1.21.3", "path": "/tmp/game" }]
+            }"#,
+        )
+        .expect("config parses");
+
+        let installation = &config.installations[0];
+        assert_eq!(installation.name, "My World");
+        assert_eq!(installation.version, "1.21.3");
+        assert_eq!(installation.start_params, "--foo bar");
+        assert_eq!(installation.last_time_played, 1_700_000_000_000);
+        assert_eq!(installation.total_time_played / 1000, 3600);
+        assert!(installation.mesa_gl_thread);
+        assert_eq!(parse_env_vars(&installation.env_vars).len(), 2);
+    }
+
+    #[test]
+    fn defaults_missing_installation_fields() {
+        let config: VsConfig =
+            serde_json::from_str(r#"{"installations":[{"name":"Only a name"}]}"#).unwrap();
+        let installation = &config.installations[0];
+        assert_eq!(installation.path, "");
+        assert_eq!(installation.last_time_played, 0);
+        assert_eq!(installation.total_time_played, 0);
+        assert!(!installation.mesa_gl_thread);
+        assert!(installation.id.is_empty());
+    }
+}
