@@ -11,11 +11,14 @@ import { useDownloadManager, waitForDownload } from "./use-download-manager";
  * pause/cancel live in the Downloads sheet) and resolves once it finishes.
  */
 export const useAddLatestModVersion = ({
+  destinationLabel,
   mod,
   modsDirectory,
 }: {
   mod: Mod;
   modsDirectory?: string;
+  /** Display name of the destination profile/server for the sheet. */
+  destinationLabel?: string;
 }) => {
   const { startModDownload } = useDownloadManager();
   return useMutation({
@@ -31,7 +34,9 @@ export const useAddLatestModVersion = ({
       startModDownload({
         token,
         label: `${modInfo.mod.name} v${release.modversion}`,
-        detail: modsDirectory ? (modsDirectory.split(/[/\\]/).pop() ?? null) : "Standalone",
+        detail:
+          destinationLabel ??
+          (modsDirectory ? (modsDirectory.split(/[/\\]/).pop() ?? null) : "Standalone"),
         url: release.mainfile,
         destpath: path,
         modsDirectory: modsDirectory ?? null,

@@ -73,6 +73,7 @@ export function ModItem({
   const pathHash = modsDirectory ? hashPath(modsDirectory) : "standalone";
 
   const { mutate: downloadLatest, isPending: isDownloading } = useAddLatestModVersion({
+    destinationLabel,
     mod,
     modsDirectory,
   });
