@@ -171,11 +171,12 @@ export function ModItem({
               <DownloadCloudIcon aria-hidden="true" />
             </TooltipTrigger>
             <TooltipContent>
-              <span className="font-mono">
-                {installedMod.version} → {updateMod.modversion}
+              <span className="grid gap-0.5">
+                <span className="font-mono">
+                  {installedMod.version} → {updateMod.modversion}
+                </span>
+                <span>Update to latest version</span>
               </span>
-              <br />
-              Update to latest version
             </TooltipContent>
           </Tooltip>
         ) : installedMod ? null : modsDirectory ? (
