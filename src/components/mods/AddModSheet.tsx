@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -16,7 +15,7 @@ import {
 import { useAddModToProfile } from "@/hooks/use-add-mod-to-profile";
 import { hashPath, latestRelease } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
-import type { Mod, ModInfo, ProgressPayload, Release } from "@/lib/types";
+import type { Mod, ModInfo, Release } from "@/lib/types";
 
 import { ModVersionPicker } from "./ModVersionPicker";
 
@@ -41,49 +40,17 @@ export function AddModSheet({
     refetchOnReconnect: false,
     refetchOnWindowFocus: false,
   });
-  const listenRef = useRef<UnlistenFn>(null);
   const [userSelectedVersion, setUserSelectedVersion] = useState<Release | null>(null);
   const selectedVersion = userSelectedVersion ?? latestRelease(modInfo?.mod.releases) ?? null;
   const pathHash = hashPath(modsDirectory);
 
-  useEffect(
-    () => () => {
-      listenRef.current?.();
-      listenRef.current = null;
-    },
-    [],
-  );
-
   const { mutate: addModToProfile, isPending } = useAddModToProfile({
     onError: (error, variables) => {
+      if (error.message === "Download cancelled") return;
       toast.error(
         `Error adding ${variables.mod.mod.name} to ${destinationLabel}: ${error.message}`,
         { id: `add-mod-${variables.mod.mod.modid}-${pathHash}` },
       );
-      listenRef.current?.();
-      listenRef.current = null;
-    },
-    onMutate: async (variables) => {
-      toast.loading(`Adding ${variables.mod.mod.name} to ${destinationLabel}...`, {
-        id: `add-mod-${variables.mod.mod.modid}-${pathHash}`,
-      });
-      listenRef.current = await listen<ProgressPayload>(variables.emitevent, (event) => {
-        const { phase, percent } = event.payload;
-        if (phase === "download") {
-          toast.loading(
-            `Downloading ${variables.mod.mod.name} to ${destinationLabel}... ${percent?.toFixed(0)}%`,
-            { id: `add-mod-${variables.mod.mod.modid}-${pathHash}` },
-          );
-        }
-      });
-    },
-    onSuccess: (_, variables) => {
-      listenRef.current?.();
-      listenRef.current = null;
-      toast.success(`Successfully added ${variables.mod.mod.name} to ${destinationLabel}`, {
-        id: `add-mod-${variables.mod.mod.modid}-${pathHash}`,
-      });
-      onOpenChange(false);
     },
   });
 
@@ -120,14 +87,16 @@ export function AddModSheet({
             variant="accent-primary"
             disabled={!selectedVersion || isPending}
             onClick={() => {
-              if (selectedVersion && modInfo) {
-                addModToProfile({
-                  emitevent: `mod-download-${mod.modid}-${pathHash}`,
-                  modsDirectory,
-                  mod: modInfo,
-                  version: selectedVersion.modversion,
-                });
-              }
+              if (!selectedVersion || !modInfo) return;
+              // Runs in the downloads manager; progress, pausing and
+              // cancelling happen in the Downloads sheet.
+              addModToProfile({
+                destinationLabel,
+                modsDirectory,
+                mod: modInfo,
+                version: selectedVersion.modversion,
+              });
+              onOpenChange(false);
             }}
           >
             Add Mod

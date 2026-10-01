@@ -1,16 +1,15 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { useEffect, useRef } from "react";
 
-import { hashPath, latestRelease, pathDelimiter } from "@/lib/helpers";
-import { toast } from "@/lib/notify";
-import type { Mod } from "@/lib/types";
-import type { ModInfo, ProgressPayload } from "@/lib/types";
+import { hashPath, latestRelease } from "@/lib/helpers";
+import type { Mod, ModInfo } from "@/lib/types";
 
-import { installedModsQueryKey } from "./use-installed-mods";
-import { modUpdatesQueryKey } from "./use-mod-updates";
+import { useDownloadManager, waitForDownload } from "./use-download-manager";
 
+/**
+ * Queues the newest release of a mod into the downloads manager (progress and
+ * pause/cancel live in the Downloads sheet) and resolves once it finishes.
+ */
 export const useAddLatestModVersion = ({
   mod,
   modsDirectory,
@@ -18,83 +17,27 @@ export const useAddLatestModVersion = ({
   mod: Mod;
   modsDirectory?: string;
 }) => {
-  const pathHash = modsDirectory ? hashPath(modsDirectory) : "standalone";
-  const emitevent = `mod-download-${mod.modid}-${pathHash}`;
-  const queryClient = useQueryClient();
-  const listenRef = useRef<UnlistenFn>(null);
-
-  useEffect(
-    () => () => {
-      listenRef.current?.();
-      listenRef.current = null;
-    },
-    [],
-  );
-
+  const { startModDownload } = useDownloadManager();
   return useMutation({
     mutationFn: async ({ path }: { path: string }) => {
       const modInfo = (await invoke("fetch_mod_info", {
         modid: mod.modid.toString(),
       })) as ModInfo;
-      (await invoke("download_and_maybe_extract", {
-        params: {
-          destpath: path,
-          emitevent,
-          extract: false,
-          url: latestRelease(modInfo.mod.releases)?.mainfile,
-        },
-      })) as string;
-      return { modInfo };
-    },
-    onError: (error, _, result) => {
-      const label = modsDirectory
-        ? modsDirectory.split(pathDelimiter).pop() || modsDirectory
-        : "Mods";
-      toast.error(`Error downloading ${result?.modInfo?.mod.name} to ${label}: ${error.message}`, {
-        id: `add-mod-${result?.modInfo?.mod.modid}-${pathHash}`,
-      });
-      listenRef.current?.();
-      listenRef.current = null;
-    },
-    onMutate: async () => {
-      const modInfo = (await invoke("fetch_mod_info", {
-        modid: mod.modid.toString(),
-      })) as ModInfo;
-      const label = modsDirectory
-        ? modsDirectory.split(pathDelimiter).pop() || modsDirectory
-        : "Mods";
-      toast.loading(`Downloading ${modInfo?.mod.name} to ${label}...`, {
-        id: `add-mod-${modInfo?.mod.modid}-${pathHash}`,
-      });
-      listenRef.current = await listen<ProgressPayload>(emitevent, (event) => {
-        const { phase, percent } = event.payload;
-        if (phase === "download") {
-          toast.loading(`Downloading ${modInfo?.mod.name} to ${label}... ${percent?.toFixed(0)}%`, {
-            id: `add-mod-${modInfo?.mod.modid}-${pathHash}`,
-          });
-        }
-      });
-      return { modInfo };
-    },
-    onSuccess: async (_, __, { modInfo }) => {
-      // Always detach first: the old early return leaked the listener for
-      // standalone downloads (no modsDirectory).
-      listenRef.current?.();
-      listenRef.current = null;
-      const label = modsDirectory
-        ? modsDirectory.split(pathDelimiter).pop() || modsDirectory
-        : "Mods";
-      toast.success(`Successfully downloaded ${modInfo?.mod.name} to ${label}`, {
-        id: `add-mod-${modInfo?.mod.modid}-${pathHash}`,
-      });
-      if (modsDirectory) {
-        void queryClient.invalidateQueries({
-          queryKey: modUpdatesQueryKey(modsDirectory),
-        });
-        void queryClient.invalidateQueries({
-          queryKey: installedModsQueryKey(modsDirectory),
-        });
+      const release = latestRelease(modInfo.mod.releases);
+      if (!release?.mainfile) {
+        throw new Error(`No download available for ${modInfo.mod.name}`);
       }
+      const token = `mod:${mod.modid}:${release.modversion}:${hashPath(path)}`;
+      startModDownload({
+        token,
+        label: `${modInfo.mod.name} v${release.modversion}`,
+        detail: modsDirectory ? (modsDirectory.split(/[/\\]/).pop() ?? null) : "Standalone",
+        url: release.mainfile,
+        destpath: path,
+        modsDirectory: modsDirectory ?? null,
+      });
+      await waitForDownload(token);
+      return { modInfo };
     },
   });
 };

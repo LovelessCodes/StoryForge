@@ -71,7 +71,6 @@ export function ModItem({
     modUpdates?.updates[mod.urlalias ?? ""];
 
   const pathHash = modsDirectory ? hashPath(modsDirectory) : "standalone";
-  const emitevent = `mod-download-${mod.modid}-${pathHash}`;
 
   const { mutate: downloadLatest, isPending: isDownloading } = useAddLatestModVersion({
     mod,
@@ -104,7 +103,12 @@ export function ModItem({
         queryClient.invalidateQueries({ queryKey: installedModsQueryKey(variables.path) }),
         queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(variables.path) }),
       ]);
-      addUpdate({ emitevent, modsDirectory: variables.path, mod: variables.update });
+      addUpdate({
+        destinationLabel,
+        label: `${mod.name} v${variables.update.modversion}`,
+        modsDirectory: variables.path,
+        mod: variables.update,
+      });
     },
   });
 

@@ -1,7 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -22,13 +21,12 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useHostedServers } from "@/hooks/queries/server-hosting";
-import { installedModsQueryKey } from "@/hooks/use-installed-mods";
-import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import { hashPath, latestRelease, pathDelimiter } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
-import type { Mod, ModInfo, ProgressPayload, Release } from "@/lib/types";
+import type { Mod, ModInfo, Release } from "@/lib/types";
 import { useProfiles } from "@/stores/profiles";
 
+import { useDownloadManager } from "../../hooks/use-download-manager";
 import { ModVersionPicker } from "./ModVersionPicker";
 
 type Destination = {
@@ -79,66 +77,37 @@ export function StandaloneInstallPickerSheet({
   const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null);
   const [userSelectedVersion, setUserSelectedVersion] = useState<Release | null>(null);
   const selectedVersion = userSelectedVersion ?? latestRelease(modInfo?.mod.releases) ?? null;
-  const queryClient = useQueryClient();
-  const listenRef = useRef<UnlistenFn>(null);
-
-  useEffect(
-    () => () => {
-      listenRef.current?.();
-      listenRef.current = null;
-    },
-    [],
-  );
+  const { startModDownload } = useDownloadManager();
 
   const { mutate: installMod, isPending } = useMutation({
-    mutationFn: ({ dest, release }: { dest: Destination; release: Release }) => {
-      const emitevent = `mod-download-${mod.modid}-${hashPath(dest.path)}`;
-      return invoke("download_and_maybe_extract", {
-        params: {
-          destpath: dest.path,
-          emitevent,
-          extract: false,
-          url: release.mainfile,
-        },
-      }) as Promise<string>;
+    mutationFn: async ({ dest, release }: { dest: Destination; release: Release }) => {
+      if (!release.mainfile) {
+        throw new Error(`No download available for ${modInfo?.mod.name ?? mod.name}`);
+      }
+      // The destination ends in `/Mods`; the profile/server root is what the
+      // mod lists are keyed by.
+      const modsSuffix = `${pathDelimiter}Mods`;
+      const modsDirectory = dest.path.endsWith(modsSuffix)
+        ? dest.path.slice(0, -modsSuffix.length)
+        : dest.path;
+      // Runs in the downloads manager; progress, pausing and cancelling
+      // happen in the Downloads sheet.
+      startModDownload({
+        token: `mod:${mod.modid}:${release.modversion}:${hashPath(dest.path)}`,
+        label: `${modInfo?.mod.name ?? mod.name} v${release.modversion}`,
+        detail: dest.name,
+        url: release.mainfile,
+        destpath: dest.path,
+        modsDirectory,
+      });
+      onOpenChange(false);
     },
     onError: (error, variables) => {
+      if (error.message === "Download cancelled") return;
       toast.error(
         `Error installing ${modInfo?.mod.name ?? mod.name} to ${variables.dest.name}: ${error.message}`,
         { id: `standalone-install-${mod.modid}-${variables.dest.id}` },
       );
-      listenRef.current?.();
-      listenRef.current = null;
-    },
-    onMutate: async (variables) => {
-      const label = modInfo?.mod.name ?? mod.name;
-      const emitevent = `mod-download-${mod.modid}-${hashPath(variables.dest.path)}`;
-      toast.loading(`Installing ${label} to ${variables.dest.name}...`, {
-        id: `standalone-install-${mod.modid}-${variables.dest.id}`,
-      });
-      listenRef.current = await listen<ProgressPayload>(emitevent, (event) => {
-        const { phase, percent } = event.payload;
-        if (phase === "download") {
-          toast.loading(
-            `Downloading ${label} to ${variables.dest.name}... ${percent?.toFixed(0)}%`,
-            { id: `standalone-install-${mod.modid}-${variables.dest.id}` },
-          );
-        }
-      });
-    },
-    onSuccess: (_, variables) => {
-      listenRef.current?.();
-      listenRef.current = null;
-      toast.success(`Installed ${modInfo?.mod.name ?? mod.name} to ${variables.dest.name}`, {
-        id: `standalone-install-${mod.modid}-${variables.dest.id}`,
-      });
-      const modsSuffix = `${pathDelimiter}Mods`;
-      const destDir = variables.dest.path.endsWith(modsSuffix)
-        ? variables.dest.path.slice(0, -modsSuffix.length)
-        : variables.dest.path;
-      void queryClient.invalidateQueries({ queryKey: installedModsQueryKey(destDir) });
-      void queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(destDir) });
-      onOpenChange(false);
     },
   });
 

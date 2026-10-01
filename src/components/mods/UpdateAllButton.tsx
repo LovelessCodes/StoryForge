@@ -28,13 +28,13 @@ export function UpdateAllButton({
   installedMods: OutputMod[];
 }) {
   const pathHash = hashPath(modsDirectory);
-  const emitevent = `mod-updates-${pathHash}-progress`;
   const toastId = `mod-updates-${pathHash}`;
   const queryClient = useQueryClient();
   const [wantsToUpdate, setWantsToUpdate] = useState(false);
 
-  const { mutate: addModUpdate, isPending: addPending } = useAddModUpdateToProfile({
+  const { mutateAsync: addModUpdate, isPending: addPending } = useAddModUpdateToProfile({
     onError: (error, variables) => {
+      if (error.message === "Download cancelled") return;
       toast.error(`Error updating mod in ${destinationLabel}: ${error.message}`, {
         id: `mod-update-${pathHash}-${variables.mod.modidstr}`,
       });
@@ -57,7 +57,6 @@ export function UpdateAllButton({
         queryClient.invalidateQueries({ queryKey: installedModsQueryKey(variables.path) }),
         queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(variables.path) }),
       ]);
-      addModUpdate({ emitevent, modsDirectory: variables.path, mod: variables.updateMod });
     },
   });
 
@@ -69,7 +68,6 @@ export function UpdateAllButton({
       return;
     }
 
-    toast.loading("Downloading mod updates...", { id: toastId });
     // Build a lookup Map to avoid O(n*m) find() inside the loop
     const installedModsByModId = new Map<string | number, OutputMod>();
     for (const installed of installedMods) {
@@ -85,11 +83,18 @@ export function UpdateAllButton({
               installedModsByModId.get(Number(modid)) ??
               installedModsByModId.get(updateMod.modidstr);
             if (!installed) return;
-            toast.loading(`Updating ${installed.name}...`, { id: toastId });
             await removeModFromProfile({
               modpath: installed.path,
               path: modsDirectory,
               updateMod,
+            });
+            // Runs in the downloads manager; progress, pausing and cancelling
+            // happen in the Downloads sheet.
+            await addModUpdate({
+              destinationLabel,
+              label: `${installed.name} v${updateMod.modversion}`,
+              modsDirectory,
+              mod: updateMod,
             });
           }),
         );

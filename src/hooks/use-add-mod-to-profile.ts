@@ -1,12 +1,14 @@
-import { type UseMutationOptions, useMutation, useQueryClient } from "@tanstack/react-query";
-import { invoke } from "@tauri-apps/api/core";
+import { type UseMutationOptions, useMutation } from "@tanstack/react-query";
 
-import { pathDelimiter } from "@/lib/helpers";
+import { hashPath, pathDelimiter } from "@/lib/helpers";
 import type { ModInfo } from "@/lib/types";
 
-import { installedModsQueryKey } from "./use-installed-mods";
-import { modUpdatesQueryKey } from "./use-mod-updates";
+import { useDownloadManager, waitForDownload } from "./use-download-manager";
 
+/**
+ * Queues a mod install into the downloads manager (progress and pause/cancel
+ * live in the Downloads sheet) and resolves once it finishes.
+ */
 export const useAddModToProfile = (
   props?: UseMutationOptions<
     string,
@@ -15,28 +17,39 @@ export const useAddModToProfile = (
       modsDirectory: string;
       mod: ModInfo;
       version: string;
-      emitevent: string;
+      destinationLabel?: string;
     }
   >,
 ) => {
-  const queryClient = useQueryClient();
-  const { onSuccess, ...restProps } = props ?? {};
+  const { startModDownload } = useDownloadManager();
   return useMutation({
-    ...restProps,
-    mutationFn: async ({ modsDirectory, mod: { mod }, version, emitevent }) =>
-      invoke("download_and_maybe_extract", {
-        params: {
-          destpath: `${modsDirectory}${pathDelimiter}Mods`,
-          emitevent,
-          extract: false,
-          url: mod.releases.find((r) => r.modversion === version)?.mainfile,
-        },
-      }) as Promise<string>,
-    onSuccess: async (...args) => {
-      const { modsDirectory } = args[1];
-      void queryClient.invalidateQueries({ queryKey: installedModsQueryKey(modsDirectory) });
-      void queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(modsDirectory) });
-      onSuccess?.(...args);
+    mutationFn: async ({
+      modsDirectory,
+      mod: { mod },
+      version,
+      destinationLabel,
+    }: {
+      modsDirectory: string;
+      mod: ModInfo;
+      version: string;
+      destinationLabel?: string;
+    }) => {
+      const release = mod.releases.find((r) => r.modversion === version);
+      if (!release?.mainfile) {
+        throw new Error(`No download available for ${mod.name} ${version}`);
+      }
+      const token = `mod:${mod.modid}:${version}:${hashPath(modsDirectory)}`;
+      startModDownload({
+        token,
+        label: `${mod.name} v${version}`,
+        detail: destinationLabel ?? null,
+        url: release.mainfile,
+        destpath: `${modsDirectory}${pathDelimiter}Mods`,
+        modsDirectory,
+      });
+      await waitForDownload(token);
+      return "success";
     },
+    ...props,
   });
 };

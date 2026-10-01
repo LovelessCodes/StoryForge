@@ -38,7 +38,7 @@ export default function DownloadsSheet({ open, onOpenChange }: DownloadsSheetPro
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b">
           <SheetTitle>Downloads</SheetTitle>
-          <SheetDescription>Game versions downloading in the background.</SheetDescription>
+          <SheetDescription>Game versions and mods downloading in the background.</SheetDescription>
         </SheetHeader>
         <ScrollArea scrollFade className="min-h-0 flex-1">
           {list.length === 0 ? (
@@ -49,7 +49,12 @@ export default function DownloadsSheet({ open, onOpenChange }: DownloadsSheetPro
                 <li key={entry.token} className="grid gap-2 p-3">
                   <div className="flex items-center gap-2">
                     <span className="truncate text-xs font-medium">{entry.label}</span>
-                    <Badge variant="secondary" className="ml-auto h-4 px-1.5 text-[10px]">
+                    {entry.detail && (
+                      <span className="text-muted-foreground truncate text-[11px]">
+                        → {entry.detail}
+                      </span>
+                    )}
+                    <Badge variant="secondary" className="ml-auto h-4 shrink-0 px-1.5 text-[10px]">
                       {statusLabel[entry.status]}
                     </Badge>
                   </div>

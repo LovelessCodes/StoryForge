@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -18,7 +17,7 @@ import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import { hashPath } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
-import type { Mod, ModInfo, OutputMod, ProgressPayload, Release } from "@/lib/types";
+import type { Mod, ModInfo, OutputMod, Release } from "@/lib/types";
 
 import { ModVersionPicker } from "./ModVersionPicker";
 
@@ -49,7 +48,6 @@ export function UpdateModSheet({
     refetchOnReconnect: false,
     refetchOnWindowFocus: false,
   });
-  const listenRef = useRef<UnlistenFn>(null);
   const [userSelectedVersion, setUserSelectedVersion] = useState<Release | null>(null);
   const versionFrom = installedMod.version;
   const selectedVersion =
@@ -58,7 +56,6 @@ export function UpdateModSheet({
       ? (modInfo?.mod.releases.find((r) => r.modversion === versionFrom) ?? null)
       : null);
   const pathHash = hashPath(modsDirectory);
-  const emitevent = `mod-download-${mod.modid}-${pathHash}`;
   const label = modInfo?.mod.name ?? mod.name;
 
   const isUpgrade = selectedVersion ? selectedVersion.modversion >= versionFrom : true;
@@ -69,42 +66,12 @@ export function UpdateModSheet({
     past: isUpgrade ? "updated" : "downgraded",
   };
 
-  useEffect(
-    () => () => {
-      listenRef.current?.();
-      listenRef.current = null;
-    },
-    [],
-  );
-
   const { mutate: addModToProfile, isPending: addPending } = useAddModToProfile({
     onError: (error) => {
+      if (error.message === "Download cancelled") return;
       toast.error(`Error ${wording.gerund} ${label} to ${destinationLabel}: ${error.message}`, {
         id: `add-mod-${modInfo?.mod.modid}-${pathHash}`,
       });
-      listenRef.current?.();
-      listenRef.current = null;
-    },
-    onMutate: async () => {
-      toast.loading(`${wording.Gerund} ${label} to ${destinationLabel}...`, {
-        id: `add-mod-${modInfo?.mod.modid}-${pathHash}`,
-      });
-      listenRef.current = await listen<ProgressPayload>(emitevent, (event) => {
-        const { phase, percent } = event.payload;
-        if (phase === "download") {
-          toast.loading(`Downloading ${label} to ${destinationLabel}... ${percent?.toFixed(0)}%`, {
-            id: `add-mod-${modInfo?.mod.modid}-${pathHash}`,
-          });
-        }
-      });
-    },
-    onSuccess: () => {
-      listenRef.current?.();
-      listenRef.current = null;
-      toast.success(`Successfully ${wording.past} ${label} to ${destinationLabel}`, {
-        id: `add-mod-${modInfo?.mod.modid}-${pathHash}`,
-      });
-      onOpenChange(false);
     },
   });
 
@@ -123,13 +90,16 @@ export function UpdateModSheet({
       void queryClient.invalidateQueries({ queryKey: installedModsQueryKey(modsDirectory) });
       void queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(modsDirectory) });
       if (selectedVersion && modInfo) {
+        // Runs in the downloads manager; progress, pausing and cancelling
+        // happen in the Downloads sheet.
         addModToProfile({
-          emitevent,
+          destinationLabel,
           modsDirectory,
           mod: modInfo,
           version: selectedVersion.modversion,
         });
       }
+      onOpenChange(false);
     },
   });
 

@@ -8,10 +8,12 @@ import { useMountEffect } from "@/hooks/use-mount-effect";
 import { buildVersionPath, zipfolderprefix } from "@/lib/helpers";
 import type { PausedDownload, ProgressPayload } from "@/lib/types";
 import { claimVersionDownload, releaseVersionDownload } from "@/lib/version-download-lock";
-import { useDownloadStore } from "@/stores/downloads";
+import { useDownloadStore, type DownloadEntry } from "@/stores/downloads";
 import { useSettingsStore } from "@/stores/settings";
 
+import { installedModsQueryKey } from "./use-installed-mods";
 import { installedVersionsQueryKey } from "./use-installed-versions";
+import { modUpdatesQueryKey } from "./use-mod-updates";
 
 const MAX_CONCURRENT = 3;
 
@@ -94,8 +96,28 @@ function computeSpeed(token: string): number | null {
   return bytesDelta / elapsed;
 }
 
-function eventName(version: string): string {
-  return `download://version:${version.replace(/\./g, "_")}`;
+function eventName(token: string): string {
+  // Tauri event names only allow alphanumerics, `-`, `/`, `:` and `_`.
+  return `download://${token.replace(/[^\w:/-]/g, "_")}`;
+}
+
+/** Refreshes the lists a finished download belongs to. */
+function invalidateQueriesFor(
+  entry: DownloadEntry,
+  queryClient: ReturnType<typeof useQueryClient>,
+): void {
+  if (entry.kind === "version") {
+    void queryClient.invalidateQueries({ queryKey: installedVersionsQueryKey() });
+    return;
+  }
+  if (entry.modsDirectory) {
+    void queryClient.invalidateQueries({
+      queryKey: installedModsQueryKey(entry.modsDirectory),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: modUpdatesQueryKey(entry.modsDirectory),
+    });
+  }
 }
 
 async function doDownload(
@@ -103,31 +125,52 @@ async function doDownload(
   queryClient: ReturnType<typeof useQueryClient>,
 ): Promise<void> {
   const store = useDownloadStore.getState();
-  const version = token;
+  const entry = store.entries[token];
+  if (!entry) return;
 
+  const version = entry.kind === "version" ? token : null;
   store.updateEntry(token, { status: "downloading", speedBps: null });
 
   let unlisten: UnlistenFn | null = null;
+  let claimed = false;
 
   try {
-    if (!claimVersionDownload(version)) {
-      throw new Error("This version is already downloading");
+    // Resolve the request: versions pick the URL and destination themselves,
+    // mods carry both in the entry (so retry works without the caller).
+    let destpath: string;
+    let url: string;
+    let extract: boolean;
+    let extractdir: string | undefined;
+    let zipsubfolderprefix: string | undefined;
+
+    if (version !== null) {
+      if (!claimVersionDownload(version)) {
+        throw new Error("This version is already downloading");
+      }
+      claimed = true;
+
+      const appFolder = await appDataDir();
+      const { versionsParent, versionsSubdir } = useSettingsStore.getState();
+      destpath = buildVersionPath(versionsParent ?? appFolder, version, versionsSubdir);
+
+      const link = (await invoke("get_download_link", { version })) as string;
+      if (!link) throw new Error("Download URL not found");
+      url = link;
+      extract = true;
+      extractdir = destpath;
+      zipsubfolderprefix = zipfolderprefix();
+    } else {
+      if (!entry.url || !entry.destpath) throw new Error("Download URL missing");
+      destpath = entry.destpath;
+      url = entry.url;
+      extract = false;
     }
-
-    // Resolve paths
-    const appFolder = await appDataDir();
-    const { versionsParent, versionsSubdir } = useSettingsStore.getState();
-    const versionPath = buildVersionPath(versionsParent ?? appFolder, version, versionsSubdir);
-
-    // Get download URL
-    const url = (await invoke("get_download_link", { version })) as string;
-    if (!url) throw new Error("Download URL not found");
 
     // Cancelled while resolving the URL: cancel() removed the entry, so don't
     // start a ghost download that nobody can see or stop.
     if (!useDownloadStore.getState().entries[token]) return;
 
-    const evt = eventName(version);
+    const evt = eventName(token);
 
     // Set up progress listener
     unlisten = await listen<ProgressPayload>(evt, (event) => {
@@ -167,12 +210,12 @@ async function doDownload(
 
     const result = (await invoke("download_and_maybe_extract", {
       params: {
-        destpath: versionPath,
+        destpath,
         emitevent: evt,
-        extract: true,
-        extractdir: versionPath,
+        extract,
+        extractdir,
         url,
-        zipsubfolderprefix: zipfolderprefix(),
+        zipsubfolderprefix,
       },
     })) as string;
 
@@ -184,23 +227,19 @@ async function doDownload(
     } else if (result === "success") {
       store.updateEntry(token, { status: "done", percent: 100 });
       settleWaiters(token);
-      void queryClient.invalidateQueries({
-        queryKey: installedVersionsQueryKey(),
-      });
+      invalidateQueriesFor(entry, queryClient);
     } else if (result === "already_downloaded") {
       store.removeEntry(token);
       settleWaiters(token);
-      // The version is on disk: refresh the list even though nothing downloaded.
-      void queryClient.invalidateQueries({
-        queryKey: installedVersionsQueryKey(),
-      });
+      // The file is on disk: refresh the lists even though nothing downloaded.
+      invalidateQueriesFor(entry, queryClient);
     }
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     store.updateEntry(token, { status: "error", error: message });
     settleWaiters(token, new Error(message));
   } finally {
-    releaseVersionDownload(version);
+    if (claimed && version !== null) releaseVersionDownload(version);
     pauseRequests.delete(token);
     unlisten?.();
     speedSamples.delete(token);
@@ -249,7 +288,7 @@ export function useDownloadManager() {
       const store = useDownloadStore.getState();
       for (const p of paused) {
         if (!store.entries[p.label]) {
-          store.addEntry({ token: p.label, label: p.label, status: "paused" });
+          store.addEntry({ token: p.label, label: p.label, status: "paused", kind: "version" });
         }
       }
 
@@ -265,7 +304,35 @@ export function useDownloadManager() {
       if (store.entries[token]) return;
       pauseRequests.delete(token);
 
-      store.addEntry({ token, label: version, status: "pending" });
+      store.addEntry({ token, label: version, status: "pending", kind: "version" });
+      processQueue(queryClient);
+    },
+    [queryClient],
+  );
+
+  const startModDownload = useCallback(
+    (request: ModDownloadRequest) => {
+      const store = useDownloadStore.getState();
+      const existing = store.entries[request.token];
+
+      if (existing) {
+        // A finished or failed entry from an earlier attempt would make the
+        // enqueue a no-op; drop it and start fresh. Anything else is already
+        // queued or running and is reused as-is.
+        if (existing.status !== "done" && existing.status !== "error") return;
+        store.removeEntry(request.token);
+      }
+      pauseRequests.delete(request.token);
+      store.addEntry({
+        token: request.token,
+        label: request.label,
+        detail: request.detail ?? null,
+        status: "pending",
+        kind: "mod",
+        url: request.url,
+        destpath: request.destpath,
+        modsDirectory: request.modsDirectory ?? null,
+      });
       processQueue(queryClient);
     },
     [queryClient],
@@ -292,20 +359,22 @@ export function useDownloadManager() {
     [queryClient],
   );
 
-  const cancel = useCallback((version: string) => {
+  const cancel = useCallback((token: string) => {
     const store = useDownloadStore.getState();
-    const entry = store.entries[version];
+    const entry = store.entries[token];
 
-    pauseRequests.delete(version);
-    void emit(`${eventName(version)}:cancel`);
+    pauseRequests.delete(token);
+    void emit(`${eventName(token)}:cancel`);
 
-    // Paused downloads have no active task — clean up partial files directly.
-    if (entry?.status === "paused") {
-      void invoke("remove_installed_version", { version });
+    // Paused downloads have no active task. A paused version cleans up its
+    // partial extraction; paused mods keep their partial file so a later
+    // install of the same file can resume from it.
+    if (entry?.status === "paused" && entry.kind === "version") {
+      void invoke("remove_installed_version", { version: token });
     }
 
-    store.removeEntry(version);
-    settleWaiters(version, new Error("Download cancelled"));
+    store.removeEntry(token);
+    settleWaiters(token, new Error("Download cancelled"));
   }, []);
 
   const retry = useCallback(
@@ -330,5 +399,17 @@ export function useDownloadManager() {
     [queryClient],
   );
 
-  return { startDownload, pause, resume, cancel, retry };
+  return { startDownload, startModDownload, pause, resume, cancel, retry };
+}
+
+/** A mod (or other file) download queued into the shared sheet. */
+export interface ModDownloadRequest {
+  token: string;
+  label: string;
+  detail?: string | null;
+  url: string;
+  /** Directory that receives the file. */
+  destpath: string;
+  /** Profile root whose mod lists are refreshed on success. */
+  modsDirectory?: string | null;
 }

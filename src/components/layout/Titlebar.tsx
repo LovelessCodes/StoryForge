@@ -23,7 +23,7 @@ export default function Titlebar() {
   const active = list.filter((e) => e.status === "downloading" || e.status === "extracting");
   const paused = list.some((e) => e.status === "paused");
   const waiting = list.some((e) => e.status === "pending");
-  const pendingCount = list.filter((e) => e.status !== "done" && e.status !== "error").length;
+  const pendingCount = list.filter((e) => e.status !== "done").length;
   const percent =
     active.length > 0 ? Math.max(0, Math.min(100, Math.round(active[0].percent ?? 0))) : null;
 
