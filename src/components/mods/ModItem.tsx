@@ -311,11 +311,6 @@ function ModSummary({
               {mod.name}
             </h3>
           </a>
-          {installedMod && (
-            <Badge variant="outline" className="border-success/40 text-success">
-              Installed v{installedMod.version}
-            </Badge>
-          )}
           <Tooltip>
             <TooltipTrigger
               render={
@@ -331,6 +326,11 @@ function ModSummary({
             </TooltipTrigger>
             <TooltipContent>Filter by author {mod.author}</TooltipContent>
           </Tooltip>
+          {installedMod && (
+            <Badge variant="outline" className="border-success/40 text-success">
+              Installed v{installedMod.version}
+            </Badge>
+          )}
         </div>
         <p className="text-muted-foreground line-clamp-1 text-xs">{mod.summary}</p>
         <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-3 text-[11px]">
