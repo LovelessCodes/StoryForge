@@ -32,6 +32,9 @@ the look & feel of Macheim (see `../macheim`). The core domain concept is the **
   imported as profiles (move or copy), preserving the game version, mods and worlds. Launch
   parameters, environment variables, pin state and playtime are carried over where the source
   stores them.
+- **Link existing game versions** — builds already installed by those launchers (or any
+  folder picked manually) are detected and linked in place, so profiles can launch without
+  re-downloading. Unlinking never touches the files.
 - **Versions** — browse all Vintage Story releases, download with a resumable, pausable queue.
 - **Mods** — search the mod database, filter by version/side/tags/author, install, update,
   downgrade, remove, and update everything at once.

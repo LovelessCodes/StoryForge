@@ -174,6 +174,19 @@ v11), the game version from `game_versions.name`, and playtime from the summed
 work. Launch arguments are re-quoted so shell-word parsing round-trips them; imports are
 recorded in `<app data>/waxlight-migration.json`. Covers (`cover_path`) are not carried over.
 
+**Linked (external) game versions** — builds installed by those launchers (or any folder) are
+registered in `<app data>/external-versions.json` and resolved by
+`versions::resolve_version_dir` (managed versions folder first, then linked folders), so
+launching and server hosting work without re-downloading. `get_installed_versions` merges them
+(`path`, `external`, `source` fields) and `remove_installed_version` unlinks them instead of
+deleting.
+
+| Command                       | Args                                      | Returns               |
+| ----------------------------- | ----------------------------------------- | --------------------- |
+| `detect_linkable_versions`    | —                                         | `LinkableVersion[]`   |
+| `link_external_versions`      | `{ versions: [{ name, path, source? }] }` | `{ linked, skipped }` |
+| `unregister_external_version` | `{ name }`                                | `()`                  |
+
 **Servers**: `fetch_all_servers` returns an address-scoped `id` (name|ip|port hash —
 favorites and status probes are stored against it) plus a profile-scoped `row_key`
 (`<profile_id>:<id>`). The frontend uses `rowKey` for React keys and list/store

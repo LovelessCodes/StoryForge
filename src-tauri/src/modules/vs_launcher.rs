@@ -48,6 +48,17 @@ const MIGRATION_LOG_FILE: &str = "vs-launcher-migration.json";
 struct VsConfig {
     #[serde(default)]
     installations: Vec<VsInstallation>,
+    #[serde(default, rename = "gameVersions", alias = "game_versions")]
+    game_versions: Vec<VsGameVersion>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct VsGameVersion {
+    #[serde(default)]
+    version: String,
+    #[serde(default)]
+    path: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -153,6 +164,34 @@ fn read_config() -> Result<Option<(PathBuf, VsConfig)>, UiError> {
         )
     })?;
     Ok(Some((path, config)))
+}
+
+/// Game versions installed by VS Launcher (its `gameVersions` list), ready to
+/// be linked into Story Forge.
+pub(crate) fn detected_game_versions() -> Vec<super::versions::DetectedVersion> {
+    let Ok(Some((_config_path, config))) = read_config() else {
+        return Vec::new();
+    };
+    game_versions_from_config(config)
+}
+
+fn game_versions_from_config(config: VsConfig) -> Vec<super::versions::DetectedVersion> {
+    config
+        .game_versions
+        .into_iter()
+        .filter_map(|entry| {
+            let name = entry.version.trim().to_string();
+            let path = PathBuf::from(entry.path.trim());
+            if name.is_empty() || !super::versions::looks_like_game_dir(&path) {
+                return None;
+            }
+            Some(super::versions::DetectedVersion {
+                name,
+                path: path.to_string_lossy().to_string(),
+                source: "VS Launcher".into(),
+            })
+        })
+        .collect()
 }
 
 fn migration_log_path(app: &AppHandle) -> Result<PathBuf, UiError> {
@@ -503,5 +542,25 @@ mod tests {
         assert_eq!(installation.total_time_played, 0);
         assert!(!installation.mesa_gl_thread);
         assert!(installation.id.is_empty());
+    }
+
+    #[test]
+    fn reads_game_versions_from_the_config() {
+        let dir = tempfile::tempdir().unwrap();
+        let install = dir.path().join("VSLGameVersions/1.21.3");
+        std::fs::create_dir_all(&install).unwrap();
+        std::fs::write(install.join("Vintagestory"), b"bin").unwrap();
+
+        let config: VsConfig = serde_json::from_str(&format!(
+            r#"{{"gameVersions":[{{"version":"1.21.3","path":"{}"}},{{"version":"missing","path":"/does/not/exist"}}]}}"#,
+            install.to_string_lossy()
+        ))
+        .unwrap();
+
+        let versions = game_versions_from_config(config);
+        assert_eq!(versions.len(), 1);
+        assert_eq!(versions[0].name, "1.21.3");
+        assert_eq!(versions[0].path, install.to_string_lossy());
+        assert_eq!(versions[0].source, "VS Launcher");
     }
 }

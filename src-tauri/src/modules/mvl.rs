@@ -159,6 +159,64 @@ fn config_modpack_paths(config: &Value, config_dir: &Path) -> Vec<PathBuf> {
         .unwrap_or_default()
 }
 
+/// Game versions installed by MVL (its `release` path list). The version name
+/// comes from the folder name, which is how MVL names downloaded releases.
+pub(crate) fn detected_game_versions() -> Vec<super::versions::DetectedVersion> {
+    let Ok(Some((config_path, config))) = read_config() else {
+        return Vec::new();
+    };
+    let config_dir = config_path.parent().unwrap_or(Path::new("."));
+    release_paths(&config, config_dir)
+        .into_iter()
+        .filter_map(|path| {
+            if !super::versions::looks_like_game_dir(&path) {
+                return None;
+            }
+            let name = dir_name(&path);
+            if !name.chars().any(|c| c.is_ascii_digit()) {
+                return None;
+            }
+            Some(super::versions::DetectedVersion {
+                name,
+                path: path.to_string_lossy().to_string(),
+                source: "MVL".into(),
+            })
+        })
+        .collect()
+}
+
+/// Absolute release (game version) folder paths listed in `data.json`.
+fn release_paths(config: &Value, config_dir: &Path) -> Vec<PathBuf> {
+    let release_folder = config
+        .get("releaseFolder")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+        .unwrap_or_else(|| config_dir.join("Release"));
+
+    config
+        .get("release")
+        .and_then(Value::as_array)
+        .map(|entries| {
+            entries
+                .iter()
+                .filter_map(Value::as_str)
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .map(|value| {
+                    let path = PathBuf::from(value);
+                    if path.is_absolute() {
+                        path
+                    } else {
+                        release_folder.join(path)
+                    }
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 /// Reads `<modpack>/modpack.json` when present.
 fn read_manifest(modpack_dir: &Path) -> Option<Value> {
     let content = read_to_string(modpack_dir.join("modpack.json")).ok()?;
@@ -490,6 +548,20 @@ mod tests {
             vec![
                 PathBuf::from("/abs/pack"),
                 PathBuf::from("/data/Modpack/rel/pack"),
+            ]
+        );
+    }
+
+    #[test]
+    fn resolves_release_paths() {
+        let config =
+            manifest(r#"{"releaseFolder":"/data/Release","release":["/abs/1.20.0","1.21.3",""]}"#);
+        let paths = release_paths(&config, Path::new("/data/MVL"));
+        assert_eq!(
+            paths,
+            vec![
+                PathBuf::from("/abs/1.20.0"),
+                PathBuf::from("/data/Release/1.21.3"),
             ]
         );
     }

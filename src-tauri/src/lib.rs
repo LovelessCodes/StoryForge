@@ -204,6 +204,9 @@ pub fn run() {
             versions::remove_installed_version,
             versions::move_versions_folder,
             versions::remove_all_versions,
+            versions::detect_linkable_versions,
+            versions::link_external_versions,
+            versions::unregister_external_version,
             // Logger
             modules::logger::log_message,
             modules::logger::log_startup_time,

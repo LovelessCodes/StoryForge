@@ -8,6 +8,12 @@ export type InstalledVersion = {
   name: string;
   size_bytes: number;
   size_display: string;
+  /** Full path of the version folder (managed or linked). */
+  path: string;
+  /** Linked from outside the versions folder instead of downloaded here. */
+  external: boolean;
+  /** Where a linked version came from ("VS Launcher", "MVL", …). */
+  source: string | null;
 };
 
 export const useInstalledVersions = () => {

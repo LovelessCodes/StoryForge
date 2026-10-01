@@ -1,5 +1,5 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { FolderDown, Plus } from "lucide-react";
+import { FolderDown, FolderSearch, Plus } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { useDownloadStore } from "@/stores/downloads";
 
 import AddVersionSheet, { MAC_WIKI_URL } from "./AddVersionSheet";
 import DownloadRow from "./DownloadRow";
+import LinkExistingVersionSheet from "./LinkExistingVersionSheet";
+import LinkVersionsBanner from "./LinkVersionsBanner";
 import VersionRow from "./VersionRow";
 
 function InstalledVersionsSkeleton() {
@@ -33,6 +35,7 @@ export default function VersionsPage() {
   const { data: versions, isPending } = useInstalledVersions();
   const entries = useDownloadStore((s) => s.entries);
   const [addOpen, setAddOpen] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
 
   const sorted = (versions ?? []).toSorted((a, b) => compareSemverDesc(a.name, b.name));
   const activeDownloads = Object.values(entries).filter((entry) => entry.status !== "done");
@@ -47,12 +50,18 @@ export default function VersionsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setLinkOpen(true)}>
+            <FolderSearch />
+            Link existing
+          </Button>
           <Button variant="accent-primary" size="sm" onClick={() => setAddOpen(true)}>
             <Plus />
             Add version
           </Button>
         </div>
       </div>
+
+      <LinkVersionsBanner />
 
       {activeDownloads.length > 0 && (
         <section className="grid gap-2">
@@ -116,6 +125,7 @@ export default function VersionsPage() {
       </section>
 
       <AddVersionSheet open={addOpen} onOpenChange={setAddOpen} />
+      <LinkExistingVersionSheet open={linkOpen} onOpenChange={setLinkOpen} />
     </div>
   );
 }

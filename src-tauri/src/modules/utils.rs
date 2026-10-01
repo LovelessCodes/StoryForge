@@ -267,6 +267,11 @@ fn managed_roots(app: &AppHandle) -> Result<Vec<PathBuf>, UiError> {
     }
     roots.extend(super::server_hosting::data_dirs(app));
     roots.extend(super::profiles::external_profile_paths(app));
+    roots.extend(
+        super::versions::external_versions(app)
+            .into_iter()
+            .map(|entry| PathBuf::from(entry.path)),
+    );
     Ok(roots)
 }
 

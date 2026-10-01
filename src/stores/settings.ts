@@ -30,6 +30,9 @@ type SettingsStore = {
   /** User hid the "import instances from Waxlight Launcher" banner. */
   waxlightDismissed: boolean;
   dismissWaxlight: () => void;
+  /** User hid the "link game versions from other launchers" banner. */
+  linkVersionsDismissed: boolean;
+  dismissLinkVersions: () => void;
   defaultModSortBy: SortBy;
   setDefaultModSortBy: (sortBy: SortBy) => void;
   profilesParent: string | null;
@@ -57,6 +60,8 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
   dismissMvl: () => set(() => ({ mvlDismissed: true })),
   waxlightDismissed: false,
   dismissWaxlight: () => set(() => ({ waxlightDismissed: true })),
+  linkVersionsDismissed: false,
+  dismissLinkVersions: () => set(() => ({ linkVersionsDismissed: true })),
   defaultModSortBy: "trending",
   setDefaultModSortBy: (sortBy) => set(() => ({ defaultModSortBy: sortBy })),
   profilesParent: null,

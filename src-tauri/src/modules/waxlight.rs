@@ -393,6 +393,57 @@ fn args_to_command(args: &[String]) -> String {
         .join(" ")
 }
 
+/// Game versions installed by Waxlight (its `game_versions` table), ready to
+/// be linked into Story Forge.
+pub(crate) fn detected_game_versions() -> Vec<super::versions::DetectedVersion> {
+    let Some(home) = waxlight_home() else {
+        return Vec::new();
+    };
+    let root = data_root(&home);
+    let db_path = root.join(DB_FILE);
+    if !db_path.is_file() {
+        return Vec::new();
+    }
+    let Ok(conn) = Connection::open_with_flags(
+        &db_path,
+        OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
+    ) else {
+        return Vec::new();
+    };
+    game_versions_from_connection(&conn, &root)
+        .into_iter()
+        .filter(|(name, path)| {
+            !name.trim().is_empty() && super::versions::looks_like_game_dir(path)
+        })
+        .map(|(name, path)| super::versions::DetectedVersion {
+            name,
+            path: path.to_string_lossy().to_string(),
+            source: "Waxlight Launcher".into(),
+        })
+        .collect()
+}
+
+fn game_versions_from_connection(conn: &Connection, root: &Path) -> Vec<(String, PathBuf)> {
+    let columns = table_columns(conn, "game_versions");
+    if !columns.contains("name") || !columns.contains("installation_dir") {
+        return Vec::new();
+    }
+    let mut out = Vec::new();
+    if let Ok(mut statement) = conn.prepare("SELECT name, installation_dir FROM game_versions") {
+        if let Ok(mut rows) = statement.query([]) {
+            while let Ok(Some(row)) = rows.next() {
+                let name: String = row.get(0).unwrap_or_default();
+                let directory: String = row.get(1).unwrap_or_default();
+                if directory.trim().is_empty() {
+                    continue;
+                }
+                out.push((name, resolve_directory(&directory, root)));
+            }
+        }
+    }
+    out
+}
+
 fn migration_log_path(app: &AppHandle) -> Result<PathBuf, UiError> {
     app.path()
         .app_data_dir()
@@ -775,6 +826,28 @@ mod tests {
         assert!(!rows[0].pinned);
         assert_eq!(rows[0].last_played, None);
         assert_eq!(rows[0].total_seconds, 0);
+    }
+
+    #[test]
+    fn reads_game_versions_from_the_database() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch(
+            r#"
+            CREATE TABLE game_versions (id TEXT PRIMARY KEY, name TEXT NOT NULL, installation_dir TEXT NOT NULL);
+            INSERT INTO game_versions (id, name, installation_dir) VALUES ('v1', '1.21.3', 'versions/1.21.3');
+            INSERT INTO game_versions (id, name, installation_dir) VALUES ('v2', '1.20.4', '/abs/1.20.4');
+            "#,
+        )
+        .unwrap();
+
+        let versions = game_versions_from_connection(&conn, Path::new("/data/waxlight"));
+        assert_eq!(versions.len(), 2);
+        assert_eq!(versions[0].0, "1.21.3");
+        assert_eq!(
+            versions[0].1,
+            PathBuf::from("/data/waxlight/versions/1.21.3")
+        );
+        assert_eq!(versions[1].1, PathBuf::from("/abs/1.20.4"));
     }
 
     #[test]

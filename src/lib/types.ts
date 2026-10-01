@@ -361,6 +361,28 @@ export type DetectedGameData = {
   registered: boolean;
 };
 
+// ── Linked (external) game versions ──
+
+export type LinkableVersion = {
+  name: string;
+  path: string;
+  source: string;
+  /** A version with this name already exists in the versions folder. */
+  installed: boolean;
+  /** Already linked to this exact path. */
+  linked: boolean;
+};
+
+export type LinkSkip = {
+  name: string;
+  reason: string;
+};
+
+export type LinkVersionsReport = {
+  linked: number;
+  skipped: LinkSkip[];
+};
+
 // ── Third-party launcher imports (VS Launcher, MVL) ──
 
 export type ForeignInstallation = {

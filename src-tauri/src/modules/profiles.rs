@@ -26,7 +26,7 @@ use super::paths::{self, clientsettings_path, mods_dir, profile_json_path};
 use super::utils::{
     dir_name, dir_size, dir_size_cached, find_dir_by_id, format_size, generate_id, move_folder,
     normalize_path, parse_start_params, profiles_folder, profiles_subdir, require_managed_path,
-    require_safe_destination, safe_file_name, safe_join, versions_folder, versions_subdir,
+    require_safe_destination, safe_file_name, safe_join,
 };
 use crate::{log_debug, log_error, log_info};
 
@@ -875,10 +875,7 @@ async fn resolve_launch_context(
     .await?;
     log_info!("[play_game] DOTNET_ROOT={:?}", dotnet_root);
 
-    let subdir = versions_subdir(app.clone());
-    let version_path = versions_folder(app.clone())?
-        .join(&subdir)
-        .join(&profile.version);
+    let version_path = super::versions::resolve_version_dir(app, &profile.version)?;
     log_info!("[play_game] version_path: {:?}", version_path);
     if !version_path.exists() || !version_path.is_dir() {
         return Err(UiError::not_found(format!(

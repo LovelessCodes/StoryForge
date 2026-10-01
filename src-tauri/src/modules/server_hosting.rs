@@ -12,7 +12,7 @@ use tokio::process::Command;
 use super::dotnet;
 use super::errors::UiError;
 use super::paths;
-use super::utils::{dir_size, format_size, lock, normalize_path, versions_folder, versions_subdir};
+use super::utils::{dir_size, format_size, lock, normalize_path};
 use crate::modules::server_hosting_actor;
 use crate::{log_error, log_info};
 
@@ -504,16 +504,11 @@ fn full_port_check(
 /// Resolve the server executable path for a given version.
 /// Finds VintagestoryServer.exe (Windows) or VintagestoryServer (Unix) in the game version folder.
 pub(crate) fn server_exe_path(app: &AppHandle, version: &str) -> Result<PathBuf, UiError> {
-    let base_dir = versions_folder(app.clone())?;
-    let subdir = versions_subdir(app.clone());
-    let version_dir = base_dir.join(&subdir).join(version);
-
-    if !version_dir.exists() {
-        return Err(UiError {
-            name: "version_not_found".into(),
-            message: format!("Version {version} is not installed"),
-        });
-    }
+    // Managed versions folder first, then linked external installs.
+    let version_dir = super::versions::resolve_version_dir(app, version).map_err(|_| UiError {
+        name: "version_not_found".into(),
+        message: format!("Version {version} is not installed"),
+    })?;
 
     // Windows: VintagestoryServer.exe
     #[cfg(target_os = "windows")]
