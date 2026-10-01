@@ -42,23 +42,15 @@ export default function VersionsPage() {
 
   return (
     <div className="grid gap-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-lg font-semibold">Versions</h1>
-          <p className="text-muted-foreground text-xs">
-            Game builds installed on this machine. Profiles launch with one of these versions.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setLinkOpen(true)}>
-            <FolderSearch />
-            Link existing
-          </Button>
-          <Button variant="accent-primary" size="sm" onClick={() => setAddOpen(true)}>
-            <Plus />
-            Add version
-          </Button>
-        </div>
+      <div className="flex items-center justify-end gap-2">
+        <Button variant="outline" size="sm" onClick={() => setLinkOpen(true)}>
+          <FolderSearch />
+          Link existing
+        </Button>
+        <Button variant="accent-primary" size="sm" onClick={() => setAddOpen(true)}>
+          <Plus />
+          Add version
+        </Button>
       </div>
 
       <LinkVersionsBanner />

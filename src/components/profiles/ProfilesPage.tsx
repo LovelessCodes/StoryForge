@@ -46,21 +46,13 @@ export default function ProfilesPage() {
 
   return (
     <div className="grid gap-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-lg font-semibold">Mod Profiles</h1>
-          <p className="text-muted-foreground text-xs">
-            Manage separate mod configurations for different playstyles.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
-            <FileDown /> Import
-          </Button>
-          <Button variant="accent-primary" size="sm" onClick={() => openDialog(null)}>
-            New Profile
-          </Button>
-        </div>
+      <div className="flex items-center justify-end gap-2">
+        <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+          <FileDown /> Import
+        </Button>
+        <Button variant="accent-primary" size="sm" onClick={() => openDialog(null)}>
+          New Profile
+        </Button>
       </div>
 
       <GameDataBanner />

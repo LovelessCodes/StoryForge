@@ -78,21 +78,12 @@ export default function ModpacksPage() {
 
   return (
     <div className="grid gap-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-lg font-semibold">Modpacks</h1>
-          <p className="text-muted-foreground text-xs">
-            Browse community mod collections and install them as profiles. Publishing needs a free
-            account — the launcher works fully offline without one.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {user && (
-            <Button size="sm" variant="accent-primary" onClick={openCreate}>
-              <Plus /> New modpack
-            </Button>
-          )}
-        </div>
+      <div className="flex items-center justify-end gap-2">
+        {user && (
+          <Button size="sm" variant="accent-primary" onClick={openCreate}>
+            <Plus /> New modpack
+          </Button>
+        )}
       </div>
 
       {sessionLoading ? (

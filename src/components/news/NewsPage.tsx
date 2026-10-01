@@ -64,13 +64,6 @@ export default function NewsPage() {
 
   return (
     <div className="grid gap-6">
-      <div>
-        <h1 className="text-lg font-semibold">News</h1>
-        <p className="text-muted-foreground text-xs">
-          Latest announcements from the Vintage Story forums.
-        </p>
-      </div>
-
       {isPending ? (
         <NewsSkeleton />
       ) : error ? (

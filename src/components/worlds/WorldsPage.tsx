@@ -70,15 +70,6 @@ export default function WorldsPage() {
 
   return (
     <div className="grid gap-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-lg font-semibold">Worlds</h1>
-          <p className="text-muted-foreground text-xs">
-            Browse the worlds of your profiles, launch them, and explore their maps.
-          </p>
-        </div>
-      </div>
-
       <div className="flex flex-wrap items-center gap-2">
         <InputGroup className="w-full sm:w-72">
           <InputGroupAddon>

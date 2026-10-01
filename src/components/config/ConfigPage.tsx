@@ -82,27 +82,19 @@ export default function ConfigPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-lg font-semibold">Mod Configurations</h1>
-          <p className="text-muted-foreground text-xs">
-            Config files in <span className="font-mono">{activeProfile.name}</span>.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <ToggleGroup
-            onValueChange={(value) => {
-              const next = value[0];
-              if (next === "live" || next === "code") setEditorMode(next);
-            }}
-            size="sm"
-            value={[editorMode]}
-            variant="outline"
-          >
-            <ToggleGroupItem value="live">Live editor</ToggleGroupItem>
-            <ToggleGroupItem value="code">Code editor</ToggleGroupItem>
-          </ToggleGroup>
-        </div>
+      <div className="flex items-center justify-end gap-2">
+        <ToggleGroup
+          onValueChange={(value) => {
+            const next = value[0];
+            if (next === "live" || next === "code") setEditorMode(next);
+          }}
+          size="sm"
+          value={[editorMode]}
+          variant="outline"
+        >
+          <ToggleGroupItem value="live">Live editor</ToggleGroupItem>
+          <ToggleGroupItem value="code">Code editor</ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
       {isLoading && configs.length === 0 ? (

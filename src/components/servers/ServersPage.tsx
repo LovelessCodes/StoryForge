@@ -45,13 +45,7 @@ export default function ServersPage() {
 
   return (
     <div className="grid gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-lg font-semibold">Servers</h1>
-          <p className="text-muted-foreground text-xs">
-            Saved multiplayer servers, the public server browser and your own hosted instances.
-          </p>
-        </div>
+      <div className="flex items-center justify-end gap-2">
         <ToggleGroup
           aria-label="Server view"
           onValueChange={(value) => value[0] && selectTab(parseTab(value[0]) ?? "mine")}

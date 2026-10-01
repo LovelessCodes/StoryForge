@@ -31,16 +31,13 @@ concept "installation" is renamed to **"profile"**.
 
 ## Visual vocabulary (copy these classNames)
 
-- Page header:
+- Page header: titles and descriptions live in the persistent top bar
+  (`src/components/layout/Header.tsx`, `pageMeta` map) — the single source of truth.
+  Pages render only their right-aligned action row at the top:
   ```tsx
-  <div className="flex items-start justify-between gap-4">
-    <div>
-      <h1 className="text-lg font-semibold">Title</h1>
-      <p className="text-muted-foreground text-xs">Short description.</p>
-    </div>
-    <div className="flex items-center gap-2">{/* actions */}</div>
-  </div>
+  <div className="flex items-center justify-end gap-2">{/* actions */}</div>
   ```
+  Drop the row entirely when a page has no actions.
 - Primary action: `<Button variant="accent-primary">`; play/launch: `variant="amber"`;
   secondary: `variant="outline"`; icon-only: `variant="ghost" size="icon-sm"`;
   danger: `variant="destructive"`; installed state: `variant="outline-success"`.
