@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { cn } from "cn";
 import {
+  Check,
   Download,
   DownloadCloudIcon,
   Heart,
@@ -307,11 +308,12 @@ function ModSummary({
         </a>
         {installedMod && (
           <Badge
+            aria-label={`Installed v${installedMod.version}`}
             variant="outline"
-            className="border-success/40 text-success px-1.5 text-[10px]"
+            className="border-success/40 text-success gap-1 px-1.5 text-[10px]"
             title={`Installed v${installedMod.version}`}
           >
-            Installed v{installedMod.version}
+            <Check className="size-3" aria-hidden="true" />v{installedMod.version}
           </Badge>
         )}
       </div>
