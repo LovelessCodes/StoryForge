@@ -199,6 +199,7 @@ pub fn run() {
             download::get_download_link,
             download::download_and_maybe_extract,
             download::scan_resume_manifests,
+            download::discard_download,
             // Versions
             versions::fetch_versions,
             versions::get_installed_versions,

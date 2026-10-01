@@ -58,16 +58,20 @@ export default function DownloadsSheet({ open, onOpenChange }: DownloadsSheetPro
                       {statusLabel[entry.status]}
                     </Badge>
                   </div>
-                  <Progress value={entry.percent ?? 0} />
-                  <div className="text-muted-foreground flex items-center gap-3 text-[11px] tabular-nums">
-                    <span>{entry.percent !== null ? `${entry.percent.toFixed(0)}%` : "…"}</span>
-                    {entry.speedBps !== null && (
-                      <span>{(entry.speedBps / 1024 / 1024).toFixed(1)} MB/s</span>
-                    )}
-                    {entry.error && (
-                      <span className="text-destructive truncate">{entry.error}</span>
-                    )}
-                  </div>
+                  {entry.status !== "done" && (
+                    <>
+                      <Progress value={entry.percent ?? 0} />
+                      <div className="text-muted-foreground flex items-center gap-3 text-[11px] tabular-nums">
+                        <span>{entry.percent !== null ? `${entry.percent.toFixed(0)}%` : "…"}</span>
+                        {entry.speedBps !== null && (
+                          <span>{(entry.speedBps / 1024 / 1024).toFixed(1)} MB/s</span>
+                        )}
+                        {entry.error && (
+                          <span className="text-destructive truncate">{entry.error}</span>
+                        )}
+                      </div>
+                    </>
+                  )}
                   <div className="flex items-center gap-2">
                     {(entry.status === "downloading" || entry.status === "pending") && (
                       <Button variant="outline" size="xs" onClick={() => pause(entry.token)}>
@@ -90,7 +94,8 @@ export default function DownloadsSheet({ open, onOpenChange }: DownloadsSheetPro
                       className="text-muted-foreground ml-auto"
                       onClick={() => cancel(entry.token)}
                     >
-                      <X /> Cancel
+                      <X />{" "}
+                      {entry.status === "done" || entry.status === "error" ? "Dismiss" : "Cancel"}
                     </Button>
                   </div>
                 </li>

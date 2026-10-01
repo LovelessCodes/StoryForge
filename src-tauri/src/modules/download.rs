@@ -262,9 +262,15 @@ fn find_resume_manifest(dest_dir: &Path, url: &str) -> Option<(PathBuf, ResumeMa
 }
 
 /// Clean up partial download / extraction artifacts on cancellation or error.
-fn cleanup(archive: &Path, dest: &Path) {
+///
+/// `dest` is the directory to drop for an interrupted *extraction* (a version
+/// folder); plain downloads never pass one — their destination may be a mods
+/// or data directory holding unrelated files.
+fn cleanup(archive: &Path, dest: Option<&Path>) {
     let _ = fs::remove_file(archive);
-    let _ = fs::remove_dir_all(dest);
+    if let Some(dest) = dest {
+        let _ = fs::remove_dir_all(dest);
+    }
     let _ = fs::remove_file(manifest_path_for(archive));
 }
 
@@ -898,7 +904,7 @@ pub async fn download_and_maybe_extract(
     }
 
     if ctx.is_cancelled() {
-        cleanup(&archive_path, &destpath);
+        cleanup(&archive_path, extract.then_some(destpath.as_path()));
         ctx.emit(DownloadContext::cancelled_payload("Download cancelled"))?;
         return Ok("cancelled".into());
     }
@@ -922,7 +928,7 @@ pub async fn download_and_maybe_extract(
         }
 
         if ctx.is_cancelled() {
-            cleanup(&archive_path, &destpath);
+            cleanup(&archive_path, Some(&extract_dir));
             ctx.emit(DownloadContext::cancelled_payload("Extraction cancelled"))?;
             return Ok("cancelled".into());
         }
@@ -1110,6 +1116,40 @@ pub fn scan_resume_manifests(dirs: Vec<String>) -> Vec<PausedDownload> {
     paused
 }
 
+/// Discards the partial file and resume state of a cancelled download.
+///
+/// Cancelling an *active* download is handled by the running command (it
+/// deletes its own partial output); this command covers downloads that are
+/// paused or queued, so a later install starts from scratch instead of
+/// silently resuming. Manifests are matched by URL because the archive file
+/// name is not derivable from the URL.
+#[command]
+pub fn discard_download(app: AppHandle, destpath: String, url: String) -> Result<(), UiError> {
+    let dest_dir = PathBuf::from(&destpath);
+    require_managed_path(&app, &dest_dir, "Download destination")?;
+
+    let Some((archive, _manifest)) = find_resume_manifest(&dest_dir, &url) else {
+        return Ok(());
+    };
+
+    // Only ever delete the partial file inside the given directory.
+    if !normalize_path(&archive).starts_with(normalize_path(&dest_dir)) {
+        return Err(UiError::new(
+            "path_not_allowed",
+            format!(
+                "Refusing to discard {} outside {}",
+                archive.display(),
+                dest_dir.display()
+            ),
+        ));
+    }
+
+    let _ = fs::remove_file(&archive);
+    let _ = fs::remove_file(manifest_path_for(&archive));
+    log_info!("download: discarded partial {}", archive.display());
+    Ok(())
+}
+
 /// Read a resume manifest from a specific path (not inferred from the archive path).
 fn read_resume_manifest_for_path(path: &Path) -> Option<ResumeManifest> {
     let data = fs::read_to_string(path).ok()?;
@@ -1183,5 +1223,29 @@ mod tests {
 
         // A different URL must not pick up this manifest.
         assert!(find_resume_manifest(tmp.path(), "https://example.invalid/other").is_none());
+    }
+
+    #[test]
+    fn cleanup_only_removes_directories_for_extractions() {
+        let tmp = tempfile::tempdir().unwrap();
+        let mods = tmp.path().join("Mods");
+        std::fs::create_dir_all(&mods).unwrap();
+        std::fs::write(mods.join("installed.zip"), b"keep me").unwrap();
+        let partial = mods.join("partial.zip");
+        std::fs::write(&partial, b"partial").unwrap();
+        std::fs::write(manifest_path_for(&partial), b"{}").unwrap();
+
+        // A plain download must never remove its destination directory.
+        cleanup(&partial, None);
+        assert!(!partial.exists());
+        assert!(!manifest_path_for(&partial).exists());
+        assert!(mods.join("installed.zip").is_file());
+
+        // Extraction destinations are dropped.
+        let version_dir = tmp.path().join("1.21.3");
+        std::fs::create_dir_all(&version_dir).unwrap();
+        std::fs::write(version_dir.join("leftover"), b"x").unwrap();
+        cleanup(&partial, Some(&version_dir));
+        assert!(!version_dir.exists());
     }
 }

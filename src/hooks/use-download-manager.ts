@@ -367,10 +367,13 @@ export function useDownloadManager() {
     void emit(`${eventName(token)}:cancel`);
 
     // Paused downloads have no active task. A paused version cleans up its
-    // partial extraction; paused mods keep their partial file so a later
-    // install of the same file can resume from it.
+    // partial extraction; a cancelled mod drops its partial zip and resume
+    // state so a later install starts over instead of silently resuming.
     if (entry?.status === "paused" && entry.kind === "version") {
       void invoke("remove_installed_version", { version: token });
+    }
+    if (entry?.kind === "mod" && entry.destpath && entry.url) {
+      void invoke("discard_download", { destpath: entry.destpath, url: entry.url });
     }
 
     store.removeEntry(token);
