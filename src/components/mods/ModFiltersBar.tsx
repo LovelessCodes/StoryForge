@@ -108,6 +108,7 @@ export function ModFiltersBar({
   }, [modTags]);
 
   const selectedTagNames = useMemo(() => selectedModTags.map((t) => t.name), [selectedModTags]);
+  const tagNames = useMemo(() => sortedTags.map((tag) => tag.name), [sortedTags]);
   const handleTagNamesChange = (names: string[]) => {
     setSelectedModTags(
       names.map((name) => tagByName[name]).filter((tag): tag is ModTag => tag !== undefined),
@@ -136,6 +137,7 @@ export function ModFiltersBar({
         />
 
         <Combobox
+          items={sortedGameVersions}
           multiple
           value={selectedGameVersions}
           onValueChange={(value) =>
@@ -166,16 +168,21 @@ export function ModFiltersBar({
           <ComboboxContent anchor={versionAnchor}>
             <ComboboxEmpty>No versions found.</ComboboxEmpty>
             <ComboboxList>
-              {sortedGameVersions.map((version) => (
+              {(version: string) => (
                 <ComboboxItem key={version} value={version}>
                   {version}
                 </ComboboxItem>
-              ))}
+              )}
             </ComboboxList>
           </ComboboxContent>
         </Combobox>
 
-        <Combobox multiple value={selectedTagNames} onValueChange={handleTagNamesChange}>
+        <Combobox
+          items={tagNames}
+          multiple
+          value={selectedTagNames}
+          onValueChange={handleTagNamesChange}
+        >
           <ComboboxChips className="w-52" ref={tagAnchor}>
             <Tags className="text-muted-foreground size-3.5 shrink-0" />
             <ComboboxValue>
@@ -217,11 +224,11 @@ export function ModFiltersBar({
           <ComboboxContent anchor={tagAnchor}>
             <ComboboxEmpty>No tags found.</ComboboxEmpty>
             <ComboboxList>
-              {sortedTags.map((tag) => (
-                <ComboboxItem key={tag.tagid} value={tag.name}>
-                  {tag.name}
+              {(name: string) => (
+                <ComboboxItem key={name} value={name}>
+                  {name}
                 </ComboboxItem>
-              ))}
+              )}
             </ComboboxList>
           </ComboboxContent>
         </Combobox>
