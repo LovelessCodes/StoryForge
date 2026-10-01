@@ -124,7 +124,7 @@ export function ModItem({
   return (
     <div
       className={cn(
-        "group flex w-full items-center gap-3 border bg-card p-3 transition-colors hover:bg-muted/40",
+        "group flex w-full items-start gap-3 border bg-card p-3 transition-colors hover:bg-muted/40",
         showInstalled && "border-success/40 bg-linear-to-r from-success/15 to-transparent",
       )}
     >
@@ -138,7 +138,7 @@ export function ModItem({
         tagColorMap={tagColorMap}
       />
 
-      <div className="flex shrink-0 items-center gap-1.5">
+      <div className="flex shrink-0 items-center gap-1.5 self-center">
         {canUpdate && installedMod && updateMod ? (
           <Tooltip>
             <TooltipTrigger
@@ -295,17 +295,28 @@ function ModSummary({
   const modUrl = `https://mods.vintagestory.at/${mod.urlalias ?? `show/mod/${mod.assetid}`}`;
 
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-3">
-      <a href={modUrl} rel="noreferrer" target="_blank" className="shrink-0">
-        <img
-          alt={mod.name}
-          className="bg-muted size-12 border object-cover transition-transform hover:scale-105"
-          loading="lazy"
-          src={mod.logo ?? DEFAULT_LOGO}
-        />
-      </a>
+    <div className="flex min-w-0 flex-1 items-start gap-3">
+      <div className="flex shrink-0 flex-col items-center gap-1.5">
+        <a href={modUrl} rel="noreferrer" target="_blank">
+          <img
+            alt={mod.name}
+            className="bg-muted size-12 border object-cover transition-transform hover:scale-105"
+            loading="lazy"
+            src={mod.logo ?? DEFAULT_LOGO}
+          />
+        </a>
+        {installedMod && (
+          <Badge
+            variant="outline"
+            className="border-success/40 text-success px-1.5 text-[10px]"
+            title={`Installed v${installedMod.version}`}
+          >
+            Installed v{installedMod.version}
+          </Badge>
+        )}
+      </div>
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+        <div className="flex min-w-0 items-center gap-2">
           <a className="min-w-0" href={modUrl} rel="noreferrer" target="_blank">
             <h3 className="hover:text-accent-amber truncate text-sm font-semibold transition-colors">
               {mod.name}
@@ -316,7 +327,7 @@ function ModSummary({
               render={
                 <button
                   aria-label={`Filter by ${mod.author}`}
-                  className="text-muted-foreground hover:text-accent-amber cursor-pointer text-xs"
+                  className="text-muted-foreground hover:text-accent-amber max-w-[45%] shrink-0 cursor-pointer truncate text-xs"
                   onClick={() => onAuthorClick(mod.author)}
                   type="button"
                 />
@@ -326,11 +337,6 @@ function ModSummary({
             </TooltipTrigger>
             <TooltipContent>Filter by author {mod.author}</TooltipContent>
           </Tooltip>
-          {installedMod && (
-            <Badge variant="outline" className="border-success/40 text-success">
-              Installed v{installedMod.version}
-            </Badge>
-          )}
         </div>
         <p className="text-muted-foreground line-clamp-1 text-xs">{mod.summary}</p>
         <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-3 text-[11px]">
