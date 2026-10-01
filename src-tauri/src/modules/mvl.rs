@@ -52,6 +52,8 @@ pub struct MvlModpack {
     pub name: String,
     pub version: String,
     pub path: String,
+    /// Constant "MVL"; kept so every importer reports the same shape.
+    pub source: String,
     pub mod_count: usize,
     pub size_bytes: u64,
     pub size_display: String,
@@ -337,6 +339,7 @@ fn detect_blocking(app: &AppHandle) -> Result<Vec<MvlModpack>, UiError> {
             name: manifest_name(manifest.as_ref(), &folder),
             version: manifest_game_version(manifest.as_ref()),
             path: path.to_string_lossy().to_string(),
+            source: "MVL".into(),
             mod_count: count_zips(&path),
             size_bytes,
             size_display: format_size(size_bytes),

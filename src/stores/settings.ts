@@ -33,6 +33,9 @@ type SettingsStore = {
   /** User hid the "link game versions from other launchers" banner. */
   linkVersionsDismissed: boolean;
   dismissLinkVersions: () => void;
+  /** User hid the "import packs from Cairn" banner. */
+  cairnDismissed: boolean;
+  dismissCairn: () => void;
   defaultModSortBy: SortBy;
   setDefaultModSortBy: (sortBy: SortBy) => void;
   profilesParent: string | null;
@@ -62,6 +65,8 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
   dismissWaxlight: () => set(() => ({ waxlightDismissed: true })),
   linkVersionsDismissed: false,
   dismissLinkVersions: () => set(() => ({ linkVersionsDismissed: true })),
+  cairnDismissed: false,
+  dismissCairn: () => set(() => ({ cairnDismissed: true })),
   defaultModSortBy: "trending",
   setDefaultModSortBy: (sortBy) => set(() => ({ defaultModSortBy: sortBy })),
   profilesParent: null,

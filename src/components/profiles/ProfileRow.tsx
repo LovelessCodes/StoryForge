@@ -243,13 +243,13 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
           <Ellipsis />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => onEdit(profile)}>
+          <DropdownMenuItem onClick={() => onEdit(profile)} className="text-nowrap">
             <Pencil /> Edit
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => openMods("mods")}>
+          <DropdownMenuItem onClick={() => openMods("mods")} className="text-nowrap">
             <Package /> Manage Mods
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => openMods("config")}>
+          <DropdownMenuItem onClick={() => openMods("config")} className="text-nowrap">
             <FileText /> Configure Mods
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -261,14 +261,14 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
           >
             <FolderOpen /> Open Folder
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setLogsOpen(true)}>
+          <DropdownMenuItem onClick={() => setLogsOpen(true)} className="text-nowrap">
             <ScrollText /> View Logs
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => void exportFile()}>
+          <DropdownMenuItem onClick={() => void exportFile()} className="text-nowrap">
             <Share2 /> Export as file…
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => void copyShareCode()}>
+          <DropdownMenuItem onClick={() => void copyShareCode()} className="text-nowrap">
             <Link2 /> Copy share code
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -276,6 +276,7 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
               setCloneName(`${profile.name} copy`);
               setCloneOpen(true);
             }}
+            className="text-nowrap"
           >
             <Copy /> Clone…
           </DropdownMenuItem>
@@ -285,6 +286,7 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
             title={isActive ? "Switch to another profile first" : undefined}
             variant="destructive"
             onClick={() => setDeleteOpen(true)}
+            className="text-nowrap"
           >
             <Trash2 />{" "}
             {isActive

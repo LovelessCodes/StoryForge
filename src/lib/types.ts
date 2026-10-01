@@ -390,6 +390,8 @@ export type ForeignInstallation = {
   name: string;
   version: string;
   path: string;
+  /** Which tool listed it ("VS Launcher", "RiftLauncher", "MVL", …). */
+  source: string;
   mod_count: number;
   size_bytes: number;
   size_display: string;

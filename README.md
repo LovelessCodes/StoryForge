@@ -26,12 +26,14 @@ the look & feel of Macheim (see `../macheim`). The core domain concept is the **
   location (`VintagestoryData`), Story Forge offers to use it as a profile in one click.
   Nothing is copied or moved; removing the profile only unregisters the folder.
 - **Import from other launchers** — installations from
-  [VS Launcher](https://github.com/XurxoMF/vs-launcher), modpacks from
-  [MVL](https://github.com/scgm0/MVL) and instances from
-  [Waxlight Launcher](https://github.com/AmadoMuerte/Waxlight-launcher) are detected and
-  imported as profiles (move or copy), preserving the game version, mods and worlds. Launch
-  parameters, environment variables, pin state and playtime are carried over where the source
-  stores them.
+  [VS Launcher](https://github.com/XurxoMF/vs-launcher) and its continuation
+  [RiftLauncher](https://github.com/StratumServer/RiftLauncher), modpacks from
+  [MVL](https://github.com/scgm0/MVL), instances from
+  [Waxlight Launcher](https://github.com/AmadoMuerte/Waxlight-launcher) and packs from
+  [Cairn](https://github.com/cairns-gg/cairn-app) are detected and imported as profiles
+  (move or copy), preserving the game version, mods and worlds. Launch parameters,
+  environment variables, pin state and playtime are carried over where the source stores
+  them.
 - **Link existing game versions** — builds already installed by those launchers (or any
   folder picked manually) are detected and linked in place, so profiles can launch without
   re-downloading. Unlinking never touches the files.

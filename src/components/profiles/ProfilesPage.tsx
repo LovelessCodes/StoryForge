@@ -6,6 +6,7 @@ import { useActiveProfile } from "@/hooks/use-active-profile";
 import { sortProfiles } from "@/lib/helpers";
 import { useProfiles, type Profile } from "@/stores/profiles";
 
+import CairnBanner from "./CairnBanner";
 import DeletedProfilesSection from "./DeletedProfilesSection";
 import GameDataBanner from "./GameDataBanner";
 import ImportProfileSheet from "./ImportProfileSheet";
@@ -60,6 +61,7 @@ export default function ProfilesPage() {
       <VsLauncherBanner />
       <MvlBanner />
       <WaxlightBanner />
+      <CairnBanner />
 
       {profiles.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 border border-dashed p-10 text-center">

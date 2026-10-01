@@ -357,6 +357,9 @@ fn detect_linkable_blocking(app: &AppHandle) -> Result<Vec<LinkableVersion>, UiE
     for detected in super::waxlight::detected_game_versions() {
         take(detected);
     }
+    for detected in super::cairn::detected_game_versions() {
+        take(detected);
+    }
 
     out.sort_by(|a, b| a.name.cmp(&b.name));
     log_info!("detect_linkable_versions: found {} candidate(s)", out.len());

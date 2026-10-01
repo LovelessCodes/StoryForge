@@ -1,6 +1,6 @@
 pub mod modules;
 use modules::{
-    auth, download, game_data, legacy, maps, mods, mvl, news, profile_ops, profiles, saves,
+    auth, cairn, download, game_data, legacy, maps, mods, mvl, news, profile_ops, profiles, saves,
     server_hosting, servers, sniffer, versions, vs_launcher, waxlight,
 };
 use tauri::RunEvent;
@@ -256,6 +256,9 @@ pub fn run() {
             // Waxlight Launcher (AmadoMuerte) instance import
             waxlight::detect_waxlight_instances,
             waxlight::import_waxlight_instances,
+            // Cairn (cairns-gg) pack import
+            cairn::detect_cairn_packs,
+            cairn::import_cairn_packs,
             // Servers
             servers::fetch_public_servers,
             servers::fetch_all_servers,

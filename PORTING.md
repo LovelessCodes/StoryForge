@@ -128,17 +128,19 @@ Migration converts `installation.json` → `profile.json` and records completed 
 `<app data>/legacy-migration.json`; name collisions import under a suffixed folder
 (e.g. `default-2`).
 
-**VS Launcher (XurxoMF) import** — reads `<appData>/VSLauncher/config.json` (VS Launcher pins
-Electron's userData to that folder):
+**VS Launcher / RiftLauncher (the VS Launcher family) import** — reads
+`<appData>/VSLauncher/config.json` and `<appData>/RiftLauncher/config.json` (RiftLauncher is
+the maintained continuation and copies VS Launcher's data over on first run, so both may
+describe the same folders; the first match wins):
 
 | Command                            | Args                                | Returns                    |
 | ---------------------------------- | ----------------------------------- | -------------------------- |
 | `detect_vs_launcher_installations` | —                                   | `VsLauncherInstallation[]` |
 | `import_vs_launcher_installations` | `{ paths, mode: "move" \| "copy" }` | `{ migrated, skipped }`    |
 
-Only paths listed in the VS Launcher config are accepted; completed imports are recorded in
-`<app data>/vs-launcher-migration.json`. VS Launcher stores env vars as a comma-separated
-`KEY=value` string, playtime in milliseconds (converted to seconds) and uses its own icon
+Only paths listed in either config are accepted; completed imports are recorded in
+`<app data>/vs-launcher-migration.json`. Both store env vars as a comma-separated
+`KEY=value` string, playtime in milliseconds (converted to seconds) and use their own icon
 artwork (icons are not carried over).
 
 **MVL (scgm0) import** — reads `<Godot user dir>/MVL/data.json` (`%APPDATA%\MVL` on Windows,
@@ -170,6 +172,22 @@ v11), the game version from `game_versions.name`, and playtime from the summed
 `play_sessions.duration_sec`. Only columns that exist are selected, so older schemas still
 work. Launch arguments are re-quoted so shell-word parsing round-trips them; imports are
 recorded in `<app data>/waxlight-migration.json`. Covers (`cover_path`) are not carried over.
+
+**Cairn (cairns-gg) import** — resolves the root like Cairn does (`CAIRN_HOME`, else the
+`home` pointer inside the default root, else `~/.cairn`) and treats a pack as the instance:
+its game data path is `<root>/packs/<id>/data` while its mods sit in
+`<root>/packs/<id>/Mods`; `pack.json` supplies the name and game version:
+
+| Command              | Args        | Returns                 |
+| -------------------- | ----------- | ----------------------- |
+| `detect_cairn_packs` | —           | `CairnPack[]`           |
+| `import_cairn_packs` | `{ paths }` | `{ migrated, skipped }` |
+
+Import is **copy-only** (the pack folder also holds Cairn's manifest, lock and local-state
+files, so there is nothing to move without breaking Cairn): `data/` is copied into the
+profile root and `Mods/` into the profile's `Mods/`. Imports are recorded in
+`<app data>/cairn-migration.json`; game builds Cairn installed under `<root>/games/<version>`
+can be linked in place.
 
 **Linked (external) game versions** — builds installed by those launchers (or any folder) are
 registered in `<app data>/external-versions.json` and resolved by

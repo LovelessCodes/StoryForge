@@ -30,6 +30,11 @@ export interface LauncherImportSource {
   importCommand: string;
   /** Query key holding the detection result (invalidated after import). */
   queryKey: QueryKey;
+  /**
+   * Import modes to offer. Defaults to move and copy; sources that cannot be
+   * moved (a pack folder holding its own manifest) pass a single mode.
+   */
+  modes?: Array<"move" | "copy">;
 }
 
 interface LauncherImportBannerProps {
@@ -61,12 +66,15 @@ export function LauncherImportBanner({
 
   const pending = items.filter((item) => !item.already_imported);
 
+  const modes = source.modes ?? (["move", "copy"] as const);
+  const activeMode: ImportMode = modes.length === 1 ? modes[0] : mode;
+
   async function runImport() {
     setBusy(true);
     try {
       const result = await invoke<LegacyMigrationReport>(source.importCommand, {
         paths: pending.map((item) => item.path),
-        mode,
+        mode: activeMode,
       });
       setReport(result);
       await loadProfiles();
@@ -127,36 +135,43 @@ export function LauncherImportBanner({
 
           <ScrollArea scrollFade className="min-h-0 flex-1">
             <div className="grid gap-4 p-4">
-              <div className="grid gap-2">
-                <span className="text-xs font-medium">How should the folders be imported?</span>
-                <ToggleGroup
-                  variant="outline"
-                  size="sm"
-                  value={[mode]}
-                  onValueChange={(value) => {
-                    const next = value[0] as ImportMode | undefined;
-                    if (next) setMode(next);
-                  }}
-                >
-                  <ToggleGroupItem value="move">
-                    <FolderInput /> Move
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="copy">
-                    <Copy /> Copy
-                  </ToggleGroupItem>
-                </ToggleGroup>
-                <p className="text-muted-foreground text-[11px]">
-                  {mode === "move"
-                    ? `Relocates the folders into your profiles directory — fast and uses no extra disk, but ${source.name} will no longer see them.`
-                    : `Copies the folders and leaves ${source.name} untouched — safe, but uses extra disk space.`}
-                </p>
-              </div>
+              {modes.length > 1 && (
+                <div className="grid gap-2">
+                  <span className="text-xs font-medium">How should the folders be imported?</span>
+                  <ToggleGroup
+                    variant="outline"
+                    size="sm"
+                    value={[mode]}
+                    onValueChange={(value) => {
+                      const next = value[0] as ImportMode | undefined;
+                      if (next) setMode(next);
+                    }}
+                  >
+                    <ToggleGroupItem value="move">
+                      <FolderInput /> Move
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="copy">
+                      <Copy /> Copy
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                  <p className="text-muted-foreground text-[11px]">
+                    {activeMode === "move"
+                      ? `Relocates the folders into your profiles directory — fast and uses no extra disk, but ${source.name} will no longer see them.`
+                      : `Copies the folders and leaves ${source.name} untouched — safe, but uses extra disk space.`}
+                  </p>
+                </div>
+              )}
 
               <div className="divide-y border">
                 {items.map((item) => (
                   <div key={item.path} className="flex items-center gap-3 p-3">
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-xs font-medium">{item.name}</div>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="truncate text-xs font-medium">{item.name}</span>
+                        <Badge variant="outline" className="h-4 shrink-0 px-1.5 text-[10px]">
+                          {item.source}
+                        </Badge>
+                      </div>
                       <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 text-[11px]">
                         {item.version && <span className="font-mono">v{item.version}</span>}
                         <span>{item.size_display}</span>

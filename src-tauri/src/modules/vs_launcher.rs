@@ -1,4 +1,10 @@
-//! Import of VS Launcher (XurxoMF) installations as Story Forge profiles.
+//! Import of VS Launcher / RiftLauncher installations as Story Forge profiles.
+//!
+//! RiftLauncher is the maintained continuation of VS Launcher (which it forks)
+//! and keeps the same config format in `<appData>/RiftLauncher/config.json`;
+//! VS Launcher keeps its own in `<appData>/VSLauncher/config.json`, and
+//! RiftLauncher copies that data over on first run, so both may exist and
+//! describe the same folders.
 //!
 //! VS Launcher keeps everything in `<appData>/VSLauncher/config.json`
 //! (it overrides Electron's userData to that folder). Installations are
@@ -18,7 +24,7 @@
 //! not carried over.
 
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fs::{create_dir_all, read_to_string, write},
     path::{Path, PathBuf},
 };
@@ -38,10 +44,17 @@ use super::utils::{
     dir_name, dir_size_cached, format_size, normalize_path, profiles_folder, profiles_subdir,
     require_managed_path,
 };
-use crate::log_info;
+use crate::{log_error, log_info};
 
-/// Folder VS Launcher pins its Electron userData to (inside the OS app-data dir).
-const VS_LAUNCHER_DIR: &str = "VSLauncher";
+/// Launchers sharing this config format, most authoritative first.
+///
+/// RiftLauncher is the maintained continuation of VS Launcher and copies VS
+/// Launcher's data over on first run, so both configs can exist side by side
+/// and describe the same installation paths; the first match wins.
+const FAMILY: [(&str, &str); 2] = [
+    ("RiftLauncher", "RiftLauncher"),
+    ("VSLauncher", "VS Launcher"),
+];
 const MIGRATION_LOG_FILE: &str = "vs-launcher-migration.json";
 
 #[derive(Debug, Deserialize)]
@@ -90,6 +103,8 @@ pub struct VsLauncherInstallation {
     pub name: String,
     pub version: String,
     pub path: String,
+    /// Which family member listed it ("VS Launcher" or "RiftLauncher").
+    pub source: String,
     pub mod_count: usize,
     pub size_bytes: u64,
     pub size_display: String,
@@ -114,68 +129,79 @@ struct VsMigrationLog {
     migrations: Vec<VsMigrationEntry>,
 }
 
-/// `<appData>/VSLauncher/config.json`, per platform.
-fn config_candidates() -> Vec<PathBuf> {
-    let mut candidates: Vec<PathBuf> = Vec::new();
+/// `<OS app-data dir>` on this platform.
+fn config_base_dirs() -> Vec<PathBuf> {
+    let mut dirs: Vec<PathBuf> = Vec::new();
 
     #[cfg(target_os = "macos")]
     if let Some(home) = std::env::var_os("HOME").map(PathBuf::from) {
-        candidates.push(
-            home.join("Library/Application Support")
-                .join(VS_LAUNCHER_DIR),
-        );
+        dirs.push(home.join("Library/Application Support"));
     }
 
     #[cfg(target_os = "windows")]
     if let Some(appdata) = std::env::var_os("APPDATA").map(PathBuf::from) {
-        candidates.push(appdata.join(VS_LAUNCHER_DIR));
+        dirs.push(appdata);
     }
 
     #[cfg(all(unix, not(target_os = "macos")))]
     if let Some(config) = std::env::var_os("XDG_CONFIG_HOME").map(PathBuf::from) {
-        candidates.push(config.join(VS_LAUNCHER_DIR));
+        dirs.push(config);
     } else if let Some(home) = std::env::var_os("HOME").map(PathBuf::from) {
-        candidates.push(home.join(".config").join(VS_LAUNCHER_DIR));
+        dirs.push(home.join(".config"));
     }
 
-    candidates
+    dirs
+}
+
+/// `<appData>/<launcher>/config.json` for every family member.
+fn family_config_paths() -> Vec<(PathBuf, &'static str)> {
+    config_base_dirs()
         .into_iter()
-        .map(|dir| dir.join("config.json"))
+        .flat_map(|base| {
+            FAMILY
+                .iter()
+                .map(move |(folder, source)| (base.join(folder).join("config.json"), *source))
+        })
         .collect()
 }
 
-fn read_config() -> Result<Option<(PathBuf, VsConfig)>, UiError> {
-    let Some(path) = config_candidates()
+fn read_family_configs() -> Vec<(PathBuf, &'static str, VsConfig)> {
+    family_config_paths()
         .into_iter()
-        .find(|candidate| candidate.is_file())
-    else {
-        return Ok(None);
-    };
-    let content = read_to_string(&path).map_err(|e| {
-        UiError::new(
-            "read_failed",
-            format!("Failed to read the VS Launcher config: {e}"),
-        )
-    })?;
-    let config: VsConfig = serde_json::from_str(&content).map_err(|e| {
-        UiError::new(
-            "parse_failed",
-            format!("Failed to parse the VS Launcher config: {e}"),
-        )
-    })?;
-    Ok(Some((path, config)))
+        .filter_map(|(path, source)| {
+            if !path.is_file() {
+                return None;
+            }
+            let content = read_to_string(&path).ok()?;
+            match serde_json::from_str::<VsConfig>(&content) {
+                Ok(config) => Some((path, source, config)),
+                Err(error) => {
+                    log_error!("vs_launcher: failed to parse {}: {error}", path.display());
+                    None
+                }
+            }
+        })
+        .collect()
 }
 
-/// Game versions installed by VS Launcher (its `gameVersions` list), ready to
-/// be linked into Story Forge.
+/// Game versions installed by the VS Launcher family, ready to be linked.
 pub(crate) fn detected_game_versions() -> Vec<super::versions::DetectedVersion> {
-    let Ok(Some((_config_path, config))) = read_config() else {
-        return Vec::new();
-    };
-    game_versions_from_config(config)
+    let mut seen: HashSet<PathBuf> = HashSet::new();
+    let mut versions = Vec::new();
+    for (_path, source, config) in read_family_configs() {
+        for version in game_versions_from_config(config, source) {
+            if seen.insert(normalize_path(Path::new(&version.path))) {
+                versions.push(version);
+            }
+        }
+    }
+    versions
 }
 
-fn game_versions_from_config(config: VsConfig) -> Vec<super::versions::DetectedVersion> {
+fn game_versions_from_config(
+    config: VsConfig,
+    source: &str,
+) -> Vec<super::versions::DetectedVersion> {
     config
         .game_versions
         .into_iter()
@@ -188,7 +214,7 @@ fn game_versions_from_config(config: VsConfig) -> Vec<super::versions::DetectedV
             Some(super::versions::DetectedVersion {
                 name,
                 path: path.to_string_lossy().to_string(),
-                source: "VS Launcher".into(),
+                source: source.to_string(),
             })
         })
         .collect()
@@ -268,54 +294,65 @@ pub async fn detect_vs_launcher_installations(
 }
 
 fn detect_blocking(app: &AppHandle) -> Result<Vec<VsLauncherInstallation>, UiError> {
-    let Some((config_path, config)) = read_config()? else {
+    let configs = read_family_configs();
+    if configs.is_empty() {
         return Ok(Vec::new());
-    };
-    log_info!("vs_launcher: reading {}", config_path.display());
+    }
+    for (path, source, _config) in &configs {
+        log_info!("vs_launcher: reading {} ({})", path.display(), source);
+    }
 
     let log = read_migration_log(app);
     let profiles_root = profiles_folder(app.clone())?.join(profiles_subdir(app.clone()));
     let game_data_candidates = super::game_data::default_data_candidates();
+    let mut seen: HashSet<PathBuf> = HashSet::new();
     let mut results = Vec::new();
 
-    for installation in config.installations {
-        if installation.name.trim().is_empty() || installation.path.trim().is_empty() {
-            continue;
-        }
-        let path = PathBuf::from(&installation.path);
-        if !path.is_dir() {
-            continue;
-        }
-        // Already part of Story Forge (root profile or adopted folder).
-        if normalize_path(&path).starts_with(normalize_path(&profiles_root))
-            || is_external_profile_dir(app, &path)
-        {
-            continue;
-        }
+    for (_config_path, source, config) in configs {
+        for installation in config.installations {
+            if installation.name.trim().is_empty() || installation.path.trim().is_empty() {
+                continue;
+            }
+            let path = PathBuf::from(&installation.path);
+            if !path.is_dir() {
+                continue;
+            }
+            // Already part of Story Forge (root profile or adopted folder).
+            if normalize_path(&path).starts_with(normalize_path(&profiles_root))
+                || is_external_profile_dir(app, &path)
+            {
+                continue;
+            }
+            // The family members can describe the same installation folder.
+            if !seen.insert(normalize_path(&path)) {
+                continue;
+            }
 
-        let already_imported = log.migrations.iter().any(|entry| {
-            normalize_path(Path::new(&entry.source_path)) == normalize_path(&path)
-                && Path::new(&entry.target_path).join(PROFILE_JSON).is_file()
-        });
-        let is_default_game_data = game_data_candidates
-            .iter()
-            .any(|candidate| normalize_path(candidate) == normalize_path(&path));
+            let already_imported = log.migrations.iter().any(|entry| {
+                normalize_path(Path::new(&entry.source_path)) == normalize_path(&path)
+                    && Path::new(&entry.target_path).join(PROFILE_JSON).is_file()
+            });
+            let is_default_game_data = game_data_candidates
+                .iter()
+                .any(|candidate| normalize_path(candidate) == normalize_path(&path));
 
-        let size_bytes = dir_size_cached(&path);
-        results.push(VsLauncherInstallation {
-            id: installation.id,
-            name: installation.name,
-            version: installation.version,
-            path: installation.path,
-            mod_count: count_zips(&path),
-            size_bytes,
-            size_display: format_size(size_bytes),
-            has_saves: path.join("Saves").is_dir(),
-            last_time_played: (installation.last_time_played > 0)
-                .then_some(installation.last_time_played as u64),
-            is_default_game_data,
-            already_imported,
-        });
+            let size_bytes = dir_size_cached(&path);
+            results.push(VsLauncherInstallation {
+                id: installation.id,
+                name: installation.name,
+                version: installation.version,
+                path: installation.path,
+                source: source.to_string(),
+                mod_count: count_zips(&path),
+                size_bytes,
+                size_display: format_size(size_bytes),
+                has_saves: path.join("Saves").is_dir(),
+                last_time_played: (installation.last_time_played > 0)
+                    .then_some(installation.last_time_played as u64),
+                is_default_game_data,
+                already_imported,
+            });
+        }
     }
 
     results.sort_by_key(|item| item.name.to_lowercase());
@@ -323,11 +360,11 @@ fn detect_blocking(app: &AppHandle) -> Result<Vec<VsLauncherInstallation>, UiErr
     Ok(results)
 }
 
-/// Imports VS Launcher installations into the profiles folder.
+/// Imports VS Launcher / RiftLauncher installations into the profiles folder.
 ///
-/// `mode` is `"move"` (relocate) or `"copy"` (keep VS Launcher working).
-/// Only paths listed in the VS Launcher config are accepted, and folder name
-/// collisions import under a suffixed name.
+/// `mode` is `"move"` (relocate) or `"copy"` (keep the other launcher working).
+/// Only paths listed in one of the family configs are accepted, and folder
+/// name collisions import under a suffixed name.
 #[command]
 pub async fn import_vs_launcher_installations(
     app: AppHandle,
@@ -351,9 +388,12 @@ fn import_blocking(
     requested: Vec<String>,
     mode: &str,
 ) -> Result<LegacyMigrationReport, UiError> {
-    let Some((_config_path, config)) = read_config()? else {
-        return Err(UiError::not_found("VS Launcher config not found"));
-    };
+    let configs = read_family_configs();
+    if configs.is_empty() {
+        return Err(UiError::not_found(
+            "No VS Launcher or RiftLauncher config found",
+        ));
+    }
     let profiles_root = profiles_folder(app.clone())?.join(profiles_subdir(app.clone()));
     create_dir_all(&profiles_root).map_err(|e| {
         UiError::new(
@@ -370,14 +410,15 @@ fn import_blocking(
 
     for requested_path in requested {
         let requested_normalized = normalize_path(Path::new(&requested_path));
-        let Some(installation) = config
-            .installations
-            .iter()
-            .find(|item| normalize_path(Path::new(&item.path)) == requested_normalized)
-        else {
+        let Some(installation) = configs.iter().find_map(|(_path, _source, config)| {
+            config
+                .installations
+                .iter()
+                .find(|item| normalize_path(Path::new(&item.path)) == requested_normalized)
+        }) else {
             report.skipped.push(LegacyMigrationSkip {
                 name: requested_path,
-                reason: "not listed in the VS Launcher config".into(),
+                reason: "not listed in the VS Launcher or RiftLauncher config".into(),
             });
             continue;
         };
@@ -557,10 +598,10 @@ mod tests {
         ))
         .unwrap();
 
-        let versions = game_versions_from_config(config);
+        let versions = game_versions_from_config(config, "RiftLauncher");
         assert_eq!(versions.len(), 1);
         assert_eq!(versions[0].name, "1.21.3");
         assert_eq!(versions[0].path, install.to_string_lossy());
-        assert_eq!(versions[0].source, "VS Launcher");
+        assert_eq!(versions[0].source, "RiftLauncher");
     }
 }

@@ -17,9 +17,9 @@ export default function VsLauncherBanner() {
       items={data ?? []}
       onDismiss={dismiss}
       source={{
-        name: "VS Launcher",
-        hint: "Installations from VS Launcher by XurxoMF (github.com/XurxoMF/vs-launcher). Each one is imported as a profile — nothing is converted except the manifest.",
-        note: "VS Launcher icons are not carried over — it uses its own artwork. Playtime and launch parameters are preserved.",
+        name: "VS Launcher / RiftLauncher",
+        hint: "Installations from VS Launcher by XurxoMF and RiftLauncher by the Stratum team (its maintained continuation). Each one is imported as a profile — nothing is converted except the manifest.",
+        note: "Icons are not carried over (both use their own artwork). Playtime, launch parameters and environment variables are preserved.",
         importCommand: "import_vs_launcher_installations",
         queryKey: vsLauncherInstallationsQueryKey,
       }}

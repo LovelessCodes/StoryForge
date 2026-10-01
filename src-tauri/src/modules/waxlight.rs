@@ -56,6 +56,8 @@ pub struct WaxlightInstance {
     pub name: String,
     pub version: String,
     pub path: String,
+    /// Constant "Waxlight Launcher"; kept so every importer reports the same shape.
+    pub source: String,
     pub mod_count: usize,
     pub size_bytes: u64,
     pub size_display: String,
@@ -550,6 +552,7 @@ fn detect_blocking(app: &AppHandle) -> Result<Vec<WaxlightInstance>, UiError> {
             },
             version: row.version,
             path: path.to_string_lossy().to_string(),
+            source: "Waxlight Launcher".into(),
             mod_count: count_zips(&path),
             size_bytes,
             size_display: format_size(size_bytes),

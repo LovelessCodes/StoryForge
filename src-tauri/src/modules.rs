@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod cairn;
 pub mod dotnet;
 pub mod download;
 pub mod errors;
