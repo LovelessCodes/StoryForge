@@ -2,8 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { format } from "date-fns";
-import insane from "insane";
+import insane, { type AllowedTags } from "insane";
 import { CircleAlert, ExternalLink, Newspaper, RefreshCw } from "lucide-react";
+import { useMemo, type MouseEvent } from "react";
 
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -23,10 +24,65 @@ const newsQuery = {
   queryKey: ["news"],
 };
 
-/** Sanitize the RSS HTML, then read it back as plain text (entities decoded). */
-function descriptionText(html: string): string {
-  const stripped = insane(html, { allowedAttributes: {}, allowedTags: [] });
-  return new DOMParser().parseFromString(stripped, "text/html").body.textContent ?? "";
+/** Tags kept when rendering a news item's RSS HTML. */
+const NEWS_ALLOWED_TAGS: AllowedTags[] = [
+  "a",
+  "b",
+  "blockquote",
+  "br",
+  "code",
+  "em",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "hr",
+  "i",
+  "img",
+  "li",
+  "ol",
+  "p",
+  "pre",
+  "span",
+  "strong",
+  "u",
+  "ul",
+];
+
+/**
+ * Sanitizes a news item's RSS HTML for rendering: scripts, styles, classes and
+ * inline styles are dropped, protocol-relative URLs are made absolute (the
+ * forum serves `//media.vintagestory.at/…`) and images lazy-load.
+ */
+function renderableNewsHtml(html: string): string {
+  const sanitized = insane(html, {
+    allowedAttributes: {
+      a: ["href", "title"],
+      img: ["alt", "src", "title"],
+    },
+    allowedTags: NEWS_ALLOWED_TAGS,
+  });
+  const doc = new DOMParser().parseFromString(sanitized, "text/html");
+  for (const image of doc.querySelectorAll("img")) {
+    const src = image.getAttribute("src") ?? "";
+    if (src.startsWith("//")) image.setAttribute("src", `https:${src}`);
+    image.setAttribute("loading", "lazy");
+  }
+  for (const anchor of doc.querySelectorAll("a")) {
+    const href = anchor.getAttribute("href") ?? "";
+    if (href.startsWith("//")) anchor.setAttribute("href", `https:${href}`);
+    anchor.setAttribute("rel", "noreferrer");
+  }
+  return doc.body.innerHTML;
+}
+
+/** Rendered descriptions live inside the cards; keep their links external. */
+function handleNewsLinkClick(event: MouseEvent<HTMLDivElement>) {
+  const anchor = (event.target as HTMLElement).closest("a");
+  if (!anchor) return;
+  event.preventDefault();
+  const href = anchor.getAttribute("href");
+  if (href) void openUrl(href);
 }
 
 function formatPubDate(value: string): string {
@@ -61,6 +117,10 @@ function NewsSkeleton() {
 
 export default function NewsPage() {
   const { data: news, error, isPending, isFetching, refetch } = useQuery(newsQuery);
+  const rendered = useMemo(
+    () => (news ?? []).map((item) => ({ html: renderableNewsHtml(item.description), item })),
+    [news],
+  );
 
   return (
     <div className="grid gap-6">
@@ -85,7 +145,7 @@ export default function NewsPage() {
         </Alert>
       ) : news && news.length > 0 ? (
         <div className="grid gap-2">
-          {news.map((item) => (
+          {rendered.map(({ item, html }) => (
             <Card size="sm" key={item.guid} className="hover:bg-muted/40 transition-colors">
               <CardHeader className="gap-1.5">
                 <CardTitle>
@@ -97,9 +157,11 @@ export default function NewsPage() {
                     {item.title}
                   </button>
                 </CardTitle>
-                <CardDescription className="line-clamp-4 leading-relaxed">
-                  {descriptionText(item.description)}
-                </CardDescription>
+                <CardDescription
+                  className="[&_a]:text-accent-primary [&_code]:bg-muted line-clamp-6 leading-relaxed [&_a]:underline [&_a]:underline-offset-2 [&_blockquote]:border-l-2 [&_blockquote]:pl-2 [&_code]:px-1 [&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold [&_img]:my-1 [&_img]:max-h-40 [&_img]:w-auto [&_img]:border [&_li]:ml-3 [&_ol]:list-decimal [&_p]:mt-1.5 [&_p:first-child]:mt-0 [&_pre]:overflow-x-auto [&_strong]:font-medium [&_ul]:list-disc"
+                  dangerouslySetInnerHTML={{ __html: html }}
+                  onClick={handleNewsLinkClick}
+                />
               </CardHeader>
               <CardFooter className="justify-between gap-3">
                 <span className="text-muted-foreground text-xs">{formatPubDate(item.pubDate)}</span>
