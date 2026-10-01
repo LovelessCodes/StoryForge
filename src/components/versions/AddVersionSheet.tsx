@@ -26,7 +26,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useDownloadManager } from "@/hooks/use-download-manager";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { compareSemverDesc } from "@/lib/helpers";
-import { toast } from "@/lib/notify";
 import { gameVersionsQuery } from "@/lib/queries";
 import { useDownloadStore } from "@/stores/downloads";
 
@@ -91,10 +90,6 @@ export default function AddVersionSheet({ open, onOpenChange }: AddVersionSheetP
       useDownloadStore.getState().removeEntry(version);
     }
     startDownload(version);
-    toast.success(`Downloading Vintage Story ${version}`, {
-      description: "Track progress under Active downloads.",
-      id: `version-add-${version}`,
-    });
     handleOpenChange(false);
   };
 

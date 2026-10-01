@@ -1,122 +1,47 @@
-import { type UseMutationOptions, useMutation, useQueryClient } from "@tanstack/react-query";
-import { invoke } from "@tauri-apps/api/core";
-import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { useRef } from "react";
+import { type UseMutationOptions, useMutation } from "@tanstack/react-query";
 
-import { buildVersionPath, zipfolderprefix } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
-import type { ProgressPayload } from "@/lib/types";
-import { claimVersionDownload, releaseVersionDownload } from "@/lib/version-download-lock";
-import { useSettingsStore } from "@/stores/settings";
+import { useDownloadStore } from "@/stores/downloads";
 
-import { useAppFolder } from "./use-app-folder";
-import { installedVersionsQueryKey } from "./use-installed-versions";
+import { useDownloadManager, waitForDownload } from "./use-download-manager";
 
+/**
+ * Queues a game version download in the downloads manager — progress lives in
+ * the Downloads sheet and the titlebar, not in a toast.
+ *
+ * The mutation resolves only after the download finishes (and rejects on
+ * failure or cancellation), so flows that continue afterwards — importing a
+ * profile or modpack once its game version is available — can await it. A
+ * download already running for the version is joined instead of restarted.
+ */
 export const useDownloadVersion = (props?: UseMutationOptions<string, Error, string>) => {
-  const { appFolder } = useAppFolder();
-  const { versionsParent, versionsSubdir } = useSettingsStore();
-  const queryClient = useQueryClient();
-  const listenRef = useRef<UnlistenFn>(null);
+  const { resume, startDownload } = useDownloadManager();
   return useMutation({
     mutationFn: async (version: string) => {
-      // The download manager can target the same version; Rust deletes the
-      // destination directory when a fresh extraction starts, so the two paths
-      // must not run concurrently for one version.
-      if (!claimVersionDownload(version)) {
-        throw new Error(`A download for version ${version} is already running`);
+      const entry = useDownloadStore.getState().entries[version];
+      // A finished or failed entry from an earlier attempt would make
+      // `startDownload` a no-op (and `waitForDownload` resolve instantly), so
+      // drop it and start fresh.
+      if (entry?.status === "done" || entry?.status === "error") {
+        useDownloadStore.getState().removeEntry(version);
       }
-      try {
-        const url = (await invoke("get_download_link", {
-          version,
-        })) as string;
-        if (!url) {
-          throw new Error("Download URL not found in response");
-        }
-        const downloadUrl = url;
-        if (!appFolder) {
-          throw new Error("App folder not found");
-        }
-        const versionPath = buildVersionPath(versionsParent ?? appFolder, version, versionsSubdir);
-        return invoke("download_and_maybe_extract", {
-          params: {
-            destpath: versionPath,
-            emitevent: `download://version:${version.replace(/\./g, "_")}`,
-            extract: true,
-            extractdir: versionPath,
-            url: downloadUrl,
-            zipsubfolderprefix: zipfolderprefix(),
-          },
-        }) as Promise<string>;
-      } finally {
-        releaseVersionDownload(version);
-      }
+      startDownload(version);
+      if (entry?.status === "paused") resume(version);
+      await waitForDownload(version);
+      return "success";
     },
     mutationKey: ["download-version"],
-    onError: (error, v) => {
-      toast.error(`Error downloading game version: ${error.message}`, {
-        action: undefined,
-        id: `download-game-version-${v}`,
-      });
-      listenRef.current?.();
-    },
-    onMutate: async (v) => {
-      toast.loading(`Starting to download game version ${v}...`, {
-        action: {
-          label: "Cancel",
-          onClick: () => emit(`download://version:${v.replace(/\./g, "_")}:cancel`),
-        },
-        id: `download-game-version-${v}`,
-      });
-      listenRef.current = await listen<ProgressPayload>(
-        `download://version:${v.replace(/\./g, "_")}`,
-        (event) => {
-          const { phase, percent } = event.payload;
-          if (phase === "download") {
-            toast.loading(`Downloading game version ${v}: ${percent?.toFixed(0)}%`, {
-              action: {
-                label: "Cancel",
-                onClick: () => emit(`download://version:${v.replace(/\./g, "_")}:cancel`),
-              },
-              id: `download-game-version-${v}`,
-            });
-          } else if (phase === "extract") {
-            toast.loading(`Extracting game version ${v}...`, {
-              action: {
-                label: "Cancel",
-                onClick: () => emit(`download://version:${v.replace(/\./g, "_")}:cancel`),
-              },
-              id: `download-game-version-${v}`,
-            });
-          }
-        },
-      );
-    },
-    onSuccess: async (d, v) => {
-      listenRef.current?.();
-      if (d === "already_downloaded") {
-        // Already installed on disk: make sure the versions list shows it.
-        void queryClient.invalidateQueries({
-          queryKey: installedVersionsQueryKey(),
-        });
-        toast.dismiss(`download-game-version-${v}`);
-        return;
-      }
-      if (d === "cancelled") {
-        toast.info(`Download of game version ${v} cancelled`, {
-          action: undefined,
-          id: `download-game-version-${v}-cancelled`,
+    onError: (error, version) => {
+      if (error.message === "Download cancelled") {
+        toast.info(`Download of game version ${version} cancelled`, {
+          id: `download-game-version-${version}`,
         });
         return;
       }
-      void queryClient.invalidateQueries({
-        queryKey: installedVersionsQueryKey(),
+      toast.error(`Error downloading game version ${version}`, {
+        description: error.message,
+        id: `download-game-version-${version}`,
       });
-      if (d === "success") {
-        toast.success(`Game version ${v} downloaded`, {
-          action: undefined,
-          id: `download-game-version-${v}`,
-        });
-      }
     },
     scope: {
       id: "download-version",

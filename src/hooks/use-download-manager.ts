@@ -31,6 +31,42 @@ const lastStoreUpdate = new Map<string, number>();
 /** Rolling speed samples per token for ~3s window. */
 const speedSamples = new Map<string, { bytes: number; time: number }[]>();
 
+/**
+ * Callers that need to continue after a download finishes (importing a
+ * profile or modpack waits for its game version) subscribe here instead of
+ * polling the store.
+ */
+type DownloadWaiter = { resolve: () => void; reject: (error: Error) => void };
+const completionWaiters = new Map<string, DownloadWaiter[]>();
+
+function settleWaiters(token: string, error?: Error) {
+  const waiters = completionWaiters.get(token);
+  if (!waiters) return;
+  completionWaiters.delete(token);
+  for (const waiter of waiters) {
+    if (error) waiter.reject(error);
+    else waiter.resolve();
+  }
+}
+
+/**
+ * Resolves when the version's download finishes, rejects on failure or
+ * cancellation. A missing entry rejects; an already-finished entry resolves.
+ */
+export function waitForDownload(version: string): Promise<void> {
+  const entry = useDownloadStore.getState().entries[version];
+  if (!entry) return Promise.reject(new Error("Download is not queued"));
+  if (entry.status === "done") return Promise.resolve();
+  if (entry.status === "error") {
+    return Promise.reject(new Error(entry.error ?? "Download failed"));
+  }
+  return new Promise((resolve, reject) => {
+    const waiters = completionWaiters.get(version) ?? [];
+    waiters.push({ resolve, reject });
+    completionWaiters.set(version, waiters);
+  });
+}
+
 function recordSpeedSample(token: string, bytesDownloaded: number) {
   const now = performance.now();
   const samples = speedSamples.get(token) ?? [];
@@ -144,13 +180,16 @@ async function doDownload(
       store.updateEntry(token, { status: "paused" });
     } else if (result === "cancelled") {
       store.removeEntry(token);
+      settleWaiters(token, new Error("Download cancelled"));
     } else if (result === "success") {
       store.updateEntry(token, { status: "done", percent: 100 });
+      settleWaiters(token);
       void queryClient.invalidateQueries({
         queryKey: installedVersionsQueryKey(),
       });
     } else if (result === "already_downloaded") {
       store.removeEntry(token);
+      settleWaiters(token);
       // The version is on disk: refresh the list even though nothing downloaded.
       void queryClient.invalidateQueries({
         queryKey: installedVersionsQueryKey(),
@@ -159,6 +198,7 @@ async function doDownload(
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     store.updateEntry(token, { status: "error", error: message });
+    settleWaiters(token, new Error(message));
   } finally {
     releaseVersionDownload(version);
     pauseRequests.delete(token);
@@ -265,6 +305,7 @@ export function useDownloadManager() {
     }
 
     store.removeEntry(version);
+    settleWaiters(version, new Error("Download cancelled"));
   }, []);
 
   const retry = useCallback(
