@@ -275,8 +275,9 @@ export default function PublicServersTab() {
                     variant="outline"
                     disabled={downloadVersion.isPending}
                     onClick={() => downloadVersion.mutate(server.gameVersion)}
+                    title={`Download game version ${server.gameVersion}`}
                   >
-                    <DownloadCloud /> Download v{server.gameVersion}
+                    <DownloadCloud /> Download
                   </Button>
                 ) : (
                   <Button

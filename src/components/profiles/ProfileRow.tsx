@@ -261,8 +261,9 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
           variant="outline"
           disabled={download.isPending}
           onClick={() => download.mutate(profile.version)}
+          title={`Download game version ${profile.version}`}
         >
-          <FileDown /> Download v{profile.version}
+          <FileDown /> Download
         </Button>
       )}
 

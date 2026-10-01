@@ -164,7 +164,7 @@ export default function ServerRow({ server, onEdit }: ServerRowProps) {
         }
       >
         {versionInstalled ? <Plug /> : <DownloadCloud />}
-        {versionInstalled ? "Connect" : `Download v${profile?.version ?? "?"}`}
+        {versionInstalled ? "Connect" : "Download"}
       </Button>
 
       <DropdownMenu>

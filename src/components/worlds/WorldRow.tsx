@@ -121,7 +121,7 @@ export default function WorldRow({ world, profiles, activeProfile }: WorldRowPro
               title={`Game version ${profile.version} is not installed`}
               variant="outline"
             >
-              <FileDown /> Install {profile.version}
+              <FileDown /> Install
             </Button>
           )
         ) : (
