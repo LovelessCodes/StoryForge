@@ -3,9 +3,11 @@ import type { LucideIcon } from "lucide-react";
 import {
   Boxes,
   Earth,
+  FileDown,
   FileText,
   FolderOpen,
   Layers,
+  Loader2,
   Newspaper,
   Package,
   Play,
@@ -19,8 +21,10 @@ import { PAGE_PATHS, type RoutePage } from "@/lib/routes";
 
 import { useActiveProfile } from "../../hooks/use-active-profile";
 import { useAppVersion } from "../../hooks/use-app-version";
+import { useDownloadVersion } from "../../hooks/use-download-version";
 import { useInstalledVersions } from "../../hooks/use-installed-versions";
 import { usePlayProfile } from "../../hooks/use-play-profile";
+import { useDownloadStore } from "../../stores/downloads";
 import AccountMenu from "../accounts/AccountMenu";
 import ProfileSelector from "../profiles/ProfileSelector";
 import { Button } from "../ui/button";
@@ -63,11 +67,22 @@ export default function Sidebar() {
   const { data: version } = useAppVersion();
   const { activeProfile } = useActiveProfile();
   const play = usePlayProfile();
+  const download = useDownloadVersion();
   const { data: installedVersions } = useInstalledVersions();
+  const downloadEntry = useDownloadStore((s) =>
+    activeProfile ? s.entries[activeProfile.version] : undefined,
+  );
 
   const versionInstalled =
     activeProfile !== null &&
     (installedVersions ?? []).some((v) => v.name === activeProfile.version);
+
+  const downloadInProgress =
+    downloadEntry !== undefined &&
+    downloadEntry.status !== "done" &&
+    downloadEntry.status !== "error";
+  const downloadPaused = downloadEntry?.status === "paused";
+  const downloadPercent = downloadEntry?.percent ?? null;
 
   function isActive(page: RoutePage) {
     if (page === "servers") {
@@ -77,11 +92,21 @@ export default function Sidebar() {
     return pathname === path || pathname.startsWith(`${path}/`);
   }
 
-  const playTitle = !activeProfile
+  const playTitle = !activeProfile ? "Create a profile first" : `Launch ${activeProfile.name}`;
+
+  const downloadTitle = !activeProfile
     ? "Create a profile first"
-    : !versionInstalled
-      ? `Game version ${activeProfile.version} is not installed yet`
-      : `Launch ${activeProfile.name}`;
+    : downloadPaused
+      ? `Game version ${activeProfile.version} download is paused — resume it on the Versions page`
+      : `Download game version ${activeProfile.version} to play ${activeProfile.name}`;
+
+  const downloadLabel = !activeProfile
+    ? "Play"
+    : downloadPaused
+      ? "Download paused"
+      : downloadInProgress
+        ? `Downloading…${downloadPercent !== null ? ` ${downloadPercent.toFixed(0)}%` : ""}`
+        : `Download v${activeProfile.version}`;
 
   return (
     <SidebarRoot collapsible="icon">
@@ -137,18 +162,29 @@ export default function Sidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <Button
-          variant="amber"
-          className="w-full group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:px-0"
-          onClick={() => activeProfile && play.mutate({ id: activeProfile.id })}
-          disabled={!activeProfile || !versionInstalled || play.isPending}
-          title={playTitle}
-        >
-          <Play />
-          <span className="group-data-[collapsible=icon]:hidden">
-            Play {activeProfile ? activeProfile.name : ""}
-          </span>
-        </Button>
+        {activeProfile && versionInstalled ? (
+          <Button
+            variant="amber"
+            className="w-full group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:px-0"
+            onClick={() => play.mutate({ id: activeProfile.id })}
+            disabled={play.isPending}
+            title={playTitle}
+          >
+            <Play />
+            <span className="group-data-[collapsible=icon]:hidden">Play {activeProfile.name}</span>
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            className="w-full group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:px-0"
+            onClick={() => activeProfile && download.mutate(activeProfile.version)}
+            disabled={!activeProfile || download.isPending || downloadInProgress || downloadPaused}
+            title={downloadTitle}
+          >
+            {downloadInProgress ? <Loader2 className="animate-spin" /> : <FileDown />}
+            <span className="group-data-[collapsible=icon]:hidden">{downloadLabel}</span>
+          </Button>
+        )}
         <Button
           variant="outline"
           className="w-full group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:px-0"

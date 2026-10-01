@@ -7,13 +7,11 @@ import { formatDistanceToNow } from "date-fns";
 import {
   Copy,
   Ellipsis,
-  FileDown,
   FileText,
   FolderOpen,
   Link2,
   Package,
   Pencil,
-  Play,
   ScrollText,
   Share2,
   Star,
@@ -32,7 +30,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import {
   Sheet,
   SheetContent,
@@ -42,11 +39,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { notify } from "@/components/ui/toast";
-import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
-import { usePlayProfile } from "@/hooks/use-play-profile";
 import { toast } from "@/lib/notify";
-import { useDownloadStore } from "@/stores/downloads";
 import { useProfilesStore, type Profile } from "@/stores/profiles";
 import { useSettingsStore } from "@/stores/settings";
 
@@ -64,12 +58,9 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
   const queryClient = useQueryClient();
   const installedNames = useInstalledVersionNames();
   const versionInstalled = installedNames.includes(profile.version);
-  const play = usePlayProfile();
-  const download = useDownloadVersion();
   const setActiveProfileId = useSettingsStore((s) => s.setActiveProfileId);
   const activeProfileId = useSettingsStore((s) => s.activeProfileId);
   const { loadProfiles } = useProfilesStore();
-  const downloadEntry = useDownloadStore((s) => s.entries[profile.version]);
 
   const [logsOpen, setLogsOpen] = useState(false);
   const [cloneOpen, setCloneOpen] = useState(false);
@@ -233,39 +224,9 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
           {meta.map((item) => (
             <span key={item}>{item}</span>
           ))}
-          {!versionInstalled && !downloadEntry && (
-            <span className="text-[var(--color-warning)]">Not installed</span>
-          )}
+          {!versionInstalled && <span className="text-[var(--color-warning)]">Not installed</span>}
         </div>
       </div>
-
-      {downloadEntry && downloadEntry.status !== "done" ? (
-        <div className="flex w-32 shrink-0 items-center gap-2">
-          <Progress value={downloadEntry.percent ?? 0} className="h-1.5" />
-          <span className="text-muted-foreground text-[11px] tabular-nums">
-            {downloadEntry.percent !== null ? `${downloadEntry.percent.toFixed(0)}%` : "…"}
-          </span>
-        </div>
-      ) : versionInstalled ? (
-        <Button
-          size="sm"
-          variant="amber"
-          disabled={play.isPending}
-          onClick={() => play.mutate({ id: profile.id })}
-        >
-          <Play /> Play
-        </Button>
-      ) : (
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={download.isPending}
-          onClick={() => download.mutate(profile.version)}
-          title={`Download game version ${profile.version}`}
-        >
-          <FileDown /> Download
-        </Button>
-      )}
 
       {!isActive && (
         <Button size="sm" variant="outline" onClick={switchToThis}>
