@@ -51,7 +51,8 @@ struct ActiveDownload {
     stored_offset: Arc<AtomicU64>,
     /// Snapshot of the manifest fields needed to write a `.resume.json` on exit.
     url: String,
-    filepath: String,
+    /// The archive path, known only after the response headers arrive.
+    filepath: Arc<Mutex<String>>,
     etag: Arc<Mutex<String>>,
 }
 
@@ -87,7 +88,7 @@ pub fn pause_all_active_downloads() {
                     ad.pause_flag.clone(),
                     ad.stored_offset.load(Ordering::SeqCst),
                     ad.url.clone(),
-                    ad.filepath.clone(),
+                    lock(&ad.filepath).clone(),
                     lock(&ad.etag).clone(),
                 )
             })
@@ -103,6 +104,12 @@ pub fn pause_all_active_downloads() {
     for (event, flag, offset, url, filepath, etag) in &entries {
         // Signal the download loop to stop
         flag.store(true, Ordering::SeqCst);
+
+        // The response headers never arrived (or the download had not written
+        // anything yet): there is no partial file to describe.
+        if filepath.is_empty() || *offset == 0 {
+            continue;
+        }
 
         // Write the resume manifest directly in case the loop can't react in time
         let manifest = ResumeManifest {
@@ -141,6 +148,8 @@ struct DownloadContext {
     pause_flag: Arc<AtomicBool>,
     stored_offset: Arc<AtomicU64>,
     stored_etag: Arc<Mutex<String>>,
+    /// Archive path once the response headers revealed the file name.
+    stored_filepath: Arc<Mutex<String>>,
 }
 
 impl DownloadContext {
@@ -219,12 +228,37 @@ fn manifest_path_for(archive: &Path) -> PathBuf {
     PathBuf::from(s)
 }
 
-/// Read a resume manifest if one exists alongside a partial download.
-fn read_resume_manifest(archive: &Path) -> Option<ResumeManifest> {
-    let path = manifest_path_for(archive);
-    let data = fs::read_to_string(&path).ok()?;
-    let manifest: ResumeManifest = serde_json::from_str(&data).ok()?;
-    Some(manifest)
+/// Find a paused download for `url` in `dest_dir`.
+///
+/// The archive filename cannot be derived from the URL reliably (the real name
+/// comes from `Content-Disposition`), so every manifest is read and matched by
+/// its stored URL. Returns the archive path and its manifest.
+fn find_resume_manifest(dest_dir: &Path, url: &str) -> Option<(PathBuf, ResumeManifest)> {
+    let entries = fs::read_dir(dest_dir).ok()?;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.to_string_lossy().ends_with(".resume.json") {
+            continue;
+        }
+        let Ok(data) = fs::read_to_string(&path) else {
+            continue;
+        };
+        let Ok(manifest) = serde_json::from_str::<ResumeManifest>(&data) else {
+            continue;
+        };
+        if manifest.url != url {
+            continue;
+        }
+        let archive = if manifest.filepath.is_empty() {
+            // Older manifests without a filepath: strip `.resume.json`.
+            let name = path.to_string_lossy();
+            PathBuf::from(name.strip_suffix(".resume.json")?)
+        } else {
+            PathBuf::from(&manifest.filepath)
+        };
+        return Some((archive, manifest));
+    }
+    None
 }
 
 /// Clean up partial download / extraction artifacts on cancellation or error.
@@ -351,6 +385,8 @@ async fn download_file(
 
     let filename = infer_filename(url, resp.headers());
     let archive_path = dest_dir.join(&filename);
+    // Pause-on-exit needs the real path, which the URL alone cannot provide.
+    *lock(&ctx.stored_filepath) = archive_path.to_string_lossy().to_string();
     let etag = resp
         .headers()
         .get(reqwest::header::ETAG)
@@ -475,6 +511,7 @@ async fn extract_zip(
     let pause_flag = ctx.pause_flag.clone();
     let stored_offset = ctx.stored_offset.clone();
     let stored_etag = ctx.stored_etag.clone();
+    let stored_filepath = ctx.stored_filepath.clone();
 
     tokio::task::spawn_blocking(move || {
         let ctx = DownloadContext {
@@ -484,6 +521,7 @@ async fn extract_zip(
             pause_flag,
             stored_offset,
             stored_etag,
+            stored_filepath,
         };
         extract_zip_sync(&ctx, &archive, &extract_dir, prefix.as_deref())
     })
@@ -601,6 +639,7 @@ async fn extract_tar(
     let pause_flag = ctx.pause_flag.clone();
     let stored_offset = ctx.stored_offset.clone();
     let stored_etag = ctx.stored_etag.clone();
+    let stored_filepath = ctx.stored_filepath.clone();
 
     tokio::task::spawn_blocking(move || {
         let ctx = DownloadContext {
@@ -610,6 +649,7 @@ async fn extract_tar(
             pause_flag,
             stored_offset,
             stored_etag,
+            stored_filepath,
         };
         extract_tar_sync(&ctx, &archive, &extract_dir)
     })
@@ -759,33 +799,38 @@ pub async fn download_and_maybe_extract(
         ids: listener_ids,
     };
 
-    // Determine the archive filename from the URL.
-    let filename_hint = url.split('/').next_back().unwrap_or("downloaded_file");
-    let candidate_path = destpath.join(filename_hint);
-
-    // Check for a resume manifest.
-    let (resume_offset, resume_etag): (u64, String) =
-        if let Some(m) = read_resume_manifest(&candidate_path) {
-            if m.url == url {
+    // Check for a paused download of the same URL. The archive filename is
+    // only known after the response (`Content-Disposition` may differ from the
+    // URL — mod links look like `/download?fileid=…`), so the manifest is
+    // matched by URL instead of by guessing the file name.
+    let (resume_offset, resume_etag): (u64, String) = match find_resume_manifest(&destpath, &url) {
+        Some((archive, manifest)) => {
+            let size = fs::metadata(&archive).map(|m| m.len()).unwrap_or(0);
+            if size > 0 && size == manifest.offset {
                 log_info!(
                     "download: resuming {} from offset {}",
-                    filename_hint,
-                    m.offset
+                    archive.display(),
+                    manifest.offset
                 );
-                (m.offset, m.etag)
+                (manifest.offset, manifest.etag)
             } else {
-                log_info!("download: url mismatch in resume manifest, starting fresh");
-                let _ = fs::remove_file(&candidate_path);
-                let _ = fs::remove_file(manifest_path_for(&candidate_path));
+                // The partial file is missing or no longer matches the
+                // manifest; start over rather than append mismatched bytes.
+                log_info!(
+                    "download: discarding unusable resume state for {}",
+                    archive.display()
+                );
+                let _ = fs::remove_file(manifest_path_for(&archive));
                 (0, String::new())
             }
-        } else {
-            (0, String::new())
-        };
+        }
+        None => (0, String::new()),
+    };
 
     // Build the shared tracking state so pause_all_active_downloads can write manifests on exit.
     let stored_offset = Arc::new(AtomicU64::new(resume_offset));
     let stored_etag = Arc::new(Mutex::new(String::new()));
+    let stored_filepath = Arc::new(Mutex::new(String::new()));
 
     // Register in the global registry.
     {
@@ -796,7 +841,7 @@ pub async fn download_and_maybe_extract(
                 pause_flag: pause_flag.clone(),
                 stored_offset: stored_offset.clone(),
                 url: url.clone(),
-                filepath: candidate_path.to_string_lossy().to_string(),
+                filepath: stored_filepath.clone(),
                 etag: stored_etag.clone(),
             },
         );
@@ -813,6 +858,7 @@ pub async fn download_and_maybe_extract(
         pause_flag: pause_flag.clone(),
         stored_offset,
         stored_etag,
+        stored_filepath,
     };
 
     // Fresh download setup (only needed when not resuming).
@@ -1109,5 +1155,33 @@ mod tests {
             reqwest::header::HeaderValue::from_static("attachment; filename=\"foo.tar.gz\""),
         );
         assert_eq!(infer_filename("http://x/y.zip", &headers), "foo.tar.gz");
+    }
+
+    #[test]
+    fn finds_resume_manifests_by_url_not_file_name() {
+        let tmp = tempfile::tempdir().unwrap();
+        let url = "https://mods.vintagestory.at/download?fileid=1234";
+        // The real archive name comes from Content-Disposition and does not
+        // match the URL segment.
+        let archive = tmp.path().join("sodium_1.2.3.zip");
+        std::fs::write(&archive, vec![0u8; 64]).unwrap();
+        let manifest = ResumeManifest {
+            offset: 64,
+            etag: "abc".into(),
+            url: url.into(),
+            filepath: archive.to_string_lossy().to_string(),
+        };
+        std::fs::write(
+            manifest_path_for(&archive),
+            serde_json::to_string(&manifest).unwrap(),
+        )
+        .unwrap();
+
+        let found = find_resume_manifest(tmp.path(), url).expect("manifest is found");
+        assert_eq!(found.0, archive);
+        assert_eq!(found.1.offset, 64);
+
+        // A different URL must not pick up this manifest.
+        assert!(find_resume_manifest(tmp.path(), "https://example.invalid/other").is_none());
     }
 }
