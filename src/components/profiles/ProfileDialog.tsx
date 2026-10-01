@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { useAppFolder } from "@/hooks/use-app-folder";
-import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { buildProfilePath, compareSemverDesc, makeStringFolderSafe } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
@@ -49,7 +48,6 @@ export default function ProfileDialog({ open, onOpenChange, profile }: ProfileDi
   const { profilesParent, profilesSubdir } = useSettingsStore();
   const { loadProfiles, addProfile } = useProfilesStore();
   const setActiveProfileId = useSettingsStore((s) => s.setActiveProfileId);
-  const { mutateAsync: downloadVersion } = useDownloadVersion();
 
   const defaultVersion =
     gameVersions?.toSorted(compareSemverDesc).filter((v) => !v.includes("rc"))[0] ?? "";
@@ -82,11 +80,6 @@ export default function ProfileDialog({ open, onOpenChange, profile }: ProfileDi
     setError(null);
 
     try {
-      if (!installedSet.has(version)) {
-        setBusy(`Downloading game version ${version}…`);
-        await downloadVersion(version);
-      }
-
       const envVars = envEntriesToMap(envEntries);
       let path = isEdit
         ? profile.path
@@ -213,7 +206,8 @@ export default function ProfileDialog({ open, onOpenChange, profile }: ProfileDi
               </Select>
               {version && !installedSet.has(version) && (
                 <p className="text-muted-foreground text-[11px]">
-                  Version {version} will be downloaded before launch.
+                  Version {version} is not installed yet — the sidebar offers a download button for
+                  it when you are ready.
                 </p>
               )}
             </div>
