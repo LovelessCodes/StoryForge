@@ -95,12 +95,12 @@ export default function Titlebar() {
   return (
     <div
       className="fixed inset-x-0 top-0 z-20 flex h-8 items-center gap-2 pr-2 pl-19 select-none"
-      data-tauri-drag-region
+      data-tauri-drag-region="deep"
     >
       <SidebarTrigger />
       <div className="bg-muted block h-2/3 w-0.5" />
       <span className="text-muted-foreground hidden truncate text-[10px] font-medium tracking-widest whitespace-nowrap uppercase sm:inline">
-        Vintage Story Manager
+        Story Forge
       </span>
       {updateButton}
 
