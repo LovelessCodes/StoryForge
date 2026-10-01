@@ -22,16 +22,8 @@ export function ModSearchInput({
 }) {
   const searchRef = useRef<HTMLInputElement>(null);
 
-  // The command palette owns Mod+K globally, but the mods browser also wants
-  // it for its own search field; conflicts are expected, so allow them.
-  useHotkey(
-    "Mod+K",
-    () => {
-      searchRef.current?.focus();
-      searchRef.current?.select();
-    },
-    { conflictBehavior: "allow" },
-  );
+  // Mod+K belongs to the global command palette, so the mods browser uses
+  // the conventional Mod+F to focus its search field instead.
   useHotkey(
     "Mod+F",
     () => {
@@ -56,7 +48,7 @@ export function ModSearchInput({
       <InputGroupAddon align="inline-end">
         <InputGroupText className="gap-0.5">
           <kbd className="font-sans">{formatForDisplay("Mod")}</kbd>
-          <kbd className="font-sans">{formatForDisplay("K")}</kbd>
+          <kbd className="font-sans">{formatForDisplay("F")}</kbd>
         </InputGroupText>
       </InputGroupAddon>
     </InputGroup>
