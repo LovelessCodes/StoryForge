@@ -1,6 +1,6 @@
 pub mod modules;
 use modules::{
-    auth, download, game_data, legacy, maps, mods, news, profile_ops, profiles, saves,
+    auth, download, game_data, legacy, maps, mods, mvl, news, profile_ops, profiles, saves,
     server_hosting, servers, sniffer, versions, vs_launcher,
 };
 use tauri::RunEvent;
@@ -247,6 +247,9 @@ pub fn run() {
             // VS Launcher (XurxoMF) installation import
             vs_launcher::detect_vs_launcher_installations,
             vs_launcher::import_vs_launcher_installations,
+            // MVL (scgm0) modpack import
+            mvl::detect_mvl_modpacks,
+            mvl::import_mvl_modpacks,
             // Servers
             servers::fetch_public_servers,
             servers::fetch_all_servers,

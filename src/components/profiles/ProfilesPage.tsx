@@ -10,6 +10,7 @@ import DeletedProfilesSection from "./DeletedProfilesSection";
 import GameDataBanner from "./GameDataBanner";
 import ImportProfileSheet from "./ImportProfileSheet";
 import LegacyMigrationBanner from "./LegacyMigrationBanner";
+import MvlBanner from "./MvlBanner";
 import ProfileDialog from "./ProfileDialog";
 import ProfileRow from "./ProfileRow";
 import VsLauncherBanner from "./VsLauncherBanner";
@@ -64,6 +65,7 @@ export default function ProfilesPage() {
       <GameDataBanner />
       <LegacyMigrationBanner />
       <VsLauncherBanner />
+      <MvlBanner />
 
       {profiles.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 border border-dashed p-10 text-center">

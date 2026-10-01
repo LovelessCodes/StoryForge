@@ -7,6 +7,7 @@ pub mod legacy;
 pub mod logger;
 pub mod maps;
 pub mod mods;
+pub mod mvl;
 pub mod news;
 pub mod paths;
 pub mod profile_ops;

@@ -361,9 +361,9 @@ export type DetectedGameData = {
   registered: boolean;
 };
 
-// ── VS Launcher (XurxoMF) installations ──
+// ── Third-party launcher imports (VS Launcher, MVL) ──
 
-export type VsLauncherInstallation = {
+export type ForeignInstallation = {
   id: string;
   name: string;
   version: string;

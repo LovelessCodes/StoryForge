@@ -25,10 +25,11 @@ the look & feel of Macheim (see `../macheim`). The core domain concept is the **
 - **Adopt existing game data** — if Vintage Story data already exists in the game's default
   location (`VintagestoryData`), Story Forge offers to use it as a profile in one click.
   Nothing is copied or moved; removing the profile only unregisters the folder.
-- **Import from VS Launcher** — installations from
-  [VS Launcher](https://github.com/XurxoMF/vs-launcher) are detected and imported as profiles
-  (move or copy), preserving the game version, launch parameters, environment variables and
-  playtime.
+- **Import from other launchers** — installations from
+  [VS Launcher](https://github.com/XurxoMF/vs-launcher) and modpacks from
+  [MVL](https://github.com/scgm0/MVL) are detected and imported as profiles (move or copy),
+  preserving the game version, mods and worlds. VS Launcher's launch parameters, environment
+  variables and playtime are carried over as well.
 - **Versions** — browse all Vintage Story releases, download with a resumable, pausable queue.
 - **Mods** — search the mod database, filter by version/side/tags/author, install, update,
   downgrade, remove, and update everything at once.

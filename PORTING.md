@@ -144,6 +144,21 @@ Only paths listed in the VS Launcher config are accepted; completed imports are 
 `KEY=value` string, playtime in milliseconds (converted to seconds) and uses its own icon
 artwork (icons are not carried over).
 
+**MVL (scgm0) import** — reads `<Godot user dir>/MVL/data.json` (`%APPDATA%\MVL` on Windows,
+`$XDG_DATA_HOME/MVL` on Linux, `~/Library/Application Support/MVL` on macOS) and the `modpack`
+path list it contains:
+
+| Command               | Args                                | Returns                 |
+| --------------------- | ----------------------------------- | ----------------------- |
+| `detect_mvl_modpacks` | —                                   | `MvlModpack[]`          |
+| `import_mvl_modpacks` | `{ paths, mode: "move" \| "copy" }` | `{ migrated, skipped }` |
+
+An MVL modpack folder _is_ the game data path (VSRun launches the game with the modpack as
+`VintageStoryDataPath`); `modpack.json` supplies the name and game version (v1 uses
+`modpackName`/`gameVersion`, v0 `name`/`version`). Imports are recorded in
+`<app data>/mvl-migration.json`. MVL's `command`/`mainAssembly` (its VSRun wiring) and
+`modpackIcon.*` artwork have no Story Forge equivalent and are not carried over.
+
 **Servers**: `fetch_all_servers` returns an address-scoped `id` (name|ip|port hash —
 favorites and status probes are stored against it) plus a profile-scoped `row_key`
 (`<profile_id>:<id>`). The frontend uses `rowKey` for React keys and list/store
