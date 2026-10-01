@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Check, ChevronsUpDown, Plus, User } from "lucide-react";
+import { Check, ChevronsUpDown, IdCard, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -43,7 +43,7 @@ export default function ProfileSelector() {
         }
       >
         <span className="flex min-w-0 items-center gap-2">
-          <User className="text-muted-foreground size-4 shrink-0" />
+          <IdCard className="text-muted-foreground size-4 shrink-0" />
           <span className="truncate">{activeProfile?.name ?? "No profile"}</span>
         </span>
         <ChevronsUpDown className="text-muted-foreground size-4 shrink-0" />

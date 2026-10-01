@@ -1,4 +1,4 @@
-import { FileDown, User } from "lucide-react";
+import { FileDown, IdCard } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -73,7 +73,7 @@ export default function ProfilesPage() {
 
       {profiles.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 border border-dashed p-10 text-center">
-          <User className="text-muted-foreground size-6" />
+          <IdCard className="text-muted-foreground size-6" />
           <div>
             <p className="text-sm font-medium">No profiles yet</p>
             <p className="text-muted-foreground text-xs">

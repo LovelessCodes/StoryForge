@@ -6,6 +6,7 @@ import {
   FileDown,
   FileText,
   FolderOpen,
+  IdCard,
   Layers,
   Loader2,
   Newspaper,
@@ -13,7 +14,6 @@ import {
   Play,
   Server,
   Settings,
-  User,
 } from "lucide-react";
 
 import { openProfilesFolderInFileExplorer } from "@/lib/app-paths";
@@ -51,7 +51,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { page: "profiles", label: "Profiles", icon: User },
+  { page: "profiles", label: "Profiles", icon: IdCard },
   { page: "mods", label: "Mods", icon: Package },
   { page: "modpacks", label: "Modpacks", icon: Layers },
   { page: "versions", label: "Versions", icon: Boxes },

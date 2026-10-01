@@ -7,6 +7,7 @@ import {
   Moon,
   Newspaper,
   Package,
+  IdCard,
   PanelLeft,
   Play,
   RefreshCw,
@@ -14,7 +15,6 @@ import {
   Server,
   Settings,
   Sun,
-  User,
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -43,7 +43,7 @@ const iconById: Partial<Record<AppCommandId, LucideIcon>> = {
   "app.refresh": RefreshCw,
   "app.openProfilesFolder": FolderOpen,
   "app.launchProfile": Play,
-  "nav.profiles": User,
+  "nav.profiles": IdCard,
   "nav.mods": Package,
   "nav.modpacks": Layers,
   "nav.versions": Boxes,

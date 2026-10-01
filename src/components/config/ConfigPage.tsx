@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
 import { cn } from "cn";
-import { FileJson2Icon, Loader2Icon, UserRoundIcon } from "lucide-react";
+import { FileJson2Icon, IdCardIcon, Loader2Icon } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -62,7 +62,7 @@ export default function ConfigPage() {
   if (!activeProfile) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 border border-dashed p-10 text-center">
-        <UserRoundIcon className="text-muted-foreground size-6" />
+        <IdCardIcon className="text-muted-foreground size-6" />
         <div>
           <p className="text-sm font-medium">No active profile</p>
           <p className="text-muted-foreground text-xs">

@@ -9,6 +9,7 @@ import {
   Ellipsis,
   FileText,
   FolderOpen,
+  IdCard,
   Link2,
   Package,
   Pencil,
@@ -16,7 +17,6 @@ import {
   Share2,
   Star,
   Trash2,
-  User,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -191,7 +191,7 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
             src={`${PROFILE_ICON_BASE}/${profile.icon}`}
           />
         ) : (
-          <User className="text-muted-foreground size-5" />
+          <IdCard className="text-muted-foreground size-5" />
         )}
       </div>
 
