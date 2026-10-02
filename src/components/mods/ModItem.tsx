@@ -138,7 +138,17 @@ export function ModItem({
     <div
       className={cn(
         "group flex w-full items-start gap-3 border bg-card p-3 transition-colors hover:bg-muted/40",
-        showInstalled && "border-success/40 bg-linear-to-r from-success/15 to-transparent",
+        // Installed: green. Pinned: amber. Update waiting (and not pinned):
+        // purple, so a pending update stands out from a plain install.
+        showInstalled &&
+          !pinned &&
+          !canUpdate &&
+          "border-success/40 bg-linear-to-r from-success/15 to-transparent",
+        showInstalled &&
+          pinned &&
+          "border-accent-amber/40 bg-linear-to-r from-accent-amber/15 to-transparent",
+        canUpdate &&
+          "border-accent-primary/40 bg-linear-to-r from-accent-primary/15 to-transparent",
       )}
     >
       <ModSummary
