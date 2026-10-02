@@ -16,7 +16,8 @@
     "screenshots": "bun scripts/screenshots.ts",
     "screenshots:capture": "bun scripts/screenshots/capture.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "bump": "bun run scripts/bump-version.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -62,6 +63,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
+    "lefthook": "^2.1.15",
     "oxfmt": "^0.71.0",
     "oxlint": "^1.86.0",
     "oxlint-tsgolint": "^7.0.2003",
