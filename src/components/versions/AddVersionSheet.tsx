@@ -49,7 +49,7 @@ export default function AddVersionSheet({ open, onOpenChange }: AddVersionSheetP
 
   // A fresh sheet always starts on the newest version again.
   const handleOpenChange = (next: boolean) => {
-    if (!next) setPicked(null);
+    if (next) setPicked(null);
     onOpenChange(next);
   };
 

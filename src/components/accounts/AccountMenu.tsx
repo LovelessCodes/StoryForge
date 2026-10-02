@@ -25,6 +25,8 @@ export default function AccountMenu() {
   const { users, selectedUser, setSelectedUser, removeUser } = useAccountStore();
   const verify = useVerifyAuth();
   const [addOpen, setAddOpen] = useState(false);
+  /** Bumped per open so the sheet remounts with a clean form. */
+  const [addSession, setAddSession] = useState(0);
 
   function verifySelected() {
     if (!selectedUser?.uid || !selectedUser.sessionkey) {
@@ -95,14 +97,19 @@ export default function AccountMenu() {
               <DropdownMenuSeparator />
             </>
           )}
-          <DropdownMenuItem onClick={() => setAddOpen(true)}>
+          <DropdownMenuItem
+            onClick={() => {
+              setAddSession((session) => session + 1);
+              setAddOpen(true);
+            }}
+          >
             <UserPlus /> Add account…
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
       {/* Remount on every open so the form starts clean (no reset effect). */}
-      <AddAccountSheet key={addOpen ? "open" : "closed"} open={addOpen} onOpenChange={setAddOpen} />
+      <AddAccountSheet key={addSession} open={addOpen} onOpenChange={setAddOpen} />
     </>
   );
 }

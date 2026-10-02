@@ -25,6 +25,8 @@ import { useProfiles } from "@/stores/profiles";
 interface PublicServerConnectSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Fires after the close animation finishes (the parent clears its state). */
+  onOpenChangeComplete?: (open: boolean) => void;
   server: PublicServer | null;
 }
 
@@ -32,6 +34,7 @@ interface PublicServerConnectSheetProps {
 export default function PublicServerConnectSheet({
   open,
   onOpenChange,
+  onOpenChangeComplete,
   server,
 }: PublicServerConnectSheetProps) {
   const { profiles } = useProfiles();
@@ -74,7 +77,7 @@ export default function PublicServerConnectSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete}>
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b">
           <SheetTitle>Connect to {server?.serverName}</SheetTitle>

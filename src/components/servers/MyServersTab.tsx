@@ -13,6 +13,15 @@ type SheetState = { mode: "add" } | { mode: "edit"; server: SavedServer } | null
 export default function MyServersTab() {
   const servers = useServerStore((s) => s.servers);
   const [sheet, setSheet] = useState<SheetState>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  /** Bumped per open so the sheet remounts with a clean form. */
+  const [sheetSession, setSheetSession] = useState(0);
+
+  function openSheet(next: SheetState) {
+    setSheetSession((session) => session + 1);
+    setSheet(next);
+    setSheetOpen(true);
+  }
 
   const sorted = [...servers].sort((a, b) => {
     if (a.favorite === b.favorite) return a.index - b.index;
@@ -25,7 +34,7 @@ export default function MyServersTab() {
         <p className="text-muted-foreground text-xs">
           Servers are stored inside a profile's clientsettings.json.
         </p>
-        <Button size="sm" variant="accent-primary" onClick={() => setSheet({ mode: "add" })}>
+        <Button size="sm" variant="accent-primary" onClick={() => openSheet({ mode: "add" })}>
           <MapPinPlus /> Add server
         </Button>
       </div>
@@ -40,7 +49,7 @@ export default function MyServersTab() {
                 Add a server to keep its address, password and profile association.
               </p>
             </div>
-            <Button size="sm" variant="accent-primary" onClick={() => setSheet({ mode: "add" })}>
+            <Button size="sm" variant="accent-primary" onClick={() => openSheet({ mode: "add" })}>
               Add your first server
             </Button>
           </div>
@@ -49,7 +58,7 @@ export default function MyServersTab() {
             {sorted.map((server) => (
               <ServerRow
                 key={server.rowKey}
-                onEdit={(target) => setSheet({ mode: "edit", server: target })}
+                onEdit={(target) => openSheet({ mode: "edit", server: target })}
                 server={server}
               />
             ))}
@@ -58,9 +67,12 @@ export default function MyServersTab() {
       </ScrollArea>
 
       <ServerFormSheet
-        key={sheet?.mode === "edit" ? sheet.server.id : "add"}
-        onOpenChange={(open) => !open && setSheet(null)}
-        open={sheet !== null}
+        key={sheetSession}
+        onOpenChange={setSheetOpen}
+        onOpenChangeComplete={(open) => {
+          if (!open) setSheet(null);
+        }}
+        open={sheetOpen}
         server={sheet?.mode === "edit" ? sheet.server : null}
       />
     </div>

@@ -65,6 +65,15 @@ export default function PublicServersTab() {
   const { profiles } = useProfiles();
   const downloadVersion = useDownloadVersion();
   const [connectServer, setConnectServer] = useState<PublicServer | null>(null);
+  const [connectOpen, setConnectOpen] = useState(false);
+  /** Bumped per open so the sheet remounts with a clean form. */
+  const [connectSession, setConnectSession] = useState(0);
+
+  function openConnect(server: PublicServer) {
+    setConnectSession((session) => session + 1);
+    setConnectServer(server);
+    setConnectOpen(true);
+  }
 
   const selectedGameVersionsSet = new Set(selectedGameVersions);
 
@@ -224,7 +233,7 @@ export default function PublicServersTab() {
               onAddProfile={() => {
                 void navigate({ to: "/profiles" });
               }}
-              onConnect={() => setConnectServer(server)}
+              onConnect={() => openConnect(server)}
               onDownload={() => downloadVersion.mutate(server.gameVersion)}
               server={server}
               versionInstalled={installedVersionsSet.has(server.gameVersion)}
@@ -235,8 +244,12 @@ export default function PublicServersTab() {
       )}
 
       <PublicServerConnectSheet
-        onOpenChange={(open) => !open && setConnectServer(null)}
-        open={connectServer !== null}
+        key={connectSession}
+        onOpenChange={setConnectOpen}
+        onOpenChangeComplete={(open) => {
+          if (!open) setConnectServer(null);
+        }}
+        open={connectOpen}
         server={connectServer}
       />
     </div>

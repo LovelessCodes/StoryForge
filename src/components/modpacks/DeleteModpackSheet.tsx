@@ -20,6 +20,8 @@ import { toast } from "@/lib/notify";
 interface DeleteModpackSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Fires after the close animation finishes (the parent clears its state). */
+  onOpenChangeComplete?: (open: boolean) => void;
   modpack: ModpackItem;
   onDeleted?: (slug: string) => void;
 }
@@ -28,6 +30,7 @@ interface DeleteModpackSheetProps {
 export default function DeleteModpackSheet({
   open,
   onOpenChange,
+  onOpenChangeComplete,
   modpack,
   onDeleted,
 }: DeleteModpackSheetProps) {
@@ -52,7 +55,11 @@ export default function DeleteModpackSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={(next) => !deleting && onOpenChange(next)}>
+    <Sheet
+      open={open}
+      onOpenChange={(next) => !deleting && onOpenChange(next)}
+      onOpenChangeComplete={onOpenChangeComplete}
+    >
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b">
           <SheetTitle>Delete modpack</SheetTitle>

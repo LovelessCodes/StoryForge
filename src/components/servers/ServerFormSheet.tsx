@@ -32,11 +32,18 @@ import { sameMinorVersion, serverEntryString, type SniffResult } from "./server-
 interface ServerFormSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Fires after the close animation finishes (the parent clears its state). */
+  onOpenChangeComplete?: (open: boolean) => void;
   /** Existing server to edit; null/undefined to add a new one. */
   server?: Server | null;
 }
 
-export default function ServerFormSheet({ open, onOpenChange, server }: ServerFormSheetProps) {
+export default function ServerFormSheet({
+  open,
+  onOpenChange,
+  onOpenChangeComplete,
+  server,
+}: ServerFormSheetProps) {
   const isEdit = server != null;
   const { profiles } = useProfiles();
   const { activeProfile } = useActiveProfile();
@@ -172,7 +179,11 @@ export default function ServerFormSheet({ open, onOpenChange, server }: ServerFo
       : "Add server";
 
   return (
-    <Sheet open={open} onOpenChange={(next) => !busy && onOpenChange(next)}>
+    <Sheet
+      open={open}
+      onOpenChange={(next) => !busy && onOpenChange(next)}
+      onOpenChangeComplete={onOpenChangeComplete}
+    >
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b">
           <SheetTitle>{isEdit ? `Edit “${server?.name}”` : "Add server"}</SheetTitle>

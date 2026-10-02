@@ -54,7 +54,9 @@ export default function ModpacksPage() {
   const [formSession, setFormSession] = useState(0);
   const [editingModpack, setEditingModpack] = useState<ModpackItem | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [deletingModpack, setDeletingModpack] = useState<ModpackItem | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const modpacks = data?.modpacks ?? [];
   const totalCount = data?.totalCount ?? 0;
@@ -186,9 +188,15 @@ export default function ModpacksPage() {
                     isOwner={user.id === modpack.owner.id}
                     key={modpack.id}
                     modpack={modpack}
-                    onDelete={() => setDeletingModpack(modpack)}
+                    onDelete={() => {
+                      setDeletingModpack(modpack);
+                      setDeleteOpen(true);
+                    }}
                     onEdit={() => openEdit(modpack)}
-                    onOpen={() => setDetailId(modpack.id)}
+                    onOpen={() => {
+                      setDetailId(modpack.id);
+                      setDetailOpen(true);
+                    }}
                   />
                 ))}
               </div>
@@ -201,31 +209,33 @@ export default function ModpacksPage() {
         key={formSession}
         open={formOpen}
         modpack={editingModpack}
-        onOpenChange={(next) => {
-          setFormOpen(next);
-          if (!next) setEditingModpack(null);
+        onOpenChange={setFormOpen}
+        onOpenChangeComplete={(open) => {
+          if (!open) setEditingModpack(null);
         }}
       />
 
       {deletingModpack && (
         <DeleteModpackSheet
-          open
+          open={deleteOpen}
           modpack={deletingModpack}
           onDeleted={(slug) => {
             if (detailModpack?.slug === slug) setDetailId(null);
           }}
-          onOpenChange={(next) => {
-            if (!next) setDeletingModpack(null);
+          onOpenChange={setDeleteOpen}
+          onOpenChangeComplete={(open) => {
+            if (!open) setDeletingModpack(null);
           }}
         />
       )}
 
       {detailModpack && (
         <ModpackDetailSheet
-          open
+          open={detailOpen}
           modpack={detailModpack}
-          onOpenChange={(next) => {
-            if (!next) setDetailId(null);
+          onOpenChange={setDetailOpen}
+          onOpenChangeComplete={(open) => {
+            if (!open) setDetailId(null);
           }}
         />
       )}

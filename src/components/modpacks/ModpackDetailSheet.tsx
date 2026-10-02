@@ -44,6 +44,8 @@ type ImportProgress = {
 interface ModpackDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Fires after the close animation finishes (the parent clears its state). */
+  onOpenChangeComplete?: (open: boolean) => void;
   modpack: ModpackItem;
 }
 
@@ -51,6 +53,7 @@ interface ModpackDetailSheetProps {
 export default function ModpackDetailSheet({
   open,
   onOpenChange,
+  onOpenChangeComplete,
   modpack,
 }: ModpackDetailSheetProps) {
   const navigate = useNavigate();
@@ -174,7 +177,7 @@ export default function ModpackDetailSheet({
   const cancelEditVersion = () => setEditingVersionId(null);
 
   return (
-    <Sheet open={open} onOpenChange={handleOpenChange}>
+    <Sheet open={open} onOpenChange={handleOpenChange} onOpenChangeComplete={onOpenChangeComplete}>
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-xl">
         <SheetHeader className="border-b pr-12">
           <SheetTitle className="truncate">{modpack.name}</SheetTitle>

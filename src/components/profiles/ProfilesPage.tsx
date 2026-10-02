@@ -103,8 +103,8 @@ export default function ProfilesPage() {
         key={dialogSession}
         open={dialogOpen}
         profile={editing}
-        onOpenChange={(open) => {
-          setDialogOpen(open);
+        onOpenChange={setDialogOpen}
+        onOpenChangeComplete={(open) => {
           if (!open) setEditing(null);
         }}
       />

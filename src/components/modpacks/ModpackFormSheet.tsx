@@ -48,6 +48,8 @@ type SlugResult = {
 interface ModpackFormSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Fires after the close animation finishes (the parent clears its state). */
+  onOpenChangeComplete?: (open: boolean) => void;
   /** Existing modpack to edit; omit to create a new one. */
   modpack?: ModpackItem | null;
 }
@@ -61,6 +63,7 @@ interface ModpackFormSheetProps {
 export default function ModpackFormSheet({
   open,
   onOpenChange,
+  onOpenChangeComplete,
   modpack = null,
 }: ModpackFormSheetProps) {
   const isEdit = modpack != null;
@@ -149,7 +152,11 @@ export default function ModpackFormSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={(next) => !saving && onOpenChange(next)}>
+    <Sheet
+      open={open}
+      onOpenChange={(next) => !saving && onOpenChange(next)}
+      onOpenChangeComplete={onOpenChangeComplete}
+    >
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b">
           <SheetTitle>{isEdit ? "Edit modpack" : "Create modpack"}</SheetTitle>
