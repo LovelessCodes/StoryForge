@@ -13,6 +13,8 @@
     "fmt:check": "oxfmt --check",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
+    "screenshots": "bun scripts/screenshots.ts",
+    "screenshots:capture": "bun scripts/screenshots/capture.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
@@ -63,6 +65,8 @@
     "oxfmt": "^0.71.0",
     "oxlint": "^1.86.0",
     "oxlint-tsgolint": "^7.0.2003",
+    "playwright": "^1.63.0",
+    "sharp": "^0.35.5",
     "typescript": "~7.0.2",
     "vite": "^8.3.1",
     "vitest": "^5.0.2"

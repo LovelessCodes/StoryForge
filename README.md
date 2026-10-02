@@ -59,6 +59,28 @@ the look & feel of Macheim (see `../macheim`). The core domain concept is the **
 - **Accounts** — multiple Vintage Story accounts with TOTP support.
 - **Light & dark theme**, command palette (⌘K), keyboard shortcuts, auto-updater.
 
+## Screenshots
+
+|                Profiles                |              Mod browser              |                 Add a mod                 |
+| :------------------------------------: | :-----------------------------------: | :---------------------------------------: |
+| ![Profiles](screenshots/profiles.webp) | ![Mod browser](screenshots/mods.webp) | ![Add a mod](screenshots/adding-mod.webp) |
+
+|                Versions                |               Worlds               |                   Public servers                   |
+| :------------------------------------: | :--------------------------------: | :------------------------------------------------: |
+| ![Versions](screenshots/versions.webp) | ![Worlds](screenshots/worlds.webp) | ![Public servers](screenshots/public-servers.webp) |
+
+|               Servers                |               Hosting                |                 Mod configs                  |
+| :----------------------------------: | :----------------------------------: | :------------------------------------------: |
+| ![Servers](screenshots/servers.webp) | ![Hosting](screenshots/hosting.webp) | ![Mod configs](screenshots/mod-configs.webp) |
+
+|              News              |                Settings                |
+| :----------------------------: | :------------------------------------: |
+| ![News](screenshots/news.webp) | ![Settings](screenshots/settings.webp) |
+
+All screenshots are 1200×800 captures of the app UI, split light/dark along the diagonal; they are
+refreshed headlessly on every published release. See
+[screenshots/README.md](screenshots/README.md) for the pipeline.
+
 ## Development
 
 ```sh
