@@ -11,10 +11,10 @@ use std::{
 use tauri::{command, AppHandle};
 
 use super::errors::UiError;
-use super::installations::find_installation_by_id;
 use super::paths;
+use super::profiles::find_profile_by_id;
 use super::proto::{GameData, MapMarkers, ProspectingLog};
-use super::utils::{installations_folder, installations_subdir, lock, require_managed_path};
+use super::utils::{dir_name, lock, profiles_folder, profiles_subdir, require_managed_path};
 use super::vcdbs;
 use crate::{log_error, log_info};
 
@@ -23,7 +23,7 @@ pub struct World {
     pub data: GameData,
     pub has_map: bool,
     pub path: String,
-    pub installation_name: String,
+    pub profile_name: String,
     pub map_markers: Option<Option<MapMarkers>>,
     pub prospecting_logs: Vec<(String, ProspectingLog)>,
 }
@@ -69,23 +69,23 @@ fn extract_prospecting_logs(gamedata: &GameData) -> Result<Vec<(String, Prospect
     Ok(results)
 }
 
-fn has_map(installation_path: &Path, savegame_identifier: &str) -> bool {
-    installation_path
+fn has_map(profile_path: &Path, savegame_identifier: &str) -> bool {
+    profile_path
         .join(paths::MAPS_DIR)
         .join(format!("{}.db", savegame_identifier))
         .exists()
 }
 
 fn load_world_from_vcdbs(
-    installation_path: &Path,
+    profile_path: &Path,
     save_path: &Path,
-    installation_name: String,
+    profile_name: String,
 ) -> Result<World, UiError> {
     let conn = vcdbs::open(save_path, false)?;
     let gamedata = vcdbs::read_gamedata(&conn)?;
 
     let compressed = compress_gamedata(&gamedata);
-    let has_map = has_map(installation_path, &gamedata.savegame_identifier);
+    let has_map = has_map(profile_path, &gamedata.savegame_identifier);
     let map_markers = extract_map_markers(&gamedata);
     let prospecting_logs = extract_prospecting_logs(&gamedata)?;
 
@@ -93,7 +93,7 @@ fn load_world_from_vcdbs(
         data: compressed,
         has_map,
         path: save_path.to_string_lossy().to_string(),
-        installation_name,
+        profile_name,
         map_markers,
         prospecting_logs,
     })
@@ -138,11 +138,11 @@ fn hash_path_metadata(
     meta.len().hash(hasher);
 }
 
-fn saves_fingerprint(installations_dir: &Path) -> Result<u64, UiError> {
+fn saves_fingerprint(profiles_dir: &Path) -> Result<u64, UiError> {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
-    installations_dir.hash(&mut hasher);
+    profiles_dir.hash(&mut hasher);
 
-    for entry in read_dir(installations_dir).map_err(|e| {
+    for entry in read_dir(profiles_dir).map_err(|e| {
         log_error!("saves: Read dir error: {e}");
         UiError::new("io_error", format!("Read dir error: {e}"))
     })? {
@@ -184,22 +184,22 @@ fn saves_fingerprint(installations_dir: &Path) -> Result<u64, UiError> {
     Ok(hasher.finish())
 }
 
-fn try_cached_saves(installations_dir: &Path) -> Option<Vec<World>> {
-    let fingerprint = saves_fingerprint(installations_dir).ok()?;
+fn try_cached_saves(profiles_dir: &Path) -> Option<Vec<World>> {
+    let fingerprint = saves_fingerprint(profiles_dir).ok()?;
     let cache = lock(saves_cache());
-    let entry = cache.entries.get(installations_dir)?;
+    let entry = cache.entries.get(profiles_dir)?;
     if entry.fingerprint == fingerprint {
         return Some(entry.worlds.clone());
     }
     None
 }
 
-fn store_saves_cache(installations_dir: &Path, worlds: &[World]) {
-    if let Ok(fingerprint) = saves_fingerprint(installations_dir) {
+fn store_saves_cache(profiles_dir: &Path, worlds: &[World]) {
+    if let Ok(fingerprint) = saves_fingerprint(profiles_dir) {
         let mut cache = lock(saves_cache());
         {
             cache.entries.insert(
-                installations_dir.to_path_buf(),
+                profiles_dir.to_path_buf(),
                 SavesCacheEntry {
                     fingerprint,
                     worlds: worlds.to_vec(),
@@ -219,34 +219,40 @@ pub fn invalidate_saves_cache() {
 
 // ── Commands ──
 
-/// Scan `installations_dir` for all `.vcdbs` save files.
-pub fn scan_saves(installations_dir: &Path) -> Result<Vec<World>, UiError> {
-    if !installations_dir.exists() || !installations_dir.is_dir() {
-        return Ok(Vec::new());
-    }
-
-    if let Some(cached) = try_cached_saves(installations_dir) {
+/// Scan `profiles_dir` for all `.vcdbs` save files.
+///
+/// `extra_dirs` are adopted game data folders outside the profiles root.
+pub fn scan_saves(profiles_dir: &Path, extra_dirs: &[PathBuf]) -> Result<Vec<World>, UiError> {
+    if let Some(cached) = try_cached_saves(profiles_dir) {
         log_info!("saves: returning cached save list");
         return Ok(cached);
     }
 
     let mut saves: Vec<World> = Vec::new();
 
-    for entry in read_dir(installations_dir).map_err(|e| {
-        log_error!("saves: Read dir error: {e}");
-        UiError::new("io_error", format!("Read dir error: {e}"))
-    })? {
-        let entry = entry.map_err(|e| {
-            log_error!("saves: Dir entry error: {e}");
-            UiError::new("io_error", format!("Dir entry error: {e}"))
-        })?;
-        let path = entry.path();
-        let installation_name = entry.file_name().into_string().unwrap_or_default();
-
-        if !path.is_dir() {
-            continue;
+    let mut profile_dirs: Vec<(PathBuf, String)> = Vec::new();
+    if profiles_dir.is_dir() {
+        for entry in read_dir(profiles_dir).map_err(|e| {
+            log_error!("saves: Read dir error: {e}");
+            UiError::new("io_error", format!("Read dir error: {e}"))
+        })? {
+            let entry = entry.map_err(|e| {
+                log_error!("saves: Dir entry error: {e}");
+                UiError::new("io_error", format!("Dir entry error: {e}"))
+            })?;
+            let path = entry.path();
+            if !path.is_dir() {
+                continue;
+            }
+            profile_dirs.push((path, entry.file_name().into_string().unwrap_or_default()));
         }
+    }
+    // Adopted game data folders live outside the profiles root.
+    for external in extra_dirs {
+        profile_dirs.push((external.clone(), dir_name(external)));
+    }
 
+    for (path, profile_name) in profile_dirs {
         let saves_path = paths::saves_dir(&path);
         if !saves_path.exists() || !saves_path.is_dir() {
             continue;
@@ -268,25 +274,26 @@ pub fn scan_saves(installations_dir: &Path) -> Result<Vec<World>, UiError> {
                 continue;
             }
 
-            let world = load_world_from_vcdbs(&path, &save_path, installation_name.clone())?;
+            let world = load_world_from_vcdbs(&path, &save_path, profile_name.clone())?;
             saves.push(world);
         }
     }
 
-    store_saves_cache(installations_dir, &saves);
+    store_saves_cache(profiles_dir, &saves);
     Ok(saves)
 }
 
 #[command]
 pub async fn get_all_saves(app: AppHandle) -> Result<Vec<World>, UiError> {
     log_info!("get_all_saves");
-    let subdir = installations_subdir(app.clone());
-    let installation_dir_path = installations_folder(app.clone())?.join(&subdir);
+    let subdir = profiles_subdir(app.clone());
+    let profile_dir_path = profiles_folder(app.clone())?.join(&subdir);
+    let extra_dirs = super::profiles::external_profile_paths(&app);
 
     // Opens every .vcdbs and decodes protobuf: keep it off the UI thread.
     tokio::task::spawn_blocking(move || {
         let start = std::time::Instant::now();
-        let result = scan_saves(&installation_dir_path);
+        let result = scan_saves(&profile_dir_path, &extra_dirs);
         log_info!(
             "get_all_saves completed in {}ms",
             start.elapsed().as_millis()
@@ -301,11 +308,8 @@ pub async fn get_all_saves(app: AppHandle) -> Result<Vec<World>, UiError> {
 }
 
 #[command]
-pub fn get_installation_saves(
-    app: AppHandle,
-    installation_id: u64,
-) -> Result<Vec<String>, UiError> {
-    let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
+pub fn get_profile_saves(app: AppHandle, profile_id: u64) -> Result<Vec<String>, UiError> {
+    let (pb, _profile) = find_profile_by_id(&app, profile_id)?;
     let saves_path = paths::saves_dir(&pb);
 
     let mut saves = Vec::new();
@@ -333,12 +337,12 @@ pub fn get_installation_saves(
 #[command]
 pub fn update_world(
     app: AppHandle,
-    installation_id: u64,
+    profile_id: u64,
     world_path: String,
     name: String,
     identifier: Option<String>,
 ) -> Result<(), UiError> {
-    let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
+    let (pb, _profile) = find_profile_by_id(&app, profile_id)?;
     let saves_path = paths::saves_dir(&pb);
     if !saves_path.exists() {
         create_dir_all(&saves_path).map_err(|e| {

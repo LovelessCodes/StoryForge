@@ -1,9 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { DashboardPage } from "@/components/pages/dashboard";
-import { ErrorComponent } from "@/components/ui/error";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
-  component: DashboardPage,
-  errorComponent: ErrorComponent,
+  beforeLoad: () => {
+    throw redirect({ to: "/profiles" });
+  },
 });

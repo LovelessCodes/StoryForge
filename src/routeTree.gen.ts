@@ -9,300 +9,194 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WorldsRouteImport } from './routes/worlds'
-import { Route as VersionsRouteImport } from './routes/versions'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as ServersRouteImport } from './routes/servers'
-import { Route as PublicServersRouteImport } from './routes/public-servers'
-import { Route as NewsRouteImport } from './routes/news'
-import { Route as ModsRouteImport } from './routes/mods'
-import { Route as ModpacksRouteImport } from './routes/modpacks'
-import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ServerHostingIndexRouteImport } from './routes/server-hosting/index'
-import { Route as InstallationsIndexRouteImport } from './routes/installations/index'
-import { Route as ModConfigsIdRouteImport } from './routes/mod-configs/$id'
-import { Route as ServerHostingIdIndexRouteImport } from './routes/server-hosting/$id/index'
-import { Route as ServerHostingIdModsRouteImport } from './routes/server-hosting/$id/mods'
-import { Route as InstallationsIdModsRouteImport } from './routes/installations/$id/mods'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as AppAuthRouteImport } from './routes/_app.auth'
+import { Route as AppConfigRouteImport } from './routes/_app.config'
+import { Route as AppModpacksRouteImport } from './routes/_app.modpacks'
+import { Route as AppModsRouteImport } from './routes/_app.mods'
+import { Route as AppNewsRouteImport } from './routes/_app.news'
+import { Route as AppProfilesRouteImport } from './routes/_app.profiles'
+import { Route as AppServersRouteImport } from './routes/_app.servers'
+import { Route as AppSettingsRouteImport } from './routes/_app.settings'
+import { Route as AppVersionsRouteImport } from './routes/_app.versions'
+import { Route as AppWorldsRouteImport } from './routes/_app.worlds'
+import { Route as AppServerHostingIdRouteImport } from './routes/_app.server-hosting.$id'
+import { Route as AppServerHostingIdModsRouteImport } from './routes/_app.server-hosting.$id.mods'
 
-const WorldsRoute = WorldsRouteImport.update({
-  id: '/worlds',
-  path: '/worlds',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const VersionsRoute = VersionsRouteImport.update({
-  id: '/versions',
-  path: '/versions',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ServersRoute = ServersRouteImport.update({
-  id: '/servers',
-  path: '/servers',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PublicServersRoute = PublicServersRouteImport.update({
-  id: '/public-servers',
-  path: '/public-servers',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NewsRoute = NewsRouteImport.update({
-  id: '/news',
-  path: '/news',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ModsRoute = ModsRouteImport.update({
-  id: '/mods',
-  path: '/mods',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ModpacksRoute = ModpacksRouteImport.update({
-  id: '/modpacks',
-  path: '/modpacks',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ServerHostingIndexRoute = ServerHostingIndexRouteImport.update({
-  id: '/server-hosting/',
-  path: '/server-hosting/',
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InstallationsIndexRoute = InstallationsIndexRouteImport.update({
-  id: '/installations/',
-  path: '/installations/',
-  getParentRoute: () => rootRouteImport,
+const AppAuthRoute = AppAuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => AppRoute,
 } as any)
-const ModConfigsIdRoute = ModConfigsIdRouteImport.update({
-  id: '/mod-configs/$id',
-  path: '/mod-configs/$id',
-  getParentRoute: () => rootRouteImport,
+const AppConfigRoute = AppConfigRouteImport.update({
+  id: '/config',
+  path: '/config',
+  getParentRoute: () => AppRoute,
 } as any)
-const ServerHostingIdIndexRoute = ServerHostingIdIndexRouteImport.update({
-  id: '/server-hosting/$id/',
-  path: '/server-hosting/$id/',
-  getParentRoute: () => rootRouteImport,
+const AppModpacksRoute = AppModpacksRouteImport.update({
+  id: '/modpacks',
+  path: '/modpacks',
+  getParentRoute: () => AppRoute,
 } as any)
-const ServerHostingIdModsRoute = ServerHostingIdModsRouteImport.update({
-  id: '/server-hosting/$id/mods',
-  path: '/server-hosting/$id/mods',
-  getParentRoute: () => rootRouteImport,
+const AppModsRoute = AppModsRouteImport.update({
+  id: '/mods',
+  path: '/mods',
+  getParentRoute: () => AppRoute,
 } as any)
-const InstallationsIdModsRoute = InstallationsIdModsRouteImport.update({
-  id: '/installations/$id/mods',
-  path: '/installations/$id/mods',
-  getParentRoute: () => rootRouteImport,
+const AppNewsRoute = AppNewsRouteImport.update({
+  id: '/news',
+  path: '/news',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProfilesRoute = AppProfilesRouteImport.update({
+  id: '/profiles',
+  path: '/profiles',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppServersRoute = AppServersRouteImport.update({
+  id: '/servers',
+  path: '/servers',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppVersionsRoute = AppVersionsRouteImport.update({
+  id: '/versions',
+  path: '/versions',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppWorldsRoute = AppWorldsRouteImport.update({
+  id: '/worlds',
+  path: '/worlds',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppServerHostingIdRoute = AppServerHostingIdRouteImport.update({
+  id: '/server-hosting/$id',
+  path: '/server-hosting/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppServerHostingIdModsRoute = AppServerHostingIdModsRouteImport.update({
+  id: '/mods',
+  path: '/mods',
+  getParentRoute: () => AppServerHostingIdRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
-  '/modpacks': typeof ModpacksRoute
-  '/mods': typeof ModsRoute
-  '/news': typeof NewsRoute
-  '/public-servers': typeof PublicServersRoute
-  '/servers': typeof ServersRoute
-  '/settings': typeof SettingsRoute
-  '/versions': typeof VersionsRoute
-  '/worlds': typeof WorldsRoute
-  '/mod-configs/$id': typeof ModConfigsIdRoute
-  '/installations/': typeof InstallationsIndexRoute
-  '/server-hosting/': typeof ServerHostingIndexRoute
-  '/installations/$id/mods': typeof InstallationsIdModsRoute
-  '/server-hosting/$id/mods': typeof ServerHostingIdModsRoute
-  '/server-hosting/$id/': typeof ServerHostingIdIndexRoute
+  '/auth': typeof AppAuthRoute
+  '/config': typeof AppConfigRoute
+  '/modpacks': typeof AppModpacksRoute
+  '/mods': typeof AppModsRoute
+  '/news': typeof AppNewsRoute
+  '/profiles': typeof AppProfilesRoute
+  '/servers': typeof AppServersRoute
+  '/settings': typeof AppSettingsRoute
+  '/versions': typeof AppVersionsRoute
+  '/worlds': typeof AppWorldsRoute
+  '/server-hosting/$id': typeof AppServerHostingIdRouteWithChildren
+  '/server-hosting/$id/mods': typeof AppServerHostingIdModsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
-  '/modpacks': typeof ModpacksRoute
-  '/mods': typeof ModsRoute
-  '/news': typeof NewsRoute
-  '/public-servers': typeof PublicServersRoute
-  '/servers': typeof ServersRoute
-  '/settings': typeof SettingsRoute
-  '/versions': typeof VersionsRoute
-  '/worlds': typeof WorldsRoute
-  '/mod-configs/$id': typeof ModConfigsIdRoute
-  '/installations': typeof InstallationsIndexRoute
-  '/server-hosting': typeof ServerHostingIndexRoute
-  '/installations/$id/mods': typeof InstallationsIdModsRoute
-  '/server-hosting/$id/mods': typeof ServerHostingIdModsRoute
-  '/server-hosting/$id': typeof ServerHostingIdIndexRoute
+  '/auth': typeof AppAuthRoute
+  '/config': typeof AppConfigRoute
+  '/modpacks': typeof AppModpacksRoute
+  '/mods': typeof AppModsRoute
+  '/news': typeof AppNewsRoute
+  '/profiles': typeof AppProfilesRoute
+  '/servers': typeof AppServersRoute
+  '/settings': typeof AppSettingsRoute
+  '/versions': typeof AppVersionsRoute
+  '/worlds': typeof AppWorldsRoute
+  '/server-hosting/$id': typeof AppServerHostingIdRouteWithChildren
+  '/server-hosting/$id/mods': typeof AppServerHostingIdModsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
-  '/modpacks': typeof ModpacksRoute
-  '/mods': typeof ModsRoute
-  '/news': typeof NewsRoute
-  '/public-servers': typeof PublicServersRoute
-  '/servers': typeof ServersRoute
-  '/settings': typeof SettingsRoute
-  '/versions': typeof VersionsRoute
-  '/worlds': typeof WorldsRoute
-  '/mod-configs/$id': typeof ModConfigsIdRoute
-  '/installations/': typeof InstallationsIndexRoute
-  '/server-hosting/': typeof ServerHostingIndexRoute
-  '/installations/$id/mods': typeof InstallationsIdModsRoute
-  '/server-hosting/$id/mods': typeof ServerHostingIdModsRoute
-  '/server-hosting/$id/': typeof ServerHostingIdIndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/_app/auth': typeof AppAuthRoute
+  '/_app/config': typeof AppConfigRoute
+  '/_app/modpacks': typeof AppModpacksRoute
+  '/_app/mods': typeof AppModsRoute
+  '/_app/news': typeof AppNewsRoute
+  '/_app/profiles': typeof AppProfilesRoute
+  '/_app/servers': typeof AppServersRoute
+  '/_app/settings': typeof AppSettingsRoute
+  '/_app/versions': typeof AppVersionsRoute
+  '/_app/worlds': typeof AppWorldsRoute
+  '/_app/server-hosting/$id': typeof AppServerHostingIdRouteWithChildren
+  '/_app/server-hosting/$id/mods': typeof AppServerHostingIdModsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/auth'
+    | '/config'
     | '/modpacks'
     | '/mods'
     | '/news'
-    | '/public-servers'
+    | '/profiles'
     | '/servers'
     | '/settings'
     | '/versions'
     | '/worlds'
-    | '/mod-configs/$id'
-    | '/installations/'
-    | '/server-hosting/'
-    | '/installations/$id/mods'
+    | '/server-hosting/$id'
     | '/server-hosting/$id/mods'
-    | '/server-hosting/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
+    | '/config'
     | '/modpacks'
     | '/mods'
     | '/news'
-    | '/public-servers'
+    | '/profiles'
     | '/servers'
     | '/settings'
     | '/versions'
     | '/worlds'
-    | '/mod-configs/$id'
-    | '/installations'
-    | '/server-hosting'
-    | '/installations/$id/mods'
-    | '/server-hosting/$id/mods'
     | '/server-hosting/$id'
+    | '/server-hosting/$id/mods'
   id:
     | '__root__'
     | '/'
-    | '/auth'
-    | '/modpacks'
-    | '/mods'
-    | '/news'
-    | '/public-servers'
-    | '/servers'
-    | '/settings'
-    | '/versions'
-    | '/worlds'
-    | '/mod-configs/$id'
-    | '/installations/'
-    | '/server-hosting/'
-    | '/installations/$id/mods'
-    | '/server-hosting/$id/mods'
-    | '/server-hosting/$id/'
+    | '/_app'
+    | '/_app/auth'
+    | '/_app/config'
+    | '/_app/modpacks'
+    | '/_app/mods'
+    | '/_app/news'
+    | '/_app/profiles'
+    | '/_app/servers'
+    | '/_app/settings'
+    | '/_app/versions'
+    | '/_app/worlds'
+    | '/_app/server-hosting/$id'
+    | '/_app/server-hosting/$id/mods'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthRoute: typeof AuthRoute
-  ModpacksRoute: typeof ModpacksRoute
-  ModsRoute: typeof ModsRoute
-  NewsRoute: typeof NewsRoute
-  PublicServersRoute: typeof PublicServersRoute
-  ServersRoute: typeof ServersRoute
-  SettingsRoute: typeof SettingsRoute
-  VersionsRoute: typeof VersionsRoute
-  WorldsRoute: typeof WorldsRoute
-  ModConfigsIdRoute: typeof ModConfigsIdRoute
-  InstallationsIndexRoute: typeof InstallationsIndexRoute
-  ServerHostingIndexRoute: typeof ServerHostingIndexRoute
-  InstallationsIdModsRoute: typeof InstallationsIdModsRoute
-  ServerHostingIdModsRoute: typeof ServerHostingIdModsRoute
-  ServerHostingIdIndexRoute: typeof ServerHostingIdIndexRoute
+  AppRoute: typeof AppRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/worlds': {
-      id: '/worlds'
-      path: '/worlds'
-      fullPath: '/worlds'
-      preLoaderRoute: typeof WorldsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/versions': {
-      id: '/versions'
-      path: '/versions'
-      fullPath: '/versions'
-      preLoaderRoute: typeof VersionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/servers': {
-      id: '/servers'
-      path: '/servers'
-      fullPath: '/servers'
-      preLoaderRoute: typeof ServersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/public-servers': {
-      id: '/public-servers'
-      path: '/public-servers'
-      fullPath: '/public-servers'
-      preLoaderRoute: typeof PublicServersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/news': {
-      id: '/news'
-      path: '/news'
-      fullPath: '/news'
-      preLoaderRoute: typeof NewsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mods': {
-      id: '/mods'
-      path: '/mods'
-      fullPath: '/mods'
-      preLoaderRoute: typeof ModsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/modpacks': {
-      id: '/modpacks'
-      path: '/modpacks'
-      fullPath: '/modpacks'
-      preLoaderRoute: typeof ModpacksRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -310,68 +204,144 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/server-hosting/': {
-      id: '/server-hosting/'
-      path: '/server-hosting'
-      fullPath: '/server-hosting/'
-      preLoaderRoute: typeof ServerHostingIndexRouteImport
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/installations/': {
-      id: '/installations/'
-      path: '/installations'
-      fullPath: '/installations/'
-      preLoaderRoute: typeof InstallationsIndexRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_app/auth': {
+      id: '/_app/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AppAuthRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/mod-configs/$id': {
-      id: '/mod-configs/$id'
-      path: '/mod-configs/$id'
-      fullPath: '/mod-configs/$id'
-      preLoaderRoute: typeof ModConfigsIdRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_app/config': {
+      id: '/_app/config'
+      path: '/config'
+      fullPath: '/config'
+      preLoaderRoute: typeof AppConfigRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/server-hosting/$id/': {
-      id: '/server-hosting/$id/'
+    '/_app/modpacks': {
+      id: '/_app/modpacks'
+      path: '/modpacks'
+      fullPath: '/modpacks'
+      preLoaderRoute: typeof AppModpacksRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/mods': {
+      id: '/_app/mods'
+      path: '/mods'
+      fullPath: '/mods'
+      preLoaderRoute: typeof AppModsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/news': {
+      id: '/_app/news'
+      path: '/news'
+      fullPath: '/news'
+      preLoaderRoute: typeof AppNewsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/profiles': {
+      id: '/_app/profiles'
+      path: '/profiles'
+      fullPath: '/profiles'
+      preLoaderRoute: typeof AppProfilesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/servers': {
+      id: '/_app/servers'
+      path: '/servers'
+      fullPath: '/servers'
+      preLoaderRoute: typeof AppServersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/versions': {
+      id: '/_app/versions'
+      path: '/versions'
+      fullPath: '/versions'
+      preLoaderRoute: typeof AppVersionsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/worlds': {
+      id: '/_app/worlds'
+      path: '/worlds'
+      fullPath: '/worlds'
+      preLoaderRoute: typeof AppWorldsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/server-hosting/$id': {
+      id: '/_app/server-hosting/$id'
       path: '/server-hosting/$id'
-      fullPath: '/server-hosting/$id/'
-      preLoaderRoute: typeof ServerHostingIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      fullPath: '/server-hosting/$id'
+      preLoaderRoute: typeof AppServerHostingIdRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/server-hosting/$id/mods': {
-      id: '/server-hosting/$id/mods'
-      path: '/server-hosting/$id/mods'
+    '/_app/server-hosting/$id/mods': {
+      id: '/_app/server-hosting/$id/mods'
+      path: '/mods'
       fullPath: '/server-hosting/$id/mods'
-      preLoaderRoute: typeof ServerHostingIdModsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/installations/$id/mods': {
-      id: '/installations/$id/mods'
-      path: '/installations/$id/mods'
-      fullPath: '/installations/$id/mods'
-      preLoaderRoute: typeof InstallationsIdModsRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppServerHostingIdModsRouteImport
+      parentRoute: typeof AppServerHostingIdRoute
     }
   }
 }
 
+interface AppServerHostingIdRouteChildren {
+  AppServerHostingIdModsRoute: typeof AppServerHostingIdModsRoute
+}
+
+const AppServerHostingIdRouteChildren: AppServerHostingIdRouteChildren = {
+  AppServerHostingIdModsRoute: AppServerHostingIdModsRoute,
+}
+
+const AppServerHostingIdRouteWithChildren =
+  AppServerHostingIdRoute._addFileChildren(AppServerHostingIdRouteChildren)
+
+interface AppRouteChildren {
+  AppAuthRoute: typeof AppAuthRoute
+  AppConfigRoute: typeof AppConfigRoute
+  AppModpacksRoute: typeof AppModpacksRoute
+  AppModsRoute: typeof AppModsRoute
+  AppNewsRoute: typeof AppNewsRoute
+  AppProfilesRoute: typeof AppProfilesRoute
+  AppServersRoute: typeof AppServersRoute
+  AppSettingsRoute: typeof AppSettingsRoute
+  AppVersionsRoute: typeof AppVersionsRoute
+  AppWorldsRoute: typeof AppWorldsRoute
+  AppServerHostingIdRoute: typeof AppServerHostingIdRouteWithChildren
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppAuthRoute: AppAuthRoute,
+  AppConfigRoute: AppConfigRoute,
+  AppModpacksRoute: AppModpacksRoute,
+  AppModsRoute: AppModsRoute,
+  AppNewsRoute: AppNewsRoute,
+  AppProfilesRoute: AppProfilesRoute,
+  AppServersRoute: AppServersRoute,
+  AppSettingsRoute: AppSettingsRoute,
+  AppVersionsRoute: AppVersionsRoute,
+  AppWorldsRoute: AppWorldsRoute,
+  AppServerHostingIdRoute: AppServerHostingIdRouteWithChildren,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthRoute: AuthRoute,
-  ModpacksRoute: ModpacksRoute,
-  ModsRoute: ModsRoute,
-  NewsRoute: NewsRoute,
-  PublicServersRoute: PublicServersRoute,
-  ServersRoute: ServersRoute,
-  SettingsRoute: SettingsRoute,
-  VersionsRoute: VersionsRoute,
-  WorldsRoute: WorldsRoute,
-  ModConfigsIdRoute: ModConfigsIdRoute,
-  InstallationsIndexRoute: InstallationsIndexRoute,
-  ServerHostingIndexRoute: ServerHostingIndexRoute,
-  InstallationsIdModsRoute: InstallationsIdModsRoute,
-  ServerHostingIdModsRoute: ServerHostingIdModsRoute,
-  ServerHostingIdIndexRoute: ServerHostingIdIndexRoute,
+  AppRoute: AppRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

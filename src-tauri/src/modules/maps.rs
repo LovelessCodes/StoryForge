@@ -12,7 +12,7 @@ use tauri::{command, AppHandle};
 use super::errors::UiError;
 use super::paths;
 use super::proto::MapPieceDb;
-use super::utils::{generate_id, installations_folder, installations_subdir};
+use super::utils::{dir_name, generate_id, profiles_folder, profiles_subdir};
 use super::vcdbs;
 use crate::{log_error, log_info};
 
@@ -20,8 +20,8 @@ use crate::{log_error, log_info};
 pub struct MapInfo {
     pub id: u64,
     pub name: String,
-    pub installation_id: u64,
-    pub installation_name: String,
+    pub profile_id: u64,
+    pub profile_name: String,
     pub path: String,
     pub size_bytes: u64,
 }
@@ -164,27 +164,31 @@ fn empty_db_info() -> MapDatabaseInfo {
 
 // ── Commands ──
 
-/// Scan `installations_dir` for Maps databases.
-pub fn scan_maps(installations_dir: &Path) -> Result<Vec<MapInfo>, UiError> {
+/// Scan the profiles root (plus adopted folders) for Maps databases.
+pub fn scan_maps(profiles_dir: &Path, extra_dirs: &[PathBuf]) -> Result<Vec<MapInfo>, UiError> {
     let mut maps = Vec::new();
 
-    if !installations_dir.is_dir() {
-        return Ok(maps);
-    }
-
-    for entry in read_dir(installations_dir).map_err(|e| UiError {
-        name: "io_error".into(),
-        message: format!("Failed to read installations dir: {e}"),
-    })? {
-        let entry = entry.map_err(|e| UiError {
+    let mut profile_dirs: Vec<PathBuf> = Vec::new();
+    if profiles_dir.is_dir() {
+        for entry in read_dir(profiles_dir).map_err(|e| UiError {
             name: "io_error".into(),
-            message: format!("Dir entry error: {e}"),
-        })?;
-        let dir = entry.path();
-        if !dir.is_dir() {
-            continue;
+            message: format!("Failed to read profiles dir: {e}"),
+        })? {
+            let entry = entry.map_err(|e| UiError {
+                name: "io_error".into(),
+                message: format!("Dir entry error: {e}"),
+            })?;
+            let dir = entry.path();
+            if !dir.is_dir() {
+                continue;
+            }
+            profile_dirs.push(dir);
         }
-        let inst_name = entry.file_name().to_string_lossy().to_string();
+    }
+    profile_dirs.extend(extra_dirs.iter().cloned());
+
+    for dir in profile_dirs {
+        let inst_name = dir_name(&dir);
         let inst_id = generate_id(&inst_name);
 
         let maps_dir = paths::maps_dir(&dir);
@@ -217,8 +221,8 @@ pub fn scan_maps(installations_dir: &Path) -> Result<Vec<MapInfo>, UiError> {
             maps.push(MapInfo {
                 id,
                 name,
-                installation_id: inst_id,
-                installation_name: inst_name.clone(),
+                profile_id: inst_id,
+                profile_name: inst_name.clone(),
                 path: map_path.to_string_lossy().to_string(),
                 size_bytes,
             });
@@ -228,15 +232,16 @@ pub fn scan_maps(installations_dir: &Path) -> Result<Vec<MapInfo>, UiError> {
     Ok(maps)
 }
 
-/// Scan all installations for Maps databases
+/// Scan all profiles for Maps databases
 #[command]
 pub fn get_all_maps(app: AppHandle) -> Result<Vec<MapInfo>, UiError> {
     log_info!("get_all_maps");
     let start = std::time::Instant::now();
 
-    let subdir = installations_subdir(app.clone());
-    let installations_dir = installations_folder(app.clone())?.join(&subdir);
-    let result = scan_maps(&installations_dir);
+    let subdir = profiles_subdir(app.clone());
+    let profiles_dir = profiles_folder(app.clone())?.join(&subdir);
+    let extra_dirs = super::profiles::external_profile_paths(&app);
+    let result = scan_maps(&profiles_dir, &extra_dirs);
 
     log_info!(
         "get_all_maps completed in {}ms",

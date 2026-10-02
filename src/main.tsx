@@ -1,91 +1,45 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createRouter, RouterProvider } from "@tanstack/react-router";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createHashHistory, createRouter, RouterProvider } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
-import { domAnimation, LazyMotion, MotionConfig } from "motion/react";
+import { ThemeProvider } from "next-themes";
+import React from "react";
 import ReactDOM from "react-dom/client";
-import { toast } from "sonner";
 
-import { AddUserDialog } from "./components/dialogs/adduser.dialog";
-import { SidebarProvider } from "./components/ui/sidebar";
-import { rootDialogHandle } from "./handles";
+import RoutePending from "./components/common/RoutePending";
+import { ensureDefaultProfile } from "./lib/ensure-default-profile";
+import { queryClient } from "./lib/query-client";
+import { QUERY_CACHE_MAX_AGE, queryCachePersister, shouldPersistQuery } from "./lib/query-persist";
 import { routeTree } from "./routeTree.gen";
 import { useAccountStore } from "./stores/accounts";
-import { useInstallationsStore } from "./stores/installations";
+import { useProfilesStore } from "./stores/profiles";
 import { useServerStore } from "./stores/servers";
 import { tauriSettingsHandler } from "./stores/settings";
 
-void invoke("log_webview_gap");
+import "./styles.css";
 
-const frontendLoadStart = performance.now();
+/** Restored on start and revalidated in the background; null when IndexedDB is unavailable. */
+const persistOptions = queryCachePersister
+  ? {
+      buster: __APP_VERSION__,
+      dehydrateOptions: {
+        // Never resume mutations after a restart — replaying an install or
+        // delete the user already initiated would duplicate side effects.
+        shouldDehydrateMutation: () => false,
+        shouldDehydrateQuery: shouldPersistQuery,
+      },
+      maxAge: QUERY_CACHE_MAX_AGE,
+      persister: queryCachePersister,
+    }
+  : null;
 
-let settingsTime = 0,
-  serversTime = 0,
-  installationsTime = 0,
-  accountsTime = 0;
-await Promise.all([
-  (async () => {
-    const t = performance.now();
-    await tauriSettingsHandler.start();
-    settingsTime = performance.now() - t;
-  })(),
-  (async () => {
-    const t = performance.now();
-    await useServerStore.getState().loadServers();
-    serversTime = performance.now() - t;
-  })(),
-  (async () => {
-    const t = performance.now();
-    await useInstallationsStore.getState().loadInstallations();
-    installationsTime = performance.now() - t;
-  })(),
-  (async () => {
-    const t = performance.now();
-    await useAccountStore.getState().loadAccounts();
-    accountsTime = performance.now() - t;
-  })(),
-]);
-void invoke("log_message", {
-  level: "INFO ",
-  message: `Frontend store loading: ${(performance.now() - frontendLoadStart).toFixed(2)}ms (settings=${settingsTime.toFixed(2)}ms servers=${serversTime.toFixed(2)}ms installations=${installationsTime.toFixed(2)}ms accounts=${accountsTime.toFixed(2)}ms)`,
-});
-
-const dark = tauriSettingsHandler.store.getState().darkMode;
-if (dark) {
-  document.body.classList.add("dark");
-} else {
-  document.body.classList.remove("dark");
-}
-
-{
-  const { users, removeUser } = useAccountStore.getState();
-  for (const user of users) {
-    if (!user.sessionkey || !user.uid) continue;
-    invoke("verify", { sessionkey: user.sessionkey, uid: user.uid }).catch((error: unknown) => {
-      // Only a rejected session may delete saved credentials. Network, HTTP or
-      // parse failures must keep the account so an offline launch doesn't wipe
-      // every saved login.
-      const name = (error as { name?: string } | null)?.name;
-      if (name !== "invalid_session") {
-        void invoke("log_message", {
-          level: "ERROR",
-          message: `Session verify failed for ${user.playername ?? user.email}: ${String(error)}`,
-        });
-        return;
-      }
-      removeUser(user.uid);
-      toast.error(`${user.playername ?? user.email}'s session expired — please sign in again`);
-      rootDialogHandle.openWithPayload(() => <AddUserDialog email={user.email} />);
-    });
-  }
-}
-
-const queryClient = new QueryClient();
 const router = createRouter({
+  routeTree,
+  history: createHashHistory(),
   context: { queryClient },
   defaultPreload: "intent",
   defaultPreloadStaleTime: 0,
-  routeTree,
-  scrollRestoration: true,
+  defaultPendingComponent: RoutePending,
 });
 
 declare module "@tanstack/react-router" {
@@ -94,21 +48,48 @@ declare module "@tanstack/react-router" {
   }
 }
 
-const reactRenderStart = performance.now();
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <MotionConfig reducedMotion="user">
-    <LazyMotion features={domAnimation}>
-      <SidebarProvider>
-        <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-        </QueryClientProvider>
-      </SidebarProvider>
-    </LazyMotion>
-  </MotionConfig>,
-);
-void invoke("log_message", {
-  level: "INFO ",
-  message: `React render: ${(performance.now() - reactRenderStart).toFixed(2)}ms`,
-});
+/**
+ * Boot sequence: start the persisted settings store, then load the profile,
+ * server and account stores off disk so the first paint already has them.
+ */
+async function bootstrap() {
+  try {
+    await invoke("log_webview_gap").catch(() => {});
+    await tauriSettingsHandler.start();
+    await Promise.all([
+      useServerStore.getState().loadServers(),
+      useProfilesStore.getState().loadProfiles(),
+      useAccountStore.getState().loadAccounts(),
+    ]);
+    await ensureDefaultProfile();
+  } catch (error) {
+    console.error("startup failed:", error);
+  }
+}
 
-void invoke("log_startup_time");
+async function main() {
+  await bootstrap();
+  ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+    <React.StrictMode>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="dark"
+        enableSystem={false}
+        disableTransitionOnChange
+      >
+        {persistOptions ? (
+          <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
+            <RouterProvider router={router} />
+          </PersistQueryClientProvider>
+        ) : (
+          <QueryClientProvider client={queryClient}>
+            <RouterProvider router={router} />
+          </QueryClientProvider>
+        )}
+      </ThemeProvider>
+    </React.StrictMode>,
+  );
+  await invoke("log_startup_time").catch(() => {});
+}
+
+void main();

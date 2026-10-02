@@ -1,0 +1,56 @@
+import { formatForDisplay, useHotkey } from "@tanstack/react-hotkeys";
+import { Search } from "lucide-react";
+import { useRef } from "react";
+
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from "@/components/ui/input-group";
+
+export function ModSearchInput({
+  className,
+  onChange,
+  placeholder = "Search mods...",
+  value,
+}: {
+  className?: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  value: string;
+}) {
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // Mod+K belongs to the global command palette, so the mods browser uses
+  // the conventional Mod+F to focus its search field instead.
+  useHotkey(
+    "Mod+F",
+    () => {
+      searchRef.current?.focus();
+      searchRef.current?.select();
+    },
+    { conflictBehavior: "allow" },
+  );
+
+  return (
+    <InputGroup className={className}>
+      <InputGroupAddon>
+        <Search />
+      </InputGroupAddon>
+      <InputGroupInput
+        ref={searchRef}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        aria-label={placeholder}
+      />
+      <InputGroupAddon align="inline-end">
+        <InputGroupText className="gap-0.5">
+          <kbd className="font-sans">{formatForDisplay("Mod")}</kbd>
+          <kbd className="font-sans">{formatForDisplay("F")}</kbd>
+        </InputGroupText>
+      </InputGroupAddon>
+    </InputGroup>
+  );
+}
