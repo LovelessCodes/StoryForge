@@ -78,7 +78,6 @@ export default function ServerSettingsPane({ instanceId, canDelete }: ServerSett
         onError: (err) => toast.error(`Failed to delete instance: ${String(err)}`),
         onSuccess: () => {
           setDeleteOpen(false);
-          toast.success("Instance deleted");
           void navigate({
             to: "/servers",
             search: ((prev: Record<string, unknown>) => ({ ...prev, tab: "hosting" })) as never,

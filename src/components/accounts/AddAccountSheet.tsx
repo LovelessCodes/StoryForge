@@ -62,7 +62,6 @@ export default function AddAccountSheet({
         sessionsignature: data.sessionsignature,
         uid: data.uid,
       });
-      toast.success(`Welcome back, ${data.playername || "player"}!`);
       onOpenChange(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

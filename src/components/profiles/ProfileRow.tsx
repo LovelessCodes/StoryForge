@@ -109,7 +109,6 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
     try {
       await invoke("clone_profile", { id: profile.id, name });
       await loadProfiles();
-      toast.success(`Cloned to "${name}"`);
       setCloneOpen(false);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -132,9 +131,6 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
         await invoke("unregister_external_profile", { path: profile.path });
         await loadProfiles();
         setDeleteOpen(false);
-        toast.success(`Removed "${profile.name}" from Story Forge`, {
-          description: "The game data folder itself was left untouched.",
-        });
         return;
       }
       const result = await invoke<{ archive_name: string }>("soft_delete_profile", {

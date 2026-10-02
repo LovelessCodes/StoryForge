@@ -7,7 +7,6 @@ import { toast } from "@/lib/notify";
 
 interface DeleteVersionInlineProps {
   modpackSlug: string;
-  modpackName: string;
   version: string;
   onCancel: () => void;
 }
@@ -15,7 +14,6 @@ interface DeleteVersionInlineProps {
 /** Inline "type the version to confirm" strip shown inside a version row. */
 export default function DeleteVersionInline({
   modpackSlug,
-  modpackName,
   version,
   onCancel,
 }: DeleteVersionInlineProps) {
@@ -28,7 +26,6 @@ export default function DeleteVersionInline({
     setDeleting(true);
     try {
       await authClient.deleteModpackVersion(modpackSlug, version);
-      toast.success(`Deleted v${version} from ${modpackName}`);
       onCancel();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

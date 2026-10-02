@@ -142,7 +142,6 @@ export default function ProfileDialog({ open, onOpenChange, profile }: ProfileDi
         });
       }
 
-      toast.success(isEdit ? `Saved "${trimmedName}"` : `Created "${trimmedName}"`);
       onOpenChange(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

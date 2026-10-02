@@ -131,7 +131,6 @@ export default function ModpackFormSheet({
           imageUrl: imageUrl.length > 0 ? imageUrl : undefined,
           name,
         });
-        toast.success(`Modpack "${name}" updated`);
       } else {
         await authClient.createModpack({
           description,
@@ -139,7 +138,6 @@ export default function ModpackFormSheet({
           name,
           slug,
         });
-        toast.success(`Modpack "${name}" created`);
       }
       onOpenChange(false);
     } catch (error) {

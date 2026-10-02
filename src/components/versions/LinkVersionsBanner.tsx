@@ -50,9 +50,6 @@ export default function LinkVersionsBanner() {
       setReport(result);
       await queryClient.invalidateQueries({ queryKey: installedVersionsQueryKey() });
       await queryClient.invalidateQueries({ queryKey: linkableVersionsQueryKey });
-      if (result.linked > 0) {
-        toast.success(`Linked ${result.linked} version${result.linked === 1 ? "" : "s"}`);
-      }
       if (result.skipped.length > 0) {
         toast.error(`${result.skipped.length} could not be linked`, {
           description: result.skipped.map((skip) => `${skip.name}: ${skip.reason}`).join(", "),

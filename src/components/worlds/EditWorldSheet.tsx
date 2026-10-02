@@ -63,7 +63,6 @@ export default function EditWorldSheet({
       toast.error("Failed to update world", { description: err.message });
     },
     onSuccess: () => {
-      toast.success(`World "${name.trim()}" updated`);
       onOpenChange(false);
     },
   });

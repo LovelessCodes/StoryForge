@@ -107,7 +107,6 @@ export default function ServerRow({ server, onEdit }: ServerRowProps) {
         onSuccess: async () => {
           await loadServers();
           setDeleteOpen(false);
-          toast.success(`Removed "${server.name}"`);
         },
       },
     );

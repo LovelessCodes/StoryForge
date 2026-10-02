@@ -117,8 +117,6 @@ function WhitelistRow({
           sendCommand.mutate(
             { id: instanceId, command: `/whitelist remove ${entry.name || uid}` },
             {
-              onSuccess: () =>
-                toast.success(`Sent whitelist remove command for ${entry.name || uid}`),
               onError: () =>
                 toast.warning(
                   "Player removed from file but live command failed (server may not be responding)",
@@ -185,7 +183,6 @@ function AddPlayerForm({ instanceId, isRunning }: { instanceId: number; isRunnin
       if (result) {
         setNewUid(result.uid);
         setNewName(result.name);
-        toast.success(`Found: ${result.name} (UID: ${result.uid})`);
       } else {
         toast.error(`Player "${query}" not found`);
       }
@@ -219,7 +216,6 @@ function AddPlayerForm({ instanceId, isRunning }: { instanceId: number; isRunnin
           sendCommand.mutate(
             { id: instanceId, command: `/whitelist add ${entry.name}` },
             {
-              onSuccess: () => toast.success(`Sent whitelist add command for ${entry.name}`),
               onError: () =>
                 toast.warning(
                   "Player added to file but live command failed (server may not be responding)",
@@ -316,8 +312,7 @@ function BulkImportForm({ instanceId }: { instanceId: number }) {
       { id: instanceId, entries },
       {
         onError: (err) => toast.error(`Import failed: ${String(err)}`),
-        onSuccess: (count) => {
-          toast.success(`Imported ${count} whitelist ${count === 1 ? "entry" : "entries"}`);
+        onSuccess: () => {
           setJson("");
         },
       },

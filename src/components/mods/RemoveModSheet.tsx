@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -45,12 +46,8 @@ export function RemoveModSheet({
         id: toastId,
       });
     },
-    onMutate: () => {
-      toast.loading(`Removing ${name} from ${destinationLabel}...`, { id: toastId });
-    },
     onSuccess: (data) => {
       if (data === "removed") {
-        toast.success(`Removed ${name} from ${destinationLabel}`, { id: toastId });
         void queryClient.invalidateQueries({ queryKey: installedModsQueryKey(modsDirectory) });
         void queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(modsDirectory) });
         onOpenChange(false);
@@ -83,6 +80,7 @@ export function RemoveModSheet({
               Cancel
             </SheetClose>
             <Button variant="destructive" disabled={isPending} onClick={() => removeMod()}>
+              {isPending && <Loader2 className="animate-spin" />}
               Remove
             </Button>
           </div>

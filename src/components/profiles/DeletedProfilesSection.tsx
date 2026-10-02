@@ -30,7 +30,6 @@ export default function DeletedProfilesSection() {
     onSuccess: async () => {
       await loadProfiles();
       void queryClient.invalidateQueries({ queryKey: ["deleted-profiles"] });
-      toast.success("Profile restored");
     },
   });
 
@@ -38,16 +37,14 @@ export default function DeletedProfilesSection() {
     mutationFn: (archiveName: string) => invoke("purge_deleted_profile", { archiveName }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["deleted-profiles"] });
-      toast.success("Profile deleted permanently");
     },
     onError: (error: Error) => toast.error("Purge failed", { description: error.message }),
   });
 
   const purgeAll = useMutation({
     mutationFn: () => invoke<number>("purge_deleted_profiles"),
-    onSuccess: (count) => {
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["deleted-profiles"] });
-      toast.success(`Deleted ${count} profile${count === 1 ? "" : "s"} permanently`);
     },
     onError: (error: Error) => toast.error("Purge failed", { description: error.message }),
   });

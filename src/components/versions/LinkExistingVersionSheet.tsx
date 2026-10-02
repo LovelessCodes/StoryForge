@@ -18,7 +18,6 @@ import {
 import { installedVersionsQueryKey } from "@/hooks/use-installed-versions";
 import { linkableVersionsQueryKey } from "@/hooks/use-linkable-versions";
 import { pathBasename } from "@/lib/helpers";
-import { toast } from "@/lib/notify";
 import type { LinkVersionsReport } from "@/lib/types";
 
 interface LinkExistingVersionSheetProps {
@@ -65,7 +64,6 @@ export default function LinkExistingVersionSheet({
       }
       await queryClient.invalidateQueries({ queryKey: installedVersionsQueryKey() });
       await queryClient.invalidateQueries({ queryKey: linkableVersionsQueryKey });
-      toast.success(`Linked version ${name.trim()}`);
       onOpenChange(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

@@ -28,7 +28,6 @@ export function UpdateAllButton({
   installedMods: OutputMod[];
 }) {
   const pathHash = hashPath(modsDirectory);
-  const toastId = `mod-updates-${pathHash}`;
   const queryClient = useQueryClient();
   const [wantsToUpdate, setWantsToUpdate] = useState(false);
 
@@ -100,7 +99,6 @@ export function UpdateAllButton({
         );
         void queryClient.invalidateQueries({ queryKey: installedModsQueryKey(modsDirectory) });
         void queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(modsDirectory) });
-        toast.success(`All mod updates completed for ${destinationLabel}.`, { id: toastId });
       } catch {
         // Per-mod failures are already toasted by the mutations.
       } finally {

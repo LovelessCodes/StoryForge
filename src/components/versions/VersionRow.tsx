@@ -33,17 +33,8 @@ export default function VersionRow({ version }: { version: InstalledVersion }) {
         { id: `version-delete-${version.name}` },
       );
     },
-    onSuccess: (result) => {
-      if (result === "unlinked") {
-        toast.success(`Version ${version.name} unlinked`, {
-          id: `version-delete-${version.name}`,
-          description: "The folder was left untouched.",
-        });
-      } else {
-        toast.success(`Version ${version.name} deleted`, {
-          id: `version-delete-${version.name}`,
-        });
-      }
+    onSuccess: () => {
+      toast.dismiss(`version-delete-${version.name}`);
       void queryClient.invalidateQueries({ queryKey: installedVersionsQueryKey() });
       void queryClient.invalidateQueries({ queryKey: linkableVersionsQueryKey });
     },

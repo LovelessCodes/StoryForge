@@ -63,7 +63,7 @@ export default function DeleteWorldSheet({ open, onOpenChange, world }: DeleteWo
       });
     },
     onSuccess: () => {
-      toast.success(`World ${data.world_name} deleted`, { id: toastId });
+      toast.dismiss(toastId);
       void queryClient.invalidateQueries({ queryKey: ["saves"] });
       onOpenChange(false);
     },

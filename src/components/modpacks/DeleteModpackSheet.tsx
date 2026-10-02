@@ -41,7 +41,6 @@ export default function DeleteModpackSheet({
     setDeleting(true);
     try {
       await authClient.deleteModpack(modpack.slug);
-      toast.success(`Deleted "${modpack.name}"`);
       onDeleted?.(modpack.slug);
       onOpenChange(false);
     } catch (error) {

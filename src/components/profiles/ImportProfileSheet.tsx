@@ -72,7 +72,6 @@ export default function ImportProfileSheet({ open, onOpenChange }: ImportProfile
     try {
       const json = await invoke<string>("read_profile_file", { path });
       setText(json);
-      toast.success("Export file loaded");
     } catch (error) {
       toast.error("Failed to read export file", { description: String(error) });
     }
@@ -145,7 +144,6 @@ export default function ImportProfileSheet({ open, onOpenChange }: ImportProfile
       await loadProfiles();
       setActiveProfileId(result.id);
       void queryClient.invalidateQueries({ queryKey: installedVersionsQueryKey() });
-      toast.success(`Imported "${result.name}"`);
       onOpenChange(false);
       setText("");
     } catch (error) {

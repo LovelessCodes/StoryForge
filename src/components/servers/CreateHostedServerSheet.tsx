@@ -88,7 +88,6 @@ export default function CreateHostedServerSheet({
       if (result) {
         setDefaultWhitelistUid(result.uid);
         setDefaultWhitelistName(result.name);
-        toast.success(`Found: ${result.name} (UID: ${result.uid})`);
       } else {
         toast.error(`Player "${query}" not found`);
       }
@@ -136,7 +135,6 @@ export default function CreateHostedServerSheet({
       {
         onError: (err) => toast.error(`Failed to create instance: ${String(err)}`),
         onSuccess: () => {
-          toast.success(`Instance "${name.trim()}" created`);
           reset();
           onOpenChange(false);
         },

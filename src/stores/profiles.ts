@@ -93,7 +93,6 @@ export const useProfilesStore = create<ProfilesStore>((set) => ({
         return state;
       }
       const profiles = [...state.profiles, profile];
-      toast.success(`Profile "${profile.name}" added successfully`);
       cb?.(true);
       return { profiles };
     }),
@@ -190,7 +189,6 @@ export const useProfilesStore = create<ProfilesStore>((set) => ({
         cb?.(false);
         return state;
       }
-      toast.success(`Profile "${profile.name}" updated successfully`);
       cb?.(true);
       return {
         profiles: [...state.profiles.filter((s) => s.id !== profile.id), profile],

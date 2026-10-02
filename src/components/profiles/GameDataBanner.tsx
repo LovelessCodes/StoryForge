@@ -75,7 +75,6 @@ export default function GameDataBanner() {
       await loadProfiles();
       setActiveProfileId(result.id);
       await queryClient.invalidateQueries({ queryKey: defaultGameDataQueryKey });
-      toast.success(`Using your existing Vintage Story data as "${result.name}"`);
       setOpen(false);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

@@ -79,9 +79,6 @@ export function LauncherImportBanner({
       setReport(result);
       await loadProfiles();
       await queryClient.invalidateQueries({ queryKey: source.queryKey });
-      if (result.migrated > 0) {
-        toast.success(`Imported ${result.migrated} profile${result.migrated === 1 ? "" : "s"}`);
-      }
       if (result.skipped.length > 0) {
         toast.error(`${result.skipped.length} could not be imported`, {
           description: result.skipped.map((skip) => `${skip.name}: ${skip.reason}`).join(", "),

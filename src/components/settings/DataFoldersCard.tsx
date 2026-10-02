@@ -123,14 +123,11 @@ export default function DataFoldersCard() {
       }
     },
     onSuccess: async (_, variables) => {
+      toast.dismiss("settings-save");
       if (variables.config?.moveCurrentData) {
-        toast.success("Profiles folder moved", { id: "settings-save" });
         updateProfilesParent(variables.path ?? appFolder ?? "");
       } else if (variables.config?.deleteCurrentData) {
-        toast.success("Profiles data deleted", { id: "settings-save" });
         removeAllProfiles();
-      } else {
-        toast.success("Profiles folder set", { id: "settings-save" });
       }
       void queryClient.invalidateQueries({ queryKey: ["saves"] });
     },
@@ -163,14 +160,8 @@ export default function DataFoldersCard() {
         });
       }
     },
-    onSuccess: async (_, variables) => {
-      if (variables.config?.moveCurrentData) {
-        toast.success("Versions folder moved", { id: "settings-save" });
-      } else if (variables.config?.deleteCurrentData) {
-        toast.success("Versions data deleted", { id: "settings-save" });
-      } else {
-        toast.success("Versions folder set", { id: "settings-save" });
-      }
+    onSuccess: async () => {
+      toast.dismiss("settings-save");
       void queryClient.invalidateQueries({ queryKey: installedVersionsQueryKey() });
     },
   });

@@ -512,7 +512,6 @@ export function useDownloadManager() {
         void invoke("remove_installed_version", { version: token })
           .then(() => {
             void queryClient.invalidateQueries({ queryKey: installedVersionsQueryKey() });
-            toast.success(`Removed game version ${token}`);
           })
           .catch((error: unknown) => {
             toast.error(`Could not remove game version ${token}`, {
@@ -547,7 +546,6 @@ export function useDownloadManager() {
               queryKey: modUpdatesQueryKey(entry.modsDirectory),
             });
           }
-          toast.success(`Removed ${entry.label}`);
         })
         .catch((error: unknown) => {
           toast.error(`Could not remove ${entry.label}`, { description: String(error) });

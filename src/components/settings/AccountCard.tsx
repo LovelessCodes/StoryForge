@@ -14,7 +14,6 @@ async function handleSignOut() {
     const { error } = await authClient.signOut();
     if (error) throw new Error(error.message ?? "Sign out failed");
     clearAuthToken();
-    toast.success("Signed out");
   } catch {
     toast.error("Failed to sign out");
   }

@@ -110,7 +110,6 @@ export default function ModpackVersionForm({
             const upload = await authClient.uploadModpackVersionConfig(modpackSlug, data);
             if (upload.data?.url) {
               configUrl = upload.data.url;
-              toast.success("ModConfig uploaded");
             }
           } catch {
             toast.error("Failed to upload ModConfig");
@@ -126,14 +125,12 @@ export default function ModpackVersionForm({
           modpack: modpackSlug,
           version: parsed.data.version,
         });
-        toast.success(`Version ${parsed.data.version} created`);
       } else {
         await authClient.updateModpackVersion(modpackSlug, parsed.data.version, {
           gameVersion: parsed.data.gameVersion,
           modConfigsUrl: configUrl,
           modsString: parsed.data.modsString,
         });
-        toast.success(`Version ${parsed.data.version} updated`);
       }
       onSuccess();
     } catch (error) {

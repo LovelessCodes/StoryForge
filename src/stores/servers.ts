@@ -58,7 +58,6 @@ export const useServerStore = create<ServerStore>()((set) => ({
         cb?.(false);
         return state;
       }
-      toast.success(`Server "${server.name}" added successfully`);
       cb?.(true);
       return { ...state, servers: [...state.servers, server] };
     }),
@@ -108,7 +107,6 @@ export const useServerStore = create<ServerStore>()((set) => ({
   removeAllServers: () => set((state) => ({ ...state, servers: [] })),
   removeServer: (rowKey) =>
     set((state) => {
-      toast.success("Server removed successfully");
       return {
         ...state,
         servers: state.servers.filter((server) => server.rowKey !== rowKey),
@@ -149,7 +147,6 @@ export const useServerStore = create<ServerStore>()((set) => ({
         cb?.(false);
         return state;
       }
-      toast.success("Server updated successfully");
       cb?.(true);
       return {
         ...state,

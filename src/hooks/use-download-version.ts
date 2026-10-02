@@ -32,12 +32,8 @@ export const useDownloadVersion = (props?: UseMutationOptions<string, Error, str
     },
     mutationKey: ["download-version"],
     onError: (error, version) => {
-      if (error.message === "Download cancelled") {
-        toast.info(`Download of game version ${version} cancelled`, {
-          id: `download-game-version-${version}`,
-        });
-        return;
-      }
+      // Cancelling is deliberate; the sheet already dropped the entry.
+      if (error.message === "Download cancelled") return;
       toast.error(`Error downloading game version ${version}`, {
         description: error.message,
         id: `download-game-version-${version}`,

@@ -153,7 +153,6 @@ export default function ModpackDetailSheet({
       // Bump the download counter server-side.
       void authClient.downloadModpackVersion(modpack.slug, version.version);
 
-      toast.success(`Installed ${installName}`);
       setInstallingVersionId(null);
       setImporting(false);
       setImportProgress(null);
@@ -315,7 +314,6 @@ export default function ModpackDetailSheet({
 
                       {deleteVersionId === version.id && (
                         <DeleteVersionInline
-                          modpackName={modpack.name}
                           modpackSlug={modpack.slug}
                           version={version.version}
                           onCancel={() => setDeleteVersionId(null)}

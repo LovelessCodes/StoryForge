@@ -55,9 +55,6 @@ export default function LegacyMigrationBanner() {
       setReport(result);
       await loadProfiles();
       await queryClient.invalidateQueries({ queryKey: legacyInstallationsQueryKey });
-      if (result.migrated > 0) {
-        toast.success(`Imported ${result.migrated} profile${result.migrated === 1 ? "" : "s"}`);
-      }
       if (result.skipped.length > 0) {
         toast.error(`${result.skipped.length} could not be imported`, {
           description: result.skipped.map((skip) => `${skip.name}: ${skip.reason}`).join(", "),
