@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import tailwindcss from "@tailwindcss/vite";
@@ -7,6 +8,12 @@ import { defineConfig } from "vite";
 
 const host = process.env.TAURI_DEV_HOST;
 
+const appVersion = (
+  JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as {
+    version: string;
+  }
+).version;
+
 // monaco-editor's package `exports` map rewrites deep paths to `esm/vs/*.js`,
 // which breaks Vite's `?worker` imports (it would look for
 // `esm/vs/esm/vs/...`). Alias the real directory so worker modules resolve.
@@ -14,6 +21,7 @@ const monacoEsmDir = fileURLToPath(new URL("./node_modules/monaco-editor/esm/vs"
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
+  define: { __APP_VERSION__: JSON.stringify(appVersion) },
   plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), react(), tailwindcss()],
   resolve: {
     alias: {

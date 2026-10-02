@@ -582,7 +582,6 @@ function SidebarMenuSkeleton({
     return `${50 + hash}%`;
   }, [id]);
 
-
   return (
     <div
       data-slot="sidebar-menu-skeleton"

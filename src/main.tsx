@@ -1,4 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createHashHistory, createRouter, RouterProvider } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
 import { ThemeProvider } from "next-themes";
@@ -8,6 +9,7 @@ import ReactDOM from "react-dom/client";
 import RoutePending from "./components/common/RoutePending";
 import { ensureDefaultProfile } from "./lib/ensure-default-profile";
 import { queryClient } from "./lib/query-client";
+import { QUERY_CACHE_MAX_AGE, queryCachePersister, shouldPersistQuery } from "./lib/query-persist";
 import { routeTree } from "./routeTree.gen";
 import { useAccountStore } from "./stores/accounts";
 import { useProfilesStore } from "./stores/profiles";
@@ -15,6 +17,21 @@ import { useServerStore } from "./stores/servers";
 import { tauriSettingsHandler } from "./stores/settings";
 
 import "./styles.css";
+
+/** Restored on start and revalidated in the background; null when IndexedDB is unavailable. */
+const persistOptions = queryCachePersister
+  ? {
+      buster: __APP_VERSION__,
+      dehydrateOptions: {
+        // Never resume mutations after a restart — replaying an install or
+        // delete the user already initiated would duplicate side effects.
+        shouldDehydrateMutation: () => false,
+        shouldDehydrateQuery: shouldPersistQuery,
+      },
+      maxAge: QUERY_CACHE_MAX_AGE,
+      persister: queryCachePersister,
+    }
+  : null;
 
 const router = createRouter({
   routeTree,
@@ -60,9 +77,15 @@ async function main() {
         enableSystem={false}
         disableTransitionOnChange
       >
-        <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-        </QueryClientProvider>
+        {persistOptions ? (
+          <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
+            <RouterProvider router={router} />
+          </PersistQueryClientProvider>
+        ) : (
+          <QueryClientProvider client={queryClient}>
+            <RouterProvider router={router} />
+          </QueryClientProvider>
+        )}
       </ThemeProvider>
     </React.StrictMode>,
   );

@@ -1,6 +1,7 @@
 import { QueryCache, QueryClient } from "@tanstack/react-query";
 
 import { notify } from "@/components/ui/toast";
+import { QUERY_CACHE_GC_TIME } from "@/lib/query-persist";
 
 export const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -15,6 +16,7 @@ export const queryClient = new QueryClient({
     queries: {
       retry: false,
       refetchOnWindowFocus: false,
+      gcTime: QUERY_CACHE_GC_TIME,
     },
   },
 });
