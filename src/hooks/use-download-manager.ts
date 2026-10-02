@@ -134,6 +134,55 @@ async function fetchInstalledModIds(
   return new Set((result.mods ?? []).map((mod) => mod.modid.toLowerCase()));
 }
 
+export interface DependencyRequest {
+  modid: string;
+  /** Version requirement from `modinfo.json` (empty when unconstrained). */
+  constraint?: string;
+}
+
+interface DependencyTarget {
+  /** Directory that receives the downloads (`<root>/Mods`). */
+  destpath: string;
+  /** Profile root whose lists refresh; null for standalone targets. */
+  modsDirectory: string | null;
+  /** Sheet detail line (destination name). */
+  detail: string | null;
+}
+
+/**
+ * Resolves each dependency through the ModDB API and queues it in the shared
+ * downloads sheet. Lookups that fail or have no release are skipped; failed
+ * downloads stay visible per entry in the sheet.
+ */
+async function queueDependencies(
+  queryClient: ReturnType<typeof useQueryClient>,
+  requests: DependencyRequest[],
+  target: DependencyTarget,
+): Promise<void> {
+  for (const request of requests) {
+    const id = request.modid.trim().toLowerCase();
+    if (!id) continue;
+
+    try {
+      const info = (await invoke("fetch_mod_info", { modid: id })) as ModInfo;
+      const release = pickDependencyRelease(info.mod.releases, request.constraint ?? "");
+      if (!release?.mainfile) continue;
+
+      const token = `mod:${info.mod.modid}:${release.modversion}:${hashPath(target.destpath)}`;
+      queueModDownload(queryClient, {
+        token,
+        label: `${info.mod.name} v${release.modversion}`,
+        detail: target.detail,
+        url: release.mainfile,
+        destpath: target.destpath,
+        modsDirectory: target.modsDirectory,
+      });
+    } catch {
+      // Keep going with the remaining dependencies.
+    }
+  }
+}
+
 /**
  * Reads a finished mod's `modinfo.json` dependencies and queues the missing
  * ones. The queued mods' own dependencies are resolved the same way once their
@@ -161,31 +210,18 @@ async function installMissingDependencies(
   }
 
   const installedIds = await fetchInstalledModIds(queryClient, modsDirectory);
+  const requests = Object.entries(dependencies)
+    .filter(([rawId]) => {
+      const id = rawId.trim().toLowerCase();
+      return Boolean(id) && id !== "game" && !installedIds.has(id);
+    })
+    .map(([rawId, constraint]) => ({ modid: rawId.trim(), constraint }));
 
-  for (const [rawId, constraint] of Object.entries(dependencies)) {
-    const id = rawId.trim().toLowerCase();
-    // `game` is the Vintage Story version requirement, not a mod.
-    if (!id || id === "game" || installedIds.has(id)) continue;
-
-    try {
-      const info = (await invoke("fetch_mod_info", { modid: id })) as ModInfo;
-      const release = pickDependencyRelease(info.mod.releases, constraint);
-      if (!release?.mainfile) continue;
-
-      const destpath = entry.destpath ?? `${modsDirectory}${pathDelimiter}Mods`;
-      const token = `mod:${info.mod.modid}:${release.modversion}:${hashPath(destpath)}`;
-      queueModDownload(queryClient, {
-        token,
-        label: `${info.mod.name} v${release.modversion}`,
-        detail: entry.detail,
-        url: release.mainfile,
-        destpath,
-        modsDirectory,
-      });
-    } catch {
-      // Keep going with the remaining dependencies.
-    }
-  }
+  await queueDependencies(queryClient, requests, {
+    destpath: entry.destpath ?? `${modsDirectory}${pathDelimiter}Mods`,
+    modsDirectory,
+    detail: entry.detail,
+  });
 }
 
 /** Starts dependency resolution for a freshly installed mod. */
@@ -432,6 +468,23 @@ export function useDownloadManager() {
     [queryClient],
   );
 
+  /**
+   * Resolves dependencies through the ModDB API and queues them in the
+   * downloads sheet (used by the missing-dependencies banner).
+   */
+  const installDependencies = useCallback(
+    (
+      requests: DependencyRequest[],
+      options: { modsDirectory: string; destpath?: string; detail?: string | null },
+    ) =>
+      queueDependencies(queryClient, requests, {
+        destpath: options.destpath ?? `${options.modsDirectory}${pathDelimiter}Mods`,
+        modsDirectory: options.modsDirectory,
+        detail: options.detail ?? null,
+      }),
+    [queryClient],
+  );
+
   const pause = useCallback((version: string) => {
     // Recorded in case the command has not started listening yet.
     pauseRequests.add(version);
@@ -554,7 +607,16 @@ export function useDownloadManager() {
     [queryClient],
   );
 
-  return { startDownload, startModDownload, pause, resume, cancel, retry, undo };
+  return {
+    startDownload,
+    startModDownload,
+    installDependencies,
+    pause,
+    resume,
+    cancel,
+    retry,
+    undo,
+  };
 }
 
 /** A mod (or other file) download queued into the shared sheet. */

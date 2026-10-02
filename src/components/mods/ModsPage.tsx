@@ -7,6 +7,7 @@ import type { Mod, OutputMod } from "@/lib/types";
 import { useSettingsStore } from "@/stores/settings";
 
 import { AddModSheet } from "./AddModSheet";
+import MissingDependenciesBanner from "./MissingDependenciesBanner";
 import { ModFiltersBar } from "./ModFiltersBar";
 import { ModList } from "./ModList";
 import { RemoveModSheet } from "./RemoveModSheet";
@@ -74,6 +75,13 @@ export default function ModsPage({ targetPath, targetLabel }: ModsPageProps) {
           modTags={data.modTags}
           modUpdates={data.modUpdates}
         />
+        {profilePath && (
+          <MissingDependenciesBanner
+            destinationLabel={destinationLabel}
+            missing={data.missingDependencies}
+            modsDirectory={profilePath}
+          />
+        )}
         <ModList
           destinationLabel={destinationLabel}
           installedMods={profilePath ? (data.instMods?.mods ?? []) : []}

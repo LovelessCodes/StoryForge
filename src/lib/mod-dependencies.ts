@@ -1,5 +1,5 @@
 import { compareSemverAsc, latestRelease } from "./helpers";
-import type { Release } from "./types";
+import type { OutputMod, Release } from "./types";
 
 /**
  * The release to install for a dependency.
@@ -22,4 +22,37 @@ export function pickDependencyRelease(
     (release) => compareSemverAsc(release.modversion, wanted) >= 0,
   );
   return latestRelease(satisfying) ?? latest;
+}
+
+export type MissingDependency = {
+  modid: string;
+  /** Version requirement from `modinfo.json` (empty when unconstrained). */
+  constraint: string;
+  /** Installed mods whose `modinfo.json` requires this dependency. */
+  requiredBy: string[];
+};
+
+/**
+ * Dependencies named by the installed mods that are not installed themselves.
+ *
+ * The `game` entry is the game version requirement, not a mod, and modids are
+ * compared case-insensitively (zip metadata is inconsistent about casing).
+ */
+export function findMissingDependencies(mods: OutputMod[] | undefined): MissingDependency[] {
+  const installed = new Set((mods ?? []).map((mod) => mod.modid.toLowerCase()));
+  const missing = new Map<string, MissingDependency>();
+
+  for (const mod of mods ?? []) {
+    for (const [rawId, constraint] of Object.entries(mod.dependencies ?? {})) {
+      const id = rawId.trim().toLowerCase();
+      if (!id || id === "game" || installed.has(id)) continue;
+
+      const entry = missing.get(id) ?? { modid: id, constraint: "", requiredBy: [] };
+      if (!entry.constraint) entry.constraint = constraint.trim();
+      if (!entry.requiredBy.includes(mod.name)) entry.requiredBy.push(mod.name);
+      missing.set(id, entry);
+    }
+  }
+
+  return [...missing.values()].sort((a, b) => a.modid.localeCompare(b.modid));
 }

@@ -92,6 +92,10 @@ pub struct OutputMod {
     pub authors: Vec<String>,
     pub version: String,
     pub path: String,
+    /// `modinfo.json` dependencies (modid -> version requirement), without the
+    /// special `game` entry: the frontend checks them for missing mods.
+    #[serde(default)]
+    pub dependencies: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -638,6 +642,7 @@ fn read_modinfo_from_zip(
                         authors,
                         version,
                         path: zip_path.to_string_lossy().into_owned(),
+                        dependencies: dependencies_from_modinfo(&json),
                     }),
                     true,
                 );

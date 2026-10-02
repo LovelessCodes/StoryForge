@@ -286,6 +286,10 @@ queued in the same downloads sheet with the same destination. Dependency install
 their own dependencies the same way when they finish; cycles terminate because installed
 modids are checked before queueing.
 
+`get_mods` also returns each installed mod's `dependencies`, so the Mods page can compute the
+dependencies nothing satisfies (`findMissingDependencies`) and show a one-click
+"Install missing" banner; it queues through the manager's `installDependencies`.
+
 **Servers**: `fetch_all_servers` returns an address-scoped `id` (name|ip|port hash —
 favorites and status probes are stored against it) plus a profile-scoped `row_key`
 (`<profile_id>:<id>`). The frontend uses `rowKey` for React keys and list/store

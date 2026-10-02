@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useInstalledMods } from "@/hooks/use-installed-mods";
 import { useModUpdates } from "@/hooks/use-mod-updates";
 import { stripped } from "@/lib/helpers";
+import { findMissingDependencies } from "@/lib/mod-dependencies";
 import { updateCheckParams } from "@/lib/mod-pins";
 import { relevanceRank, type SortBy } from "@/lib/mod-sort";
 import { gameVersionsQuery, modTagsQuery } from "@/lib/queries";
@@ -254,7 +255,20 @@ export function useModsData({
     return map;
   }, [modTags]);
 
-  return { gameVersions, instMods, modTags, modsList, modUpdates, tagByName, tagColorMap };
+  // Dependencies named by the installed mods that are not installed (shown as
+  // the missing-dependencies banner above the list).
+  const missingDependencies = useMemo(() => findMissingDependencies(instMods?.mods), [instMods]);
+
+  return {
+    gameVersions,
+    instMods,
+    missingDependencies,
+    modTags,
+    modsList,
+    modUpdates,
+    tagByName,
+    tagColorMap,
+  };
 }
 
 export type ModsData = ReturnType<typeof useModsData>;

@@ -44,9 +44,10 @@ the look & feel of Macheim (see `../macheim`). The core domain concept is the **
 - **Versions** — browse all Vintage Story releases, download with a resumable, pausable queue.
 - **Mods** — search the mod database, filter by version/side/tags/author, install, update,
   downgrade, remove, and update everything at once. Installs read each mod's `modinfo.json`
-  and queue its missing dependencies (recursively) in the downloads sheet. Pin a mod to keep
-  its installed version — pinned mods are left out of the update check, so "Update All" skips
-  them (unpin to see updates again).
+  and queue its missing dependencies (recursively) in the downloads sheet; installed mods are
+  also checked for missing dependencies, with a one-click "Install missing" banner. Pin a mod
+  to keep its installed version — pinned mods are left out of the update check, so "Update All"
+  skips them (unpin to see updates again).
 - **Modpacks** — browse/install community modpacks (optional cloud login via Better Auth),
   create and publish your own.
 - **Worlds** — list saves across profiles, edit/delete, launch straight into a world, and view

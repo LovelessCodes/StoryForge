@@ -6,8 +6,8 @@ vi.mock("@tauri-apps/plugin-os", () => ({ platform: () => "macos" }));
 vi.mock("@tauri-apps/plugin-clipboard-manager", () => ({ writeText: vi.fn() }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
 
-import { pickDependencyRelease } from "./mod-dependencies";
-import type { Release } from "./types";
+import { pickDependencyRelease, findMissingDependencies } from "./mod-dependencies";
+import type { OutputMod, Release } from "./types";
 
 const release = (modversion: string): Release => ({
   releaseid: 1,
@@ -42,5 +42,45 @@ describe("pickDependencyRelease", () => {
   it("returns undefined for no releases", () => {
     expect(pickDependencyRelease(undefined, "1.0.0")).toBeUndefined();
     expect(pickDependencyRelease([], "1.0.0")).toBeUndefined();
+  });
+});
+
+describe("findMissingDependencies", () => {
+  const installed = (
+    modid: string,
+    name: string,
+    dependencies: Record<string, string>,
+  ): OutputMod => ({
+    modid,
+    name,
+    authors: [],
+    version: "1.0.0",
+    path: `/mods/${modid}.zip`,
+    dependencies,
+  });
+
+  it("lists dependencies that are not installed", () => {
+    const missing = findMissingDependencies([
+      installed("carryon", "Carry On", { game: "1.21.5", sodium: "1.2.0" }),
+      installed("stonequarry", "Stone Quarry", { sodium: "", libfoo: "2.0.0" }),
+    ]);
+
+    expect(missing).toEqual([
+      { modid: "libfoo", constraint: "2.0.0", requiredBy: ["Stone Quarry"] },
+      { modid: "sodium", constraint: "1.2.0", requiredBy: ["Carry On", "Stone Quarry"] },
+    ]);
+  });
+
+  it("ignores the game entry and installed mods, case-insensitively", () => {
+    const missing = findMissingDependencies([
+      installed("alpha", "Alpha", { game: "1.21.5", Beta: "1.0.0" }),
+      installed("beta", "Beta", {}),
+    ]);
+    expect(missing).toEqual([]);
+  });
+
+  it("handles missing dependency data", () => {
+    expect(findMissingDependencies(undefined)).toEqual([]);
+    expect(findMissingDependencies([installed("alpha", "Alpha", {})])).toEqual([]);
   });
 });

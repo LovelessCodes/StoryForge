@@ -261,6 +261,8 @@ export type OutputMod = {
   authors: string[];
   version: string;
   path: string;
+  /** `modinfo.json` dependencies (modid -> version requirement). */
+  dependencies?: Record<string, string>;
 };
 
 /** A mod as returned by the mod database search endpoint. */
