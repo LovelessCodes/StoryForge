@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useEffect, useRef } from "react";
 
+import { t } from "@/lib/i18n";
 import { toast } from "@/lib/notify";
 import { findProfileForServer, useProfiles } from "@/stores/profiles";
 import { useSettingsStore } from "@/stores/settings";
@@ -77,7 +78,7 @@ export const useConnectToServer = (
       // play_game failed: no launch event will arrive, so drop the listeners.
       for (const unlisten of unlistens.current) unlisten();
       unlistens.current = [];
-      toast.error(`Error connecting to server: ${error.message}`);
+      toast.error(t("layout.launch.errorConnecting", { message: error.message }));
     },
     onMutate: async (variable) => {
       for (const unlisten of unlistens.current) {
@@ -93,11 +94,11 @@ export const useConnectToServer = (
         (event) => {
           const { phase, percent } = event.payload;
           if (phase === "downloading") {
-            toast.loading(`Downloading .NET runtime... ${percent.toFixed(0)}%`, {
+            toast.loading(t("layout.launch.downloadingDotnet", { percent: percent.toFixed(0) }), {
               id: `dotnet-download-${variable.profileId}`,
             });
           } else if (phase === "extracting") {
-            toast.loading("Extracting .NET runtime...", {
+            toast.loading(t("layout.launch.extractingDotnet"), {
               id: `dotnet-download-${variable.profileId}`,
             });
           } else if (phase === "done") {
@@ -117,12 +118,12 @@ export const useConnectToServer = (
         const { phase, current, total } = event.payload;
         if (phase === "backing-up") {
           const percent = total && total > 0 ? Math.round(((current ?? 0) / total) * 100) : 0;
-          toast.loading(`Backing up ${profile?.name}… ${percent}%`, {
+          toast.loading(t("layout.launch.backingUp", { name: profile?.name ?? "", percent }), {
             id: `launch-game-${variable.profileId}`,
           });
         }
         if (phase === "error") {
-          toast.error("Backup before launch failed", {
+          toast.error(t("layout.launch.backupFailed"), {
             description: event.payload.message,
             id: `backup-error-${variable.profileId}`,
           });
@@ -138,19 +139,25 @@ export const useConnectToServer = (
       }>(`launch-${variable.profileId}`, (event) => {
         const { status } = event.payload;
         if (status === "pending") {
-          toast.loading(`Launching ${profile?.name}...`, {
+          toast.loading(t("layout.launch.launching", { name: profile?.name ?? "" }), {
             id: `launch-game-${variable.profileId}`,
           });
         }
         if (status === "success") {
-          toast.success(`Launched ${profile?.name} and connecting to ${variable.name}!`, {
-            description: event.payload.version ? `Version: ${event.payload.version}` : undefined,
-            id: `launch-game-${variable.profileId}`,
-          });
+          toast.success(
+            t("layout.launch.launchedAndConnecting", {
+              name: profile?.name ?? "",
+              server: variable.name,
+            }),
+            {
+              description: event.payload.version ? `Version: ${event.payload.version}` : undefined,
+              id: `launch-game-${variable.profileId}`,
+            },
+          );
           updateLastPlayed(variable.profileId);
         }
         if (status === "error") {
-          toast.error(`Error launching game: ${event.payload.reason}`, {
+          toast.error(t("layout.launch.errorLaunching", { reason: event.payload.reason }), {
             id: `launch-game-${variable.profileId}`,
           });
         }

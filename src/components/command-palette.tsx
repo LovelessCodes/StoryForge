@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 import { COMMANDS, getCommand, type AppCommandId } from "../lib/commands";
 import { elementCenter, switchTheme } from "../lib/theme-transition";
@@ -34,7 +35,12 @@ import {
   CommandSeparator,
 } from "./ui/command";
 
-const GROUP_ORDER: ReadonlyArray<string> = ["Go to", "Application", "Appearance", "Game"];
+const GROUP_ORDER: ReadonlyArray<string> = [
+  "layout.commands.groups.goTo",
+  "layout.commands.groups.application",
+  "layout.commands.groups.appearance",
+  "layout.commands.groups.game",
+];
 
 const iconById: Partial<Record<AppCommandId, LucideIcon>> = {
   "app.commandPalette": Search,
@@ -54,9 +60,11 @@ const iconById: Partial<Record<AppCommandId, LucideIcon>> = {
   "nav.settings": Settings,
 };
 
-const groups = GROUP_ORDER.map((group) => ({
-  group,
-  ids: (Object.keys(COMMANDS) as AppCommandId[]).filter((id) => getCommand(id).group === group),
+const groups = GROUP_ORDER.map((groupKey) => ({
+  groupKey,
+  ids: (Object.keys(COMMANDS) as AppCommandId[]).filter(
+    (id) => getCommand(id).groupKey === groupKey,
+  ),
 })).filter((entry) => entry.ids.length > 0);
 
 interface CommandPaletteProps {
@@ -66,6 +74,7 @@ interface CommandPaletteProps {
 
 export default function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const runCommand = useRunCommand();
+  const { t } = useTranslation();
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme !== "light";
   const themeItemRef = useRef<HTMLDivElement>(null);
@@ -118,13 +127,13 @@ export default function CommandPalette({ open, onOpenChange }: CommandPalettePro
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <Command>
-        <CommandInput placeholder="Search Story Forge..." />
+        <CommandInput placeholder={t("layout.commandPalette.placeholder")} />
         <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
+          <CommandEmpty>{t("layout.commandPalette.empty")}</CommandEmpty>
           {groups.map((entry, index) => (
-            <div key={entry.group}>
+            <div key={entry.groupKey}>
               {index > 0 && <CommandSeparator />}
-              <CommandGroup heading={entry.group}>
+              <CommandGroup heading={t(entry.groupKey)}>
                 {entry.ids.map((id) => {
                   const command = getCommand(id);
 
@@ -133,7 +142,7 @@ export default function CommandPalette({ open, onOpenChange }: CommandPalettePro
                       <CommandItem
                         key={id}
                         ref={themeItemRef}
-                        value={`toggle theme ${isDark ? "light" : "dark"}`}
+                        value={t("layout.commands.toggleTheme.title")}
                         onSelect={() => {
                           // Derive from the DOM so the label and action can't disagree.
                           const nextTheme = document.documentElement.classList.contains("dark")
@@ -147,16 +156,19 @@ export default function CommandPalette({ open, onOpenChange }: CommandPalettePro
                         }}
                       >
                         {isDark ? <Sun /> : <Moon />}
-                        {command.title} — switch to {isDark ? "light" : "dark"}
+                        {t("layout.commandPalette.switchToTheme", {
+                          title: t(command.titleKey),
+                          theme: isDark ? t("layout.theme.light") : t("layout.theme.dark"),
+                        })}
                       </CommandItem>
                     );
                   }
 
                   const Icon = iconById[id] ?? Search;
                   return (
-                    <CommandItem key={id} value={command.title} onSelect={() => go(id)}>
+                    <CommandItem key={id} value={t(command.titleKey)} onSelect={() => go(id)}>
                       <Icon />
-                      {command.title}
+                      {t(command.titleKey)}
                     </CommandItem>
                   );
                 })}

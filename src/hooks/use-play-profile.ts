@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useEffect, useRef } from "react";
 
+import { t } from "@/lib/i18n";
 import { toast } from "@/lib/notify";
 import { useProfiles } from "@/stores/profiles";
 import { useSettingsStore } from "@/stores/settings";
@@ -34,7 +35,7 @@ export const usePlayProfile = (
       });
     },
     onError: (error) => {
-      toast.error(`Error playing with profile: ${error.message}`);
+      toast.error(t("layout.launch.errorPlaying", { message: error.message }));
     },
     onMutate: async (variable) => {
       // Drop listeners from the previous play so repeated plays don't stack
@@ -50,11 +51,11 @@ export const usePlayProfile = (
         (event) => {
           const { phase, percent } = event.payload;
           if (phase === "downloading") {
-            toast.loading(`Downloading .NET runtime... ${percent.toFixed(0)}%`, {
+            toast.loading(t("layout.launch.downloadingDotnet", { percent: percent.toFixed(0) }), {
               id: `dotnet-download-${variable.id}`,
             });
           } else if (phase === "extracting") {
-            toast.loading("Extracting .NET runtime...", {
+            toast.loading(t("layout.launch.extractingDotnet"), {
               id: `dotnet-download-${variable.id}`,
             });
           } else if (phase === "done") {
@@ -86,12 +87,12 @@ export const usePlayProfile = (
         const { phase, current, total } = event.payload;
         if (phase === "backing-up") {
           const percent = total && total > 0 ? Math.round(((current ?? 0) / total) * 100) : 0;
-          toast.loading(`Backing up ${profile?.name}… ${percent}%`, {
+          toast.loading(t("layout.launch.backingUp", { name: profile?.name ?? "", percent }), {
             id: `launch-game-${variable.id}`,
           });
         }
         if (phase === "error") {
-          toast.error("Backup before launch failed", {
+          toast.error(t("layout.launch.backupFailed"), {
             description: event.payload.message,
             id: `backup-error-${variable.id}`,
           });
@@ -107,13 +108,18 @@ export const usePlayProfile = (
       }>(`launch-${variable.id}`, (event) => {
         const { status } = event.payload;
         if (status === "pending") {
-          toast.loading(`Launching ${profile?.name}...`, {
+          toast.loading(t("layout.launch.launching", { name: profile?.name ?? "" }), {
             id: `launch-game-${variable.id}`,
           });
         }
         if (status === "success") {
           toast.success(
-            `Launched${variable.save ? ` world ${variable.save} with` : ""} ${profile?.name}!`,
+            variable.save
+              ? t("layout.launch.launchedWithWorld", {
+                  world: variable.save,
+                  name: profile?.name ?? "",
+                })
+              : t("layout.launch.launched", { name: profile?.name ?? "" }),
             {
               description: event.payload.version ? `Version: ${event.payload.version}` : undefined,
               id: `launch-game-${variable.id}`,
@@ -122,7 +128,7 @@ export const usePlayProfile = (
           updateLastPlayed(variable.id);
         }
         if (status === "error") {
-          toast.error(`Error launching game: ${event.payload.reason}`, {
+          toast.error(t("layout.launch.errorLaunching", { reason: event.payload.reason }), {
             id: `launch-game-${variable.id}`,
           });
         }

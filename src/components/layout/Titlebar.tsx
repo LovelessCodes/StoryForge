@@ -2,6 +2,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { cn } from "cn";
 import { Clock, Download, Loader2, Minus, Pause, RotateCcw, Search, Square, X } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { useRunCommand } from "@/components/command-runtime";
 import ThemeToggle from "@/components/common/ThemeToggle";
@@ -16,6 +17,7 @@ import { isMac, isWindows, modifierLabel } from "@/lib/helpers";
 import { useDownloadStore } from "@/stores/downloads";
 
 export default function Titlebar() {
+  const { t } = useTranslation();
   const runCommand = useRunCommand();
   const { data: update } = useUpdater();
   const entries = useDownloadStore((s) => s.entries);
@@ -49,7 +51,7 @@ export default function Titlebar() {
     notify("updater", {
       type: "loading",
       timeout: 0,
-      title: `Downloading Story Forge ${update.version}…`,
+      title: t("layout.updater.downloading", { version: update.version }),
     });
     try {
       await update.downloadAndInstall((event) => {
@@ -61,14 +63,20 @@ export default function Titlebar() {
           notify("updater", {
             type: "loading",
             timeout: 0,
-            title: `Downloading Story Forge ${update.version}…${pct !== null ? ` ${pct}%` : ""}`,
+            title:
+              pct !== null
+                ? t("layout.updater.downloadingPercent", {
+                    version: update.version,
+                    percent: pct,
+                  })
+                : t("layout.updater.downloading", { version: update.version }),
           });
         }
       });
       notify("updater", {
         type: "success",
         timeout: 0,
-        title: "Update installed — restarting…",
+        title: t("layout.updater.installed"),
       });
       const { relaunch } = await import("@tauri-apps/plugin-process");
       await relaunch();
@@ -76,7 +84,7 @@ export default function Titlebar() {
       setInstalling(false);
       notify("updater", {
         type: "error",
-        title: "Update failed",
+        title: t("layout.updater.failed"),
         description: String(error),
       });
     }
@@ -88,10 +96,10 @@ export default function Titlebar() {
       size="xs"
       onClick={() => void installUpdate()}
       disabled={installing}
-      title={`Update to Story Forge ${update.version}`}
+      title={t("layout.titlebar.updateTitle", { version: update.version })}
     >
       {installing ? <Loader2 className="animate-spin" /> : <RotateCcw />}
-      Update v{update.version}
+      {t("layout.titlebar.update", { version: update.version })}
     </Button>
   ) : null;
 
@@ -117,8 +125,8 @@ export default function Titlebar() {
         {active.length > 0 && percent !== null && (
           <Progress
             value={percent}
-            aria-label={`Download progress: ${percent}%`}
-            title={`Download progress: ${percent}%`}
+            aria-label={t("layout.titlebar.downloadProgress", { percent })}
+            title={t("layout.titlebar.downloadProgress", { percent })}
             className="[&_[data-slot=progress-indicator]]:bg-accent-primary mr-1 w-24 [&_[data-slot=progress-track]]:h-1.5"
           />
         )}
@@ -127,10 +135,10 @@ export default function Titlebar() {
           size="xs"
           className="text-muted-foreground gap-2"
           onClick={() => setDownloadsOpen(true)}
-          title="Downloads"
+          title={t("layout.titlebar.downloads")}
         >
           {downloadIcon}
-          <span className="hidden sm:inline">Downloads</span>
+          <span className="hidden sm:inline">{t("layout.titlebar.downloads")}</span>
           {pendingCount > 0 && (
             <Badge variant="secondary" className="h-4 px-1.5 text-[10px] tabular-nums">
               {pendingCount}
@@ -142,10 +150,10 @@ export default function Titlebar() {
           size="xs"
           className="text-muted-foreground gap-2"
           onClick={() => runCommand("app.commandPalette")}
-          title="Search pages and actions"
+          title={t("layout.titlebar.searchTitle")}
         >
           <Search />
-          <span className="hidden sm:inline">Search</span>
+          <span className="hidden sm:inline">{t("layout.titlebar.search")}</span>
           <kbd className="pointer-events-none hidden rounded-none border px-1 font-sans text-[10px] sm:inline">
             {modifierLabel}K
           </kbd>
@@ -154,7 +162,7 @@ export default function Titlebar() {
         {isWindows && (
           <>
             <Button
-              aria-label="Minimize window"
+              aria-label={t("layout.titlebar.minimize")}
               className="text-muted-foreground hover:text-warning"
               onClick={() => void getCurrentWindow().minimize()}
               size="icon-sm"
@@ -163,7 +171,7 @@ export default function Titlebar() {
               <Minus />
             </Button>
             <Button
-              aria-label="Maximize window"
+              aria-label={t("layout.titlebar.maximize")}
               className="text-muted-foreground hover:text-success"
               onClick={() => void getCurrentWindow().toggleMaximize()}
               size="icon-sm"
@@ -172,7 +180,7 @@ export default function Titlebar() {
               <Square />
             </Button>
             <Button
-              aria-label="Close window"
+              aria-label={t("layout.titlebar.close")}
               className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
               onClick={() => void getCurrentWindow().close()}
               size="icon-sm"

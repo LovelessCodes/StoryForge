@@ -13,100 +13,101 @@ export interface CommandRuntime {
 }
 
 export interface CommandDefinition {
-  description?: string;
-  group: string;
+  /** Key in the `layout` namespace; translated at render time. */
+  descriptionKey?: string;
+  groupKey: string;
   run: (runtime: CommandRuntime) => void;
-  title: string;
+  titleKey: string;
 }
 
 export const COMMANDS = {
   "app.commandPalette": {
-    group: "Application",
-    title: "Open command palette",
-    description: "Search pages and actions",
+    groupKey: "layout.commands.groups.application",
+    titleKey: "layout.commands.commandPalette.title",
+    descriptionKey: "layout.commands.commandPalette.description",
     run: (runtime) => runtime.openCommandPalette(),
   },
   "app.toggleSidebar": {
-    group: "Application",
-    title: "Toggle sidebar",
+    groupKey: "layout.commands.groups.application",
+    titleKey: "layout.commands.toggleSidebar",
     run: (runtime) => runtime.toggleSidebar(),
   },
   "app.toggleTheme": {
-    group: "Appearance",
-    title: "Toggle theme",
-    description: "Switch between light and dark",
+    groupKey: "layout.commands.groups.appearance",
+    titleKey: "layout.commands.toggleTheme.title",
+    descriptionKey: "layout.commands.toggleTheme.description",
     run: (runtime) => runtime.toggleTheme(),
   },
   "app.checkForUpdates": {
-    group: "Application",
-    title: "Check for updates",
+    groupKey: "layout.commands.groups.application",
+    titleKey: "layout.commands.checkForUpdates",
     run: (runtime) => runtime.checkForUpdates(),
   },
   "app.refresh": {
-    group: "Application",
-    title: "Refresh data",
+    groupKey: "layout.commands.groups.application",
+    titleKey: "layout.commands.refresh",
     run: (runtime) => runtime.refresh(),
   },
   "app.openProfilesFolder": {
-    group: "Application",
-    title: "Open profiles folder",
+    groupKey: "layout.commands.groups.application",
+    titleKey: "layout.commands.openProfilesFolder",
     run: (runtime) => runtime.openProfilesFolder(),
   },
   "app.launchProfile": {
-    group: "Game",
-    title: "Launch active profile",
+    groupKey: "layout.commands.groups.game",
+    titleKey: "layout.commands.launchProfile",
     run: (runtime) => runtime.launchProfile(),
   },
   "nav.profiles": {
-    group: "Go to",
-    title: "Profiles",
+    groupKey: "layout.commands.groups.goTo",
+    titleKey: "layout.nav.profiles",
     run: (runtime) => runtime.navigate("profiles"),
   },
   "nav.mods": {
-    group: "Go to",
-    title: "Mods",
+    groupKey: "layout.commands.groups.goTo",
+    titleKey: "layout.nav.mods",
     run: (runtime) => runtime.navigate("mods"),
   },
   "nav.modpacks": {
-    group: "Go to",
-    title: "Modpacks",
+    groupKey: "layout.commands.groups.goTo",
+    titleKey: "layout.nav.modpacks",
     run: (runtime) => runtime.navigate("modpacks"),
   },
   "nav.versions": {
-    group: "Go to",
-    title: "Versions",
+    groupKey: "layout.commands.groups.goTo",
+    titleKey: "layout.nav.versions",
     run: (runtime) => runtime.navigate("versions"),
   },
   "nav.worlds": {
-    group: "Go to",
-    title: "Worlds",
+    groupKey: "layout.commands.groups.goTo",
+    titleKey: "layout.nav.worlds",
     run: (runtime) => runtime.navigate("worlds"),
   },
   "nav.servers": {
-    group: "Go to",
-    title: "Servers",
+    groupKey: "layout.commands.groups.goTo",
+    titleKey: "layout.nav.servers",
     run: (runtime) => runtime.navigate("servers"),
   },
   "nav.config": {
-    group: "Go to",
-    title: "Mod Configs",
+    groupKey: "layout.commands.groups.goTo",
+    titleKey: "layout.nav.config",
     run: (runtime) => runtime.navigate("config"),
   },
   "nav.news": {
-    group: "Go to",
-    title: "News",
+    groupKey: "layout.commands.groups.goTo",
+    titleKey: "layout.nav.news",
     run: (runtime) => runtime.navigate("news"),
   },
   "nav.settings": {
-    group: "Go to",
-    title: "Settings",
+    groupKey: "layout.commands.groups.goTo",
+    titleKey: "layout.nav.settings",
     run: (runtime) => runtime.navigate("settings"),
   },
 } satisfies Record<string, CommandDefinition>;
 
 export type AppCommandId = keyof typeof COMMANDS;
 
-/** Widened accessor: the registry's literal types narrow `description` away. */
+/** Widened accessor: the registry's literal types narrow `descriptionKey` away. */
 export function getCommand(id: AppCommandId): CommandDefinition {
   return COMMANDS[id];
 }

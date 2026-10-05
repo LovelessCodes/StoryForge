@@ -1,0 +1,98 @@
+{
+  "nav": {
+    "profiles": "Profiles",
+    "mods": "Mods",
+    "modpacks": "Modpacks",
+    "versions": "Versions",
+    "worlds": "Worlds",
+    "servers": "Servers",
+    "config": "Mod Configs",
+    "news": "News",
+    "settings": "Settings"
+  },
+  "sidebar": {
+    "navigation": "Navigation",
+    "tagline": "Vintage Story Manager",
+    "openProfilesFolderTitle": "Open the profiles folder",
+    "play": "Play {{name}}",
+    "createProfileFirst": "Create a profile first",
+    "launchTitle": "Launch {{name}}",
+    "pausedTitle": "Game version {{version}} download is paused — resume it on the Versions page",
+    "downloadTitle": "Download game version {{version}} to play {{name}}",
+    "downloadPaused": "Download paused",
+    "downloading": "Downloading… {{percent}}%",
+    "downloadingNoPercent": "Downloading…",
+    "downloadVersion": "Download v{{version}}"
+  },
+  "titlebar": {
+    "update": "Update v{{version}}",
+    "updateTitle": "Update to Story Forge {{version}}",
+    "downloads": "Downloads",
+    "downloadProgress": "Download progress: {{percent}}%",
+    "search": "Search",
+    "searchTitle": "Search pages and actions",
+    "minimize": "Minimize window",
+    "maximize": "Maximize window",
+    "close": "Close window"
+  },
+  "theme": {
+    "toggle": "Toggle theme",
+    "switchToLight": "Switch to light mode",
+    "switchToDark": "Switch to dark mode",
+    "light": "light",
+    "dark": "dark"
+  },
+  "commandPalette": {
+    "placeholder": "Search Story Forge…",
+    "empty": "No results found.",
+    "switchToTheme": "{{title}} — switch to {{theme}}"
+  },
+  "commands": {
+    "groups": {
+      "goTo": "Go to",
+      "application": "Application",
+      "appearance": "Appearance",
+      "game": "Game"
+    },
+    "commandPalette": {
+      "title": "Open command palette",
+      "description": "Search pages and actions"
+    },
+    "toggleSidebar": "Toggle sidebar",
+    "toggleTheme": {
+      "title": "Toggle theme",
+      "description": "Switch between light and dark"
+    },
+    "checkForUpdates": "Check for updates",
+    "refresh": "Refresh data",
+    "openProfilesFolder": "Open profiles folder",
+    "launchProfile": "Launch active profile"
+  },
+  "updater": {
+    "checking": "Checking for updates…",
+    "downloading": "Downloading Story Forge {{version}}…",
+    "downloadingPercent": "Downloading Story Forge {{version}}… {{percent}}%",
+    "installed": "Update installed — restarting…",
+    "failed": "Update failed"
+  },
+  "noActiveProfile": {
+    "title": "No active profile",
+    "description": "Create or select a profile first."
+  },
+  "launch": {
+    "errorPlaying": "Error playing with profile: {{message}}",
+    "downloadingDotnet": "Downloading .NET runtime… {{percent}}%",
+    "extractingDotnet": "Extracting .NET runtime…",
+    "launching": "Launching {{name}}…",
+    "launched": "Launched {{name}}!",
+    "launchedWithWorld": "Launched world {{world}} with {{name}}!",
+    "launchedAndConnecting": "Launched {{name}} and connecting to {{server}}!",
+    "errorLaunching": "Error launching game: {{reason}}",
+    "errorConnecting": "Error connecting to server: {{message}}",
+    "backingUp": "Backing up {{name}}… {{percent}}%",
+    "backupFailed": "Backup before launch failed"
+  },
+  "reveal": {
+    "failed": "Failed to reveal in file explorer: {{message}}"
+  }
+}

@@ -15,6 +15,7 @@ import {
   Server,
   Settings,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { openProfilesFolderInFileExplorer } from "@/lib/app-paths";
 import { PAGE_PATHS, type RoutePage } from "@/lib/routes";
@@ -44,25 +45,26 @@ import {
 } from "../ui/sidebar";
 import { notify } from "../ui/toast";
 
+/** Sidebar entries; labels come from `layout.nav.<page>`. */
 interface NavItem {
   page: RoutePage;
-  label: string;
   icon: LucideIcon;
 }
 
 const navItems: NavItem[] = [
-  { page: "profiles", label: "Profiles", icon: IdCard },
-  { page: "mods", label: "Mods", icon: Package },
-  { page: "modpacks", label: "Modpacks", icon: Layers },
-  { page: "versions", label: "Versions", icon: Boxes },
-  { page: "worlds", label: "Worlds", icon: Earth },
-  { page: "servers", label: "Servers", icon: Server },
-  { page: "config", label: "Mod Configs", icon: FileText },
-  { page: "news", label: "News", icon: Newspaper },
-  { page: "settings", label: "Settings", icon: Settings },
+  { page: "profiles", icon: IdCard },
+  { page: "mods", icon: Package },
+  { page: "modpacks", icon: Layers },
+  { page: "versions", icon: Boxes },
+  { page: "worlds", icon: Earth },
+  { page: "servers", icon: Server },
+  { page: "config", icon: FileText },
+  { page: "news", icon: Newspaper },
+  { page: "settings", icon: Settings },
 ];
 
 export default function Sidebar() {
+  const { t } = useTranslation();
   const { pathname } = useLocation();
   const { data: version } = useAppVersion();
   const { activeProfile } = useActiveProfile();
@@ -92,21 +94,28 @@ export default function Sidebar() {
     return pathname === path || pathname.startsWith(`${path}/`);
   }
 
-  const playTitle = !activeProfile ? "Create a profile first" : `Launch ${activeProfile.name}`;
+  const playTitle = !activeProfile
+    ? t("layout.sidebar.createProfileFirst")
+    : t("layout.sidebar.launchTitle", { name: activeProfile.name });
 
   const downloadTitle = !activeProfile
-    ? "Create a profile first"
+    ? t("layout.sidebar.createProfileFirst")
     : downloadPaused
-      ? `Game version ${activeProfile.version} download is paused — resume it on the Versions page`
-      : `Download game version ${activeProfile.version} to play ${activeProfile.name}`;
+      ? t("layout.sidebar.pausedTitle", { version: activeProfile.version })
+      : t("layout.sidebar.downloadTitle", {
+          version: activeProfile.version,
+          name: activeProfile.name,
+        });
 
   const downloadLabel = !activeProfile
-    ? "Play"
+    ? t("common.actions.play")
     : downloadPaused
-      ? "Download paused"
+      ? t("layout.sidebar.downloadPaused")
       : downloadInProgress
-        ? `Downloading…${downloadPercent !== null ? ` ${downloadPercent.toFixed(0)}%` : ""}`
-        : `Download v${activeProfile.version}`;
+        ? downloadPercent !== null
+          ? t("layout.sidebar.downloading", { percent: downloadPercent.toFixed(0) })
+          : t("layout.sidebar.downloadingNoPercent")
+        : t("layout.sidebar.downloadVersion", { version: activeProfile.version });
 
   return (
     <SidebarRoot collapsible="icon">
@@ -121,7 +130,7 @@ export default function Sidebar() {
               )}
             </span>
             <span className="truncate text-[10px] font-medium tracking-widest text-[var(--color-accent-amber)] uppercase">
-              Vintage Story Manager
+              {t("layout.sidebar.tagline")}
             </span>
           </div>
         </div>
@@ -138,20 +147,21 @@ export default function Sidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("layout.sidebar.navigation")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => {
                 const Icon = item.icon;
+                const label = t(`layout.nav.${item.page}`);
                 return (
                   <SidebarMenuItem key={item.page}>
                     <SidebarMenuButton
                       isActive={isActive(item.page)}
-                      tooltip={item.label}
+                      tooltip={label}
                       render={<Link to={PAGE_PATHS[item.page]} />}
                     >
                       <Icon />
-                      <span>{item.label}</span>
+                      <span>{label}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
@@ -171,7 +181,9 @@ export default function Sidebar() {
             title={playTitle}
           >
             <Play />
-            <span className="group-data-[collapsible=icon]:hidden">Play {activeProfile.name}</span>
+            <span className="group-data-[collapsible=icon]:hidden">
+              {t("layout.sidebar.play", { name: activeProfile.name })}
+            </span>
           </Button>
         ) : (
           <Button
@@ -193,10 +205,12 @@ export default function Sidebar() {
               notify("profiles-folder", { type: "error", title: String(err) });
             });
           }}
-          title="Open the profiles folder"
+          title={t("layout.sidebar.openProfilesFolderTitle")}
         >
           <FolderOpen />
-          <span className="group-data-[collapsible=icon]:hidden">Open Folder</span>
+          <span className="group-data-[collapsible=icon]:hidden">
+            {t("common.actions.openFolder")}
+          </span>
         </Button>
       </SidebarFooter>
 

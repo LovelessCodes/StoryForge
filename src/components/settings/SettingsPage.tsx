@@ -1,8 +1,10 @@
 import { useQueryClient } from "@tanstack/react-query";
+import { locale } from "@tauri-apps/plugin-os";
 import { DownloadIcon, MoonIcon, RefreshCwIcon, ZapIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import type { ReactNode } from "react";
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useAppVersion } from "@/hooks/use-app-version";
+import { LOCALES, resolveLocale } from "@/lib/i18n";
 import { type SortBy, sortOptions } from "@/lib/mod-sort";
 import { toast } from "@/lib/notify";
 import { elementCenter, switchTheme } from "@/lib/theme-transition";
@@ -53,22 +56,44 @@ function SettingRow({
 
 function AppearanceCard() {
   const { resolvedTheme, setTheme } = useTheme();
+  const { i18n, t } = useTranslation();
+  const language = useSettingsStore((s) => s.language);
+  const setLanguage = useSettingsStore((s) => s.setLanguage);
   const isDark = resolvedTheme === "dark";
   const switchRef = useRef<HTMLSpanElement>(null);
+
+  const languageItems = [
+    { label: t("settings.appearance.systemLanguage"), value: "system" },
+    ...LOCALES.map((entry) => ({ label: entry.label, value: entry.code })),
+  ];
+
+  async function changeLanguage(next: string) {
+    setLanguage(next);
+    let systemLocale: string | null = null;
+    try {
+      systemLocale = await locale();
+    } catch {
+      // Browser dev without the OS plugin.
+    }
+    await i18n.changeLanguage(resolveLocale(next, systemLocale));
+  }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <MoonIcon className="size-4" />
-          Appearance
+          {t("settings.appearance.title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">
-        <SettingRow description="Use the dark theme across the app." label="Dark mode">
+        <SettingRow
+          description={t("settings.appearance.darkModeDescription")}
+          label={t("settings.appearance.darkMode")}
+        >
           <span ref={switchRef} className="inline-flex">
             <Switch
-              aria-label="Dark mode"
+              aria-label={t("settings.appearance.darkMode")}
               checked={isDark}
               onCheckedChange={(checked) =>
                 switchTheme(checked ? "dark" : "light", {
@@ -78,6 +103,29 @@ function AppearanceCard() {
               }
             />
           </span>
+        </SettingRow>
+        <SettingRow
+          description={t("settings.appearance.languageDescription")}
+          label={t("settings.appearance.language")}
+        >
+          <Select
+            items={languageItems}
+            value={language}
+            onValueChange={(value) => {
+              if (value) void changeLanguage(value);
+            }}
+          >
+            <SelectTrigger aria-label={t("settings.appearance.language")} className="w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="start" alignItemWithTrigger={false}>
+              {languageItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </SettingRow>
       </CardContent>
     </Card>

@@ -6,6 +6,7 @@ import { useActiveProfile } from "@/hooks/use-active-profile";
 import { usePlayProfile } from "@/hooks/use-play-profile";
 import { openProfilesFolderInFileExplorer } from "@/lib/app-paths";
 import { COMMANDS, type AppCommandId, type CommandRuntime } from "@/lib/commands";
+import { t } from "@/lib/i18n";
 import { queryClient } from "@/lib/query-client";
 import { PAGE_PATHS } from "@/lib/routes";
 import { switchTheme } from "@/lib/theme-transition";
@@ -36,7 +37,7 @@ export function CommandRuntimeProvider({
         void queryClient.invalidateQueries({ queryKey: ["updater"] });
         notify("updater-check", {
           type: "info",
-          title: "Checking for updates…",
+          title: t("layout.updater.checking"),
           timeout: 2500,
         });
       },
@@ -44,8 +45,8 @@ export function CommandRuntimeProvider({
         if (!activeProfile) {
           notify("launch-no-profile", {
             type: "error",
-            title: "No active profile",
-            description: "Create or select a profile first.",
+            title: t("layout.noActiveProfile.title"),
+            description: t("layout.noActiveProfile.description"),
           });
           return;
         }

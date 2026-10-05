@@ -15,6 +15,9 @@ type SettingsStore = {
   /** Id of the profile the UI (and the sidebar Play button) targets. */
   activeProfileId: number | null;
   setActiveProfileId: (id: number | null) => void;
+  /** UI language: "system" or a bundled locale code. */
+  language: string;
+  setLanguage: (language: string) => void;
   /** User hid the "import installations from the previous app" banner. */
   legacyMigrationDismissed: boolean;
   dismissLegacyMigration: () => void;
@@ -71,6 +74,8 @@ type SettingsStore = {
 export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
   activeProfileId: null,
   setActiveProfileId: (id) => set(() => ({ activeProfileId: id })),
+  language: "system",
+  setLanguage: (language) => set(() => ({ language })),
   legacyMigrationDismissed: false,
   dismissLegacyMigration: () => set(() => ({ legacyMigrationDismissed: true })),
   gameDataDismissed: false,

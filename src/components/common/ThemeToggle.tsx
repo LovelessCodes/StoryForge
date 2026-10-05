@@ -2,6 +2,7 @@ import { cn } from "cn";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 import { elementCenter, switchTheme } from "../../lib/theme-transition";
 import { buttonVariants } from "../ui/button";
@@ -12,6 +13,7 @@ interface ThemeToggleProps {
 }
 
 export default function ThemeToggle({ className, duration = 400 }: ThemeToggleProps) {
+  const { t } = useTranslation();
   const { resolvedTheme, setTheme } = useTheme();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const isDark = resolvedTheme !== "light";
@@ -30,8 +32,8 @@ export default function ThemeToggle({ className, duration = 400 }: ThemeTogglePr
     <button
       type="button"
       ref={buttonRef}
-      aria-label="Toggle theme"
-      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={t("layout.theme.toggle")}
+      title={isDark ? t("layout.theme.switchToLight") : t("layout.theme.switchToDark")}
       onClick={toggleTheme}
       className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), className)}
     >
