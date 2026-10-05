@@ -262,6 +262,7 @@ export default function ModpackDetailSheet({
                       <ModpackVersionForm
                         key={version.id}
                         existingVersion={{
+                          changelog: version.changelog ?? null,
                           gameVersion: version.gameVersion,
                           modConfigsUrl: version.modConfigsUrl,
                           modsString: version.modsString,
@@ -293,6 +294,11 @@ export default function ModpackDetailSheet({
                           <span className="text-muted-foreground/70 text-[11px]">
                             {t("modpacks.downloads", { count: version.downloads })}
                           </span>
+                          {version.changelog && (
+                            <p className="text-muted-foreground/80 line-clamp-3 text-[11px] whitespace-pre-wrap">
+                              {version.changelog}
+                            </p>
+                          )}
                         </div>
 
                         {isOwner && !isNaming && (

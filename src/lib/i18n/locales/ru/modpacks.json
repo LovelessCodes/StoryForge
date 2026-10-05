@@ -103,6 +103,8 @@
     "selectProfile": "Выберите профиль…",
     "gameVersion": "Версия игры",
     "modsString": "Строка модов",
+    "changelog": "Изменения",
+    "changelogPlaceholder": "Что изменилось в этой версии…",
     "modConfigsUrl": "URL конфигов модов",
     "uploadModConfig": "Загрузить папку ModConfig из профиля",
     "saving": "Сохранение…",

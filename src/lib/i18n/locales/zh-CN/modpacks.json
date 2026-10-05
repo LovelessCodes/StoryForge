@@ -85,6 +85,8 @@
     "selectProfile": "选择配置档…",
     "gameVersion": "游戏版本",
     "modsString": "模组字符串",
+    "changelog": "更新日志",
+    "changelogPlaceholder": "此版本有哪些变化…",
     "modConfigsUrl": "模组配置 URL",
     "uploadModConfig": "从配置档上传 ModConfig 文件夹",
     "saving": "正在保存…",

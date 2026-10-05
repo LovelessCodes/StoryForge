@@ -91,6 +91,8 @@
     "selectProfile": "Selecciona un perfil…",
     "gameVersion": "Versión del juego",
     "modsString": "Cadena de mods",
+    "changelog": "Novedades",
+    "changelogPlaceholder": "Qué cambió en esta versión…",
     "modConfigsUrl": "URL de configuración de mods",
     "uploadModConfig": "Subir la carpeta ModConfig del perfil",
     "saving": "Guardando…",

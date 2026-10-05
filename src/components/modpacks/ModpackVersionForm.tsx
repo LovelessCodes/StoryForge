@@ -38,6 +38,7 @@ export type ExistingVersion = {
   gameVersion: string;
   modsString: string;
   modConfigsUrl: string;
+  changelog?: string | null;
 };
 
 interface ModpackVersionFormProps {
@@ -64,6 +65,7 @@ export default function ModpackVersionForm({
   const [gameVersion, setGameVersion] = useState(existingVersion?.gameVersion ?? "");
   const [modsString, setModsString] = useState(existingVersion?.modsString ?? "");
   const [modConfigsUrl, setModConfigsUrl] = useState(existingVersion?.modConfigsUrl ?? "");
+  const [changelog, setChangelog] = useState(existingVersion?.changelog ?? "");
   const [pickedProfileId, setPickedProfileId] = useState<number | null>(null);
   const [uploadModConfig, setUploadModConfig] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -137,12 +139,14 @@ export default function ModpackVersionForm({
           version: parsed.data.version,
           ...(configSha256 !== undefined ? { modConfigsSha256: configSha256 } : {}),
           ...(configSize !== undefined ? { modConfigsSize: configSize } : {}),
+          ...(changelog.trim() ? { changelog: changelog.trim() } : {}),
         });
       } else {
         await authClient.updateModpackVersion(modpackSlug, parsed.data.version, {
           gameVersion: parsed.data.gameVersion,
           modConfigsUrl: configUrl,
           modsString: parsed.data.modsString,
+          changelog: changelog.trim() || null,
           ...(configSha256 !== undefined ? { modConfigsSha256: configSha256 } : {}),
           ...(configSize !== undefined ? { modConfigsSize: configSize } : {}),
         });
@@ -252,6 +256,21 @@ export default function ModpackVersionForm({
           rows={3}
           value={modsString}
           onChange={(event) => setModsString(event.target.value)}
+        />
+      </div>
+
+      <div className="grid gap-1.5">
+        <label className="text-muted-foreground text-[11px] font-medium" htmlFor="mpv-changelog">
+          {t("modpacks.versionForm.changelog")}
+        </label>
+        <Textarea
+          className="min-h-16 resize-none text-[11px]"
+          disabled={saving}
+          id="mpv-changelog"
+          placeholder={t("modpacks.versionForm.changelogPlaceholder")}
+          rows={3}
+          value={changelog}
+          onChange={(event) => setChangelog(event.target.value)}
         />
       </div>
 
