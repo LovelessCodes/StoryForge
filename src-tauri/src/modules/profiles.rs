@@ -1240,8 +1240,25 @@ async fn prepare_clientsettings(
 ) -> Result<(), UiError> {
     let account = load_selected_account(app);
     // The shared game defaults are read here, on the main thread, because the
-    // write below happens on a blocking task without an AppHandle.
-    let (apply_game_defaults, defaults) = game_defaults::launch_defaults(app);
+    // write below happens on a blocking task without an AppHandle. The source
+    // profile's file is read live, so changes made there carry over; the source
+    // profile itself is never overwritten with its own settings.
+    let (apply_game_defaults, source_profile_id, include_session) =
+        game_defaults::launch_defaults(app);
+    let defaults = if apply_game_defaults {
+        match source_profile_id {
+            Some(id) if profile_id_for_dir(pb) != id => {
+                game_defaults::live_snapshot(app, id, include_session)
+            }
+            Some(_) => {
+                log_info!("[play_game] game defaults skipped — this is the source profile");
+                None
+            }
+            None => None,
+        }
+    } else {
+        None
+    };
     tokio::task::spawn_blocking({
         let pb = pb.to_path_buf();
         let profile = profile.clone();
@@ -1348,10 +1365,9 @@ fn write_clientsettings(
     }
 
     // Finally merge the shared game defaults (key bindings + game/video
-    // settings). Account keys were stripped at capture time unless the capture
-    // opted into the session bundle; the account merge above injects the
-    // selected launcher account's session, so a copied session only applies
-    // when no account is selected.
+    // settings), read live from the source profile. The account merge above
+    // injects the selected launcher account's session, so a source session
+    // only applies when no account is selected.
     if apply_game_defaults && !profile.ignore_game_defaults {
         if let Some(defaults) = defaults.as_ref() {
             let allow_session = account.is_none();
@@ -1361,7 +1377,7 @@ fn write_clientsettings(
                 "[play_game] applied {} shared game default settings",
                 written
             );
-            if game_defaults::includes_account(defaults) && !allow_session {
+            if game_defaults::carries_session(defaults) && !allow_session {
                 log_info!(
                     "[play_game] copied account session skipped — a launcher account is selected"
                 );

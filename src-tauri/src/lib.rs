@@ -345,8 +345,8 @@ pub fn run() {
             auth::load_accounts,
             // News
             news::fetch_news,
-            // Game defaults (shared client settings applied on launch)
-            game_defaults::capture_game_defaults,
+            // Game defaults (live source profile settings applied on launch)
+            game_defaults::preview_game_defaults,
             // Mods
             mods::fetch_mod_tags,
             mods::fetch_mods,

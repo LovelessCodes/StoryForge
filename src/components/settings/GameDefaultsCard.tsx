@@ -1,6 +1,6 @@
+import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { formatDistanceToNow } from "date-fns";
-import { Gamepad2, Loader2, RefreshCw, Trash2, Upload } from "lucide-react";
+import { Gamepad2, RefreshCw, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -23,71 +23,68 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
-import { gameDefaultsCounts, type GameDefaults } from "@/lib/game-defaults";
-import { useDateLocale } from "@/lib/i18n/date-locale";
+import type { GameDefaultsPreview } from "@/lib/game-defaults";
 import { toast } from "@/lib/notify";
 import { useProfilesStore } from "@/stores/profiles";
 import { useSettingsStore } from "@/stores/settings";
 
 /**
- * One set of key bindings, game and video settings shared by every profile:
- * captured from one profile and merged into each profile's clientsettings.json
- * right before the game launches (profiles can opt out in their own settings).
+ * One profile's key bindings, game and video settings shared with every other
+ * profile: the source is read live at each launch, so changes made there carry
+ * over automatically. The source profile itself is never overwritten.
  */
 export default function GameDefaultsCard() {
   const { t } = useTranslation();
-  const dateLocale = useDateLocale();
   const applyGameDefaults = useSettingsStore((s) => s.applyGameDefaults);
   const setApplyGameDefaults = useSettingsStore((s) => s.setApplyGameDefaults);
-  const gameDefaults = useSettingsStore((s) => s.gameDefaults);
-  const setGameDefaults = useSettingsStore((s) => s.setGameDefaults);
+  const sourceProfileId = useSettingsStore((s) => s.gameDefaultsProfileId);
+  const setSourceProfileId = useSettingsStore((s) => s.setGameDefaultsProfileId);
+  const includeAccount = useSettingsStore((s) => s.gameDefaultsIncludeAccount);
+  const setIncludeAccount = useSettingsStore((s) => s.setGameDefaultsIncludeAccount);
   const profiles = useProfilesStore((s) => s.profiles);
 
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [sourceId, setSourceId] = useState<number | null>(null);
-  const [includeSession, setIncludeSession] = useState(false);
-  const [capturing, setCapturing] = useState(false);
+  const [pickedId, setPickedId] = useState<number | null>(null);
+  const [pickedInclude, setPickedInclude] = useState(false);
 
   // Reset the form every time the sheet opens (render-time reset keeps the
-  // previous pick from leaking into the next capture).
+  // current choice offered as the starting point).
   const [prevPickerOpen, setPrevPickerOpen] = useState(pickerOpen);
   if (pickerOpen !== prevPickerOpen) {
     setPrevPickerOpen(pickerOpen);
     if (pickerOpen) {
-      setSourceId(null);
-      setIncludeSession(false);
+      setPickedId(sourceProfileId);
+      setPickedInclude(includeAccount);
     }
   }
 
-  const counts = gameDefaults ? gameDefaultsCounts(gameDefaults) : null;
-  const capturedAgo =
-    gameDefaults?.capturedAt !== undefined
-      ? formatDistanceToNow(new Date(gameDefaults.capturedAt), {
-          addSuffix: true,
-          locale: dateLocale,
-        })
-      : null;
+  const sourceProfile = profiles.find((profile) => profile.id === sourceProfileId) ?? null;
+  const sourceMissing = sourceProfileId !== null && sourceProfile === null;
 
-  async function capture() {
-    if (sourceId === null) return;
-    setCapturing(true);
-    try {
-      const snapshot = await invoke<GameDefaults>("capture_game_defaults", {
-        profileId: sourceId,
-        includeAccountSession: includeSession,
-      });
-      setGameDefaults(snapshot);
-      setPickerOpen(false);
-      setSourceId(null);
-      setIncludeSession(false);
-      toast.success(t("settings.gameDefaults.captured"));
-    } catch (error) {
-      toast.error(t("settings.gameDefaults.captureFailed"), {
-        description: (error as Error)?.message ?? String(error),
-      });
-    } finally {
-      setCapturing(false);
-    }
+  const preview = useQuery({
+    queryKey: ["gameDefaultsPreview", sourceProfileId, includeAccount],
+    queryFn: () =>
+      invoke<GameDefaultsPreview>("preview_game_defaults", {
+        profileId: sourceProfileId as number,
+        includeAccountSession: includeAccount,
+      }),
+    enabled: sourceProfileId !== null && !sourceMissing,
+    staleTime: 30_000,
+  });
+
+  function applyPick() {
+    if (pickedId === null) return;
+    setSourceProfileId(pickedId);
+    setIncludeAccount(pickedInclude);
+    setPickerOpen(false);
+    toast.success(t("settings.gameDefaults.captured"));
+  }
+
+  function clear() {
+    setSourceProfileId(null);
+    setIncludeAccount(false);
+    setApplyGameDefaults(false);
+    toast.success(t("settings.gameDefaults.cleared"));
   }
 
   return (
@@ -108,8 +105,8 @@ export default function GameDefaultsCard() {
             </span>
           </div>
           <Switch
-            checked={applyGameDefaults}
-            disabled={!gameDefaults}
+            checked={applyGameDefaults && sourceProfile !== null}
+            disabled={!sourceProfile}
             onCheckedChange={setApplyGameDefaults}
           />
         </div>
@@ -117,22 +114,25 @@ export default function GameDefaultsCard() {
         <div className="flex flex-wrap items-center justify-between gap-3 border p-3">
           <div className="grid min-w-0 gap-0.5">
             <span className="truncate text-xs font-medium">
-              {gameDefaults
-                ? t("settings.gameDefaults.capturedFrom", {
-                    name: gameDefaults.sourceProfile ?? "",
-                  })
-                : t("settings.gameDefaults.none")}
+              {sourceMissing
+                ? t("settings.gameDefaults.sourceMissing")
+                : sourceProfile
+                  ? t("settings.gameDefaults.capturedFrom", { name: sourceProfile.name })
+                  : t("settings.gameDefaults.none")}
             </span>
-            {gameDefaults && counts && (
+            {sourceProfile && (
               <span className="text-muted-foreground text-[11px]">
-                {t("settings.gameDefaults.counts", {
-                  keys: counts.keyBindings,
-                  settings: counts.settings,
-                })}
-                {gameDefaults.includesAccount
+                {preview.isPending
+                  ? "…"
+                  : preview.error
+                    ? (preview.error as Error).message
+                    : t("settings.gameDefaults.counts", {
+                        keys: preview.data?.keyBindings ?? 0,
+                        settings: preview.data?.settings ?? 0,
+                      })}
+                {preview.data?.includesAccount
                   ? ` · ${t("settings.gameDefaults.includesSession")}`
                   : ""}
-                {capturedAgo ? ` · ${capturedAgo}` : ""}
               </span>
             )}
           </div>
@@ -143,21 +143,13 @@ export default function GameDefaultsCard() {
               size="sm"
               variant="outline"
             >
-              {gameDefaults ? <RefreshCw /> : <Upload />}
-              {gameDefaults
+              {sourceProfileId !== null ? <RefreshCw /> : <Upload />}
+              {sourceProfileId !== null
                 ? t("settings.gameDefaults.recapture")
                 : t("settings.gameDefaults.capture")}
             </Button>
-            {gameDefaults && (
-              <Button
-                onClick={() => {
-                  setGameDefaults(null);
-                  setApplyGameDefaults(false);
-                  toast.success(t("settings.gameDefaults.cleared"));
-                }}
-                size="sm"
-                variant="ghost"
-              >
+            {sourceProfileId !== null && (
+              <Button onClick={clear} size="sm" variant="ghost">
                 <Trash2 />
                 {t("settings.gameDefaults.clear")}
               </Button>
@@ -180,9 +172,9 @@ export default function GameDefaultsCard() {
                   label: profile.name,
                   value: String(profile.id),
                 }))}
-                value={sourceId === null ? "" : String(sourceId)}
+                value={pickedId === null ? "" : String(pickedId)}
                 onValueChange={(value) => {
-                  if (value) setSourceId(Number(value));
+                  if (value) setPickedId(Number(value));
                 }}
               >
                 <SelectTrigger
@@ -210,20 +202,15 @@ export default function GameDefaultsCard() {
                   {t("settings.gameDefaults.includeSessionHint")}
                 </span>
               </div>
-              <Switch checked={includeSession} onCheckedChange={setIncludeSession} />
+              <Switch checked={pickedInclude} onCheckedChange={setPickedInclude} />
             </div>
           </div>
           <SheetFooter className="border-t">
             <div className="flex justify-end gap-2">
-              <SheetClose render={<Button disabled={capturing} variant="outline" />}>
+              <SheetClose render={<Button variant="outline" />}>
                 {t("common.actions.cancel")}
               </SheetClose>
-              <Button
-                disabled={capturing || sourceId === null}
-                onClick={() => void capture()}
-                variant="accent-primary"
-              >
-                {capturing && <Loader2 className="animate-spin" />}
+              <Button disabled={pickedId === null} onClick={applyPick} variant="accent-primary">
                 {t("settings.gameDefaults.capture")}
               </Button>
             </div>
