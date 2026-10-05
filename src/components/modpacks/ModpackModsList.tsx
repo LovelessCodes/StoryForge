@@ -34,7 +34,7 @@ function ModpackModRow({ modid, version }: ParsedMod) {
 
   if (isError || !modInfo?.mod) {
     return (
-      <span className="text-muted-foreground font-mono text-[11px]">
+      <span className="text-muted-foreground min-w-0 truncate font-mono text-[11px]">
         {modid}@{version}
       </span>
     );
@@ -49,7 +49,7 @@ function ModpackModRow({ modid, version }: ParsedMod) {
   const url = `https://mods.vintagestory.at/${mod.urlalias ?? `show/mod/${mod.assetid}`}`;
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex min-w-0 items-center gap-2">
       <a href={url} rel="noreferrer" target="_blank">
         <img alt={mod.name} className="size-7 shrink-0 object-cover" loading="lazy" src={logoSrc} />
       </a>
@@ -93,7 +93,7 @@ export default function ModpackModsList({ modsString, open, onOpenChange }: Modp
         {mods.length} mod{mods.length !== 1 ? "s" : ""}
       </button>
       {open && (
-        <div className="bg-background/60 grid gap-1.5 border p-2">
+        <div className="bg-background/60 grid min-w-0 gap-1.5 border p-2">
           {mods.map((mod) => (
             <ModpackModRow key={mod.modid} modid={mod.modid} version={mod.version} />
           ))}

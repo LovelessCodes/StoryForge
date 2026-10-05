@@ -256,7 +256,7 @@ export default function ModpackDetailSheet({
                   const isNaming = installingVersionId === version.id;
 
                   return (
-                    <div key={version.id} className="bg-card grid gap-3 border p-3">
+                    <div key={version.id} className="bg-card grid min-w-0 gap-3 border p-3">
                       <div className="flex items-center gap-3">
                         <div className="grid min-w-0 flex-1 gap-0.5">
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
