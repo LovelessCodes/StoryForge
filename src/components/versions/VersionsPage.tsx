@@ -1,6 +1,7 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { FolderDown, FolderSearch, Plus } from "lucide-react";
 import { useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,6 +33,7 @@ function InstalledVersionsSkeleton() {
 }
 
 export default function VersionsPage() {
+  const { t } = useTranslation();
   const { data: versions, isPending } = useInstalledVersions();
   const entries = useDownloadStore((s) => s.entries);
   const [addOpen, setAddOpen] = useState(false);
@@ -45,11 +47,11 @@ export default function VersionsPage() {
       <div className="flex items-center justify-end gap-2">
         <Button variant="outline" size="sm" onClick={() => setLinkOpen(true)}>
           <FolderSearch />
-          Link existing
+          {t("versions.page.linkExisting")}
         </Button>
         <Button variant="accent-primary" size="sm" onClick={() => setAddOpen(true)}>
           <Plus />
-          Add version
+          {t("versions.add.action")}
         </Button>
       </div>
 
@@ -58,7 +60,7 @@ export default function VersionsPage() {
       {activeDownloads.length > 0 && (
         <section className="grid gap-2">
           <h2 className="text-muted-foreground text-[10px] font-medium tracking-widest uppercase">
-            Active downloads ({activeDownloads.length})
+            {t("versions.page.activeDownloads", { count: activeDownloads.length })}
           </h2>
           <div className="grid gap-2">
             {activeDownloads.map((entry) => (
@@ -70,7 +72,9 @@ export default function VersionsPage() {
 
       <section className="grid gap-2">
         <h2 className="text-muted-foreground text-[10px] font-medium tracking-widest uppercase">
-          Installed versions{sorted.length > 0 ? ` (${sorted.length})` : ""}
+          {sorted.length > 0
+            ? t("versions.page.installedVersionsCount", { count: sorted.length })
+            : t("versions.page.installedVersions")}
         </h2>
 
         {isPending && sorted.length === 0 ? (
@@ -79,31 +83,34 @@ export default function VersionsPage() {
           <div className="flex flex-col items-center justify-center gap-3 border border-dashed p-10 text-center">
             <FolderDown className="text-muted-foreground size-6" />
             <div className="grid gap-1">
-              <p className="text-muted-foreground text-xs">No game versions installed yet.</p>
+              <p className="text-muted-foreground text-xs">{t("versions.page.emptyTitle")}</p>
               <p className="text-muted-foreground text-[11px]">
-                Download a build to create profiles and launch the game.
+                {t("versions.page.emptyDescription")}
               </p>
             </div>
             <Button size="sm" variant="accent-primary" onClick={() => setAddOpen(true)}>
               <Plus />
-              Add version
+              {t("versions.add.action")}
             </Button>
             {isMac && (
               <p className="text-muted-foreground max-w-md text-[11px]">
-                On macOS, versions below 1.19.0 need extra setup to run. See the{" "}
-                <a
-                  className="hover:text-foreground underline underline-offset-2"
-                  href={MAC_WIKI_URL}
-                  rel="noreferrer"
-                  target="_blank"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    void openUrl(MAC_WIKI_URL);
+                <Trans
+                  i18nKey="versions.page.macNote"
+                  components={{
+                    wiki: (
+                      <a
+                        className="hover:text-foreground underline underline-offset-2"
+                        href={MAC_WIKI_URL}
+                        rel="noreferrer"
+                        target="_blank"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          void openUrl(MAC_WIKI_URL);
+                        }}
+                      />
+                    ),
                   }}
-                >
-                  Installing Vintage Story on macOS
-                </a>{" "}
-                wiki article.
+                />
               </p>
             )}
           </div>

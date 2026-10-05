@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -33,6 +34,7 @@ export function AddModSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useTranslation();
   const { data: modInfo } = useQuery({
     enabled: open,
     queryFn: () => invoke("fetch_mod_info", { modid: mod.modid.toString() }) as Promise<ModInfo>,
@@ -43,12 +45,17 @@ export function AddModSheet({
   const [userSelectedVersion, setUserSelectedVersion] = useState<Release | null>(null);
   const selectedVersion = userSelectedVersion ?? latestRelease(modInfo?.mod.releases) ?? null;
   const pathHash = hashPath(modsDirectory);
+  const name = modInfo?.mod.name ?? mod.name;
 
   const { mutate: addModToProfile, isPending } = useAddModToProfile({
     onError: (error, variables) => {
       if (error.message === "Download cancelled") return;
       toast.error(
-        `Error adding ${variables.mod.mod.name} to ${destinationLabel}: ${error.message}`,
+        t("mods.errors.add", {
+          name: variables.mod.mod.name,
+          destination: destinationLabel,
+          message: error.message,
+        }),
         { id: `add-mod-${variables.mod.mod.modid}-${pathHash}` },
       );
     },
@@ -59,19 +66,24 @@ export function AddModSheet({
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b">
           <SheetTitle>
-            Add <span className="text-accent-amber">{modInfo?.mod.name ?? mod.name}</span> to{" "}
-            <span className="text-accent-primary">{destinationLabel}</span>
+            <Trans
+              components={{
+                name: <span className="text-accent-amber" />,
+                destination: <span className="text-accent-primary" />,
+              }}
+              i18nKey="mods.addSheet.title"
+              values={{ destination: destinationLabel, name }}
+            />
           </SheetTitle>
           <SheetDescription>
-            Select the version of {modInfo?.mod.name ?? mod.name} you want to add to{" "}
-            {destinationLabel}.
+            {t("mods.addSheet.description", { name, destination: destinationLabel })}
           </SheetDescription>
         </SheetHeader>
         <ScrollArea scrollFade className="min-h-0 flex-1">
           <div className="grid gap-4 p-4">
             <div className="grid gap-1.5">
               <p className="text-muted-foreground text-[10px] font-medium tracking-widest uppercase">
-                Version
+                {t("common.fields.version")}
               </p>
               <ModVersionPicker
                 onSelect={setUserSelectedVersion}
@@ -79,7 +91,9 @@ export function AddModSheet({
                 selected={selectedVersion}
               />
             </div>
-            {!modInfo && <p className="text-muted-foreground text-xs">Loading releases...</p>}
+            {!modInfo && (
+              <p className="text-muted-foreground text-xs">{t("mods.loadingReleases")}</p>
+            )}
           </div>
         </ScrollArea>
         <SheetFooter className="border-t">
@@ -99,7 +113,7 @@ export function AddModSheet({
               onOpenChange(false);
             }}
           >
-            Add Mod
+            {t("mods.addSheet.submit")}
           </Button>
         </SheetFooter>
       </SheetContent>

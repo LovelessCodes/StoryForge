@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
 import { hashPath, latestRelease } from "@/lib/helpers";
+import { t } from "@/lib/i18n";
 import type { Mod, ModInfo } from "@/lib/types";
 
 import { useDownloadManager, waitForDownload } from "./use-download-manager";
@@ -36,7 +37,9 @@ export const useAddLatestModVersion = ({
         label: `${modInfo.mod.name} v${release.modversion}`,
         detail:
           destinationLabel ??
-          (modsDirectory ? (modsDirectory.split(/[/\\]/).pop() ?? null) : "Standalone"),
+          (modsDirectory
+            ? (modsDirectory.split(/[/\\]/).pop() ?? null)
+            : t("downloads.standalone")),
         url: release.mainfile,
         destpath: path,
         modsDirectory: modsDirectory ?? null,

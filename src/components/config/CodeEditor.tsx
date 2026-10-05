@@ -1,4 +1,5 @@
 import { lazy, Suspense, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import "@/lib/monaco";
@@ -21,6 +22,7 @@ export default function CodeEditor({
   file: string;
   onSave: (params: SaveParams) => void;
 }) {
+  const { t } = useTranslation();
   const [editableCode, setEditableCode] = useState(() => JSON.stringify(code, null, 2));
   const savedCode = useMemo(() => JSON.stringify(code, null, 2), [code]);
   const canSave = editableCode !== savedCode;
@@ -29,7 +31,7 @@ export default function CodeEditor({
   return (
     <div className="relative h-full">
       <Suspense
-        fallback={<p className="text-muted-foreground p-4 text-xs">Loading code editor…</p>}
+        fallback={<p className="text-muted-foreground p-4 text-xs">{t("config.code.loading")}</p>}
       >
         <Editor
           height="100%"
@@ -48,14 +50,14 @@ export default function CodeEditor({
 
       <div className="bg-background/90 absolute top-2 right-3 z-10 flex items-center gap-3 border px-2 py-1 text-[11px]">
         <span className={canSave ? "text-[var(--color-warning)]" : "text-muted-foreground"}>
-          {canSave ? "Unsaved changes" : "All changes saved"}
+          {canSave ? t("config.code.unsaved") : t("config.code.saved")}
         </span>
         <Button
           disabled={!canSave}
           onClick={() => onSave({ file, newCode: editableCode })}
           size="xs"
         >
-          Save
+          {t("common.actions.save")}
         </Button>
       </div>
     </div>

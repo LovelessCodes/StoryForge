@@ -1,6 +1,7 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { HardDrive, Search, Server } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useServerStatusListener } from "@/hooks/queries/server-hosting";
@@ -10,9 +11,9 @@ import MyServersTab from "./MyServersTab";
 import PublicServersTab from "./PublicServersTab";
 
 const TABS = [
-  { value: "mine", label: "My Servers", icon: Server },
-  { value: "public", label: "Public", icon: Search },
-  { value: "hosting", label: "Hosting", icon: HardDrive },
+  { value: "mine", labelKey: "servers.tabs.mine", icon: Server },
+  { value: "public", labelKey: "servers.tabs.public", icon: Search },
+  { value: "hosting", labelKey: "servers.tabs.hosting", icon: HardDrive },
 ] as const;
 
 type ServersTab = (typeof TABS)[number]["value"];
@@ -22,6 +23,7 @@ function parseTab(value: unknown): ServersTab | null {
 }
 
 export default function ServersPage() {
+  const { t } = useTranslation();
   // Live hosted-server status events. This page owns the listener for the
   // whole hosting area; the detail page mounts the same hook while it is the
   // active route (the two routes never render at the same time).
@@ -47,7 +49,7 @@ export default function ServersPage() {
     <div className="flex h-full min-h-0 flex-col gap-6">
       <div className="flex shrink-0 items-center justify-end gap-2">
         <ToggleGroup
-          aria-label="Server view"
+          aria-label={t("servers.tabs.aria")}
           onValueChange={(value) => value[0] && selectTab(parseTab(value[0]) ?? "mine")}
           size="sm"
           value={[tab]}
@@ -58,7 +60,7 @@ export default function ServersPage() {
             return (
               <ToggleGroupItem key={item.value} value={item.value}>
                 <Icon />
-                {item.label}
+                {t(item.labelKey)}
               </ToggleGroupItem>
             );
           })}

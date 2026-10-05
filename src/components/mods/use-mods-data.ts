@@ -19,10 +19,11 @@ export type OrderDirection = "ascending" | "descending";
 export type Side = "any" | "client" | "server" | "both" | "installed";
 export type Category = "mod" | "externaltool" | "other";
 
+/** Category values mapped to their `mods.category.*` display-label keys. */
 export const categoryOptions: Record<Category, string> = {
-  externaltool: "External Tool",
-  mod: "Mod",
-  other: "Other",
+  externaltool: "mods.category.externaltool",
+  mod: "mods.category.mod",
+  other: "mods.category.other",
 };
 
 type ModsParams = {

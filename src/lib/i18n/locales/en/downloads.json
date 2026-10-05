@@ -1,1 +1,21 @@
-{}
+{
+  "title": "Downloads",
+  "description": "Game versions and mods downloading in the background.",
+  "empty": "No downloads right now.",
+  "status": {
+    "done": "Done",
+    "downloading": "Downloading",
+    "error": "Failed",
+    "extracting": "Extracting",
+    "paused": "Paused",
+    "pending": "Queued"
+  },
+  "versionRemoved": "Version removed",
+  "modRemoved": "Mod removed",
+  "toasts": {
+    "removeVersionFailed": "Could not remove game version {{version}}",
+    "downloadNoFile": "This download no longer points at a file",
+    "removeFailed": "Could not remove {{label}}"
+  },
+  "standalone": "Standalone"
+}

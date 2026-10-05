@@ -1,12 +1,14 @@
 import { formatDistanceToNow } from "date-fns";
 import { FileDown, Map as MapIcon, Pencil, Play, Sprout, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { usePlayProfile } from "@/hooks/use-play-profile";
+import { useDateLocale } from "@/lib/i18n/date-locale";
 import type { World } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/stores/profiles";
@@ -24,6 +26,8 @@ interface WorldRowProps {
 }
 
 export default function WorldRow({ world, profiles, activeProfile }: WorldRowProps) {
+  const { t } = useTranslation();
+  const dateLocale = useDateLocale();
   const installedNames = useInstalledVersionNames();
   const play = usePlayProfile();
   const download = useDownloadVersion();
@@ -60,16 +64,22 @@ export default function WorldRow({ world, profiles, activeProfile }: WorldRowPro
                 : "text-muted-foreground hover:text-foreground",
             )}
             onClick={() => copySeed(seed)}
-            title={`Seed ${seed} — click to copy`}
+            title={t("worlds.row.seedTitle", { seed })}
             type="button"
           >
             <Sprout className="size-3" />
-            {copied ? "Copied!" : seed}
+            {copied ? t("worlds.row.copied") : seed}
           </button>
         </div>
         <p className="text-muted-foreground mt-0.5 text-[11px]">
-          by <span className="text-[var(--color-warning)]">{data.created_by_player_name}</span> in{" "}
-          {data.created_game_version}
+          <Trans
+            components={{ author: <span className="text-[var(--color-warning)]" /> }}
+            i18nKey="worlds.row.byline"
+            values={{
+              author: data.created_by_player_name,
+              version: data.created_game_version,
+            }}
+          />
         </p>
         <div className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px]">
           <span title={profile ? profile.path : world.profile_name}>
@@ -78,9 +88,15 @@ export default function WorldRow({ world, profiles, activeProfile }: WorldRowPro
           {versionMismatch && profile ? (
             <span
               className="text-[var(--color-warning)]"
-              title={`The profile version (${profile.version}) differs from the world's last saved version (${data.last_saved_game_version}).`}
+              title={t("worlds.row.versionMismatchTitle", {
+                profileVersion: profile.version,
+                worldVersion: data.last_saved_game_version,
+              })}
             >
-              Different version {data.last_saved_game_version} → {profile.version}
+              {t("worlds.row.differentVersion", {
+                worldVersion: data.last_saved_game_version,
+                profileVersion: profile.version,
+              })}
             </span>
           ) : (
             <span className="opacity-60">
@@ -93,10 +109,14 @@ export default function WorldRow({ world, profiles, activeProfile }: WorldRowPro
             </span>
           )}
           <span>
-            Last played:{" "}
             {data.last_played
-              ? formatDistanceToNow(new Date(data.last_played), { addSuffix: true })
-              : "Never"}
+              ? t("worlds.row.lastPlayed", {
+                  time: formatDistanceToNow(new Date(data.last_played), {
+                    addSuffix: true,
+                    locale: dateLocale,
+                  }),
+                })
+              : t("common.states.never")}
           </span>
         </div>
       </div>
@@ -108,55 +128,59 @@ export default function WorldRow({ world, profiles, activeProfile }: WorldRowPro
               disabled={play.isPending}
               onClick={playWorld}
               size="sm"
-              title={`Play ${data.world_name} with ${profile.name}`}
+              title={t("worlds.row.playTitle", { world: data.world_name, profile: profile.name })}
               variant="amber"
             >
-              <Play /> Play
+              <Play /> {t("common.actions.play")}
             </Button>
           ) : (
             <Button
               disabled={download.isPending}
               onClick={() => download.mutate(profile.version)}
               size="sm"
-              title={`Game version ${profile.version} is not installed`}
+              title={t("worlds.row.installTitle", { version: profile.version })}
               variant="outline"
             >
-              <FileDown /> Install
+              <FileDown /> {t("common.actions.install")}
             </Button>
           )
         ) : (
-          <Button disabled size="sm" title="No matching profile found" variant="outline">
-            <Play /> No profile
+          <Button disabled size="sm" title={t("worlds.row.noProfileTitle")} variant="outline">
+            <Play /> {t("worlds.row.noProfile")}
           </Button>
         )}
 
         <Button
-          aria-label="View map"
+          aria-label={t("worlds.row.viewMapAria")}
           disabled={!world.has_map}
           onClick={() => setMapOpen(true)}
           size="icon-sm"
-          title={world.has_map ? "View Map" : `No map available for ${data.world_name}`}
+          title={
+            world.has_map
+              ? t("worlds.map.view")
+              : t("worlds.row.noMapTitle", { name: data.world_name })
+          }
           variant="outline"
         >
           <MapIcon className={cn(!world.has_map ? "text-destructive" : "text-info")} />
         </Button>
 
         <Button
-          aria-label="Edit world"
+          aria-label={t("worlds.row.editAria")}
           onClick={() => setEditOpen(true)}
           size="icon-sm"
-          title="Edit"
+          title={t("common.actions.edit")}
           variant="outline"
         >
           <Pencil />
         </Button>
 
         <Button
-          aria-label="Delete world"
+          aria-label={t("worlds.row.deleteAria")}
           className="text-muted-foreground hover:text-destructive"
           onClick={() => setDeleteOpen(true)}
           size="icon-sm"
-          title="Delete"
+          title={t("common.actions.delete")}
           variant="ghost"
         >
           <Trash2 />

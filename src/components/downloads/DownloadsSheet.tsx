@@ -1,4 +1,5 @@
 import { Loader2, Pause, RotateCcw, Undo2, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,13 +18,14 @@ import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { pathDelimiter } from "@/lib/helpers";
 import { useDownloadStore, type DownloadEntry } from "@/stores/downloads";
 
-const statusLabel: Record<DownloadEntry["status"], string> = {
-  done: "Done",
-  downloading: "Downloading",
-  error: "Failed",
-  extracting: "Extracting",
-  paused: "Paused",
-  pending: "Queued",
+/** Translation keys: `downloads.status.<status>`. */
+const statusKey: Record<DownloadEntry["status"], string> = {
+  done: "downloads.status.done",
+  downloading: "downloads.status.downloading",
+  error: "downloads.status.error",
+  extracting: "downloads.status.extracting",
+  paused: "downloads.status.paused",
+  pending: "downloads.status.pending",
 };
 
 /**
@@ -54,6 +56,7 @@ function useDownloadStillInstalled(entry: DownloadEntry): boolean {
 }
 
 function DownloadRow({ entry }: { entry: DownloadEntry }) {
+  const { t } = useTranslation();
   const { pause, resume, cancel, retry, undo } = useDownloadManager();
   const stillInstalled = useDownloadStillInstalled(entry);
   const canUndo =
@@ -67,7 +70,7 @@ function DownloadRow({ entry }: { entry: DownloadEntry }) {
           <span className="text-muted-foreground truncate text-[11px]">→ {entry.detail}</span>
         )}
         <Badge variant="secondary" className="ml-auto h-4 shrink-0 px-1.5 text-[10px]">
-          {statusLabel[entry.status]}
+          {t(statusKey[entry.status])}
         </Badge>
       </div>
       {entry.status !== "done" && (
@@ -85,27 +88,27 @@ function DownloadRow({ entry }: { entry: DownloadEntry }) {
       <div className="flex items-center gap-2">
         {(entry.status === "downloading" || entry.status === "pending") && (
           <Button variant="outline" size="xs" onClick={() => pause(entry.token)}>
-            <Pause /> Pause
+            <Pause /> {t("common.actions.pause")}
           </Button>
         )}
         {entry.status === "paused" && (
           <Button variant="outline" size="xs" onClick={() => resume(entry.token)}>
-            <Loader2 /> Resume
+            <Loader2 /> {t("common.actions.resume")}
           </Button>
         )}
         {entry.status === "error" && (
           <Button variant="outline" size="xs" onClick={() => retry(entry.token)}>
-            <RotateCcw /> Retry
+            <RotateCcw /> {t("common.actions.retry")}
           </Button>
         )}
         {canUndo && (
           <Button variant="outline" size="xs" onClick={() => undo(entry.token)}>
-            <Undo2 /> Undo
+            <Undo2 /> {t("common.actions.undo")}
           </Button>
         )}
         {entry.status === "done" && !stillInstalled && (
           <span className="text-muted-foreground text-[11px]">
-            {entry.kind === "version" ? "Version removed" : "Mod removed"}
+            {entry.kind === "version" ? t("downloads.versionRemoved") : t("downloads.modRemoved")}
           </span>
         )}
         <Button
@@ -114,7 +117,10 @@ function DownloadRow({ entry }: { entry: DownloadEntry }) {
           className="text-muted-foreground ml-auto"
           onClick={() => cancel(entry.token)}
         >
-          <X /> {entry.status === "done" || entry.status === "error" ? "Dismiss" : "Cancel"}
+          <X />{" "}
+          {entry.status === "done" || entry.status === "error"
+            ? t("common.actions.dismiss")
+            : t("common.actions.cancel")}
         </Button>
       </div>
     </li>
@@ -127,6 +133,7 @@ interface DownloadsSheetProps {
 }
 
 export default function DownloadsSheet({ open, onOpenChange }: DownloadsSheetProps) {
+  const { t } = useTranslation();
   const entries = useDownloadStore((s) => s.entries);
   const list = Object.values(entries);
 
@@ -134,12 +141,12 @@ export default function DownloadsSheet({ open, onOpenChange }: DownloadsSheetPro
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b">
-          <SheetTitle>Downloads</SheetTitle>
-          <SheetDescription>Game versions and mods downloading in the background.</SheetDescription>
+          <SheetTitle>{t("downloads.title")}</SheetTitle>
+          <SheetDescription>{t("downloads.description")}</SheetDescription>
         </SheetHeader>
         <ScrollArea scrollFade className="min-h-0 flex-1">
           {list.length === 0 ? (
-            <p className="text-muted-foreground p-6 text-xs">No downloads right now.</p>
+            <p className="text-muted-foreground p-6 text-xs">{t("downloads.empty")}</p>
           ) : (
             <ul className="divide-y">
               {list.map((entry) => (

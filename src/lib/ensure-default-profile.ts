@@ -2,10 +2,9 @@ import { invoke } from "@tauri-apps/api/core";
 import { appDataDir } from "@tauri-apps/api/path";
 
 import { buildProfilePath, compareSemverDesc, makeStringFolderSafe } from "@/lib/helpers";
+import { t } from "@/lib/i18n";
 import { useProfilesStore } from "@/stores/profiles";
 import { useSettingsStore } from "@/stores/settings";
-
-export const DEFAULT_PROFILE_NAME = "Default";
 
 /** Newest version, preferring non-release-candidates. */
 function pickVersion(versions: string[]): string {
@@ -42,18 +41,20 @@ export async function ensureDefaultProfile(): Promise<void> {
   }
   if (!version) return;
 
+  const defaultName = t("common.defaultProfileName");
+
   try {
     const appFolder = await appDataDir();
     const { profilesParent, profilesSubdir } = useSettingsStore.getState();
     const path = buildProfilePath(
       profilesParent ?? appFolder,
-      makeStringFolderSafe(DEFAULT_PROFILE_NAME),
+      makeStringFolderSafe(defaultName),
       profilesSubdir,
     );
     await invoke("initialize_game", { path });
     await invoke("save_profile", {
       path,
-      name: DEFAULT_PROFILE_NAME,
+      name: defaultName,
       version,
       startParams: "",
       favorite: false,

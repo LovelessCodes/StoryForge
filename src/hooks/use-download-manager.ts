@@ -6,6 +6,7 @@ import { useCallback } from "react";
 
 import { useMountEffect } from "@/hooks/use-mount-effect";
 import { buildVersionPath, hashPath, pathDelimiter, zipfolderprefix } from "@/lib/helpers";
+import { t } from "@/lib/i18n";
 import { pickDependencyRelease } from "@/lib/mod-dependencies";
 import { toast } from "@/lib/notify";
 import type { ModInfo, OutputMod, PausedDownload, ProgressPayload } from "@/lib/types";
@@ -567,7 +568,7 @@ export function useDownloadManager() {
             void queryClient.invalidateQueries({ queryKey: installedVersionsQueryKey() });
           })
           .catch((error: unknown) => {
-            toast.error(`Could not remove game version ${token}`, {
+            toast.error(t("downloads.toasts.removeVersionFailed", { version: token }), {
               description: String(error),
             });
           });
@@ -575,7 +576,7 @@ export function useDownloadManager() {
       }
 
       if (!entry.savedPath) {
-        toast.error("This download no longer points at a file");
+        toast.error(t("downloads.toasts.downloadNoFile"));
         return;
       }
       // The destination is the profile/server `Mods` folder; removal commands
@@ -601,7 +602,9 @@ export function useDownloadManager() {
           }
         })
         .catch((error: unknown) => {
-          toast.error(`Could not remove ${entry.label}`, { description: String(error) });
+          toast.error(t("downloads.toasts.removeFailed", { label: entry.label }), {
+            description: String(error),
+          });
         });
     },
     [queryClient],

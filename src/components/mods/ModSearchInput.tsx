@@ -1,6 +1,7 @@
 import { formatForDisplay, useHotkey } from "@tanstack/react-hotkeys";
 import { Search } from "lucide-react";
 import { useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   InputGroup,
@@ -12,7 +13,7 @@ import {
 export function ModSearchInput({
   className,
   onChange,
-  placeholder = "Search mods...",
+  placeholder,
   value,
 }: {
   className?: string;
@@ -20,7 +21,9 @@ export function ModSearchInput({
   placeholder?: string;
   value: string;
 }) {
+  const { t } = useTranslation();
   const searchRef = useRef<HTMLInputElement>(null);
+  const resolvedPlaceholder = placeholder ?? t("mods.search.placeholder");
 
   // Mod+K belongs to the global command palette, so the mods browser uses
   // the conventional Mod+F to focus its search field instead.
@@ -42,8 +45,8 @@ export function ModSearchInput({
         ref={searchRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        aria-label={placeholder}
+        placeholder={resolvedPlaceholder}
+        aria-label={resolvedPlaceholder}
       />
       <InputGroupAddon align="inline-end">
         <InputGroupText className="gap-0.5">

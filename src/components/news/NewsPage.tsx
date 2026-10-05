@@ -1,15 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { format } from "date-fns";
+import { format, type Locale } from "date-fns";
 import insane, { type AllowedTags } from "insane";
 import { CircleAlert, ExternalLink, Newspaper, RefreshCw } from "lucide-react";
 import { useMemo, type MouseEvent } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { t as translate } from "@/lib/i18n";
+import { useDateLocale } from "@/lib/i18n/date-locale";
 
 interface NewsItem {
   title: string;
@@ -85,19 +88,19 @@ function handleNewsLinkClick(event: MouseEvent<HTMLDivElement>) {
   if (href) void openUrl(href);
 }
 
-function formatPubDate(value: string): string {
+function formatPubDate(value: string, locale: Locale): string {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : format(date, "PPp");
+  return Number.isNaN(date.getTime()) ? value : format(date, "PPp", { locale });
 }
 
 function errorText(error: unknown): string {
-  if (!error) return "Could not reach the Vintage Story forums.";
+  if (!error) return translate("news.unreachable");
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;
   if (typeof error === "object" && error !== null && "message" in error) {
     return String((error as { message: unknown }).message);
   }
-  return "Could not reach the Vintage Story forums.";
+  return translate("news.unreachable");
 }
 
 function NewsSkeleton() {
@@ -116,6 +119,8 @@ function NewsSkeleton() {
 }
 
 export default function NewsPage() {
+  const { t } = useTranslation();
+  const dateLocale = useDateLocale();
   const { data: news, error, isPending, isFetching, refetch } = useQuery(newsQuery);
   const rendered = useMemo(
     () => (news ?? []).map((item) => ({ html: renderableNewsHtml(item.description), item })),
@@ -129,7 +134,7 @@ export default function NewsPage() {
       ) : error ? (
         <Alert variant="destructive">
           <CircleAlert />
-          <AlertTitle>Failed to load news</AlertTitle>
+          <AlertTitle>{t("news.failedToLoad")}</AlertTitle>
           <AlertDescription>{errorText(error)}</AlertDescription>
           <AlertAction>
             <Button
@@ -139,7 +144,7 @@ export default function NewsPage() {
               onClick={() => void refetch()}
             >
               <RefreshCw className={isFetching ? "animate-spin" : undefined} />
-              Retry
+              {t("common.actions.retry")}
             </Button>
           </AlertAction>
         </Alert>
@@ -164,14 +169,16 @@ export default function NewsPage() {
                 />
               </CardHeader>
               <CardFooter className="justify-between gap-3">
-                <span className="text-muted-foreground text-xs">{formatPubDate(item.pubDate)}</span>
+                <span className="text-muted-foreground text-xs">
+                  {formatPubDate(item.pubDate, dateLocale)}
+                </span>
                 <Button
                   variant="ghost"
                   size="sm"
                   className="text-muted-foreground hover:text-foreground"
                   onClick={() => void openUrl(item.link)}
                 >
-                  Open post
+                  {t("news.openPost")}
                   <ExternalLink />
                 </Button>
               </CardFooter>
@@ -181,10 +188,10 @@ export default function NewsPage() {
       ) : (
         <div className="flex flex-col items-center justify-center gap-3 border border-dashed p-10 text-center">
           <Newspaper className="text-muted-foreground size-6" />
-          <p className="text-muted-foreground text-xs">No news found.</p>
+          <p className="text-muted-foreground text-xs">{t("news.empty")}</p>
           <Button size="sm" variant="outline" disabled={isFetching} onClick={() => void refetch()}>
             <RefreshCw className={isFetching ? "animate-spin" : undefined} />
-            Refresh
+            {t("common.actions.refresh")}
           </Button>
         </div>
       )}

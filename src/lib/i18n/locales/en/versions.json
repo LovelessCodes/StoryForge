@@ -1,1 +1,84 @@
-{}
+{
+  "add": {
+    "action": "Add version",
+    "allInstalledOrDownloading": "Every available version is already installed or downloading.",
+    "description": "Download a Vintage Story build. Already installed versions are marked and cannot be picked again.",
+    "gameVersion": "Game version",
+    "installedOption": "{{version}} (installed)",
+    "installedTag": "(installed)",
+    "macWarning": "This version may need extra setup to run on macOS. See the <wiki>Installing Vintage Story on macOS</wiki> wiki article.",
+    "macWarningTitle": "macOS: version below 1.19.0",
+    "pickPlaceholder": "Pick a game version",
+    "title": "Add version"
+  },
+  "banner": {
+    "action": "Link…",
+    "hint": "Link them in place — no re-download, nothing is copied.",
+    "alreadyInstalled": "already installed",
+    "description": "These installs already exist on disk. Linking registers them with Story Forge so profiles can launch without downloading them again.",
+    "found_one": "{{count}} game version from other launchers found",
+    "found_other": "{{count}} game versions from other launchers found",
+    "linkVersions_one": "Link {{count}} version",
+    "linkVersions_other": "Link {{count}} versions",
+    "note": "Story Forge stores only a reference to these folders. Unlinking later leaves every file where it is; the launcher that installed them keeps working.",
+    "skipped_one": "{{count}} version could not be linked",
+    "skipped_other": "{{count}} versions could not be linked",
+    "title": "Link existing game versions"
+  },
+  "download": {
+    "pause": "Pause",
+    "resume": "Resume",
+    "status": {
+      "done": "Done",
+      "downloading": "Downloading",
+      "error": "Failed",
+      "extracting": "Extracting",
+      "paused": "Paused",
+      "pending": "Queued"
+    }
+  },
+  "linkExisting": {
+    "description": "Point Story Forge at a Vintage Story install folder. The folder is registered in place — nothing is copied or moved.",
+    "folderHint": "The folder should contain the game files (Vintagestory, Vintagestory.exe or Vintage Story.app).",
+    "folderLabel": "Install folder",
+    "linkFailed": "Could not link that folder",
+    "nameHint": "Used when choosing a version for a profile; the folder name is a good default.",
+    "nameLabel": "Version name",
+    "selectFolderTitle": "Select a Vintage Story installation folder",
+    "submit": "Link version",
+    "title": "Link an existing version"
+  },
+  "linked": "Linked",
+  "linkedWithSource": "Linked · {{source}}",
+  "linking": "Linking…",
+  "page": {
+    "activeDownloads": "Active downloads ({{count}})",
+    "emptyDescription": "Download a build to create profiles and launch the game.",
+    "emptyTitle": "No game versions installed yet.",
+    "installedVersions": "Installed versions",
+    "installedVersionsCount": "Installed versions ({{count}})",
+    "linkExisting": "Link existing",
+    "macNote": "On macOS, versions below 1.19.0 need extra setup to run. See the <wiki>Installing Vintage Story on macOS</wiki> wiki article."
+  },
+  "row": {
+    "deleteNote": "Profiles using this version keep working; you just cannot create new ones with it until it is reinstalled.",
+    "deleteVersion": "Delete version {{name}}",
+    "folderMissing": "Folder not found — relink or unlink it",
+    "reallyDelete": "Really delete?",
+    "reallyUnlink": "Really unlink?",
+    "releaseCandidate": "Release Candidate",
+    "unlink": "Unlink",
+    "unlinkNote": "Story Forge stops using this folder; nothing on disk is changed and the launcher that installed it keeps working.",
+    "unlinkVersion": "Unlink version {{name}}"
+  },
+  "toast": {
+    "deleteFailed": "Failed to delete version {{name}}: {{message}}",
+    "deleting": "Deleting version {{name}}…",
+    "downloadFailed": "Error downloading game version {{version}}",
+    "linkFailed": "Linking failed",
+    "linkSkipped_one": "{{count}} could not be linked",
+    "linkSkipped_other": "{{count}} could not be linked",
+    "unlinkFailed": "Failed to unlink version {{name}}: {{message}}",
+    "unlinking": "Unlinking version {{name}}…"
+  }
+}

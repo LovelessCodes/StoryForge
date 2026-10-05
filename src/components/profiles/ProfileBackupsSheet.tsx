@@ -4,6 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import { format, formatDistanceToNow } from "date-fns";
 import { Archive, Loader2, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { profileBackupsQueryKey, useProfileBackups } from "@/hooks/use-profile-backups";
+import { useDateLocale } from "@/lib/i18n/date-locale";
 import { toast } from "@/lib/notify";
 import { type Profile, useProfilesStore } from "@/stores/profiles";
 
@@ -53,6 +55,8 @@ export default function ProfileBackupsSheet({
   onOpenChange,
   profile,
 }: ProfileBackupsSheetProps) {
+  const { t } = useTranslation();
+  const dateLocale = useDateLocale();
   const queryClient = useQueryClient();
   const loadProfiles = useProfilesStore((s) => s.loadProfiles);
   const backupsQuery = useProfileBackups(profile.id);
@@ -116,7 +120,7 @@ export default function ProfileBackupsSheet({
       await invoke("create_profile_backup", { profileId: profile.id });
       await refreshList();
     } catch (error) {
-      toast.error("Backup failed", { description: messageOf(error) });
+      toast.error(t("profiles.backups.backupFailed"), { description: messageOf(error) });
     } finally {
       setBusy(null);
       setProgress(null);
@@ -128,14 +132,14 @@ export default function ProfileBackupsSheet({
     setConfirmRestore(null);
     try {
       await invoke("restore_profile_backup", { profileId: profile.id, backupId: id });
-      toast.success("Backup restored", {
-        description: "The profile folder now matches the snapshot.",
+      toast.success(t("profiles.backups.restored"), {
+        description: t("profiles.backups.restoredDescription"),
       });
       // Mods, worlds and configs on disk were rewritten: refresh every reader.
       await queryClient.invalidateQueries();
       await loadProfiles();
     } catch (error) {
-      toast.error("Restore failed", { description: messageOf(error) });
+      toast.error(t("profiles.errors.restoreFailed"), { description: messageOf(error) });
     } finally {
       setBusy(null);
       setProgress(null);
@@ -149,7 +153,7 @@ export default function ProfileBackupsSheet({
       await invoke("delete_profile_backup", { profileId: profile.id, backupId: id });
       await refreshList();
     } catch (error) {
-      toast.error("Failed to delete backup", { description: messageOf(error) });
+      toast.error(t("profiles.backups.deleteFailed"), { description: messageOf(error) });
     } finally {
       setBusy(null);
     }
@@ -163,7 +167,7 @@ export default function ProfileBackupsSheet({
         backupLimit: nextLimit,
       });
     } catch (error) {
-      toast.error("Failed to save backup settings", { description: messageOf(error) });
+      toast.error(t("profiles.backups.settingsFailed"), { description: messageOf(error) });
     } finally {
       // Success or failure: the store reload resets the drafts to disk state.
       await loadProfiles();
@@ -174,10 +178,8 @@ export default function ProfileBackupsSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b pr-12">
-          <SheetTitle>Backups — {profile.name}</SheetTitle>
-          <SheetDescription>
-            Snapshots of this profile's mods, worlds and configs. Logs are left out.
-          </SheetDescription>
+          <SheetTitle>{t("profiles.backups.title", { name: profile.name })}</SheetTitle>
+          <SheetDescription>{t("profiles.backups.description")}</SheetDescription>
         </SheetHeader>
 
         <ScrollArea scrollFade className="min-h-0 flex-1">
@@ -186,13 +188,13 @@ export default function ProfileBackupsSheet({
             <div className="grid gap-3 border p-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs font-medium">Back up before each launch</p>
+                  <p className="text-xs font-medium">{t("profiles.backups.autoLabel")}</p>
                   <p className="text-muted-foreground text-[11px]">
-                    Runs right before the game starts.
+                    {t("profiles.backups.autoHint")}
                   </p>
                 </div>
                 <Switch
-                  aria-label="Back up before each launch"
+                  aria-label={t("profiles.backups.autoLabel")}
                   checked={backupOnPlay}
                   disabled={busy !== null}
                   onCheckedChange={(checked) => {
@@ -203,9 +205,9 @@ export default function ProfileBackupsSheet({
               </div>
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs font-medium">Keep last</p>
+                  <p className="text-xs font-medium">{t("profiles.backups.keepLabel")}</p>
                   <p className="text-muted-foreground text-[11px]">
-                    Older backups are deleted automatically.
+                    {t("profiles.backups.keepHint")}
                   </p>
                 </div>
                 <NumberField
@@ -232,13 +234,15 @@ export default function ProfileBackupsSheet({
             <div className="grid gap-2">
               <Button disabled={busy !== null} onClick={() => void backupNow()}>
                 {busy === "create" ? <Loader2 className="animate-spin" /> : <Archive />}
-                Back up now
+                {t("profiles.backups.backupNow")}
               </Button>
               {progress && (
                 <div className="grid gap-1">
                   <Progress value={percent} />
                   <p className="text-muted-foreground text-[11px]">
-                    {progress.phase === "restoring" ? "Restoring" : "Backing up"}… {percent}%
+                    {progress.phase === "restoring"
+                      ? t("profiles.backups.restoringProgress", { percent })
+                      : t("profiles.backups.backingUpProgress", { percent })}
                   </p>
                 </div>
               )}
@@ -255,27 +259,30 @@ export default function ProfileBackupsSheet({
               <div className="flex flex-col items-center justify-center gap-3 border border-dashed p-8 text-center">
                 <Archive className="text-muted-foreground size-6" />
                 <div>
-                  <p className="text-sm font-medium">No backups yet</p>
+                  <p className="text-sm font-medium">{t("profiles.backups.emptyTitle")}</p>
                   <p className="text-muted-foreground text-xs">
-                    Create one before risky changes, or back up before each launch.
+                    {t("profiles.backups.emptyDescription")}
                   </p>
                 </div>
               </div>
             ) : (
               <div className="grid gap-2">
                 <p className="text-muted-foreground text-[11px]">
-                  {backups.length} backup{backups.length !== 1 ? "s" : ""} · newest first
+                  {t("profiles.backups.count", { count: backups.length })}
                 </p>
                 {backups.map((backup) => (
                   <div className="grid gap-2 border p-3" key={backup.id}>
                     <div className="flex items-center justify-between gap-3">
                       <div className="grid gap-0.5">
                         <p className="text-xs font-medium">
-                          {format(new Date(backup.created_at), "PPp")}
+                          {format(new Date(backup.created_at), "PPp", { locale: dateLocale })}
                         </p>
                         <p className="text-muted-foreground text-[11px]">
-                          {formatDistanceToNow(new Date(backup.created_at), { addSuffix: true })} ·{" "}
-                          {backup.size_display}
+                          {formatDistanceToNow(new Date(backup.created_at), {
+                            addSuffix: true,
+                            locale: dateLocale,
+                          })}{" "}
+                          · {backup.size_display}
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-1">
@@ -288,10 +295,10 @@ export default function ProfileBackupsSheet({
                             setConfirmRestore(backup.id);
                           }}
                         >
-                          Restore
+                          {t("common.actions.restore")}
                         </Button>
                         <Button
-                          aria-label="Delete backup"
+                          aria-label={t("profiles.backups.deleteBackup")}
                           className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                           disabled={busy !== null}
                           size="icon-sm"
@@ -308,10 +315,7 @@ export default function ProfileBackupsSheet({
 
                     {confirmRestore === backup.id && (
                       <div className="border-warning/40 bg-warning/5 grid gap-2 border p-2">
-                        <p className="text-[11px]">
-                          Restore this snapshot? Files it contains are overwritten; files added
-                          since are kept.
-                        </p>
+                        <p className="text-[11px]">{t("profiles.backups.confirmRestore")}</p>
                         <div className="flex items-center gap-2">
                           <Button
                             disabled={busy !== null}
@@ -320,10 +324,10 @@ export default function ProfileBackupsSheet({
                             onClick={() => void doRestore(backup.id)}
                           >
                             {busy === "restore" ? <Loader2 className="animate-spin" /> : null}
-                            Restore backup
+                            {t("profiles.backups.restoreBackup")}
                           </Button>
                           <Button size="sm" variant="ghost" onClick={() => setConfirmRestore(null)}>
-                            Cancel
+                            {t("common.actions.cancel")}
                           </Button>
                         </div>
                       </div>
@@ -331,7 +335,7 @@ export default function ProfileBackupsSheet({
 
                     {confirmDelete === backup.id && (
                       <div className="border-destructive/40 bg-destructive/5 grid gap-2 border p-2">
-                        <p className="text-[11px]">Delete this backup? This cannot be undone.</p>
+                        <p className="text-[11px]">{t("profiles.backups.confirmDelete")}</p>
                         <div className="flex items-center gap-2">
                           <Button
                             disabled={busy !== null}
@@ -339,10 +343,10 @@ export default function ProfileBackupsSheet({
                             variant="destructive"
                             onClick={() => void doDelete(backup.id)}
                           >
-                            Delete backup
+                            {t("profiles.backups.deleteBackup")}
                           </Button>
                           <Button size="sm" variant="ghost" onClick={() => setConfirmDelete(null)}>
-                            Cancel
+                            {t("common.actions.cancel")}
                           </Button>
                         </div>
                       </div>

@@ -1,5 +1,6 @@
 import { Globe, Search } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import {
@@ -20,6 +21,7 @@ import { findWorldProfile } from "./worlds-utils";
 const ALL_PROFILES = "all";
 
 export default function WorldsPage() {
+  const { t } = useTranslation();
   const [searchText, setSearchText] = useState("");
   const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null);
 
@@ -76,15 +78,15 @@ export default function WorldsPage() {
             <Search />
           </InputGroupAddon>
           <InputGroupInput
-            aria-label="Search worlds and maps"
+            aria-label={t("worlds.page.searchAria")}
             onChange={(event) => setSearchText(event.target.value)}
-            placeholder="Search worlds and maps…"
+            placeholder={t("worlds.page.searchPlaceholder")}
             value={searchText}
           />
         </InputGroup>
 
         <Select
-          items={[{ label: "All profiles", value: ALL_PROFILES }, ...profileItems]}
+          items={[{ label: t("worlds.page.allProfiles"), value: ALL_PROFILES }, ...profileItems]}
           value={selectedProfileId === null ? ALL_PROFILES : String(selectedProfileId)}
           onValueChange={(value) =>
             setSelectedProfileId(
@@ -92,11 +94,11 @@ export default function WorldsPage() {
             )
           }
         >
-          <SelectTrigger className="w-44" aria-label="Filter by profile">
+          <SelectTrigger className="w-44" aria-label={t("worlds.page.filterAria")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL_PROFILES}>All profiles</SelectItem>
+            <SelectItem value={ALL_PROFILES}>{t("worlds.page.allProfiles")}</SelectItem>
             {profileItems.map((profile) => (
               <SelectItem key={profile.value} value={profile.value}>
                 {profile.label}
@@ -107,24 +109,24 @@ export default function WorldsPage() {
       </div>
 
       {isPending ? (
-        <p className="text-muted-foreground text-sm">Loading worlds…</p>
+        <p className="text-muted-foreground text-sm">{t("worlds.page.loading")}</p>
       ) : (
         <>
           <section className="grid gap-2">
             <h2 className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
-              Worlds{filteredWorlds.length > 0 ? ` (${filteredWorlds.length})` : ""}
+              {filteredWorlds.length > 0
+                ? t("worlds.page.worldsCount", { count: filteredWorlds.length })
+                : t("worlds.page.worlds")}
             </h2>
 
             {filteredWorlds.length === 0 ? (
               !hasWorlds && !hasMaps && !filterActive ? (
                 <div className="flex flex-col items-center justify-center gap-3 border border-dashed p-10 text-center">
                   <Globe className="text-muted-foreground size-6" />
-                  <p className="text-muted-foreground text-xs">
-                    No worlds found yet. Create a world in-game to get started.
-                  </p>
+                  <p className="text-muted-foreground text-xs">{t("worlds.page.empty")}</p>
                 </div>
               ) : (
-                <p className="text-muted-foreground text-sm">No worlds match your filters.</p>
+                <p className="text-muted-foreground text-sm">{t("worlds.page.noMatches")}</p>
               )
             ) : (
               <div className="divide-y border">
@@ -143,7 +145,7 @@ export default function WorldsPage() {
           {filteredMaps.length > 0 && (
             <section className="grid gap-2">
               <h2 className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
-                Maps without saves ({filteredMaps.length})
+                {t("worlds.page.mapsWithoutSaves", { count: filteredMaps.length })}
               </h2>
               <div className="divide-y border">
                 {filteredMaps.map((map) => (

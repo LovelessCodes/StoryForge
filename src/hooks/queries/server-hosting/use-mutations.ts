@@ -1,6 +1,7 @@
 import { type UseMutationOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
+import { t } from "@/lib/i18n";
 import { toast } from "@/lib/notify";
 import type {
   CreateInstanceParams,
@@ -106,7 +107,7 @@ export const useStartServer = (props?: UseMutationOptions<void, Error, number>) 
       if (context?.previous) {
         queryClient.setQueryData(serverStatusQueryKey(id), context.previous);
       }
-      toast.error(`Failed to start server: ${_}`);
+      toast.error(t("hosting.toasts.startFailed", { message: String(_) }));
     },
   });
 };
@@ -131,7 +132,7 @@ export const useStopServer = (props?: UseMutationOptions<void, Error, number>) =
       if (context?.previous) {
         queryClient.setQueryData(serverStatusQueryKey(id), context.previous);
       }
-      toast.error(`Failed to stop server: ${_}`);
+      toast.error(t("hosting.toasts.stopFailed", { message: String(_) }));
     },
   });
 };
@@ -145,7 +146,7 @@ export const useRestartServer = (props?: UseMutationOptions<void, Error, number>
     mutationFn: (id: number) =>
       invoke("restart_hosted_server", { instanceId: id }) as Promise<void>,
     onError: () => {
-      toast.error("Failed to restart server");
+      toast.error(t("hosting.toasts.restartFailed"));
     },
   });
 };
@@ -183,7 +184,7 @@ export const useToggleFavorite = (
       if (context?.previous) {
         queryClient.setQueryData(hostedServersQueryKey(), context.previous);
       }
-      toast.error("Failed to update favorite");
+      toast.error(t("hosting.toasts.favoriteFailed"));
     },
     onSuccess: (...args) => {
       props?.onSuccess?.(...args);

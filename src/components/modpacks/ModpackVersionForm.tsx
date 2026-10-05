@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -19,10 +20,10 @@ import type { Profile } from "@/stores/profiles";
 
 const SemVer = z
   .string()
-  .min(1, "Version is required")
+  .min(1, "modpacks.versionForm.errors.versionRequired")
   .regex(
     /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/,
-    "Invalid semantic version",
+    "modpacks.versionForm.errors.invalidSemver",
   );
 
 const versionSchema = z.object({
@@ -56,6 +57,7 @@ export default function ModpackVersionForm({
   onCancel,
   onSuccess,
 }: ModpackVersionFormProps) {
+  const { t } = useTranslation();
   const isNew = existingVersion == null;
 
   const [version, setVersion] = useState(existingVersion?.version ?? "");
@@ -69,8 +71,12 @@ export default function ModpackVersionForm({
 
   const parsed = versionSchema.safeParse({ gameVersion, modConfigsUrl, modsString, version });
   const issues = parsed.success ? [] : parsed.error.issues;
-  const issueFor = (path: string) =>
-    touched[path] ? issues.find((issue) => issue.path[0] === path)?.message : undefined;
+  const issueFor = (path: string) => {
+    const message = touched[path]
+      ? issues.find((issue) => issue.path[0] === path)?.message
+      : undefined;
+    return message ? t(message) : undefined;
+  };
 
   const canSubmit = version.trim().length > 0 && gameVersion.trim().length > 0 && !saving;
 
@@ -83,7 +89,7 @@ export default function ModpackVersionForm({
       };
       setModsString(result.mods.map((mod) => `${mod.modid}@${mod.version}`).join(","));
     } catch {
-      toast.error("Failed to read installed mods");
+      toast.error(t("modpacks.versionForm.readModsFailed"));
     }
   }
 
@@ -112,7 +118,7 @@ export default function ModpackVersionForm({
               configUrl = upload.data.url;
             }
           } catch {
-            toast.error("Failed to upload ModConfig");
+            toast.error(t("modpacks.versionForm.uploadConfigFailed"));
           }
         }
       }
@@ -135,7 +141,7 @@ export default function ModpackVersionForm({
       onSuccess();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      toast.error("Failed to save version", { description: message });
+      toast.error(t("modpacks.versionForm.saveFailed"), { description: message });
     } finally {
       setSaving(false);
     }
@@ -143,12 +149,18 @@ export default function ModpackVersionForm({
 
   return (
     <div className="bg-muted/30 grid gap-3 border p-3">
-      <span className="text-xs font-semibold">{isNew ? "New version" : `Edit v${version}`}</span>
+      <span className="text-xs font-semibold">
+        {isNew
+          ? t("modpacks.versionForm.newTitle")
+          : t("modpacks.versionForm.editTitle", { version })}
+      </span>
 
       {/* Pick from profile — new versions only */}
       {isNew && profiles.length > 0 && (
         <div className="grid gap-1.5">
-          <span className="text-muted-foreground text-[11px] font-medium">Pick from profile</span>
+          <span className="text-muted-foreground text-[11px] font-medium">
+            {t("modpacks.versionForm.pickFromProfile")}
+          </span>
           <Select
             items={profiles.map((profile) => ({
               label: `${profile.name} (VS ${profile.version})`,
@@ -161,8 +173,11 @@ export default function ModpackVersionForm({
               if (profile) void handlePickProfile(profile);
             }}
           >
-            <SelectTrigger className="w-full" aria-label="Pick from profile">
-              <SelectValue placeholder="Select a profile…" />
+            <SelectTrigger
+              className="w-full"
+              aria-label={t("modpacks.versionForm.pickFromProfile")}
+            >
+              <SelectValue placeholder={t("modpacks.versionForm.selectProfile")} />
             </SelectTrigger>
             <SelectContent>
               {profiles.map((profile) => (
@@ -179,7 +194,7 @@ export default function ModpackVersionForm({
       <div className="grid grid-cols-2 gap-3">
         <div className="grid gap-1.5">
           <label className="text-muted-foreground text-[11px] font-medium" htmlFor="mpv-version">
-            Version <span className="text-destructive">*</span>
+            {t("common.fields.version")} <span className="text-destructive">*</span>
           </label>
           <Input
             className="font-mono"
@@ -199,7 +214,7 @@ export default function ModpackVersionForm({
             className="text-muted-foreground text-[11px] font-medium"
             htmlFor="mpv-game-version"
           >
-            Game version <span className="text-destructive">*</span>
+            {t("modpacks.versionForm.gameVersion")} <span className="text-destructive">*</span>
           </label>
           <Input
             className="font-mono"
@@ -218,7 +233,7 @@ export default function ModpackVersionForm({
 
       <div className="grid gap-1.5">
         <label className="text-muted-foreground text-[11px] font-medium" htmlFor="mpv-mods">
-          Mods string
+          {t("modpacks.versionForm.modsString")}
         </label>
         <Textarea
           className="min-h-16 resize-none font-mono text-[11px]"
@@ -236,7 +251,7 @@ export default function ModpackVersionForm({
           className="text-muted-foreground text-[11px] font-medium"
           htmlFor="mpv-modconfig-url"
         >
-          Mod configs URL
+          {t("modpacks.versionForm.modConfigsUrl")}
         </label>
         <Input
           disabled={saving}
@@ -250,7 +265,7 @@ export default function ModpackVersionForm({
       {/* ModConfig upload — only when a profile was picked */}
       {pickedProfileId !== null && (
         <div className="flex items-center justify-between gap-4">
-          <span className="text-xs">Upload ModConfig folder from profile</span>
+          <span className="text-xs">{t("modpacks.versionForm.uploadModConfig")}</span>
           <Switch
             checked={uploadModConfig}
             disabled={saving}
@@ -261,7 +276,7 @@ export default function ModpackVersionForm({
 
       <div className="flex items-center justify-end gap-2">
         <Button disabled={saving} size="sm" variant="ghost" onClick={onCancel}>
-          Cancel
+          {t("common.actions.cancel")}
         </Button>
         <Button
           disabled={!canSubmit}
@@ -269,7 +284,11 @@ export default function ModpackVersionForm({
           variant="accent-primary"
           onClick={() => void submit()}
         >
-          {saving ? "Saving…" : isNew ? "Create" : "Save"}
+          {saving
+            ? t("modpacks.versionForm.saving")
+            : isNew
+              ? t("common.actions.create")
+              : t("common.actions.save")}
         </Button>
       </div>
     </div>

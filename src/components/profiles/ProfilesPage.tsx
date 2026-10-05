@@ -1,5 +1,6 @@
 import { FileDown, IdCard } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { useActiveProfile } from "@/hooks/use-active-profile";
@@ -22,6 +23,7 @@ import WaxlightBanner from "./WaxlightBanner";
 import YelloowstoneBanner from "./YelloowstoneBanner";
 
 export default function ProfilesPage() {
+  const { t } = useTranslation();
   const { activeProfile } = useActiveProfile();
   const { profiles, loadProfiles } = useProfiles();
 
@@ -53,10 +55,10 @@ export default function ProfilesPage() {
     <div className="grid gap-6">
       <div className="flex items-center justify-end gap-2">
         <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
-          <FileDown /> Import
+          <FileDown /> {t("profiles.page.import")}
         </Button>
         <Button variant="accent-primary" size="sm" onClick={() => openDialog(null)}>
-          New Profile
+          {t("profiles.page.newProfile")}
         </Button>
       </div>
 
@@ -75,13 +77,11 @@ export default function ProfilesPage() {
         <div className="flex flex-col items-center justify-center gap-3 border border-dashed p-10 text-center">
           <IdCard className="text-muted-foreground size-6" />
           <div>
-            <p className="text-sm font-medium">No profiles yet</p>
-            <p className="text-muted-foreground text-xs">
-              Create a profile to pick a game version and start adding mods.
-            </p>
+            <p className="text-sm font-medium">{t("profiles.page.emptyTitle")}</p>
+            <p className="text-muted-foreground text-xs">{t("profiles.page.emptyDescription")}</p>
           </div>
           <Button size="sm" variant="accent-primary" onClick={() => openDialog(null)}>
-            Create your first profile
+            {t("profiles.page.createFirst")}
           </Button>
         </div>
       ) : (

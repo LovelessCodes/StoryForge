@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { Gamepad2, X } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +36,7 @@ import { useSettingsStore } from "@/stores/settings";
  * Nothing is copied or moved — the profile links to the folder.
  */
 export default function GameDataBanner() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: detected } = useDefaultGameData();
   const dismissed = useSettingsStore((s) => s.gameDataDismissed);
@@ -78,7 +80,7 @@ export default function GameDataBanner() {
       setOpen(false);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      toast.error("Could not use that folder", { description: message });
+      toast.error(t("profiles.gameData.adoptFailed"), { description: message });
     } finally {
       setBusy(false);
     }
@@ -90,17 +92,25 @@ export default function GameDataBanner() {
         <div className="flex flex-wrap items-center gap-3 border border-[var(--color-info)]/30 bg-[var(--color-info)]/5 p-3">
           <Gamepad2 className="size-4 shrink-0 text-[var(--color-info)]" />
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium">Existing Vintage Story data found</p>
+            <p className="text-xs font-medium">{t("profiles.gameData.foundTitle")}</p>
             <p className="text-muted-foreground truncate text-[11px]">
-              {pending[0].path}
-              {pending.length > 1 ? ` (+${pending.length - 1} more)` : ""} — use it as a profile
-              without copying anything.
+              {pending.length > 1
+                ? t("profiles.gameData.foundDescriptionMore", {
+                    path: pending[0].path,
+                    more: pending.length - 1,
+                  })
+                : t("profiles.gameData.foundDescription", { path: pending[0].path })}
             </p>
           </div>
           <Button size="sm" variant="accent-primary" onClick={openSheet}>
-            Use it
+            {t("profiles.gameData.use")}
           </Button>
-          <Button aria-label="Dismiss" size="icon-sm" variant="ghost" onClick={dismiss}>
+          <Button
+            aria-label={t("common.actions.dismiss")}
+            size="icon-sm"
+            variant="ghost"
+            onClick={dismiss}
+          >
             <X />
           </Button>
         </div>
@@ -109,24 +119,24 @@ export default function GameDataBanner() {
       <Sheet open={open} onOpenChange={(next) => !busy && setOpen(next)}>
         <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
           <SheetHeader className="border-b">
-            <SheetTitle>Use your existing game data</SheetTitle>
-            <SheetDescription>
-              Story Forge links to the folder instead of copying it — your mods, worlds and settings
-              stay exactly where they are.
-            </SheetDescription>
+            <SheetTitle>{t("profiles.gameData.title")}</SheetTitle>
+            <SheetDescription>{t("profiles.gameData.description")}</SheetDescription>
           </SheetHeader>
 
           <ScrollArea scrollFade className="min-h-0 flex-1">
             <div className="grid gap-4 p-4">
               {pending.length > 1 && (
                 <div className="grid gap-1.5">
-                  <span className="text-xs font-medium">Folder</span>
+                  <span className="text-xs font-medium">{t("common.fields.folder")}</span>
                   <Select
                     items={pending.map((item) => ({ label: item.path, value: item.path }))}
                     value={selectedPath}
                     onValueChange={(value) => value && setSelectedPath(value)}
                   >
-                    <SelectTrigger className="w-full" aria-label="Game data folder">
+                    <SelectTrigger
+                      className="w-full"
+                      aria-label={t("profiles.gameData.folderAria")}
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -143,14 +153,14 @@ export default function GameDataBanner() {
               {selected && (
                 <p className="bg-muted text-muted-foreground border p-2 text-[11px]">
                   <span className="text-foreground font-medium">{selected.size_display}</span> ·{" "}
-                  {selected.mod_count} mod{selected.mod_count === 1 ? "" : "s"} ·{" "}
-                  {selected.has_saves ? "has worlds" : "no worlds yet"}
+                  {t("profiles.modCount", { count: selected.mod_count })} ·{" "}
+                  {selected.has_saves ? t("profiles.hasWorlds") : t("profiles.noWorlds")}
                 </p>
               )}
 
               <div className="grid gap-1.5">
                 <label className="text-xs font-medium" htmlFor="game-data-name">
-                  Profile name
+                  {t("profiles.fields.profileName")}
                 </label>
                 <Input
                   id="game-data-name"
@@ -160,16 +170,18 @@ export default function GameDataBanner() {
               </div>
 
               <div className="grid gap-1.5">
-                <span className="text-xs font-medium">Game version</span>
+                <span className="text-xs font-medium">{t("profiles.fields.gameVersion")}</span>
                 <Select
                   items={(gameVersions ?? []).toSorted(compareSemverDesc).map((entry) => ({
-                    label: installedSet.has(entry) ? `${entry} (installed)` : entry,
+                    label: installedSet.has(entry)
+                      ? t("profiles.fields.installedVersion", { version: entry })
+                      : entry,
                     value: entry,
                   }))}
                   value={version}
                   onValueChange={(value) => value && setVersion(value)}
                 >
-                  <SelectTrigger className="w-full" aria-label="Game version">
+                  <SelectTrigger className="w-full" aria-label={t("profiles.fields.gameVersion")}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -177,15 +189,16 @@ export default function GameDataBanner() {
                       <SelectItem key={entry} value={entry}>
                         {entry}
                         {installedSet.has(entry) && (
-                          <span className="text-muted-foreground ml-2 text-xs">(installed)</span>
+                          <span className="text-muted-foreground ml-2 text-xs">
+                            {t("profiles.fields.installed")}
+                          </span>
                         )}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <p className="text-muted-foreground text-[11px]">
-                  Your data folder does not record its game version — pick the one you play. It will
-                  be downloaded on first launch if it is not installed yet.
+                  {t("profiles.gameData.versionHint")}
                 </p>
               </div>
             </div>
@@ -197,7 +210,11 @@ export default function GameDataBanner() {
               disabled={busy || !selectedPath || !version || name.trim().length < 2}
               onClick={() => void adopt()}
             >
-              {busy ? "Linking…" : `Use as "${name.trim() || "profile"}"`}
+              {busy
+                ? t("profiles.gameData.linking")
+                : t("profiles.gameData.useAs", {
+                    name: name.trim() || t("profiles.gameData.defaultName"),
+                  })}
             </Button>
           </SheetFooter>
         </SheetContent>

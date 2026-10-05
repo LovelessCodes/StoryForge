@@ -8,6 +8,7 @@ import {
   Search,
 } from "lucide-react";
 import { useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 
 import { GridSkeleton } from "@/components/common/LoadingSkeleton";
 import { Button } from "@/components/ui/button";
@@ -28,14 +29,14 @@ import ModpackCard from "./ModpackCard";
 import ModpackDetailSheet from "./ModpackDetailSheet";
 import ModpackFormSheet from "./ModpackFormSheet";
 
-const SORT_OPTIONS: { label: string; value: ModpacksFilters["sortBy"] }[] = [
-  { label: "Created", value: "created" },
-  { label: "Downloads", value: "downloads" },
-  { label: "Name", value: "name" },
-  { label: "Last Updated", value: "updated" },
-];
-
 export default function ModpacksPage() {
+  const { t } = useTranslation();
+  const sortOptions: { label: string; value: ModpacksFilters["sortBy"] }[] = [
+    { label: t("modpacks.sort.created"), value: "created" },
+    { label: t("modpacks.sort.downloads"), value: "downloads" },
+    { label: t("modpacks.sort.name"), value: "name" },
+    { label: t("modpacks.sort.lastUpdated"), value: "updated" },
+  ];
   const {
     searchText,
     setSearchText,
@@ -85,11 +86,17 @@ export default function ModpacksPage() {
           <div className="text-muted-foreground flex items-center gap-2 text-xs">
             <CloudOff className="size-4 shrink-0" />
             <p>
-              Browsing as a guest — anyone can install.{" "}
-              <Link className="hover:text-foreground underline underline-offset-2" to="/auth">
-                Sign in
-              </Link>{" "}
-              to publish your own modpacks.
+              <Trans
+                i18nKey="modpacks.page.guest"
+                components={{
+                  signIn: (
+                    <Link
+                      className="hover:text-foreground underline underline-offset-2"
+                      to="/auth"
+                    />
+                  ),
+                }}
+              />
             </p>
           </div>
         ) : (
@@ -97,7 +104,7 @@ export default function ModpacksPage() {
         )}
         {user && (
           <Button size="sm" variant="accent-primary" onClick={openCreate}>
-            <Plus /> New modpack
+            <Plus /> {t("modpacks.page.newModpack")}
           </Button>
         )}
       </div>
@@ -106,8 +113,8 @@ export default function ModpacksPage() {
       <div className="flex flex-wrap items-center gap-2">
         <InputGroup className="w-full sm:w-64">
           <InputGroupInput
-            aria-label="Search modpacks"
-            placeholder="Search modpacks…"
+            aria-label={t("modpacks.page.searchAria")}
+            placeholder={t("modpacks.page.searchPlaceholder")}
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
           />
@@ -117,17 +124,17 @@ export default function ModpacksPage() {
         </InputGroup>
 
         <Select
-          items={SORT_OPTIONS}
+          items={sortOptions}
           value={sortBy}
           onValueChange={(value) => {
             if (value) setSortBy(value);
           }}
         >
-          <SelectTrigger aria-label="Sort by" className="w-36">
+          <SelectTrigger aria-label={t("modpacks.page.sortByAria")} className="w-36">
             <SelectValue />
           </SelectTrigger>
           <SelectContent align="start" alignItemWithTrigger={false}>
-            {SORT_OPTIONS.map((option) => (
+            {sortOptions.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>
@@ -136,10 +143,10 @@ export default function ModpacksPage() {
         </Select>
 
         <Button
-          aria-label="Toggle sort direction"
+          aria-label={t("modpacks.page.toggleSortAria")}
           size="icon-sm"
           title={
-            orderDirection === "desc" ? "Sort direction: descending" : "Sort direction: ascending"
+            orderDirection === "desc" ? t("modpacks.page.sortDesc") : t("modpacks.page.sortAsc")
           }
           variant="outline"
           onClick={() => setOrderDirection(orderDirection === "desc" ? "asc" : "desc")}
@@ -149,8 +156,8 @@ export default function ModpacksPage() {
 
         <InputGroup className="w-full sm:w-52">
           <InputGroupInput
-            aria-label="Filter by owner"
-            placeholder="Filter by owner…"
+            aria-label={t("modpacks.page.filterOwnerAria")}
+            placeholder={t("modpacks.page.filterOwnerPlaceholder")}
             value={owner}
             onChange={(event) => setOwner(event.target.value)}
           />
@@ -167,13 +174,13 @@ export default function ModpacksPage() {
         <div className="flex flex-col items-center justify-center gap-3 border border-dashed p-10 text-center">
           <PackageOpen className="text-muted-foreground size-6" />
           <p className="text-muted-foreground text-xs">
-            {hasFilters ? "No modpacks match your filters." : "No modpacks yet."}
+            {hasFilters ? t("modpacks.page.emptyFiltered") : t("modpacks.page.empty")}
           </p>
         </div>
       ) : (
         <div className="grid gap-4">
           <p className="text-muted-foreground text-xs">
-            {totalCount} modpack{totalCount !== 1 ? "s" : ""} found
+            {t("modpacks.page.found", { count: totalCount })}
           </p>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
             {modpacks.map((modpack) => (

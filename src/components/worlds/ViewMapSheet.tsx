@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   Select,
@@ -36,11 +37,12 @@ export default function ViewMapSheet({
   mapPath,
   mapName,
 }: ViewMapSheetProps) {
+  const { t } = useTranslation();
   const worldData = world?.data;
   const mapMarkers = world?.map_markers;
   const prospectingLogs = world?.prospecting_logs;
 
-  const displayName = mapName ?? worldData?.world_name ?? "Map";
+  const displayName = mapName ?? worldData?.world_name ?? t("worlds.map.defaultName");
 
   // Union of waypoint marker owners and prospecting log owners.
   const players = useMemo(() => {
@@ -69,8 +71,8 @@ export default function ViewMapSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-4xl">
         <SheetHeader className="border-b">
-          <SheetTitle>{displayName} — World Map</SheetTitle>
-          <SheetDescription>Interactive map viewer · Drag to pan · Scroll to zoom</SheetDescription>
+          <SheetTitle>{t("worlds.map.title", { name: displayName })}</SheetTitle>
+          <SheetDescription>{t("worlds.map.description")}</SheetDescription>
         </SheetHeader>
 
         <div className="flex flex-wrap items-center gap-4 border-b p-4">
@@ -82,9 +84,9 @@ export default function ViewMapSheet({
             <SelectTrigger
               className="w-56"
               disabled={players.length === 0}
-              aria-label="Player whose markers are shown"
+              aria-label={t("worlds.map.playerAria")}
             >
-              <SelectValue placeholder="No players found" />
+              <SelectValue placeholder={t("worlds.map.noPlayers")} />
             </SelectTrigger>
             <SelectContent>
               {playerItems.map((player) => (
@@ -97,7 +99,7 @@ export default function ViewMapSheet({
 
           <label className="flex items-center gap-2 text-xs" htmlFor="show-prospect">
             <Switch checked={showProspect} id="show-prospect" onCheckedChange={setShowProspect} />
-            Show prospecting
+            {t("worlds.map.showProspecting")}
           </label>
         </div>
 

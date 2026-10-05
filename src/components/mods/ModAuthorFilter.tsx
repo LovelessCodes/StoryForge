@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { User, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   Combobox,
@@ -30,6 +31,7 @@ export function ModAuthorFilter({
   selectedGameVersions: string[];
   value: string;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const anchor = useRef<HTMLDivElement | null>(null);
   const [query, setQuery] = useState("");
@@ -64,9 +66,12 @@ export function ModAuthorFilter({
     >
       <ComboboxChips className="w-52" ref={anchor}>
         <User className="text-muted-foreground size-3.5 shrink-0" />
-        <ComboboxInput placeholder="Filter author..." aria-label="Filter by author" />
+        <ComboboxInput
+          placeholder={t("mods.authorFilter.placeholder")}
+          aria-label={t("mods.authorFilter.aria")}
+        />
         {value && (
-          <ComboboxClear aria-label="Clear author filter">
+          <ComboboxClear aria-label={t("mods.authorFilter.clear")}>
             <X className="size-3" />
           </ComboboxClear>
         )}
@@ -76,19 +81,24 @@ export function ModAuthorFilter({
         {/* The list is pre-filtered here, so base-ui's own Empty state cannot
             see which items were dropped. */}
         {matches.length === 0 && (
-          <div className="text-muted-foreground px-2 py-2 text-xs">No authors found.</div>
+          <div className="text-muted-foreground px-2 py-2 text-xs">
+            {t("mods.authorFilter.empty")}
+          </div>
         )}
         <ComboboxList>
-          {matches.map((author) => (
-            <ComboboxItem key={author} value={author}>
-              <span className="flex w-full items-center justify-between gap-2">
-                <span className="truncate">{author}</span>
-                <span className="text-muted-foreground text-[10px]">
-                  {authorCounts.get(author)} mod{(authorCounts.get(author) ?? 0) === 1 ? "" : "s"}
+          {matches.map((author) => {
+            const count = authorCounts.get(author) ?? 0;
+            return (
+              <ComboboxItem key={author} value={author}>
+                <span className="flex w-full items-center justify-between gap-2">
+                  <span className="truncate">{author}</span>
+                  <span className="text-muted-foreground text-[10px]">
+                    {t("mods.authorFilter.count", { count })}
+                  </span>
                 </span>
-              </span>
-            </ComboboxItem>
-          ))}
+              </ComboboxItem>
+            );
+          })}
         </ComboboxList>
       </ComboboxContent>
     </Combobox>

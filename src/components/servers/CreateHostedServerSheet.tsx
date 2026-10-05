@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { Loader2, Search } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,7 @@ export default function CreateHostedServerSheet({
   open,
   onOpenChange,
 }: CreateHostedServerSheetProps) {
+  const { t } = useTranslation();
   const createInstance = useCreateInstance();
   const { data: gameVersions } = useQuery(gameVersionsQuery);
   const installedVersions = useInstalledVersionNames();
@@ -89,10 +91,10 @@ export default function CreateHostedServerSheet({
         setDefaultWhitelistUid(result.uid);
         setDefaultWhitelistName(result.name);
       } else {
-        toast.error(`Player "${query}" not found`);
+        toast.error(t("servers.create.playerNotFound", { name: query }));
       }
     } catch (err) {
-      toast.error(`Lookup failed: ${String(err)}`);
+      toast.error(t("servers.create.lookupFailed", { error: String(err) }));
     } finally {
       setLookingUp(false);
     }
@@ -110,11 +112,11 @@ export default function CreateHostedServerSheet({
 
   function submit() {
     if (!name.trim()) {
-      setError("Enter a server name");
+      setError(t("servers.create.errorName"));
       return;
     }
     if (!selectedVersion) {
-      setError("Pick a game version");
+      setError(t("servers.create.errorVersion"));
       return;
     }
     setError(null);
@@ -133,7 +135,7 @@ export default function CreateHostedServerSheet({
         defaultWhitelistName,
       },
       {
-        onError: (err) => toast.error(`Failed to create instance: ${String(err)}`),
+        onError: (err) => toast.error(t("servers.create.createFailed", { error: String(err) })),
         onSuccess: () => {
           reset();
           onOpenChange(false);
@@ -146,37 +148,37 @@ export default function CreateHostedServerSheet({
     <Sheet open={open} onOpenChange={(next) => !createInstance.isPending && onOpenChange(next)}>
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b">
-          <SheetTitle>New server instance</SheetTitle>
-          <SheetDescription>
-            Set up a self-hosted Vintage Story server instance on this machine.
-          </SheetDescription>
+          <SheetTitle>{t("servers.create.title")}</SheetTitle>
+          <SheetDescription>{t("servers.create.description")}</SheetDescription>
         </SheetHeader>
 
         <ScrollArea scrollFade className="min-h-0 flex-1">
           <div className="grid gap-4 p-4">
             <div className="grid gap-1.5">
               <label className="text-xs font-medium" htmlFor="hosted-name">
-                Name
+                {t("common.fields.name")}
               </label>
               <Input
                 id="hosted-name"
-                placeholder="My Server"
+                placeholder={t("servers.create.namePlaceholder")}
                 value={name}
                 onChange={(event) => setName(event.target.value)}
               />
             </div>
 
             <div className="grid gap-1.5">
-              <span className="text-xs font-medium">Version</span>
+              <span className="text-xs font-medium">{t("common.fields.version")}</span>
               <Select
                 items={allVersions.map((v) => ({
-                  label: installedVersionsSet.has(v) ? `${v} (installed)` : `${v} (not installed)`,
+                  label: installedVersionsSet.has(v)
+                    ? t("servers.create.installedOption", { version: v })
+                    : t("servers.create.notInstalledOption", { version: v }),
                   value: v,
                 }))}
                 value={selectedVersion}
                 onValueChange={(value) => value && setVersion(value)}
               >
-                <SelectTrigger className="w-full" aria-label="Game version">
+                <SelectTrigger className="w-full" aria-label={t("servers.create.gameVersionAria")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -184,7 +186,9 @@ export default function CreateHostedServerSheet({
                     <SelectItem key={v} value={v}>
                       {v}
                       <span className="text-muted-foreground ml-2 text-xs">
-                        {installedVersionsSet.has(v) ? "(installed)" : "(not installed)"}
+                        {installedVersionsSet.has(v)
+                          ? t("servers.create.installed")
+                          : t("servers.create.notInstalled")}
                       </span>
                     </SelectItem>
                   ))}
@@ -195,7 +199,7 @@ export default function CreateHostedServerSheet({
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-1.5">
                 <label className="text-xs font-medium" htmlFor="hosted-port">
-                  Port
+                  {t("common.fields.port")}
                 </label>
                 <Input
                   id="hosted-port"
@@ -206,7 +210,7 @@ export default function CreateHostedServerSheet({
               </div>
               <div className="grid gap-1.5">
                 <label className="text-xs font-medium" htmlFor="hosted-bind-ip">
-                  Bind IP
+                  {t("servers.create.bindIp")}
                 </label>
                 <Input
                   id="hosted-bind-ip"
@@ -218,11 +222,11 @@ export default function CreateHostedServerSheet({
 
             <div className="grid gap-1.5">
               <label className="text-xs font-medium" htmlFor="hosted-data-dir">
-                Data directory
+                {t("servers.create.dataDirectory")}
               </label>
               <Input
                 id="hosted-data-dir"
-                placeholder="Leave empty for an auto-generated path"
+                placeholder={t("servers.create.dataDirectoryPlaceholder")}
                 value={dataDir}
                 onChange={(event) => setDataDir(event.target.value)}
               />
@@ -230,24 +234,26 @@ export default function CreateHostedServerSheet({
 
             <div className="grid gap-1.5">
               <label className="text-xs font-medium" htmlFor="hosted-start-params">
-                Extra start parameters <span className="text-muted-foreground">(optional)</span>
+                {t("servers.create.startParams")}{" "}
+                <span className="text-muted-foreground">({t("common.states.optional")})</span>
               </label>
               <Input
                 id="hosted-start-params"
                 className="font-mono"
-                placeholder="Additional CLI arguments"
+                placeholder={t("servers.create.startParamsPlaceholder")}
                 value={startParams}
                 onChange={(event) => setStartParams(event.target.value)}
               />
             </div>
 
             <p className="text-muted-foreground border-t pt-4 text-[10px] font-medium tracking-widest uppercase">
-              Server security
+              {t("servers.create.securityHeading")}
             </p>
 
             <div className="grid gap-1.5">
               <label className="text-xs font-medium" htmlFor="hosted-password">
-                Password <span className="text-muted-foreground">(optional)</span>
+                {t("common.fields.password")}{" "}
+                <span className="text-muted-foreground">({t("common.states.optional")})</span>
               </label>
               <Input
                 id="hosted-password"
@@ -259,9 +265,9 @@ export default function CreateHostedServerSheet({
 
             <div className="flex items-center justify-between gap-4">
               <div className="grid gap-0.5">
-                <span className="text-xs font-medium">Enable whitelist</span>
+                <span className="text-xs font-medium">{t("servers.create.enableWhitelist")}</span>
                 <span className="text-muted-foreground text-[11px]">
-                  Only listed players can join.
+                  {t("servers.create.whitelistHint")}
                 </span>
               </div>
               <Switch checked={whitelistEnabled} onCheckedChange={setWhitelistEnabled} />
@@ -270,10 +276,12 @@ export default function CreateHostedServerSheet({
             {whitelistEnabled && (
               <>
                 <div className="grid gap-1.5">
-                  <span className="text-xs font-medium">Default whitelist player</span>
+                  <span className="text-xs font-medium">
+                    {t("servers.create.defaultWhitelistPlayer")}
+                  </span>
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Vintage Story account name"
+                      placeholder={t("servers.create.accountNamePlaceholder")}
                       value={lookupInput}
                       onChange={(event) => setLookupInput(event.target.value)}
                       onKeyDown={(event) => {
@@ -288,7 +296,7 @@ export default function CreateHostedServerSheet({
                       onClick={() => void handleNameLookup()}
                     >
                       {lookingUp ? <Loader2 className="animate-spin" /> : <Search />}
-                      Look up
+                      {t("servers.create.lookup")}
                     </Button>
                   </div>
                 </div>
@@ -296,11 +304,11 @@ export default function CreateHostedServerSheet({
                 <div className="grid grid-cols-2 gap-3">
                   <div className="grid gap-1.5">
                     <label className="text-xs font-medium" htmlFor="hosted-whitelist-uid">
-                      Player UID
+                      {t("servers.create.playerUid")}
                     </label>
                     <Input
                       id="hosted-whitelist-uid"
-                      placeholder="Player UID"
+                      placeholder={t("servers.create.playerUid")}
                       value={defaultWhitelistUid}
                       onBlur={() => void handleUidLookup(defaultWhitelistUid)}
                       onChange={(event) => setDefaultWhitelistUid(event.target.value)}
@@ -308,11 +316,11 @@ export default function CreateHostedServerSheet({
                   </div>
                   <div className="grid gap-1.5">
                     <label className="text-xs font-medium" htmlFor="hosted-whitelist-name">
-                      Player name
+                      {t("servers.create.playerName")}
                     </label>
                     <Input
                       id="hosted-whitelist-name"
-                      placeholder="Player name"
+                      placeholder={t("servers.create.playerName")}
                       value={defaultWhitelistName}
                       onChange={(event) => setDefaultWhitelistName(event.target.value)}
                     />
@@ -332,7 +340,7 @@ export default function CreateHostedServerSheet({
                     }
                   }}
                 >
-                  + Add me
+                  {t("servers.create.addMe")}
                 </Button>
               </>
             )}
@@ -349,10 +357,10 @@ export default function CreateHostedServerSheet({
           >
             {createInstance.isPending ? (
               <>
-                <Loader2 className="animate-spin" /> Creating…
+                <Loader2 className="animate-spin" /> {t("servers.create.creating")}
               </>
             ) : (
-              "Create instance"
+              t("servers.create.submit")
             )}
           </Button>
         </SheetFooter>

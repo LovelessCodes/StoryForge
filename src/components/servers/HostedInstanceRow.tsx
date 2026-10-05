@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { cn } from "cn";
 import { FolderOpen, Play, RotateCcw, Square } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import {
   formatUptime,
@@ -20,6 +21,7 @@ import { useServerDataDirSize } from "@/hooks/use-server-data-dir-size";
 import type { HostedServerInstance } from "@/lib/server-hosting-types";
 
 export default function HostedInstanceRow({ instance }: { instance: HostedServerInstance }) {
+  const { t } = useTranslation();
   const { data: statusData } = useServerStatus(instance.id);
   const startServer = useStartServer();
   const stopServer = useStopServer();
@@ -57,7 +59,9 @@ export default function HostedInstanceRow({ instance }: { instance: HostedServer
           <span className={statusText[status.status]}>
             {statusLabels[status.status] ?? status.status}
             {isCrashed && status.exit_code != null && (
-              <span className="text-muted-foreground ml-1">(code {status.exit_code})</span>
+              <span className="text-muted-foreground ml-1">
+                {t("servers.hostedRow.exitCode", { code: status.exit_code })}
+              </span>
             )}
             {isRunning && status.uptime != null && (
               <span className="text-muted-foreground ml-1">— {formatUptime(status.uptime)}</span>
@@ -73,7 +77,7 @@ export default function HostedInstanceRow({ instance }: { instance: HostedServer
           disabled={stopServer.isPending}
           onClick={() => stopServer.mutate(instance.id)}
         >
-          <Square /> Stop
+          <Square /> {t("common.actions.stop")}
         </Button>
       ) : isCrashed ? (
         <Button
@@ -82,7 +86,7 @@ export default function HostedInstanceRow({ instance }: { instance: HostedServer
           disabled={restartServer.isPending}
           onClick={() => restartServer.mutate(instance.id)}
         >
-          <RotateCcw /> Restart
+          <RotateCcw /> {t("common.actions.restart")}
         </Button>
       ) : (
         <Button
@@ -91,14 +95,17 @@ export default function HostedInstanceRow({ instance }: { instance: HostedServer
           disabled={isBusy || startServer.isPending}
           onClick={() => startServer.mutate(instance.id)}
         >
-          <Play /> {status.status === "starting" ? "Starting…" : "Start"}
+          <Play />{" "}
+          {status.status === "starting"
+            ? t("servers.hostedRow.starting")
+            : t("servers.hostedRow.start")}
         </Button>
       )}
 
       <Button
-        aria-label={`Open data folder for ${instance.name}`}
+        aria-label={t("servers.hostedRow.openDataFolderAria", { name: instance.name })}
         size="icon-sm"
-        title="Open data folder"
+        title={t("servers.hostedRow.openDataFolder")}
         variant="ghost"
         onClick={() => revealInFolder.mutate(instance.data_dir)}
       >
@@ -110,7 +117,7 @@ export default function HostedInstanceRow({ instance }: { instance: HostedServer
         size="sm"
         variant="outline"
       >
-        Manage
+        {t("servers.actions.manage")}
       </Button>
     </div>
   );

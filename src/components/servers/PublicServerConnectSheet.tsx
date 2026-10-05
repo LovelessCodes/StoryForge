@@ -1,5 +1,6 @@
 import { Plug } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,7 @@ export default function PublicServerConnectSheet({
   onOpenChangeComplete,
   server,
 }: PublicServerConnectSheetProps) {
+  const { t } = useTranslation();
   const { profiles } = useProfiles();
   const connectToServer = useConnectToServer();
   const [password, setPassword] = useState("");
@@ -80,18 +82,18 @@ export default function PublicServerConnectSheet({
     <Sheet open={open} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete}>
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b">
-          <SheetTitle>Connect to {server?.serverName}</SheetTitle>
+          <SheetTitle>{t("servers.connect.title", { name: server?.serverName ?? "" })}</SheetTitle>
           <SheetDescription>
-            This opens Vintage Story and connects to {server?.serverIP}.
+            {t("servers.connect.description", { ip: server?.serverIP ?? "" })}
           </SheetDescription>
         </SheetHeader>
 
         <div className="grid gap-4 p-4">
           <div className="grid gap-1.5">
-            <span className="text-xs font-medium">Profile</span>
+            <span className="text-xs font-medium">{t("servers.profile")}</span>
             {matchingProfiles.length === 0 ? (
               <p className="text-muted-foreground text-xs">
-                No profile uses v{server?.gameVersion} yet. Create one on the Profiles page first.
+                {t("servers.connect.noProfile", { version: server?.gameVersion ?? "" })}
               </p>
             ) : (
               <Select
@@ -99,7 +101,7 @@ export default function PublicServerConnectSheet({
                 value={selectedProfileId === null ? "" : String(selectedProfileId)}
                 onValueChange={(value) => value && setSelectedProfileId(Number(value))}
               >
-                <SelectTrigger className="w-full" aria-label="Profile">
+                <SelectTrigger className="w-full" aria-label={t("servers.profile")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -116,7 +118,7 @@ export default function PublicServerConnectSheet({
           {server?.hasPassword && (
             <div className="grid gap-1.5">
               <label className="text-xs font-medium" htmlFor="public-server-password">
-                Server password
+                {t("servers.connect.serverPassword")}
               </label>
               <Input
                 id="public-server-password"
@@ -134,7 +136,10 @@ export default function PublicServerConnectSheet({
             disabled={selectedProfile === undefined || connectToServer.isPending}
             onClick={connect}
           >
-            <Plug /> {connectToServer.isPending ? "Connecting…" : "Connect"}
+            <Plug />{" "}
+            {connectToServer.isPending
+              ? t("servers.connect.connecting")
+              : t("servers.actions.connect")}
           </Button>
         </SheetFooter>
       </SheetContent>

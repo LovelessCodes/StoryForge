@@ -20,6 +20,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ import {
 } from "@/components/ui/sheet";
 import { notify } from "@/components/ui/toast";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
+import { useDateLocale } from "@/lib/i18n/date-locale";
 import { toast } from "@/lib/notify";
 import { useProfilesStore, type Profile } from "@/stores/profiles";
 import { useSettingsStore } from "@/stores/settings";
@@ -56,6 +58,8 @@ interface ProfileRowProps {
 }
 
 export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProps) {
+  const { t } = useTranslation();
+  const dateLocale = useDateLocale();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const installedNames = useInstalledVersionNames();
@@ -67,7 +71,9 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
   const [logsOpen, setLogsOpen] = useState(false);
   const [backupsOpen, setBackupsOpen] = useState(false);
   const [cloneOpen, setCloneOpen] = useState(false);
-  const [cloneName, setCloneName] = useState(`${profile.name} copy`);
+  const [cloneName, setCloneName] = useState(
+    t("profiles.clone.defaultName", { name: profile.name }),
+  );
   const [cloneBusy, setCloneBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
@@ -85,13 +91,13 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
     try {
       const path = await save({
         defaultPath: `${profile.name}.sfprofile.json`,
-        filters: [{ name: "Profile export", extensions: ["json"] }],
+        filters: [{ name: t("profiles.export.filterName"), extensions: ["json"] }],
       });
       if (!path) return;
       await invoke("export_profile_file", { id: profile.id, path });
-      toast.success("Profile exported");
+      toast.success(t("profiles.export.exported"));
     } catch (error) {
-      toast.error("Export failed", { description: String(error) });
+      toast.error(t("profiles.export.failed"), { description: String(error) });
     }
   }
 
@@ -99,9 +105,9 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
     try {
       const code = await invoke<string>("export_profile_code", { id: profile.id });
       await writeText(code);
-      toast.success("Share code copied to clipboard");
+      toast.success(t("profiles.export.shareCodeCopied"));
     } catch (error) {
-      toast.error("Failed to build share code", { description: String(error) });
+      toast.error(t("profiles.export.shareCodeFailed"), { description: String(error) });
     }
   }
 
@@ -115,7 +121,7 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
       setCloneOpen(false);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      toast.error("Clone failed", { description: message });
+      toast.error(t("profiles.clone.failed"), { description: message });
     } finally {
       setCloneBusy(false);
     }
@@ -123,7 +129,7 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
 
   async function doDelete() {
     if (isActive || activeProfileId === profile.id) {
-      toast.error("Switch to another profile before deleting this one");
+      toast.error(t("profiles.delete.switchFirst"));
       return;
     }
     setDeleteBusy(true);
@@ -145,11 +151,11 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
       setDeleteOpen(false);
       notify(`profile-deleted-${result.archive_name}`, {
         type: "info",
-        title: `Deleted "${profile.name}"`,
-        description: "The folder was moved to the trash — you can undo this.",
+        title: t("profiles.delete.deleted", { name: profile.name }),
+        description: t("profiles.delete.description"),
         timeout: 10000,
         actionProps: {
-          children: "Undo",
+          children: t("profiles.delete.undo"),
           onClick: () => {
             void invoke("restore_deleted_profile", { archiveName: result.archive_name }).then(
               async () => {
@@ -157,7 +163,7 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
                 void queryClient.invalidateQueries({ queryKey: ["deleted-profiles"] });
                 void notify(`profile-restored-${result.archive_name}`, {
                   type: "success",
-                  title: `Restored "${profile.name}"`,
+                  title: t("profiles.delete.restored", { name: profile.name }),
                   timeout: 4000,
                 });
               },
@@ -167,7 +173,7 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      toast.error("Delete failed", { description: message });
+      toast.error(t("profiles.delete.failed"), { description: message });
     } finally {
       setDeleteBusy(false);
     }
@@ -176,8 +182,13 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
   const meta: string[] = [`v${profile.version}`, profile.sizeDisplay];
   meta.push(
     profile.lastTimePlayed > 0
-      ? `Played ${formatDistanceToNow(new Date(profile.lastTimePlayed), { addSuffix: true })}`
-      : "Never played",
+      ? t("profiles.row.played", {
+          time: formatDistanceToNow(new Date(profile.lastTimePlayed), {
+            addSuffix: true,
+            locale: dateLocale,
+          }),
+        })
+      : t("profiles.row.neverPlayed"),
   );
 
   return (
@@ -199,7 +210,7 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
           <span className="truncate text-sm font-medium">{profile.name}</span>
           {isActive && (
             <Badge className="border-accent-primary/40 bg-accent-primary/10 text-accent-primary h-4 px-1.5 text-[10px]">
-              Active
+              {t("profiles.row.active")}
             </Badge>
           )}
           {profile.favorite && (
@@ -215,7 +226,7 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
               variant="outline"
               className="h-4 border-[var(--color-info)]/40 px-1.5 text-[10px] text-[var(--color-info)]"
             >
-              Existing data
+              {t("profiles.row.existingData")}
             </Badge>
           )}
         </div>
@@ -223,79 +234,85 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
           {meta.map((item) => (
             <span key={item}>{item}</span>
           ))}
-          {!versionInstalled && <span className="text-[var(--color-warning)]">Not installed</span>}
+          {!versionInstalled && (
+            <span className="text-[var(--color-warning)]">{t("profiles.row.notInstalled")}</span>
+          )}
         </div>
       </div>
 
       {!isActive && (
         <Button size="sm" variant="outline" onClick={switchToThis}>
-          Switch
+          {t("profiles.row.switch")}
         </Button>
       )}
 
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button aria-label={`Actions for ${profile.name}`} size="icon-sm" variant="ghost" />
+            <Button
+              aria-label={t("profiles.row.actionsFor", { name: profile.name })}
+              size="icon-sm"
+              variant="ghost"
+            />
           }
         >
           <Ellipsis />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => onEdit(profile)} className="text-nowrap">
-            <Pencil /> Edit
+            <Pencil /> {t("common.actions.edit")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => openMods("mods")} className="text-nowrap">
-            <Package /> Manage Mods
+            <Package /> {t("profiles.row.manageMods")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => openMods("config")} className="text-nowrap">
-            <FileText /> Configure Mods
+            <FileText /> {t("profiles.row.configureMods")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
               void invoke("reveal_in_file_explorer", { path: profile.path }).catch((error) =>
-                toast.error("Could not open folder", { description: String(error) }),
+                toast.error(t("profiles.row.openFolderFailed"), { description: String(error) }),
               );
             }}
           >
-            <FolderOpen /> Open Folder
+            <FolderOpen /> {t("common.actions.openFolder")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setLogsOpen(true)} className="text-nowrap">
-            <ScrollText /> View Logs
+            <ScrollText /> {t("profiles.row.viewLogs")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setBackupsOpen(true)} className="text-nowrap">
-            <Archive /> Backups
+            <Archive /> {t("profiles.row.backups")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => void exportFile()} className="text-nowrap">
-            <Share2 /> Export as file…
+            <Share2 /> {t("profiles.row.exportFile")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => void copyShareCode()} className="text-nowrap">
-            <Link2 /> Copy share code
+            <Link2 /> {t("profiles.row.copyShareCode")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
-              setCloneName(`${profile.name} copy`);
+              setCloneName(t("profiles.clone.defaultName", { name: profile.name }));
               setCloneOpen(true);
             }}
             className="text-nowrap"
           >
-            <Copy /> Clone…
+            <Copy /> {t("profiles.clone.menu")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             disabled={isActive}
-            title={isActive ? "Switch to another profile first" : undefined}
+            title={isActive ? t("profiles.row.switchFirstTitle") : undefined}
             variant="destructive"
             onClick={() => setDeleteOpen(true)}
             className="text-nowrap"
           >
             <Trash2 />{" "}
             {isActive
-              ? "Delete (current profile)"
+              ? t("profiles.row.deleteCurrent")
               : profile.external
-                ? "Remove from Story Forge"
-                : "Delete"}
+                ? t("profiles.delete.removeAction")
+                : t("common.actions.delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -306,14 +323,12 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
       <Sheet open={cloneOpen} onOpenChange={(next) => !cloneBusy && setCloneOpen(next)}>
         <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-sm">
           <SheetHeader className="border-b">
-            <SheetTitle>Clone “{profile.name}”</SheetTitle>
-            <SheetDescription>
-              Copies the whole profile folder — mods, configs and worlds included.
-            </SheetDescription>
+            <SheetTitle>{t("profiles.clone.title", { name: profile.name })}</SheetTitle>
+            <SheetDescription>{t("profiles.clone.description")}</SheetDescription>
           </SheetHeader>
           <div className="grid gap-1.5 p-4">
             <label className="text-xs font-medium" htmlFor="clone-name">
-              New name
+              {t("profiles.clone.newName")}
             </label>
             <Input
               id="clone-name"
@@ -327,7 +342,7 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
               disabled={cloneBusy || cloneName.trim().length < 2}
               onClick={() => void doClone()}
             >
-              {cloneBusy ? "Cloning…" : "Clone profile"}
+              {cloneBusy ? t("profiles.clone.busy") : t("profiles.clone.submit")}
             </Button>
           </SheetFooter>
         </SheetContent>
@@ -338,24 +353,24 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
           <SheetHeader className="border-b">
             <SheetTitle>
               {profile.external
-                ? `Remove “${profile.name}” from Story Forge?`
-                : `Delete “${profile.name}”?`}
+                ? t("profiles.delete.removeTitle", { name: profile.name })
+                : t("profiles.delete.deleteTitle", { name: profile.name })}
             </SheetTitle>
             <SheetDescription>
               {profile.external
-                ? "This profile links to your existing Vintage Story data folder. Removing it only stops Story Forge from managing the folder — nothing inside it is moved or deleted."
-                : "The profile folder is moved to the trash inside your profiles directory. You can undo this from the toast or the “Deleted profiles” section."}
+                ? t("profiles.delete.externalDescription")
+                : t("profiles.delete.folderDescription")}
             </SheetDescription>
           </SheetHeader>
           <SheetFooter className="border-t">
             <Button variant="destructive" disabled={deleteBusy} onClick={() => void doDelete()}>
               {deleteBusy
                 ? profile.external
-                  ? "Removing…"
-                  : "Deleting…"
+                  ? t("profiles.delete.removing")
+                  : t("profiles.delete.deleting")
                 : profile.external
-                  ? "Remove from Story Forge"
-                  : "Move to trash"}
+                  ? t("profiles.delete.removeAction")
+                  : t("profiles.delete.moveToTrash")}
             </Button>
           </SheetFooter>
         </SheetContent>

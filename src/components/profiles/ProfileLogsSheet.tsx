@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { RefreshCw } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -24,6 +25,7 @@ interface ProfileLogsSheetProps {
 }
 
 export default function ProfileLogsSheet({ open, onOpenChange, profile }: ProfileLogsSheetProps) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<string | null>(null);
 
   const logsQuery = useQuery({
@@ -44,11 +46,11 @@ export default function ProfileLogsSheet({ open, onOpenChange, profile }: Profil
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-3xl">
         <SheetHeader className="flex-row items-center justify-between border-b">
           <div>
-            <SheetTitle>Logs — {profile.name}</SheetTitle>
-            <SheetDescription>Game logs written to the profile’s Logs folder.</SheetDescription>
+            <SheetTitle>{t("profiles.logs.title", { name: profile.name })}</SheetTitle>
+            <SheetDescription>{t("profiles.logs.description")}</SheetDescription>
           </div>
           <Button
-            aria-label="Refresh logs"
+            aria-label={t("profiles.logs.refresh")}
             size="icon-sm"
             variant="ghost"
             onClick={() => {
@@ -63,7 +65,7 @@ export default function ProfileLogsSheet({ open, onOpenChange, profile }: Profil
         <div className="flex min-h-0 flex-1">
           <div className="w-48 shrink-0 overflow-y-auto border-r">
             {(logsQuery.data ?? []).length === 0 && (
-              <p className="text-muted-foreground p-3 text-[11px]">No logs found.</p>
+              <p className="text-muted-foreground p-3 text-[11px]">{t("profiles.logs.empty")}</p>
             )}
             {(logsQuery.data ?? []).map((log) => (
               <button
@@ -84,8 +86,8 @@ export default function ProfileLogsSheet({ open, onOpenChange, profile }: Profil
           <ScrollArea scrollFade className="min-h-0 flex-1">
             <pre className="text-muted-foreground p-3 font-mono text-[11px] whitespace-pre-wrap">
               {logContent.isLoading
-                ? "Loading…"
-                : (logContent.data ?? "Select a log to view its contents.")}
+                ? t("common.states.loading")
+                : (logContent.data ?? t("profiles.logs.select"))}
             </pre>
           </ScrollArea>
         </div>

@@ -16,6 +16,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,7 @@ interface ServerRowProps {
 }
 
 export default function ServerRow({ server, onEdit }: ServerRowProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const toggleFavorite = useServerStore((s) => s.toggleFavorite);
   const loadServers = useServerStore((s) => s.loadServers);
@@ -100,7 +102,7 @@ export default function ServerRow({ server, onEdit }: ServerRowProps) {
       },
       {
         onError: (error) => {
-          toast.error(`Error removing server: ${error.message}`, {
+          toast.error(t("servers.row.removeFailed", { error: error.message }), {
             id: `server-remove-${server.id}`,
           });
         },
@@ -118,11 +120,17 @@ export default function ServerRow({ server, onEdit }: ServerRowProps) {
     <div className="bg-card hover:bg-muted/40 flex items-center gap-3 p-3 transition-colors">
       <div className="flex shrink-0 items-center">
         {isChecking ? (
-          <Wifi className="text-muted-foreground/40 size-3" aria-label="Checking server status" />
+          <Wifi
+            className="text-muted-foreground/40 size-3"
+            aria-label={t("servers.row.checkingAria")}
+          />
         ) : isOnline ? (
-          <Wifi className="text-success size-3" aria-label="Server is online" />
+          <Wifi className="text-success size-3" aria-label={t("servers.row.onlineAria")} />
         ) : (
-          <WifiOff className="text-destructive size-3" aria-label="Server is unreachable" />
+          <WifiOff
+            className="text-destructive size-3"
+            aria-label={t("servers.row.unreachableAria")}
+          />
         )}
       </div>
 
@@ -136,11 +144,17 @@ export default function ServerRow({ server, onEdit }: ServerRowProps) {
         </div>
         <div className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px]">
           <span className={cn("font-mono", !streamMode && "text-[var(--color-warning)]")}>
-            {streamMode ? "hidden" : address}
+            {streamMode ? t("servers.row.hidden") : address}
           </span>
-          <span>via {profile?.name ?? server.profileName ?? "Unknown profile"}</span>
+          <span>
+            {t("servers.row.via", {
+              name: profile?.name ?? server.profileName ?? t("servers.row.unknownProfile"),
+            })}
+          </span>
           {profile?.version && <span>v{profile.version}</span>}
-          {!versionInstalled && <span className="text-[var(--color-warning)]">Not installed</span>}
+          {!versionInstalled && (
+            <span className="text-[var(--color-warning)]">{t("servers.row.notInstalled")}</span>
+          )}
         </div>
       </div>
 
@@ -151,18 +165,24 @@ export default function ServerRow({ server, onEdit }: ServerRowProps) {
         onClick={connect}
         title={
           versionInstalled
-            ? `Connect to ${server.name}`
-            : `Download version ${profile?.version ?? "unknown"}`
+            ? t("servers.row.connectTitle", { name: server.name })
+            : t("servers.row.downloadTitle", {
+                version: profile?.version ?? t("common.states.unknown"),
+              })
         }
       >
         {versionInstalled ? <Plug /> : <DownloadCloud />}
-        {versionInstalled ? "Connect" : "Download"}
+        {versionInstalled ? t("servers.actions.connect") : t("servers.actions.download")}
       </Button>
 
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button aria-label={`Actions for ${server.name}`} size="icon-sm" variant="ghost" />
+            <Button
+              aria-label={t("servers.row.actionsAria", { name: server.name })}
+              size="icon-sm"
+              variant="ghost"
+            />
           }
         >
           <Ellipsis />
@@ -170,31 +190,31 @@ export default function ServerRow({ server, onEdit }: ServerRowProps) {
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={connect} disabled={busy}>
             {versionInstalled ? <Plug /> : <DownloadCloud />}
-            {versionInstalled ? "Connect" : "Download version"}
+            {versionInstalled ? t("servers.actions.connect") : t("servers.actions.downloadVersion")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => toggleFavorite(server.rowKey)}>
             <Star className={cn(server.favorite && "text-warning fill-warning")} />
-            {server.favorite ? "Unfavorite" : "Favorite"}
+            {server.favorite ? t("servers.row.unfavorite") : t("servers.row.favorite")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem disabled={!profile} onClick={() => openProfileFolder("mods")}>
-            <Package /> Manage Mods
+            <Package /> {t("servers.row.manageMods")}
           </DropdownMenuItem>
           <DropdownMenuItem disabled={!profile} onClick={() => openProfileFolder("config")}>
-            <FileText /> Configure Mods
+            <FileText /> {t("servers.row.configureMods")}
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={!profile}
             onClick={() => profile && revealInFolder.mutate(profile.path)}
           >
-            <FolderOpen /> Open Profile Folder
+            <FolderOpen /> {t("servers.row.openProfileFolder")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => onEdit(server)}>
-            <Pencil /> Edit
+            <Pencil /> {t("common.actions.edit")}
           </DropdownMenuItem>
           <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
-            <Trash2 /> Delete
+            <Trash2 /> {t("common.actions.delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -205,10 +225,11 @@ export default function ServerRow({ server, onEdit }: ServerRowProps) {
       >
         <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-sm">
           <SheetHeader className="border-b">
-            <SheetTitle>Delete “{server.name}”?</SheetTitle>
+            <SheetTitle>{t("servers.row.deleteTitle", { name: server.name })}</SheetTitle>
             <SheetDescription>
-              This removes the server from “{profile?.name ?? server.profileName}”. The action
-              cannot be undone.
+              {t("servers.row.deleteDescription", {
+                profile: profile?.name ?? server.profileName,
+              })}
             </SheetDescription>
           </SheetHeader>
           <div className="p-4">
@@ -224,10 +245,10 @@ export default function ServerRow({ server, onEdit }: ServerRowProps) {
             >
               {removeServerFromProfile.isPending ? (
                 <>
-                  <Loader2 className="animate-spin" /> Deleting…
+                  <Loader2 className="animate-spin" /> {t("servers.row.deleting")}
                 </>
               ) : (
-                "Delete server"
+                t("servers.row.deleteSubmit")
               )}
             </Button>
           </SheetFooter>

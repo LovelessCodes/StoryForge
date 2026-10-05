@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 import { LauncherImportBanner } from "@/components/profiles/LauncherImportBanner";
 import {
   useGruntLauncherInstances,
@@ -7,6 +9,7 @@ import { useSettingsStore } from "@/stores/settings";
 
 /** Import banner for GruntLauncher (renarin-kholin) instances. */
 export default function GruntLauncherBanner() {
+  const { t } = useTranslation();
   const { data } = useGruntLauncherInstances();
   const dismissed = useSettingsStore((s) => s.gruntLauncherDismissed);
   const dismiss = useSettingsStore((s) => s.dismissGruntLauncher);
@@ -18,8 +21,8 @@ export default function GruntLauncherBanner() {
       onDismiss={dismiss}
       source={{
         name: "GruntLauncher",
-        hint: "Instances from GruntLauncher by renarin-kholin. Each instance folder becomes a profile with its mods, settings and worlds.",
-        note: "GruntLauncher's own instance file and mod logo cache are removed from the imported profile. Game versions from its installations folder can be linked on the Versions page.",
+        hint: t("profiles.banners.gruntLauncher.hint"),
+        note: t("profiles.banners.gruntLauncher.note"),
         importCommand: "import_gruntlauncher_instances",
         queryKey: gruntLauncherInstancesQueryKey,
       }}

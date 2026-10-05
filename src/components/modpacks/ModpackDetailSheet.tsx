@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { Boxes, CheckIcon, Download, Pencil, Plus, Trash2, XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,7 @@ export default function ModpackDetailSheet({
   onOpenChangeComplete,
   modpack,
 }: ModpackDetailSheetProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuthSession();
   const { appFolder } = useAppFolder();
@@ -168,7 +170,7 @@ export default function ModpackDetailSheet({
       setImporting(false);
       setImportProgress(null);
       const message = error instanceof Error ? error.message : String(error);
-      toast.error("Failed to import modpack", { description: message });
+      toast.error(t("modpacks.install.failed"), { description: message });
     }
   };
 
@@ -182,9 +184,12 @@ export default function ModpackDetailSheet({
         <SheetHeader className="border-b pr-12">
           <SheetTitle className="truncate">{modpack.name}</SheetTitle>
           <SheetDescription>
-            by {modpack.owner.name} · {modpack.downloads.toLocaleString()} download
-            {modpack.downloads !== 1 ? "s" : ""}
-            {isOwner ? " · Yours" : ""}
+            {isOwner
+              ? t("modpacks.detail.bylineOwner", {
+                  name: modpack.owner.name,
+                  count: modpack.downloads,
+                })
+              : t("modpacks.detail.byline", { name: modpack.owner.name, count: modpack.downloads })}
           </SheetDescription>
         </SheetHeader>
 
@@ -198,7 +203,7 @@ export default function ModpackDetailSheet({
               src={modpack.imageUrl}
             />
             <p className="text-muted-foreground text-xs leading-relaxed whitespace-pre-wrap">
-              {modpack.description || "No description"}
+              {modpack.description || t("modpacks.noDescription")}
             </p>
 
             <Separator />
@@ -208,11 +213,11 @@ export default function ModpackDetailSheet({
               <div className="flex items-center justify-between gap-2">
                 <h3 className="flex items-center gap-2 text-xs font-semibold">
                   <Boxes className="size-4" />
-                  Versions ({sortedVersions.length})
+                  {t("modpacks.detail.versionsCount", { count: sortedVersions.length })}
                 </h3>
                 {isOwner && editingVersionId !== "new" && (
                   <Button size="sm" variant="outline" onClick={startAddVersion}>
-                    <Plus /> Add version
+                    <Plus /> {t("modpacks.detail.addVersion")}
                   </Button>
                 )}
               </div>
@@ -229,8 +234,7 @@ export default function ModpackDetailSheet({
 
               {sortedVersions.length === 0 ? (
                 <p className="text-muted-foreground text-xs">
-                  No versions published yet.
-                  {isOwner ? " Add one to make this modpack installable." : ""}
+                  {isOwner ? t("modpacks.detail.emptyOwner") : t("modpacks.detail.empty")}
                 </p>
               ) : (
                 sortedVersions.map((version) => {
@@ -264,19 +268,20 @@ export default function ModpackDetailSheet({
                               v{version.version}
                             </span>
                             <span className="text-muted-foreground font-mono text-[10px]">
-                              for VS {version.gameVersion}
+                              {t("modpacks.detail.forVs", { version: version.gameVersion })}
                             </span>
                           </div>
                           <span className="text-muted-foreground/70 text-[11px]">
-                            {version.downloads.toLocaleString()} download
-                            {version.downloads !== 1 ? "s" : ""}
+                            {t("modpacks.downloads", { count: version.downloads })}
                           </span>
                         </div>
 
                         {isOwner && !isNaming && (
                           <div className="flex shrink-0 items-center gap-0.5">
                             <Button
-                              aria-label={`Edit version ${version.version}`}
+                              aria-label={t("modpacks.detail.editVersion", {
+                                version: version.version,
+                              })}
                               size="icon-sm"
                               variant="ghost"
                               onClick={() => startEditVersion(version)}
@@ -284,7 +289,9 @@ export default function ModpackDetailSheet({
                               <Pencil />
                             </Button>
                             <Button
-                              aria-label={`Delete version ${version.version}`}
+                              aria-label={t("modpacks.detail.deleteVersion", {
+                                version: version.version,
+                              })}
                               className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                               size="icon-sm"
                               variant="ghost"
@@ -304,7 +311,9 @@ export default function ModpackDetailSheet({
                             onClick={() => handleInstallClick(version)}
                           >
                             <Download />
-                            {versionInstalled ? "Install" : `Need VS ${version.gameVersion}`}
+                            {versionInstalled
+                              ? t("common.actions.install")
+                              : t("modpacks.detail.needVs", { version: version.gameVersion })}
                           </Button>
                         )}
                       </div>
@@ -331,13 +340,13 @@ export default function ModpackDetailSheet({
                                 className="text-muted-foreground text-[11px] font-medium"
                                 htmlFor={`install-name-${version.id}`}
                               >
-                                Profile name
+                                {t("modpacks.install.profileName")}
                               </label>
                               <Input
                                 autoFocus
                                 disabled={importing}
                                 id={`install-name-${version.id}`}
-                                placeholder="My profile"
+                                placeholder={t("modpacks.install.profilePlaceholder")}
                                 value={installName}
                                 onChange={(event) => setInstallName(event.target.value)}
                                 onKeyDown={(event) => {
@@ -349,7 +358,7 @@ export default function ModpackDetailSheet({
                               />
                             </div>
                             <Button
-                              aria-label="Install this version"
+                              aria-label={t("modpacks.install.confirmAria")}
                               disabled={importing || !installName.trim()}
                               size="icon-sm"
                               variant="accent-primary"
@@ -358,7 +367,7 @@ export default function ModpackDetailSheet({
                               <CheckIcon />
                             </Button>
                             <Button
-                              aria-label="Cancel install"
+                              aria-label={t("modpacks.install.cancelAria")}
                               disabled={importing}
                               size="icon-sm"
                               variant="ghost"
@@ -385,10 +394,11 @@ export default function ModpackDetailSheet({
 
 /** Per-mod download progress while a modpack version is being installed. */
 function ImportProgressBar({ progress }: { progress: ImportProgress }) {
+  const { t } = useTranslation();
   return (
     <div className="grid gap-1">
       <p className="text-muted-foreground text-[11px]">
-        Downloading mod {progress.current} of {progress.total}:{" "}
+        {t("modpacks.install.progress", { current: progress.current, total: progress.total })}{" "}
         <span className="text-foreground font-medium">{progress.modid}</span>
         <span className="text-muted-foreground">@{progress.version}</span>
       </p>

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { Box, FolderOpen, Link2, Loader2, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,15 +11,8 @@ import { linkableVersionsQueryKey } from "@/hooks/use-linkable-versions";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
 import { toast } from "@/lib/notify";
 
-const deleteNote =
-  "Profiles using this version keep working; you just cannot create new ones with it " +
-  "until it is reinstalled.";
-
-const unlinkNote =
-  "Story Forge stops using this folder; nothing on disk is changed and the launcher that " +
-  "installed it keeps working.";
-
 export default function VersionRow({ version }: { version: InstalledVersion }) {
+  const { t } = useTranslation();
   const { mutate: openFolder } = useRevealInFolder();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState(false);
@@ -28,8 +22,8 @@ export default function VersionRow({ version }: { version: InstalledVersion }) {
     onMutate: () => {
       toast.loading(
         version.external
-          ? `Unlinking version ${version.name}…`
-          : `Deleting version ${version.name}…`,
+          ? t("versions.toast.unlinking", { name: version.name })
+          : t("versions.toast.deleting", { name: version.name }),
         { id: `version-delete-${version.name}` },
       );
     },
@@ -40,7 +34,9 @@ export default function VersionRow({ version }: { version: InstalledVersion }) {
     },
     onError: (error) => {
       toast.error(
-        `Failed to ${version.external ? "unlink" : "delete"} version ${version.name}: ${error.message}`,
+        version.external
+          ? t("versions.toast.unlinkFailed", { name: version.name, message: error.message })
+          : t("versions.toast.deleteFailed", { name: version.name, message: error.message }),
         { id: `version-delete-${version.name}` },
       );
     },
@@ -58,7 +54,7 @@ export default function VersionRow({ version }: { version: InstalledVersion }) {
           <span className="truncate font-mono text-xs font-medium">{version.name}</span>
           {isRc && (
             <Badge variant="outline" className="shrink-0 text-[10px]">
-              Release Candidate
+              {t("versions.row.releaseCandidate")}
             </Badge>
           )}
           {version.external && (
@@ -67,15 +63,15 @@ export default function VersionRow({ version }: { version: InstalledVersion }) {
               className="border-accent-primary/40 text-accent-primary shrink-0 gap-1 text-[10px]"
             >
               <Link2 className="size-3" />
-              Linked{version.source ? ` · ${version.source}` : ""}
+              {version.source
+                ? t("versions.linkedWithSource", { source: version.source })
+                : t("versions.linked")}
             </Badge>
           )}
         </div>
         <p className="text-muted-foreground text-xs">
           {folderMissing ? (
-            <span className="text-[var(--color-warning)]">
-              Folder not found — relink or unlink it
-            </span>
+            <span className="text-[var(--color-warning)]">{t("versions.row.folderMissing")}</span>
           ) : (
             version.size_display
           )}
@@ -86,9 +82,9 @@ export default function VersionRow({ version }: { version: InstalledVersion }) {
         <div className="flex shrink-0 items-center gap-2">
           <span
             className="text-destructive text-[11px]"
-            title={version.external ? unlinkNote : deleteNote}
+            title={version.external ? t("versions.row.unlinkNote") : t("versions.row.deleteNote")}
           >
-            {version.external ? "Really unlink?" : "Really delete?"}
+            {version.external ? t("versions.row.reallyUnlink") : t("versions.row.reallyDelete")}
           </span>
           <Button
             variant="ghost"
@@ -96,7 +92,7 @@ export default function VersionRow({ version }: { version: InstalledVersion }) {
             disabled={isPending}
             onClick={() => setConfirming(false)}
           >
-            Cancel
+            {t("common.actions.cancel")}
           </Button>
           <Button
             variant="destructive"
@@ -105,22 +101,24 @@ export default function VersionRow({ version }: { version: InstalledVersion }) {
             onClick={() => removeVersion(version.name)}
           >
             {isPending && <Loader2 className="animate-spin" />}
-            {version.external ? "Unlink" : "Delete"}
+            {version.external ? t("versions.row.unlink") : t("common.actions.delete")}
           </Button>
         </div>
       ) : (
         <div className="flex shrink-0 items-center gap-1">
           <Button variant="outline" size="sm" onClick={() => openFolder(version.path)}>
             <FolderOpen />
-            <span className="hidden sm:inline">Open Folder</span>
+            <span className="hidden sm:inline">{t("common.actions.openFolder")}</span>
           </Button>
           <Button
             variant="ghost"
             size="icon-sm"
             aria-label={
-              version.external ? `Unlink version ${version.name}` : `Delete version ${version.name}`
+              version.external
+                ? t("versions.row.unlinkVersion", { name: version.name })
+                : t("versions.row.deleteVersion", { name: version.name })
             }
-            title={version.external ? "Unlink" : "Delete"}
+            title={version.external ? t("versions.row.unlink") : t("common.actions.delete")}
             disabled={isPending}
             className="text-muted-foreground hover:text-destructive"
             onClick={() => setConfirming(true)}

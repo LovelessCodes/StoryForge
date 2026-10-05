@@ -1,4 +1,5 @@
 import { Package } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import VirtualList from "@/components/common/VirtualList";
 import type { ModUpdatesResponse } from "@/hooks/use-mod-updates";
@@ -37,6 +38,8 @@ export function ModList({
   onRemove: (mod: Mod, installedMod: OutputMod) => void;
   onStandaloneInstall: (mod: Mod) => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <VirtualList
       items={mods}
@@ -46,9 +49,7 @@ export function ModList({
       empty={
         <div className="flex flex-col items-center justify-center gap-3 border border-dashed p-10 text-center">
           <Package className="text-muted-foreground size-6" />
-          <p className="text-muted-foreground text-xs">
-            No mods found. Try adjusting your search or filters.
-          </p>
+          <p className="text-muted-foreground text-xs">{t("mods.list.empty")}</p>
         </div>
       }
       renderItem={(mod) => (

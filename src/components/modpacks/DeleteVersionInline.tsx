@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,7 @@ export default function DeleteVersionInline({
   version,
   onCancel,
 }: DeleteVersionInlineProps) {
+  const { t } = useTranslation();
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
 
@@ -29,7 +31,7 @@ export default function DeleteVersionInline({
       onCancel();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      toast.error("Failed to delete version", { description: message });
+      toast.error(t("modpacks.deleteVersion.failed"), { description: message });
     } finally {
       setDeleting(false);
     }
@@ -38,14 +40,14 @@ export default function DeleteVersionInline({
   return (
     <div className="border-destructive/40 bg-destructive/5 grid gap-2 border p-2">
       <p className="text-xs">
-        Permanently delete <strong>v{version}</strong>? This cannot be undone.
+        <Trans i18nKey="modpacks.deleteVersion.confirm" values={{ version }} />
       </p>
       <div className="flex items-center gap-2">
         <Input
           autoFocus
           className="font-mono"
           disabled={deleting}
-          placeholder={`Type ${version} to confirm`}
+          placeholder={t("modpacks.deleteVersion.confirmPlaceholder", { version })}
           value={confirmText}
           onChange={(event) => setConfirmText(event.target.value)}
           onKeyDown={(event) => {
@@ -54,7 +56,7 @@ export default function DeleteVersionInline({
           }}
         />
         <Button disabled={deleting} size="sm" variant="ghost" onClick={onCancel}>
-          Cancel
+          {t("common.actions.cancel")}
         </Button>
         <Button
           disabled={!canDelete || deleting}
@@ -62,7 +64,7 @@ export default function DeleteVersionInline({
           variant="destructive"
           onClick={() => void handleDelete()}
         >
-          {deleting ? "Deleting…" : "Delete"}
+          {deleting ? t("modpacks.deleteVersion.pending") : t("common.actions.delete")}
         </Button>
       </div>
     </div>

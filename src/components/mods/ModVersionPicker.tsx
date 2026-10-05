@@ -1,19 +1,26 @@
+import { useTranslation } from "react-i18next";
+
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import type { Release } from "@/lib/types";
 
 /** One release row: version, game tag(s) and download count. */
 export function ModReleaseItem({ release }: { release: Release }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col">
       <span>
         {release.modversion}
         <span className="text-muted-foreground">
           {" "}
-          for {release.tags[0]}{" "}
-          {release.tags.length > 1 ? `(+${release.tags.length - 1} more)` : ""}
+          {t("mods.versionPicker.forVersion", { version: release.tags[0] })}{" "}
+          {release.tags.length > 1
+            ? t("mods.versionPicker.moreTags", { count: release.tags.length - 1 })
+            : ""}
         </span>
       </span>
-      <span className="text-muted-foreground text-xs">{release.downloads} downloads</span>
+      <span className="text-muted-foreground text-xs">
+        {t("mods.release.downloads", { count: release.downloads })}
+      </span>
     </div>
   );
 }
@@ -32,6 +39,7 @@ export function ModVersionPicker({
   selected: Release | null | undefined;
   onSelect: (release: Release | null) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Select
       onValueChange={(value) => {
@@ -40,18 +48,20 @@ export function ModVersionPicker({
       }}
       value={selected?.modversion ?? null}
     >
-      <SelectTrigger className="w-full truncate" aria-label="Select version">
+      <SelectTrigger className="w-full truncate" aria-label={t("mods.versionPicker.aria")}>
         <span className="truncate">
           {selected?.modversion ? (
             <>
               {selected.modversion}{" "}
               <span className="text-muted-foreground">
-                for {selected.tags[0]}{" "}
-                {selected.tags.length > 1 ? `(+${selected.tags.length - 1} more)` : ""}
+                {t("mods.versionPicker.forVersion", { version: selected.tags[0] })}{" "}
+                {selected.tags.length > 1
+                  ? t("mods.versionPicker.moreTags", { count: selected.tags.length - 1 })
+                  : ""}
               </span>
             </>
           ) : (
-            "Select version..."
+            t("mods.versionPicker.placeholder")
           )}
         </span>
       </SelectTrigger>

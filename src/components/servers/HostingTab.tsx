@@ -1,6 +1,7 @@
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { HardDrive, Plus, RefreshCw, Server } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { ListSkeleton } from "@/components/common/LoadingSkeleton";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import CreateHostedServerSheet from "./CreateHostedServerSheet";
 import HostedInstanceRow from "./HostedInstanceRow";
 
 export default function HostingTab() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: instances, isPending } = useHostedServers();
   const [createOpen, setCreateOpen] = useState(false);
@@ -19,12 +21,10 @@ export default function HostingTab() {
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
       <div className="flex shrink-0 items-center justify-between gap-4">
-        <p className="text-muted-foreground text-xs">
-          Self-hosted Vintage Story instances managed by Story Forge.
-        </p>
+        <p className="text-muted-foreground text-xs">{t("servers.hosting.description")}</p>
         <div className="flex items-center gap-2">
           <Button
-            aria-label="Refresh instances"
+            aria-label={t("servers.hosting.refreshAria")}
             disabled={refreshing}
             size="icon-sm"
             variant="outline"
@@ -35,7 +35,7 @@ export default function HostingTab() {
             <RefreshCw className={refreshing ? "animate-spin" : undefined} />
           </Button>
           <Button size="sm" variant="accent-primary" onClick={() => setCreateOpen(true)}>
-            <Plus /> New server
+            <Plus /> {t("servers.hosting.newServer")}
           </Button>
         </div>
       </div>
@@ -47,13 +47,13 @@ export default function HostingTab() {
           <div className="flex flex-col items-center justify-center gap-3 border border-dashed p-10 text-center">
             <Server className="text-muted-foreground size-6" />
             <div>
-              <p className="text-sm font-medium">No server instances yet</p>
+              <p className="text-sm font-medium">{t("servers.hosting.emptyTitle")}</p>
               <p className="text-muted-foreground text-xs">
-                Create an instance to run a dedicated Vintage Story server from this machine.
+                {t("servers.hosting.emptyDescription")}
               </p>
             </div>
             <Button size="sm" variant="accent-primary" onClick={() => setCreateOpen(true)}>
-              <HardDrive /> Create your first instance
+              <HardDrive /> {t("servers.hosting.createFirst")}
             </Button>
           </div>
         ) : (

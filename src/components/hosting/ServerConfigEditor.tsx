@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,6 +10,7 @@ import { toast } from "@/lib/notify";
 const Editor = lazy(() => import("@monaco-editor/react"));
 
 export default function ServerConfigEditor({ instanceId }: { instanceId: number }) {
+  const { t } = useTranslation();
   const { data: serverConfig } = useServerConfig(instanceId);
   const writeConfig = useWriteServerConfig();
 
@@ -22,13 +24,13 @@ export default function ServerConfigEditor({ instanceId }: { instanceId: number 
 
   function handleSave() {
     if (config === original) {
-      toast.info("No changes to save");
+      toast.info(t("hosting.config.noChanges"));
       return;
     }
     try {
       JSON.parse(config);
     } catch (err) {
-      toast.error(`Failed to save: ${String(err)}`);
+      toast.error(t("hosting.config.saveFailed", { message: String(err) }));
       return;
     }
     writeConfig.mutate(
@@ -36,9 +38,9 @@ export default function ServerConfigEditor({ instanceId }: { instanceId: number 
       {
         onSuccess: () => {
           setSaved(config);
-          toast.success("serverconfig.json saved. Restart the server to apply changes.");
+          toast.success(t("hosting.config.saved"));
         },
-        onError: (err) => toast.error(`Failed to save: ${String(err)}`),
+        onError: (err) => toast.error(t("hosting.config.saveFailed", { message: String(err) })),
       },
     );
   }
@@ -58,9 +60,7 @@ export default function ServerConfigEditor({ instanceId }: { instanceId: number 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-muted-foreground text-xs">
-          Edit serverconfig.json. Changes apply on the next restart.
-        </p>
+        <p className="text-muted-foreground text-xs">{t("hosting.config.description")}</p>
         <div className="flex gap-2">
           <Button
             disabled={!hasChanges}
@@ -68,7 +68,7 @@ export default function ServerConfigEditor({ instanceId }: { instanceId: number 
             variant="outline"
             onClick={() => setEdited(original)}
           >
-            Reset
+            {t("hosting.config.reset")}
           </Button>
           <Button
             disabled={!hasChanges || writeConfig.isPending}
@@ -76,7 +76,7 @@ export default function ServerConfigEditor({ instanceId }: { instanceId: number 
             variant="accent-primary"
             onClick={handleSave}
           >
-            {writeConfig.isPending ? "Saving…" : "Save changes"}
+            {writeConfig.isPending ? t("hosting.config.saving") : t("hosting.config.saveChanges")}
           </Button>
         </div>
       </div>

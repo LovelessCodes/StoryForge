@@ -8,6 +8,7 @@ import {
   Tags,
 } from "lucide-react";
 import { useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -65,6 +66,7 @@ export function ModFiltersBar({
   destinationLabel: string;
   modCount: number;
 }) {
+  const { t } = useTranslation();
   const versionAnchor = useRef<HTMLDivElement | null>(null);
   const tagAnchor = useRef<HTMLDivElement | null>(null);
   const {
@@ -107,7 +109,7 @@ export function ModFiltersBar({
     return map;
   }, [modTags]);
 
-  const selectedTagNames = useMemo(() => selectedModTags.map((t) => t.name), [selectedModTags]);
+  const selectedTagNames = useMemo(() => selectedModTags.map((tag) => tag.name), [selectedModTags]);
   const tagNames = useMemo(() => sortedTags.map((tag) => tag.name), [sortedTags]);
   const handleTagNamesChange = (names: string[]) => {
     setSelectedModTags(
@@ -116,12 +118,16 @@ export function ModFiltersBar({
   };
 
   const sortItems = useMemo(
-    () => Object.entries(sortOptions).map(([value, label]) => ({ label, value })),
-    [],
+    () => Object.keys(sortOptions).map((value) => ({ label: t(`mods.sort.${value}`), value })),
+    [t],
   );
   const categoryItems = useMemo(
-    () => Object.entries(categoryOptions).map(([value, label]) => ({ label, value })),
-    [],
+    () =>
+      Object.entries(categoryOptions).map(([value, labelKey]) => ({
+        label: t(labelKey),
+        value,
+      })),
+    [t],
   );
 
   const updateCount = Object.keys(modUpdates?.updates ?? {}).length;
@@ -129,12 +135,7 @@ export function ModFiltersBar({
   return (
     <div className="flex shrink-0 flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        <ModSearchInput
-          className="w-full sm:w-72"
-          onChange={setSearchText}
-          placeholder="Search mods..."
-          value={searchText}
-        />
+        <ModSearchInput className="w-full sm:w-72" onChange={setSearchText} value={searchText} />
 
         <Combobox
           items={sortedGameVersions}
@@ -158,15 +159,17 @@ export function ModFiltersBar({
                     </span>
                   )}
                   <ComboboxInput
-                    aria-label="Filter by game version"
-                    placeholder={values.length > 0 ? "" : "Game versions..."}
+                    aria-label={t("mods.filters.gameVersions.aria")}
+                    placeholder={
+                      values.length > 0 ? "" : t("mods.filters.gameVersions.placeholder")
+                    }
                   />
                 </>
               )}
             </ComboboxValue>
           </ComboboxChips>
           <ComboboxContent anchor={versionAnchor}>
-            <ComboboxEmpty>No versions found.</ComboboxEmpty>
+            <ComboboxEmpty>{t("mods.filters.gameVersions.empty")}</ComboboxEmpty>
             <ComboboxList>
               {(version: string) => (
                 <ComboboxItem key={version} value={version}>
@@ -214,15 +217,15 @@ export function ModFiltersBar({
                     </span>
                   )}
                   <ComboboxInput
-                    aria-label="Filter by tag"
-                    placeholder={values.length > 0 ? "" : "Mod tags..."}
+                    aria-label={t("mods.filters.tags.aria")}
+                    placeholder={values.length > 0 ? "" : t("mods.filters.tags.placeholder")}
                   />
                 </>
               )}
             </ComboboxValue>
           </ComboboxChips>
           <ComboboxContent anchor={tagAnchor}>
-            <ComboboxEmpty>No tags found.</ComboboxEmpty>
+            <ComboboxEmpty>{t("mods.filters.tags.empty")}</ComboboxEmpty>
             <ComboboxList>
               {(name: string) => (
                 <ComboboxItem key={name} value={name}>
@@ -249,7 +252,7 @@ export function ModFiltersBar({
             if (typeof value === "string") setSortBy(value as SortBy);
           }}
         >
-          <SelectTrigger size="sm" aria-label="Sort by">
+          <SelectTrigger size="sm" aria-label={t("mods.filters.sort.aria")}>
             <ArrowUpDown className="text-muted-foreground" />
             <SelectValue />
           </SelectTrigger>
@@ -263,12 +266,16 @@ export function ModFiltersBar({
         </Select>
 
         <Button
-          aria-label="Toggle sort direction"
+          aria-label={t("mods.filters.sort.toggleDirection")}
           onClick={() =>
             setOrderDirection(orderDirection === "descending" ? "ascending" : "descending")
           }
           size="icon-sm"
-          title={orderDirection === "descending" ? "Descending" : "Ascending"}
+          title={
+            orderDirection === "descending"
+              ? t("mods.sortDirection.descending")
+              : t("mods.sortDirection.ascending")
+          }
           variant="outline"
         >
           {orderDirection === "descending" ? <ArrowDownNarrowWide /> : <ArrowUpNarrowWide />}
@@ -281,7 +288,7 @@ export function ModFiltersBar({
             if (typeof value === "string") setCategory(value as Category);
           }}
         >
-          <SelectTrigger size="sm" aria-label="Category">
+          <SelectTrigger size="sm" aria-label={t("mods.filters.category.aria")}>
             <ListFilter className="text-muted-foreground" />
             <SelectValue />
           </SelectTrigger>
@@ -296,10 +303,10 @@ export function ModFiltersBar({
 
         <div className="flex items-center gap-1.5">
           <span className="text-muted-foreground text-[10px] font-medium tracking-widest uppercase">
-            Side
+            {t("mods.filters.side.label")}
           </span>
           <ToggleGroup
-            aria-label="Filter by side"
+            aria-label={t("mods.filters.side.aria")}
             size="sm"
             value={[side]}
             onValueChange={(value) => {
@@ -307,11 +314,13 @@ export function ModFiltersBar({
             }}
             variant="outline"
           >
-            <ToggleGroupItem value="any">Any</ToggleGroupItem>
-            <ToggleGroupItem value="client">Client</ToggleGroupItem>
-            <ToggleGroupItem value="server">Server</ToggleGroupItem>
-            <ToggleGroupItem value="both">Both</ToggleGroupItem>
-            {showInstalled && <ToggleGroupItem value="installed">Installed</ToggleGroupItem>}
+            <ToggleGroupItem value="any">{t("common.states.any")}</ToggleGroupItem>
+            <ToggleGroupItem value="client">{t("mods.side.client")}</ToggleGroupItem>
+            <ToggleGroupItem value="server">{t("mods.side.server")}</ToggleGroupItem>
+            <ToggleGroupItem value="both">{t("mods.side.both")}</ToggleGroupItem>
+            {showInstalled && (
+              <ToggleGroupItem value="installed">{t("common.states.installed")}</ToggleGroupItem>
+            )}
           </ToggleGroup>
         </div>
 
@@ -320,7 +329,7 @@ export function ModFiltersBar({
             <FolderOpen />
             {destinationLabel}
           </Badge>
-          <span className="tabular-nums">{modCount.toLocaleString()} mods</span>
+          <span className="tabular-nums">{t("mods.filters.count", { count: modCount })}</span>
           {showInstalled && instMods && modUpdates && updateCount > 0 && (
             <UpdateAllButton
               destinationLabel={destinationLabel}

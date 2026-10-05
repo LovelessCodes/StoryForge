@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { CheckIcon, Loader2, SparklesIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -24,11 +25,11 @@ const IMAGE_URL_PREFIX = "https://moddbcdn.vintagestory.at/";
 const formSchema = z.object({
   description: z.string(),
   imageUrl: z.string(),
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(1, "modpacks.form.errors.nameRequired"),
   slug: z
     .string()
-    .min(1, "Slug is required")
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase alphanumeric with hyphens"),
+    .min(1, "modpacks.form.errors.slugRequired")
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "modpacks.form.errors.slugFormat"),
 });
 
 function slugify(name: string): string {
@@ -66,6 +67,7 @@ export default function ModpackFormSheet({
   onOpenChangeComplete,
   modpack = null,
 }: ModpackFormSheetProps) {
+  const { t } = useTranslation();
   const isEdit = modpack != null;
 
   const [name, setName] = useState(modpack?.name ?? "");
@@ -95,8 +97,12 @@ export default function ModpackFormSheet({
 
   const parsed = formSchema.safeParse({ description, imageUrl, name, slug });
   const issues = parsed.success ? [] : parsed.error.issues;
-  const issueFor = (path: string) =>
-    touched[path] ? issues.find((issue) => issue.path[0] === path)?.message : undefined;
+  const issueFor = (path: string) => {
+    const message = touched[path]
+      ? issues.find((issue) => issue.path[0] === path)?.message
+      : undefined;
+    return message ? t(message) : undefined;
+  };
 
   const slugValid = /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug.trim());
   const slugUnavailable = !isEdit && slugCheck !== null && !slugCheck.available;
@@ -114,14 +120,14 @@ export default function ModpackFormSheet({
       return;
     }
     if (imageUrl.trim().length > 0 && !imageUrl.startsWith(IMAGE_URL_PREFIX)) {
-      toast.error("Image URLs must be from moddbcdn.vintagestory.at", {
-        description: "Upload your image at https://mods.vintagestory.at/edit/mod first.",
+      toast.error(t("modpacks.form.imageHostError"), {
+        description: t("modpacks.form.imageHostHint"),
       });
       return;
     }
     if (slugUnavailable) {
-      toast.error("That slug is not available", {
-        description: "Pick the suggestion or one of the alternatives below the Slug field.",
+      toast.error(t("modpacks.form.slugUnavailable"), {
+        description: t("modpacks.form.slugUnavailableHint"),
       });
       return;
     }
@@ -145,7 +151,9 @@ export default function ModpackFormSheet({
       onOpenChange(false);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      toast.error(`Failed to ${isEdit ? "update" : "create"} modpack`, { description: message });
+      toast.error(isEdit ? t("modpacks.form.updateFailed") : t("modpacks.form.createFailed"), {
+        description: message,
+      });
     } finally {
       setSaving(false);
     }
@@ -159,11 +167,11 @@ export default function ModpackFormSheet({
     >
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b">
-          <SheetTitle>{isEdit ? "Edit modpack" : "Create modpack"}</SheetTitle>
+          <SheetTitle>
+            {isEdit ? t("modpacks.form.editTitle") : t("modpacks.form.createTitle")}
+          </SheetTitle>
           <SheetDescription>
-            {isEdit
-              ? "Update the modpack details below."
-              : "Publish a new collection of mods for other players."}
+            {isEdit ? t("modpacks.form.editDescription") : t("modpacks.form.createDescription")}
           </SheetDescription>
         </SheetHeader>
 
@@ -172,13 +180,13 @@ export default function ModpackFormSheet({
             {/* Name */}
             <div className="grid gap-1.5">
               <label className="text-xs font-medium" htmlFor="modpack-name">
-                Name <span className="text-destructive">*</span>
+                {t("common.fields.name")} <span className="text-destructive">*</span>
               </label>
               <Input
                 autoFocus
                 disabled={saving}
                 id="modpack-name"
-                placeholder="My Awesome Modpack"
+                placeholder={t("modpacks.form.namePlaceholder")}
                 value={name}
                 onBlur={() => setTouched((prev) => ({ ...prev, name: true }))}
                 onChange={(event) => {
@@ -197,7 +205,7 @@ export default function ModpackFormSheet({
             {!isEdit && (
               <div className="grid gap-1.5">
                 <label className="text-xs font-medium" htmlFor="modpack-slug">
-                  Slug <span className="text-destructive">*</span>
+                  {t("modpacks.form.slug")} <span className="text-destructive">*</span>
                 </label>
                 <div className="relative">
                   <Input
@@ -229,7 +237,9 @@ export default function ModpackFormSheet({
                     {slugCheck.suggestion && (
                       <div className="flex items-center gap-1.5">
                         <SparklesIcon className="text-muted-foreground size-3" />
-                        <span className="text-muted-foreground text-xs">Suggestion:</span>
+                        <span className="text-muted-foreground text-xs">
+                          {t("modpacks.form.suggestion")}
+                        </span>
                         <button
                           className="text-accent-primary text-xs font-medium hover:underline"
                           type="button"
@@ -241,7 +251,9 @@ export default function ModpackFormSheet({
                     )}
                     {slugCheck.alternatives && slugCheck.alternatives.length > 0 && (
                       <div className="flex flex-wrap items-center gap-1">
-                        <span className="text-muted-foreground text-xs">Alternatives:</span>
+                        <span className="text-muted-foreground text-xs">
+                          {t("modpacks.form.alternatives")}
+                        </span>
                         {slugCheck.alternatives.map((alternative) => (
                           <button
                             className="bg-muted hover:bg-accent rounded-none px-1.5 py-0.5 text-xs transition-colors"
@@ -262,12 +274,12 @@ export default function ModpackFormSheet({
             {/* Description */}
             <div className="grid gap-1.5">
               <label className="text-xs font-medium" htmlFor="modpack-description">
-                Description
+                {t("common.fields.description")}
               </label>
               <Textarea
                 disabled={saving}
                 id="modpack-description"
-                placeholder="A collection of mods for…"
+                placeholder={t("modpacks.form.descriptionPlaceholder")}
                 rows={3}
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
@@ -277,7 +289,7 @@ export default function ModpackFormSheet({
             {/* Image URL */}
             <div className="grid gap-1.5">
               <label className="text-xs font-medium" htmlFor="modpack-image">
-                Image URL
+                {t("modpacks.form.imageUrl")}
               </label>
               <Input
                 disabled={saving}
@@ -287,16 +299,19 @@ export default function ModpackFormSheet({
                 onChange={(event) => setImageUrl(event.target.value)}
               />
               <p className="text-muted-foreground text-[11px]">
-                Upload your image to{" "}
-                <a
-                  className="text-accent-primary underline hover:no-underline"
-                  href="https://mods.vintagestory.at/edit/mod"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  mods.vintagestory.at
-                </a>{" "}
-                and paste the link here. External URLs are not accepted.
+                <Trans
+                  i18nKey="modpacks.form.imageHint"
+                  components={{
+                    site: (
+                      <a
+                        className="text-accent-primary underline hover:no-underline"
+                        href="https://mods.vintagestory.at/edit/mod"
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      />
+                    ),
+                  }}
+                />
               </p>
             </div>
           </div>
@@ -309,7 +324,11 @@ export default function ModpackFormSheet({
             variant="accent-primary"
             onClick={() => void submit()}
           >
-            {saving ? "Saving…" : isEdit ? "Save changes" : "Create modpack"}
+            {saving
+              ? t("modpacks.form.saving")
+              : isEdit
+                ? t("modpacks.form.saveChanges")
+                : t("modpacks.form.createSubmit")}
           </Button>
         </SheetFooter>
       </SheetContent>

@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -7,15 +8,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { authClient } from "@/lib/auth";
+import { t as translate } from "@/lib/i18n";
 
-const signInSchema = z.object({
-  email: z.email("Please enter a valid email"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-});
+/** Built per parse so validation messages follow the current language. */
+function createSignInSchema() {
+  return z.object({
+    email: z.email(translate("auth.validation.invalidEmail")),
+    password: z.string().min(8, translate("auth.validation.passwordMin")),
+  });
+}
 
-const signUpSchema = signInSchema.extend({
-  name: z.string().min(1, "Name is required"),
-});
+function createSignUpSchema() {
+  return createSignInSchema().extend({
+    name: z.string().min(1, translate("auth.validation.nameRequired")),
+  });
+}
 
 type FieldName = "email" | "password" | "name";
 type FieldErrors = Partial<Record<FieldName, string>>;
@@ -51,6 +58,7 @@ function useAuthSearch() {
 }
 
 export default function AuthPage() {
+  const { t } = useTranslation();
   const { mode, redirect } = useAuthSearch();
   const navigate = useNavigate();
   const isSignUp = mode === "signup";
@@ -69,7 +77,10 @@ export default function AuthPage() {
     event.preventDefault();
     setFormError(null);
 
-    const nextErrors = collectErrors(isSignUp ? signUpSchema : signInSchema, values);
+    const nextErrors = collectErrors(
+      isSignUp ? createSignUpSchema() : createSignInSchema(),
+      values,
+    );
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       return;
@@ -85,7 +96,7 @@ export default function AuthPage() {
           password: values.password,
         });
         if (result.error) {
-          setFormError(result.error.message ?? "Sign up failed");
+          setFormError(result.error.message ?? t("auth.errors.signUpFailed"));
         } else {
           void navigate({ to: (redirect ?? "/settings") as "/settings" });
         }
@@ -95,13 +106,13 @@ export default function AuthPage() {
           password: values.password,
         });
         if (result.error) {
-          setFormError(result.error.message ?? "Sign in failed");
+          setFormError(result.error.message ?? t("auth.errors.signInFailed"));
         } else {
           void navigate({ to: (redirect ?? "/settings") as "/settings" });
         }
       }
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : "An unexpected error occurred");
+      setFormError(error instanceof Error ? error.message : t("auth.errors.unexpected"));
     } finally {
       setSubmitting(false);
     }
@@ -121,11 +132,9 @@ export default function AuthPage() {
     <div className="flex min-h-[60vh] items-center justify-center py-10">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>{isSignUp ? "Create an account" : "Welcome back"}</CardTitle>
+          <CardTitle>{isSignUp ? t("auth.signUp.title") : t("auth.signIn.title")}</CardTitle>
           <CardDescription>
-            {isSignUp
-              ? "Enter your details to get started."
-              : "Sign in to your Story Forge account. Optional — the app works offline."}
+            {isSignUp ? t("auth.signUp.description") : t("auth.signIn.description")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -133,13 +142,13 @@ export default function AuthPage() {
             {isSignUp && (
               <div className="grid gap-1.5">
                 <label className="text-xs font-medium" htmlFor="name">
-                  Name
+                  {t("common.fields.name")}
                 </label>
                 <Input
                   autoComplete="name"
                   id="name"
                   onChange={(event) => setValue("name", event.target.value)}
-                  placeholder="Your name"
+                  placeholder={t("auth.fields.namePlaceholder")}
                   required
                   type="text"
                   value={values.name}
@@ -150,13 +159,13 @@ export default function AuthPage() {
 
             <div className="grid gap-1.5">
               <label className="text-xs font-medium" htmlFor="email">
-                Email
+                {t("common.fields.email")}
               </label>
               <Input
                 autoComplete="email"
                 id="email"
                 onChange={(event) => setValue("email", event.target.value)}
-                placeholder="you@example.com"
+                placeholder={t("auth.fields.emailPlaceholder")}
                 required
                 type="email"
                 value={values.email}
@@ -166,7 +175,7 @@ export default function AuthPage() {
 
             <div className="grid gap-1.5">
               <label className="text-xs font-medium" htmlFor="password">
-                Password
+                {t("common.fields.password")}
               </label>
               <Input
                 autoComplete={isSignUp ? "new-password" : "current-password"}
@@ -183,20 +192,24 @@ export default function AuthPage() {
             {formError && <p className="text-destructive text-xs">{formError}</p>}
 
             <Button className="w-full" disabled={submitting} type="submit" variant="accent-primary">
-              {submitting ? "Please wait..." : isSignUp ? "Create account" : "Sign in"}
+              {submitting
+                ? t("auth.actions.submitting")
+                : isSignUp
+                  ? t("auth.actions.createAccount")
+                  : t("auth.actions.signIn")}
             </Button>
           </form>
 
           <Separator className="my-4" />
 
           <p className="text-muted-foreground text-center text-xs">
-            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+            {isSignUp ? t("auth.modeSwitch.alreadyHaveAccount") : t("auth.modeSwitch.noAccount")}{" "}
             <button
               className="text-accent-primary hover:underline"
               onClick={toggleMode}
               type="button"
             >
-              {isSignUp ? "Sign in" : "Sign up"}
+              {isSignUp ? t("auth.actions.signIn") : t("auth.actions.signUp")}
             </button>
           </p>
         </CardContent>

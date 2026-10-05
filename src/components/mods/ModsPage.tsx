@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useActiveProfile } from "@/hooks/use-active-profile";
@@ -32,6 +33,7 @@ type SheetRequest =
   | { kind: "standalone"; mod: Mod };
 
 export default function ModsPage({ targetPath, targetLabel }: ModsPageProps) {
+  const { t } = useTranslation();
   const { activeProfile } = useActiveProfile();
   const defaultModSortBy = useSettingsStore((s) => s.defaultModSortBy);
   const filters = useModFilters(defaultModSortBy);
@@ -40,7 +42,8 @@ export default function ModsPage({ targetPath, targetLabel }: ModsPageProps) {
   // update commands expect.
   const profilePath = targetPath ?? activeProfile?.path;
   const destinationLabel =
-    targetLabel ?? (targetPath ? pathBasename(targetPath) : (activeProfile?.name ?? "Standalone"));
+    targetLabel ??
+    (targetPath ? pathBasename(targetPath) : (activeProfile?.name ?? t("mods.standalone")));
 
   const data = useModsData({
     author: filters.author,

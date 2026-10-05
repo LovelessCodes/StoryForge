@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { ArrowUpCircle, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { useAddModUpdateToProfile } from "@/hooks/use-add-mod-update-to-profile";
@@ -27,6 +28,7 @@ export function UpdateAllButton({
   updates: ModUpdatesResponse;
   installedMods: OutputMod[];
 }) {
+  const { t } = useTranslation();
   const pathHash = hashPath(modsDirectory);
   const queryClient = useQueryClient();
   const [wantsToUpdate, setWantsToUpdate] = useState(false);
@@ -34,9 +36,12 @@ export function UpdateAllButton({
   const { mutateAsync: addModUpdate, isPending: addPending } = useAddModUpdateToProfile({
     onError: (error, variables) => {
       if (error.message === "Download cancelled") return;
-      toast.error(`Error updating mod in ${destinationLabel}: ${error.message}`, {
-        id: `mod-update-${pathHash}-${variables.mod.modidstr}`,
-      });
+      toast.error(
+        t("mods.errors.updateIn", { destination: destinationLabel, message: error.message }),
+        {
+          id: `mod-update-${pathHash}-${variables.mod.modidstr}`,
+        },
+      );
     },
   });
 
@@ -47,7 +52,11 @@ export function UpdateAllButton({
       }),
     onError: (error, variables) => {
       toast.error(
-        `Error removing ${variables.updateMod.filename} from ${destinationLabel}: ${error.message}`,
+        t("mods.errors.remove", {
+          name: variables.updateMod.filename,
+          destination: destinationLabel,
+          message: error.message,
+        }),
         { id: `mod-remove-${variables.path}-${variables.modpath}` },
       );
     },
@@ -115,7 +124,9 @@ export function UpdateAllButton({
       onClick={handleUpdateAll}
     >
       {addPending || removePending ? <Loader2 className="animate-spin" /> : <ArrowUpCircle />}
-      {wantsToUpdate ? "Yes, really" : `Update All (${updateCount})`}
+      {wantsToUpdate
+        ? t("mods.updateAll.confirm")
+        : t("mods.updateAll.button", { count: updateCount })}
     </Button>
   );
 }

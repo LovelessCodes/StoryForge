@@ -4,6 +4,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { FileUp, Link2 } from "lucide-react";
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,7 @@ interface ImportProfileSheetProps {
 }
 
 export default function ImportProfileSheet({ open, onOpenChange }: ImportProfileSheetProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { loadProfiles } = useProfilesStore();
   const setActiveProfileId = useSettingsStore((s) => s.setActiveProfileId);
@@ -66,14 +68,14 @@ export default function ImportProfileSheet({ open, onOpenChange }: ImportProfile
   async function chooseFile() {
     const path = await openFileDialog({
       multiple: false,
-      filters: [{ name: "Profile export", extensions: ["json"] }],
+      filters: [{ name: t("profiles.export.filterName"), extensions: ["json"] }],
     });
     if (typeof path !== "string") return;
     try {
       const json = await invoke<string>("read_profile_file", { path });
       setText(json);
     } catch (error) {
-      toast.error("Failed to read export file", { description: String(error) });
+      toast.error(t("profiles.import.readFailed"), { description: String(error) });
     }
   }
 
@@ -84,13 +86,13 @@ export default function ImportProfileSheet({ open, onOpenChange }: ImportProfile
     try {
       let json = raw;
       if (raw.startsWith("SF1.")) {
-        setBusy("Decoding share code…");
+        setBusy(t("profiles.import.decodingShareCode"));
         json = await invoke<string>("import_profile_code", { code: raw });
       }
       const normalized = json.replace(/[\u201C\u201D]/g, '"').replace(/[\u2018\u2019]/g, "'");
       const parsed = importSchema.safeParse(JSON.parse(normalized));
       if (!parsed.success) {
-        toast.error("That does not look like a profile export");
+        toast.error(t("profiles.import.invalid"));
         setBusy(null);
         return;
       }
@@ -100,7 +102,7 @@ export default function ImportProfileSheet({ open, onOpenChange }: ImportProfile
         typeof mods === "string" ? mods : (mods ?? []).map((m) => `${m.id}@${m.version}`).join(",");
 
       if (!installedNames.includes(version)) {
-        setBusy(`Downloading game version ${version}…`);
+        setBusy(t("profiles.import.downloadingVersion", { version }));
         await downloadVersion(version);
       }
 
@@ -123,7 +125,7 @@ export default function ImportProfileSheet({ open, onOpenChange }: ImportProfile
         }
       });
 
-      setBusy(`Importing "${name}"…`);
+      setBusy(t("profiles.import.importing", { name }));
       const result = await invoke<ProfileImportResult>("import_profile", {
         params: {
           emitevent,
@@ -148,7 +150,7 @@ export default function ImportProfileSheet({ open, onOpenChange }: ImportProfile
       setText("");
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      toast.error("Import failed", { description: message });
+      toast.error(t("profiles.errors.importFailed"), { description: message });
     } finally {
       listenRef.current?.();
       listenRef.current = null;
@@ -161,20 +163,17 @@ export default function ImportProfileSheet({ open, onOpenChange }: ImportProfile
     <Sheet open={open} onOpenChange={(next) => !busy && onOpenChange(next)}>
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b">
-          <SheetTitle>Import a profile</SheetTitle>
-          <SheetDescription>
-            Paste a share code or exported JSON, or pick an exported file. Mods are downloaded
-            automatically.
-          </SheetDescription>
+          <SheetTitle>{t("profiles.import.title")}</SheetTitle>
+          <SheetDescription>{t("profiles.import.description")}</SheetDescription>
         </SheetHeader>
 
         <ScrollArea scrollFade className="min-h-0 flex-1">
           <div className="grid gap-3 p-4">
             <Textarea
-              aria-label="Profile export"
+              aria-label={t("profiles.export.filterName")}
               className="min-h-48 resize-none font-mono text-[11px]"
               disabled={busy !== null}
-              placeholder={"SF1.… share code, or profile JSON export"}
+              placeholder={t("profiles.import.placeholder")}
               value={text}
               onChange={(event) => setText(event.target.value)}
             />
@@ -185,17 +184,20 @@ export default function ImportProfileSheet({ open, onOpenChange }: ImportProfile
                 disabled={busy !== null}
                 onClick={() => void chooseFile()}
               >
-                <FileUp /> Choose file…
+                <FileUp /> {t("profiles.import.chooseFile")}
               </Button>
               <span className="text-muted-foreground flex items-center gap-1 text-[11px]">
-                <Link2 className="size-3" /> Share codes start with SF1.
+                <Link2 className="size-3" /> {t("profiles.import.shareCodeHint")}
               </span>
             </div>
 
             {progress && progress.total > 0 && (
               <div className="grid gap-1">
                 <p className="text-muted-foreground text-xs">
-                  Downloading mod {progress.current} of {progress.total}:{" "}
+                  {t("profiles.import.downloadingMod", {
+                    current: progress.current,
+                    total: progress.total,
+                  })}{" "}
                   <span className="text-foreground font-medium">{progress.modid}</span>
                   <span className="text-muted-foreground">@{progress.version}</span>
                 </p>
@@ -211,7 +213,7 @@ export default function ImportProfileSheet({ open, onOpenChange }: ImportProfile
             disabled={busy !== null || text.trim() === ""}
             onClick={() => void submit()}
           >
-            {busy ?? "Import profile"}
+            {busy ?? t("profiles.import.submit")}
           </Button>
         </SheetFooter>
       </SheetContent>

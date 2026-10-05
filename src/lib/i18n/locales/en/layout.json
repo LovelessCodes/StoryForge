@@ -22,7 +22,10 @@
     "downloadPaused": "Download paused",
     "downloading": "Downloading… {{percent}}%",
     "downloadingNoPercent": "Downloading…",
-    "downloadVersion": "Download v{{version}}"
+    "downloadVersion": "Download v{{version}}",
+    "title": "Sidebar",
+    "description": "Displays the mobile sidebar.",
+    "toggle": "Toggle Sidebar"
   },
   "titlebar": {
     "update": "Update v{{version}}",
@@ -94,5 +97,68 @@
   },
   "reveal": {
     "failed": "Failed to reveal in file explorer: {{message}}"
+  },
+  "pages": {
+    "profiles": {
+      "title": "Mod Profiles",
+      "description": "Manage separate mod configurations for different playstyles."
+    },
+    "mods": {
+      "title": "Mods"
+    },
+    "modpacks": {
+      "title": "Modpacks",
+      "description": "Browse community mod collections and install them as profiles."
+    },
+    "versions": {
+      "title": "Versions",
+      "description": "Game builds installed on this machine. Profiles launch with one of these versions."
+    },
+    "worlds": {
+      "title": "Worlds",
+      "description": "Browse the worlds of your profiles, launch them, and explore their maps."
+    },
+    "servers": {
+      "title": "Servers",
+      "description": "Saved multiplayer servers, the public server browser and your own hosted instances."
+    },
+    "serverHosting": {
+      "title": "Servers",
+      "description": "Manage saved servers and the dedicated servers you host."
+    },
+    "config": {
+      "title": "Mod Configs",
+      "description": "Config files in your active profile."
+    },
+    "news": {
+      "title": "News",
+      "description": "Latest announcements from the Vintage Story forums."
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Folders, appearance, downloads and the application account."
+    },
+    "auth": {
+      "title": "Account",
+      "description": "Sign in to the optional Story Forge cloud for modpacks."
+    },
+    "default": {
+      "title": "Story Forge"
+    }
+  },
+  "header": {
+    "refreshing": "Refreshing…"
+  },
+  "errors": {
+    "title": "Something went wrong",
+    "description": "Story Forge hit an unexpected error while loading this page.",
+    "tryAgain": "Try again",
+    "backToProfiles": "Back to Profiles",
+    "notFoundTitle": "Page not found",
+    "notFoundDescription": "This page does not exist or was moved. Head back to browsing mods."
+  },
+  "scrollToTop": "Scroll to top",
+  "toast": {
+    "close": "Close toast"
   }
 }

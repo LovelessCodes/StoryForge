@@ -1,49 +1,48 @@
 import { useLocation } from "@tanstack/react-router";
 import { RefreshCw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { PAGE_PATHS } from "@/lib/routes";
 
 import { Button } from "../ui/button";
 
-const pageMeta: Record<string, { title: string; description?: string }> = {
+const pageMeta: Record<string, { titleKey: string; descriptionKey?: string }> = {
   [PAGE_PATHS.profiles]: {
-    title: "Mod Profiles",
-    description: "Manage separate mod configurations for different playstyles.",
+    titleKey: "layout.pages.profiles.title",
+    descriptionKey: "layout.pages.profiles.description",
   },
-  [PAGE_PATHS.mods]: { title: "Mods" },
+  [PAGE_PATHS.mods]: { titleKey: "layout.pages.mods.title" },
   [PAGE_PATHS.modpacks]: {
-    title: "Modpacks",
-    description: "Browse community mod collections and install them as profiles.",
+    titleKey: "layout.pages.modpacks.title",
+    descriptionKey: "layout.pages.modpacks.description",
   },
   [PAGE_PATHS.versions]: {
-    title: "Versions",
-    description:
-      "Game builds installed on this machine. Profiles launch with one of these versions.",
+    titleKey: "layout.pages.versions.title",
+    descriptionKey: "layout.pages.versions.description",
   },
   [PAGE_PATHS.worlds]: {
-    title: "Worlds",
-    description: "Browse the worlds of your profiles, launch them, and explore their maps.",
+    titleKey: "layout.pages.worlds.title",
+    descriptionKey: "layout.pages.worlds.description",
   },
   [PAGE_PATHS.servers]: {
-    title: "Servers",
-    description:
-      "Saved multiplayer servers, the public server browser and your own hosted instances.",
+    titleKey: "layout.pages.servers.title",
+    descriptionKey: "layout.pages.servers.description",
   },
   [PAGE_PATHS.config]: {
-    title: "Mod Configs",
-    description: "Config files in your active profile.",
+    titleKey: "layout.pages.config.title",
+    descriptionKey: "layout.pages.config.description",
   },
   [PAGE_PATHS.news]: {
-    title: "News",
-    description: "Latest announcements from the Vintage Story forums.",
+    titleKey: "layout.pages.news.title",
+    descriptionKey: "layout.pages.news.description",
   },
   [PAGE_PATHS.settings]: {
-    title: "Settings",
-    description: "Folders, appearance, downloads and the application account.",
+    titleKey: "layout.pages.settings.title",
+    descriptionKey: "layout.pages.settings.description",
   },
   "/auth": {
-    title: "Account",
-    description: "Sign in to the optional Story Forge cloud for modpacks.",
+    titleKey: "layout.pages.auth.title",
+    descriptionKey: "layout.pages.auth.description",
   },
 };
 
@@ -53,23 +52,26 @@ interface HeaderProps {
 }
 
 export default function Header({ onRefresh, isRefreshing }: HeaderProps) {
+  const { t } = useTranslation();
   const { pathname } = useLocation();
 
   const meta =
     pageMeta[pathname] ??
     (pathname.startsWith("/server-hosting")
       ? {
-          title: "Servers",
-          description: "Manage saved servers and the dedicated servers you host.",
+          titleKey: "layout.pages.serverHosting.title",
+          descriptionKey: "layout.pages.serverHosting.description",
         }
-      : { title: "Story Forge" });
+      : { titleKey: "layout.pages.default.title" });
 
   return (
     <header className="flex h-10 shrink-0 items-center gap-2 border-b px-4" data-tauri-drag-region>
-      <h2 className="text-foreground text-base font-semibold whitespace-nowrap">{meta.title}</h2>
+      <h2 className="text-foreground text-base font-semibold whitespace-nowrap">
+        {t(meta.titleKey)}
+      </h2>
 
-      {meta.description && (
-        <p className="text-muted-foreground truncate text-xs">{meta.description}</p>
+      {meta.descriptionKey && (
+        <p className="text-muted-foreground truncate text-xs">{t(meta.descriptionKey)}</p>
       )}
 
       <div className="flex-1" />
@@ -80,10 +82,10 @@ export default function Header({ onRefresh, isRefreshing }: HeaderProps) {
           size="sm"
           onClick={onRefresh}
           disabled={isRefreshing}
-          title="Refresh"
+          title={t("common.actions.refresh")}
         >
           <RefreshCw className={isRefreshing ? "animate-spin" : undefined} />
-          {isRefreshing ? "Refreshing..." : "Refresh"}
+          {isRefreshing ? t("layout.header.refreshing") : t("common.actions.refresh")}
         </Button>
       )}
     </header>

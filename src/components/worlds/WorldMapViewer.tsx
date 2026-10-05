@@ -7,6 +7,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   imageDataToDataUrl,
@@ -69,6 +70,7 @@ export function WorldMapViewer({
   selectedPlayer,
   showProspect,
 }: WorldMapViewerProps) {
+  const { t } = useTranslation();
   const {
     attachContainer,
     baseCanvasRef,
@@ -97,7 +99,7 @@ export function WorldMapViewer({
     return (
       <StatePanel>
         <Loader2 className="text-muted-foreground size-8 animate-spin" />
-        <p className="text-muted-foreground text-sm">Loading map…</p>
+        <p className="text-muted-foreground text-sm">{t("worlds.map.loading")}</p>
       </StatePanel>
     );
   }
@@ -108,8 +110,8 @@ export function WorldMapViewer({
         <MapIcon className="text-muted-foreground size-12 opacity-50" />
         <p className="text-muted-foreground text-sm">
           {tilesError.message.includes("maps_not_found")
-            ? "No map data available yet. Explore the world in-game to generate the map!"
-            : `Error loading map: ${tilesError.message}`}
+            ? t("worlds.map.noMapData")
+            : t("worlds.map.loadError", { message: tilesError.message })}
         </p>
       </StatePanel>
     );
@@ -119,9 +121,7 @@ export function WorldMapViewer({
     return (
       <StatePanel>
         <MapIcon className="text-muted-foreground size-12 opacity-50" />
-        <p className="text-muted-foreground text-sm">
-          No map tiles found. Explore the world in-game to generate the map!
-        </p>
+        <p className="text-muted-foreground text-sm">{t("worlds.map.noTiles")}</p>
       </StatePanel>
     );
   }
@@ -159,7 +159,7 @@ export function WorldMapViewer({
               : `${cursorCoords.x}, ${cursorCoords.y}`}
             {prospectingMarker && (
               <div className="mt-1">
-                <strong>Prospecting Results:</strong>
+                <strong>{t("worlds.map.prospectingResults")}</strong>
                 <ul className="list-inside list-disc">
                   {prospectingMarker.results.toSorted(sortByQuality).map((result) => {
                     const stableKey = `${result.ore_code}-${result.readings?.depth ?? 0}-${result.readings?.quality ?? 0}`;
@@ -193,7 +193,7 @@ export function WorldMapViewer({
         )}
       </div>
       <div className="bg-background/90 text-muted-foreground pointer-events-none absolute right-1 bottom-1 border px-3 py-2 text-xs backdrop-blur-sm">
-        <p>Drag to pan · Scroll to zoom</p>
+        <p>{t("worlds.map.panZoom")}</p>
       </div>
     </div>
   );

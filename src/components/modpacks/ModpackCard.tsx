@@ -1,4 +1,5 @@
 import { Download, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ export default function ModpackCard({
   onEdit,
   onDelete,
 }: ModpackCardProps) {
+  const { t } = useTranslation();
   // Newest version by creation time — the API does not guarantee ordering.
   const latestVersion = modpack.modpackVersions.reduce<
     ModpackItem["modpackVersions"][number] | null
@@ -55,7 +57,7 @@ export default function ModpackCard({
 
         {isOwner && (
           <Badge className="bg-accent-primary/90 absolute top-2 left-2 border-transparent text-white">
-            Yours
+            {t("modpacks.yours")}
           </Badge>
         )}
 
@@ -65,7 +67,7 @@ export default function ModpackCard({
               <DropdownMenuTrigger
                 render={
                   <Button
-                    aria-label={`Manage ${modpack.name}`}
+                    aria-label={t("modpacks.card.manage", { name: modpack.name })}
                     size="icon-sm"
                     variant="secondary"
                     onClick={(event) => event.stopPropagation()}
@@ -76,10 +78,10 @@ export default function ModpackCard({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={onEdit}>
-                  <Pencil /> Edit
+                  <Pencil /> {t("common.actions.edit")}
                 </DropdownMenuItem>
                 <DropdownMenuItem variant="destructive" onClick={onDelete}>
-                  <Trash2 /> Delete
+                  <Trash2 /> {t("common.actions.delete")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -98,7 +100,7 @@ export default function ModpackCard({
             </span>
           ) : (
             <Badge className="shrink-0" variant="outline">
-              Draft
+              {t("modpacks.card.draft")}
             </Badge>
           )}
         </CardTitle>
@@ -111,18 +113,19 @@ export default function ModpackCard({
               src={modpack.owner.image}
             />
           ) : null}
-          <span className="truncate">by {modpack.owner.name}</span>
+          <span className="truncate">
+            {t("modpacks.card.byline", { name: modpack.owner.name })}
+          </span>
         </div>
       </CardHeader>
 
       <CardContent className="grid gap-2 pb-3">
         <p className="text-muted-foreground line-clamp-2 text-xs">
-          {modpack.description || "No description"}
+          {modpack.description || t("modpacks.noDescription")}
         </p>
         <span className="text-muted-foreground/70 flex items-center gap-1 text-[11px]">
           <Download className="size-3" />
-          {modpack.downloads.toLocaleString()} download
-          {modpack.downloads !== 1 ? "s" : ""}
+          {t("modpacks.downloads", { count: modpack.downloads })}
         </span>
       </CardContent>
     </Card>

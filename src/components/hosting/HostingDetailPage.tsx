@@ -2,6 +2,7 @@ import { Outlet, useNavigate, useParams, useRouterState } from "@tanstack/react-
 import { cn } from "cn";
 import { ArrowLeft, Package, Play, RotateCcw, Square, Terminal } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { ListSkeleton } from "@/components/common/LoadingSkeleton";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ export default function HostingDetailPage() {
 }
 
 function HostingDetailContent() {
+  const { t } = useTranslation();
   const { id } = useParams({ from: "/_app/server-hosting/$id" });
   const navigate = useNavigate();
   const instanceId = Number(id);
@@ -74,9 +76,9 @@ function HostingDetailContent() {
     }
     return (
       <div className="flex flex-col items-center gap-4 py-12">
-        <p className="text-muted-foreground text-sm">Instance not found.</p>
+        <p className="text-muted-foreground text-sm">{t("hosting.instanceNotFound")}</p>
         <Button size="sm" variant="outline" onClick={goBack}>
-          Back to Servers
+          {t("hosting.detail.backToServers")}
         </Button>
       </div>
     );
@@ -89,14 +91,21 @@ function HostingDetailContent() {
     <div className="grid gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
-          <Button aria-label="Back to servers" size="icon-sm" variant="ghost" onClick={goBack}>
+          <Button
+            aria-label={t("hosting.detail.backToServersAria")}
+            size="icon-sm"
+            variant="ghost"
+            onClick={goBack}
+          >
             <ArrowLeft />
           </Button>
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2">
               <h1 className="truncate text-lg font-semibold">{instance.name}</h1>
               {status.pid != null && (
-                <span className="text-muted-foreground shrink-0 text-xs">PID {status.pid}</span>
+                <span className="text-muted-foreground shrink-0 text-xs">
+                  {t("hosting.detail.pid", { pid: status.pid })}
+                </span>
               )}
             </div>
             <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
@@ -107,11 +116,15 @@ function HostingDetailContent() {
                 />
                 {statusLabels[status.status] ?? status.status}
                 {status.status === "crashed" && status.exit_code != null && (
-                  <span className="text-muted-foreground">(code {status.exit_code})</span>
+                  <span className="text-muted-foreground">
+                    {t("hosting.detail.exitCode", { code: status.exit_code })}
+                  </span>
                 )}
               </span>
               {isRunning && status.uptime != null && (
-                <span className="text-muted-foreground">up {formatUptime(status.uptime)}</span>
+                <span className="text-muted-foreground">
+                  {t("hosting.detail.uptime", { duration: formatUptime(status.uptime) })}
+                </span>
               )}
               <span className="text-muted-foreground font-mono">
                 {instance.bind_ip}:{instance.port}
@@ -129,7 +142,7 @@ function HostingDetailContent() {
               void navigate({ to: "/server-hosting/$id/mods", params: { id: String(id) } })
             }
           >
-            <Package /> Mods
+            <Package /> {t("hosting.detail.mods")}
           </Button>
           {isRunning ? (
             <Button
@@ -138,7 +151,7 @@ function HostingDetailContent() {
               variant="outline"
               onClick={() => stopServer.mutate(instanceId)}
             >
-              <Square /> Stop
+              <Square /> {t("common.actions.stop")}
             </Button>
           ) : (
             <Button
@@ -147,7 +160,7 @@ function HostingDetailContent() {
               variant="outline-success"
               onClick={() => startServer.mutate(instanceId)}
             >
-              <Play /> Start
+              <Play /> {t("hosting.detail.start")}
             </Button>
           )}
           <Button
@@ -156,24 +169,24 @@ function HostingDetailContent() {
             variant="outline"
             onClick={() => restartServer.mutate(instanceId)}
           >
-            <RotateCcw /> Restart
+            <RotateCcw /> {t("common.actions.restart")}
           </Button>
         </div>
       </div>
 
       <ToggleGroup
-        aria-label="Instance section"
+        aria-label={t("hosting.detail.sectionAria")}
         onValueChange={(value) => value[0] && setSection(value[0] as HostingSection)}
         size="sm"
         value={[section]}
         variant="outline"
       >
         <ToggleGroupItem value="console">
-          <Terminal /> Console
+          <Terminal /> {t("hosting.sections.console")}
         </ToggleGroupItem>
-        <ToggleGroupItem value="config">Config</ToggleGroupItem>
-        <ToggleGroupItem value="whitelist">Whitelist</ToggleGroupItem>
-        <ToggleGroupItem value="settings">Settings</ToggleGroupItem>
+        <ToggleGroupItem value="config">{t("hosting.sections.config")}</ToggleGroupItem>
+        <ToggleGroupItem value="whitelist">{t("hosting.sections.whitelist")}</ToggleGroupItem>
+        <ToggleGroupItem value="settings">{t("hosting.sections.settings")}</ToggleGroupItem>
       </ToggleGroup>
 
       {section === "console" && <ServerConsole instanceId={instanceId} key={instanceId} />}

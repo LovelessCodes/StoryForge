@@ -1,5 +1,6 @@
 import { MapPinPlus, Server } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -11,6 +12,7 @@ import ServerRow from "./ServerRow";
 type SheetState = { mode: "add" } | { mode: "edit"; server: SavedServer } | null;
 
 export default function MyServersTab() {
+  const { t } = useTranslation();
   const servers = useServerStore((s) => s.servers);
   const [sheet, setSheet] = useState<SheetState>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -31,11 +33,9 @@ export default function MyServersTab() {
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
       <div className="flex shrink-0 items-center justify-between gap-4">
-        <p className="text-muted-foreground text-xs">
-          Servers are stored inside a profile's clientsettings.json.
-        </p>
+        <p className="text-muted-foreground text-xs">{t("servers.mine.description")}</p>
         <Button size="sm" variant="accent-primary" onClick={() => openSheet({ mode: "add" })}>
-          <MapPinPlus /> Add server
+          <MapPinPlus /> {t("servers.mine.add")}
         </Button>
       </div>
 
@@ -44,13 +44,11 @@ export default function MyServersTab() {
           <div className="flex flex-col items-center justify-center gap-3 border border-dashed p-10 text-center">
             <Server className="text-muted-foreground size-6" />
             <div>
-              <p className="text-sm font-medium">No servers yet</p>
-              <p className="text-muted-foreground text-xs">
-                Add a server to keep its address, password and profile association.
-              </p>
+              <p className="text-sm font-medium">{t("servers.mine.emptyTitle")}</p>
+              <p className="text-muted-foreground text-xs">{t("servers.mine.emptyDescription")}</p>
             </div>
             <Button size="sm" variant="accent-primary" onClick={() => openSheet({ mode: "add" })}>
-              Add your first server
+              {t("servers.mine.addFirst")}
             </Button>
           </div>
         ) : (

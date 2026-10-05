@@ -1,5 +1,6 @@
 import { CopyIcon } from "lucide-react";
 import { useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,7 @@ export default function DeleteModpackSheet({
   modpack,
   onDeleted,
 }: DeleteModpackSheetProps) {
+  const { t } = useTranslation();
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [, copy] = useCopyToClipboard();
@@ -48,7 +50,7 @@ export default function DeleteModpackSheet({
       onOpenChange(false);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      toast.error("Failed to delete modpack", { description: message });
+      toast.error(t("modpacks.delete.failed"), { description: message });
     } finally {
       setDeleting(false);
     }
@@ -62,30 +64,34 @@ export default function DeleteModpackSheet({
     >
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b">
-          <SheetTitle>Delete modpack</SheetTitle>
+          <SheetTitle>{t("modpacks.delete.title")}</SheetTitle>
           <SheetDescription>
-            This permanently deletes <strong>{modpack.name}</strong> and all its versions. This
-            action cannot be undone.
+            <Trans i18nKey="modpacks.delete.description" values={{ name: modpack.name }} />
           </SheetDescription>
         </SheetHeader>
 
         <ScrollArea scrollFade className="min-h-0 flex-1">
           <div className="grid gap-2 p-4">
             <label className="text-xs font-medium" htmlFor="delete-modpack-confirm">
-              Type{" "}
-              <span className="inline-flex items-center gap-1 align-middle">
-                <code className="bg-muted px-1 font-mono text-xs">{modpack.slug}</code>
-                <Button
-                  aria-label="Copy slug"
-                  className="text-muted-foreground"
-                  size="icon-xs"
-                  variant="ghost"
-                  onClick={() => copy(modpack.slug)}
-                >
-                  <CopyIcon className="size-3" />
-                </Button>
-              </span>{" "}
-              to confirm
+              <Trans
+                i18nKey="modpacks.delete.confirmLabel"
+                values={{ slug: modpack.slug }}
+                components={{
+                  wrap: <span className="inline-flex items-center gap-1 align-middle" />,
+                  code: <code className="bg-muted px-1 font-mono text-xs" />,
+                  copy: (
+                    <Button
+                      aria-label={t("modpacks.delete.copyAria")}
+                      className="text-muted-foreground"
+                      size="icon-xs"
+                      variant="ghost"
+                      onClick={() => copy(modpack.slug)}
+                    >
+                      <CopyIcon className="size-3" />
+                    </Button>
+                  ),
+                }}
+              />
             </label>
             <Input
               autoFocus
@@ -108,7 +114,7 @@ export default function DeleteModpackSheet({
             variant="destructive"
             onClick={() => void handleDelete()}
           >
-            {deleting ? "Deleting…" : "Delete modpack"}
+            {deleting ? t("modpacks.delete.pending") : t("modpacks.delete.submit")}
           </Button>
         </SheetFooter>
       </SheetContent>

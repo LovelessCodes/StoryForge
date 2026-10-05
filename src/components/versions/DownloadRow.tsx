@@ -1,4 +1,5 @@
 import { CircleAlert, Loader2, Pause, Play, RotateCw, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,13 +7,13 @@ import { Progress } from "@/components/ui/progress";
 import { useDownloadManager } from "@/hooks/use-download-manager";
 import type { DownloadEntry, DownloadStatus } from "@/stores/downloads";
 
-const statusLabels: Record<DownloadStatus, string> = {
-  done: "Done",
-  downloading: "Downloading",
-  error: "Failed",
-  extracting: "Extracting",
-  paused: "Paused",
-  pending: "Queued",
+const statusKeys: Record<DownloadStatus, string> = {
+  done: "versions.download.status.done",
+  downloading: "versions.download.status.downloading",
+  error: "versions.download.status.error",
+  extracting: "versions.download.status.extracting",
+  paused: "versions.download.status.paused",
+  pending: "versions.download.status.pending",
 };
 
 function formatSpeed(bytesPerSec: number | null): string {
@@ -38,6 +39,7 @@ function StatusIcon({ status }: { status: DownloadStatus }) {
 }
 
 export default function DownloadRow({ entry }: { entry: DownloadEntry }) {
+  const { t } = useTranslation();
   const { pause, resume, cancel, retry } = useDownloadManager();
 
   const percent = Math.round(entry.percent ?? 0);
@@ -56,7 +58,7 @@ export default function DownloadRow({ entry }: { entry: DownloadEntry }) {
         <div className="flex items-center gap-2">
           <span className="truncate font-mono text-xs font-medium">{entry.label}</span>
           <Badge variant="secondary" className="h-4 shrink-0 px-1.5 text-[10px]">
-            {statusLabels[entry.status]}
+            {t(statusKeys[entry.status])}
           </Badge>
         </div>
 
@@ -78,8 +80,8 @@ export default function DownloadRow({ entry }: { entry: DownloadEntry }) {
           <Button
             variant="outline"
             size="icon-sm"
-            aria-label="Pause"
-            title="Pause"
+            aria-label={t("versions.download.pause")}
+            title={t("versions.download.pause")}
             onClick={() => pause(entry.token)}
           >
             <Pause />
@@ -89,8 +91,8 @@ export default function DownloadRow({ entry }: { entry: DownloadEntry }) {
           <Button
             variant="outline"
             size="icon-sm"
-            aria-label="Resume"
-            title="Resume"
+            aria-label={t("versions.download.resume")}
+            title={t("versions.download.resume")}
             onClick={() => resume(entry.token)}
           >
             <Play />
@@ -100,8 +102,8 @@ export default function DownloadRow({ entry }: { entry: DownloadEntry }) {
           <Button
             variant="outline"
             size="icon-sm"
-            aria-label="Retry"
-            title="Retry"
+            aria-label={t("common.actions.retry")}
+            title={t("common.actions.retry")}
             onClick={() => retry(entry.token)}
           >
             <RotateCw />
@@ -111,8 +113,8 @@ export default function DownloadRow({ entry }: { entry: DownloadEntry }) {
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label="Cancel"
-            title="Cancel"
+            aria-label={t("common.actions.cancel")}
+            title={t("common.actions.cancel")}
             className="text-muted-foreground hover:text-destructive"
             onClick={() => cancel(entry.token)}
           >

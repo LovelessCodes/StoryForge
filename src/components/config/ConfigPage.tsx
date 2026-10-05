@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { cn } from "cn";
 import { FileJson2Icon, IdCardIcon, Loader2Icon } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,6 +27,7 @@ function errorMessage(error: unknown): string {
 }
 
 export default function ConfigPage() {
+  const { t } = useTranslation();
   const { activeProfile } = useActiveProfile();
   const profileId = activeProfile?.id ?? -1;
 
@@ -48,13 +50,15 @@ export default function ConfigPage() {
       return await invoke("save_mod_config", { profileId, file, newCode });
     },
     onError: (saveError) => {
-      toast.error(`Failed to save: ${errorMessage(saveError)}`, { id: "save-mod-config" });
+      toast.error(t("config.toasts.saveFailed", { message: errorMessage(saveError) }), {
+        id: "save-mod-config",
+      });
     },
     onMutate: () => {
-      toast.loading("Saving...", { id: "save-mod-config" });
+      toast.loading(t("config.toasts.saving"), { id: "save-mod-config" });
     },
     onSuccess: async () => {
-      toast.success("Saved!", { id: "save-mod-config" });
+      toast.success(t("config.toasts.saved"), { id: "save-mod-config" });
       void queryClient.invalidateQueries({ queryKey: modConfigsQueryKey(profileId) });
     },
   });
@@ -64,13 +68,11 @@ export default function ConfigPage() {
       <div className="flex h-full flex-col items-center justify-center gap-3 border border-dashed p-10 text-center">
         <IdCardIcon className="text-muted-foreground size-6" />
         <div>
-          <p className="text-sm font-medium">No active profile</p>
-          <p className="text-muted-foreground text-xs">
-            Create or select a profile to edit its mod config files.
-          </p>
+          <p className="text-sm font-medium">{t("config.noActiveProfile")}</p>
+          <p className="text-muted-foreground text-xs">{t("config.noActiveProfileDescription")}</p>
         </div>
         <Button render={<Link to="/profiles" />} size="sm" variant="accent-primary">
-          Go to Profiles
+          {t("config.goToProfiles")}
         </Button>
       </div>
     );
@@ -92,25 +94,25 @@ export default function ConfigPage() {
           value={[editorMode]}
           variant="outline"
         >
-          <ToggleGroupItem value="live">Live editor</ToggleGroupItem>
-          <ToggleGroupItem value="code">Code editor</ToggleGroupItem>
+          <ToggleGroupItem value="live">{t("config.liveEditor")}</ToggleGroupItem>
+          <ToggleGroupItem value="code">{t("config.codeEditor")}</ToggleGroupItem>
         </ToggleGroup>
       </div>
 
       {isLoading && configs.length === 0 ? (
         <div className="text-muted-foreground flex flex-1 items-center justify-center gap-2 border border-dashed p-10 text-xs">
           <Loader2Icon className="size-4 animate-spin" />
-          Loading configurations…
+          {t("config.loading")}
         </div>
       ) : configs.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 border border-dashed p-10 text-center">
           <FileJson2Icon className="text-muted-foreground size-6" />
           <div>
-            <p className="text-sm font-medium">No config files</p>
+            <p className="text-sm font-medium">{t("config.noConfigFiles")}</p>
             <p className="text-muted-foreground text-xs">
               {error
-                ? `Could not read mod configs: ${errorMessage(error)}`
-                : "Mods that ship configurable JSON files will show them here."}
+                ? t("config.readFailed", { message: errorMessage(error) })
+                : t("config.noConfigFilesHint")}
             </p>
           </div>
         </div>
@@ -119,7 +121,7 @@ export default function ConfigPage() {
           <div className="flex w-56 shrink-0 flex-col border-r">
             <div className="border-b px-3 py-2">
               <span className="text-muted-foreground text-[10px] font-medium tracking-widest uppercase">
-                Files
+                {t("config.files")}
               </span>
             </div>
             <ScrollArea className="min-h-0 flex-1">

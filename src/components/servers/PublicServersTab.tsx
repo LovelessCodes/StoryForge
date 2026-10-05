@@ -13,6 +13,7 @@ import {
   Users2,
 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import VirtualList from "@/components/common/VirtualList";
 import { Badge } from "@/components/ui/badge";
@@ -36,17 +37,17 @@ import { useServersFilters, type ServersFilters } from "@/stores/serversFilters"
 
 import PublicServerConnectSheet from "./PublicServerConnectSheet";
 
-const sortOptions: Record<ServersFilters["sortBy"], string> = {
-  maxplayers: "Max Players",
-  mods: "Mods",
-  name: "Name",
-  players: "Players",
-  version: "Version",
-  whitelist: "Whitelist",
-};
-
 export default function PublicServersTab() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+  const sortOptions: Record<ServersFilters["sortBy"], string> = {
+    maxplayers: t("servers.public.sort.maxplayers"),
+    mods: t("servers.public.sort.mods"),
+    name: t("servers.public.sort.name"),
+    players: t("servers.public.sort.players"),
+    version: t("servers.public.sort.version"),
+    whitelist: t("servers.public.sort.whitelist"),
+  };
   const {
     searchText,
     setSearchText,
@@ -136,7 +137,7 @@ export default function PublicServersTab() {
           <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2" />
           <Input
             className="pl-7"
-            placeholder="Search servers…"
+            placeholder={t("servers.public.searchPlaceholder")}
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
           />
@@ -150,13 +151,13 @@ export default function PublicServersTab() {
           value={selectedGameVersions}
           onValueChange={syncGameVersions}
         >
-          <SelectTrigger className="w-44" aria-label="Game versions">
+          <SelectTrigger className="w-44" aria-label={t("servers.public.gameVersionsAria")}>
             <SelectValue>
               {selectedGameVersions.length > 0
                 ? selectedGameVersions.length > 1
-                  ? `${selectedGameVersions.length} versions`
+                  ? t("servers.public.selectedVersions", { count: selectedGameVersions.length })
                   : selectedGameVersions[0]
-                : "Game version(s)"}
+                : t("servers.public.gameVersionsPlaceholder")}
             </SelectValue>
           </SelectTrigger>
           <SelectContent align="start" alignItemWithTrigger={false}>
@@ -173,7 +174,7 @@ export default function PublicServersTab() {
           value={sortBy}
           onValueChange={(value) => value && setSortBy(value as ServersFilters["sortBy"])}
         >
-          <SelectTrigger className="w-36" aria-label="Sort by">
+          <SelectTrigger className="w-36" aria-label={t("servers.public.sortBy")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent align="start" alignItemWithTrigger={false}>
@@ -186,13 +187,13 @@ export default function PublicServersTab() {
         </Select>
 
         <Button
-          aria-label="Toggle sort direction"
+          aria-label={t("servers.public.toggleSortDirection")}
           size="icon-sm"
           variant="outline"
           title={
             orderDirection === "descending"
-              ? "Sort direction: descending"
-              : "Sort direction: ascending"
+              ? t("servers.public.sortDescending")
+              : t("servers.public.sortAscending")
           }
           onClick={() =>
             setOrderDirection(orderDirection === "descending" ? "ascending" : "descending")
@@ -202,7 +203,7 @@ export default function PublicServersTab() {
         </Button>
 
         <span className="text-muted-foreground ml-auto text-xs">
-          {filteredServers.length} server{filteredServers.length === 1 ? "" : "s"}
+          {t("servers.public.count", { count: filteredServers.length })}
         </span>
       </div>
 
@@ -216,9 +217,9 @@ export default function PublicServersTab() {
             <div className="flex flex-col items-center justify-center gap-3 border border-dashed p-10 text-center">
               <Search className="text-muted-foreground size-6" />
               <div>
-                <p className="text-sm font-medium">No public servers match</p>
+                <p className="text-sm font-medium">{t("servers.public.emptyTitle")}</p>
                 <p className="text-muted-foreground text-xs">
-                  Clear the search or version filters and try again.
+                  {t("servers.public.emptyDescription")}
                 </p>
               </div>
             </div>
@@ -274,6 +275,7 @@ function PublicServerRow({
   onDownload: () => void;
   onAddProfile: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="bg-card hover:bg-muted/40 flex items-center gap-3 border p-3 transition-colors">
       <div className="min-w-0 flex-1">
@@ -287,7 +289,7 @@ function PublicServerRow({
             className={versionInstalled ? "text-[var(--color-success)]" : "text-destructive"}
             variant="outline"
           >
-            Version {server.gameVersion}
+            {t("servers.public.versionBadge", { version: server.gameVersion })}
           </Badge>
           <Badge className="text-muted-foreground" variant="outline">
             {server.players}/{server.maxPlayers}
@@ -295,18 +297,18 @@ function PublicServerRow({
           </Badge>
           {server.mods.length > 0 && (
             <Badge className="text-muted-foreground" variant="outline">
-              Mods {server.mods.length}
+              {t("servers.public.modsBadge", { count: server.mods.length })}
             </Badge>
           )}
           {server.whitelisted && (
             <Badge className="text-muted-foreground" variant="outline">
-              Whitelisted
+              {t("servers.public.whitelisted")}
               <ListCheck className="size-3" />
             </Badge>
           )}
           {server.hasPassword && (
             <Badge className="text-muted-foreground" variant="outline">
-              Protected
+              {t("servers.public.protected")}
               <Lock className="size-3" />
             </Badge>
           )}
@@ -315,26 +317,26 @@ function PublicServerRow({
 
       {versionInstalled ? (
         <Button size="sm" variant="outline-success" onClick={onConnect}>
-          <Plug /> Connect
+          <Plug /> {t("servers.actions.connect")}
         </Button>
       ) : hasProfile ? (
         <Button
           disabled={downloading}
           onClick={onDownload}
           size="sm"
-          title={`Download game version ${server.gameVersion}`}
+          title={t("servers.public.downloadTitle", { version: server.gameVersion })}
           variant="outline"
         >
-          <DownloadCloud /> Download
+          <DownloadCloud /> {t("servers.actions.download")}
         </Button>
       ) : (
         <Button
           onClick={onAddProfile}
           size="sm"
-          title={`Create a profile with v${server.gameVersion} to connect`}
+          title={t("servers.public.addProfileTitle", { version: server.gameVersion })}
           variant="outline"
         >
-          <FolderPlus /> Add profile
+          <FolderPlus /> {t("servers.public.addProfile")}
         </Button>
       )}
     </div>

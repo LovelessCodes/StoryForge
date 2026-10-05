@@ -1,1 +1,6 @@
-{}
+{
+  "failedToLoad": "Failed to load news",
+  "unreachable": "Could not reach the Vintage Story forums.",
+  "empty": "No news found.",
+  "openPost": "Open post"
+}

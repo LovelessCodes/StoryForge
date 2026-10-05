@@ -2,6 +2,7 @@ import { Dialog as SheetPrimitive } from "@base-ui/react/dialog";
 import { cn } from "cn";
 import { XIcon } from "lucide-react";
 import * as React from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "./button";
 
@@ -103,6 +104,7 @@ function SheetContent({
   side?: SheetSide;
   showCloseButton?: boolean;
 }) {
+  const { t } = useTranslation();
   const entering = useEntering();
   return (
     <SheetPortal>
@@ -124,7 +126,7 @@ function SheetContent({
             render={<Button variant="ghost" className="absolute top-3 right-3" size="icon-sm" />}
           >
             <XIcon />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">{t("common.actions.close")}</span>
           </SheetPrimitive.Close>
         )}
       </SheetPrimitive.Popup>

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -40,6 +41,7 @@ export function UpdateModSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: modInfo } = useQuery({
     enabled: open,
@@ -59,19 +61,20 @@ export function UpdateModSheet({
   const label = modInfo?.mod.name ?? mod.name;
 
   const isUpgrade = selectedVersion ? selectedVersion.modversion >= versionFrom : true;
-  const wording = {
-    Gerund: isUpgrade ? "Upgrading" : "Downgrading",
-    button: isUpgrade ? "Update" : "Downgrade",
-    gerund: isUpgrade ? "upgrading" : "downgrading",
-    past: isUpgrade ? "updated" : "downgraded",
-  };
 
   const { mutate: addModToProfile, isPending: addPending } = useAddModToProfile({
     onError: (error) => {
       if (error.message === "Download cancelled") return;
-      toast.error(`Error ${wording.gerund} ${label} to ${destinationLabel}: ${error.message}`, {
-        id: `add-mod-${modInfo?.mod.modid}-${pathHash}`,
-      });
+      toast.error(
+        t(isUpgrade ? "mods.errors.upgrading" : "mods.errors.downgrading", {
+          name: label,
+          destination: destinationLabel,
+          message: error.message,
+        }),
+        {
+          id: `add-mod-${modInfo?.mod.modid}-${pathHash}`,
+        },
+      );
     },
   });
 
@@ -80,7 +83,11 @@ export function UpdateModSheet({
       invoke("remove_mod_from_profile", { params: { modpath, path } }),
     onError: (error, variables) => {
       toast.error(
-        `Error removing ${variables.modpath} from ${destinationLabel}: ${error.message}`,
+        t("mods.errors.remove", {
+          name: variables.modpath,
+          destination: destinationLabel,
+          message: error.message,
+        }),
         {
           id: `mod-remove-${variables.path}-${variables.modpath}`,
         },
@@ -108,19 +115,30 @@ export function UpdateModSheet({
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b">
           <SheetTitle>
-            {wording.button} <span className="text-accent-amber">{label}</span> in{" "}
-            <span className="text-accent-primary">{destinationLabel}</span>
+            <Trans
+              components={{
+                name: <span className="text-accent-amber" />,
+                destination: <span className="text-accent-primary" />,
+              }}
+              i18nKey={
+                isUpgrade ? "mods.updateSheet.titleUpdate" : "mods.updateSheet.titleDowngrade"
+              }
+              values={{ destination: destinationLabel, name: label }}
+            />
           </SheetTitle>
           <SheetDescription>
-            Currently installed version: <span className="font-mono">{versionFrom}</span>. Select
-            the version you want to change to.
+            <Trans
+              components={{ version: <span className="font-mono" /> }}
+              i18nKey="mods.updateSheet.description"
+              values={{ version: versionFrom }}
+            />
           </SheetDescription>
         </SheetHeader>
         <ScrollArea scrollFade className="min-h-0 flex-1">
           <div className="grid gap-4 p-4">
             <div className="grid gap-1.5">
               <p className="text-muted-foreground text-[10px] font-medium tracking-widest uppercase">
-                Version
+                {t("common.fields.version")}
               </p>
               <ModVersionPicker
                 onSelect={setUserSelectedVersion}
@@ -128,7 +146,9 @@ export function UpdateModSheet({
                 selected={selectedVersion}
               />
             </div>
-            {!modInfo && <p className="text-muted-foreground text-xs">Loading releases...</p>}
+            {!modInfo && (
+              <p className="text-muted-foreground text-xs">{t("mods.loadingReleases")}</p>
+            )}
           </div>
         </ScrollArea>
         <SheetFooter className="border-t">
@@ -149,7 +169,7 @@ export function UpdateModSheet({
               }
             }}
           >
-            {wording.button} Mod
+            {isUpgrade ? t("mods.updateSheet.buttonUpdate") : t("mods.updateSheet.buttonDowngrade")}
           </Button>
         </SheetFooter>
       </SheetContent>

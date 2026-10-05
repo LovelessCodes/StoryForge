@@ -27,11 +27,6 @@ import AccountCard from "./AccountCard";
 import DataFoldersCard from "./DataFoldersCard";
 import LogViewer from "./LogViewer";
 
-const sortItems = (Object.keys(sortOptions) as SortBy[]).map((key) => ({
-  label: sortOptions[key],
-  value: key,
-}));
-
 function SettingRow({
   label,
   description,
@@ -133,6 +128,7 @@ function AppearanceCard() {
 }
 
 function BehaviourCard() {
+  const { t } = useTranslation();
   const streamMode = useSettingsStore((s) => s.streamMode);
   const toggleStreamMode = useSettingsStore((s) => s.toggleStreamMode);
   const useSystemDotnet = useSettingsStore((s) => s.useSystemDotnet);
@@ -140,40 +136,45 @@ function BehaviourCard() {
   const defaultModSortBy = useSettingsStore((s) => s.defaultModSortBy);
   const setDefaultModSortBy = useSettingsStore((s) => s.setDefaultModSortBy);
 
+  const sortItems = (Object.keys(sortOptions) as SortBy[]).map((key) => ({
+    label: t(`settings.behaviour.sort.${key}`),
+    value: key,
+  }));
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ZapIcon className="size-4" />
-          Behaviour
+          {t("settings.behaviour.title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4">
         <SettingRow
-          description="Hide server addresses in server lists, for example while streaming."
-          label="Stream mode"
+          description={t("settings.behaviour.streamModeDescription")}
+          label={t("settings.behaviour.streamMode")}
         >
           <Switch
-            aria-label="Stream mode"
+            aria-label={t("settings.behaviour.streamMode")}
             checked={streamMode}
             onCheckedChange={() => toggleStreamMode()}
           />
         </SettingRow>
 
         <SettingRow
-          description="Try your system's .NET runtime before downloading one."
-          label="Use system .NET"
+          description={t("settings.behaviour.systemDotnetDescription")}
+          label={t("settings.behaviour.systemDotnet")}
         >
           <Switch
-            aria-label="Use system .NET"
+            aria-label={t("settings.behaviour.systemDotnet")}
             checked={useSystemDotnet}
             onCheckedChange={() => toggleUseSystemDotnet()}
           />
         </SettingRow>
 
         <SettingRow
-          description="Sort order used when the mod browser opens."
-          label="Default mod sort"
+          description={t("settings.behaviour.defaultModSortDescription")}
+          label={t("settings.behaviour.defaultModSort")}
         >
           <Select
             items={sortItems}
@@ -182,7 +183,7 @@ function BehaviourCard() {
             }}
             value={defaultModSortBy}
           >
-            <SelectTrigger aria-label="Default mod sort" className="w-40">
+            <SelectTrigger aria-label={t("settings.behaviour.defaultModSort")} className="w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -200,19 +201,22 @@ function BehaviourCard() {
 }
 
 function UpdatesCard() {
+  const { t } = useTranslation();
   const { data: version } = useAppVersion();
   const queryClient = useQueryClient();
   const [checking, setChecking] = useState(false);
 
   async function checkForUpdates() {
     setChecking(true);
-    toast.loading("Checking for updates...", { id: "update-check" });
+    toast.loading(t("settings.updates.checkingToast"), { id: "update-check" });
     try {
       await queryClient.invalidateQueries({ queryKey: ["updater"] });
-      toast.success("Update check complete", { id: "update-check" });
+      toast.success(t("settings.updates.checkComplete"), { id: "update-check" });
     } catch (error) {
       toast.error(
-        `Update check failed: ${error instanceof Error ? error.message : String(error)}`,
+        t("settings.updates.checkFailed", {
+          message: error instanceof Error ? error.message : String(error),
+        }),
         { id: "update-check" },
       );
     } finally {
@@ -225,16 +229,19 @@ function UpdatesCard() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <DownloadIcon className="size-4" />
-          Updates
+          {t("settings.updates.title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">
-        <SettingRow description="Currently installed version." label="App version">
+        <SettingRow
+          description={t("settings.updates.appVersionDescription")}
+          label={t("settings.updates.appVersion")}
+        >
           <span className="font-mono text-xs">{version ? `v${version}` : "…"}</span>
         </SettingRow>
         <SettingRow
-          description="Checks quietly; updates are announced in the title bar."
-          label="Updates"
+          description={t("settings.updates.description")}
+          label={t("settings.updates.label")}
         >
           <Button
             disabled={checking}
@@ -243,7 +250,7 @@ function UpdatesCard() {
             variant="outline"
           >
             <RefreshCwIcon className={checking ? "animate-spin" : undefined} />
-            {checking ? "Checking..." : "Check for updates"}
+            {checking ? t("settings.updates.checking") : t("settings.updates.check")}
           </Button>
         </SettingRow>
       </CardContent>

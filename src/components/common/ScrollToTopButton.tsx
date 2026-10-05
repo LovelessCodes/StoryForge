@@ -1,6 +1,7 @@
 import { cn } from "cn";
 import { ArrowUp } from "lucide-react";
 import { useEffect, useState, type RefObject } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "../ui/button";
 
@@ -16,6 +17,7 @@ export default function ScrollToTopButton({
   viewportRef,
   align = "right",
 }: ScrollToTopButtonProps) {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -45,8 +47,8 @@ export default function ScrollToTopButton({
       type="button"
       variant="secondary"
       size="icon-sm"
-      aria-label="Scroll to top"
-      title="Scroll to top"
+      aria-label={t("layout.scrollToTop")}
+      title={t("layout.scrollToTop")}
       onClick={scrollToTop}
       className={cn(
         "animate-in fade-in slide-in-from-bottom-2 absolute bottom-2 z-10 border shadow-lg duration-150",

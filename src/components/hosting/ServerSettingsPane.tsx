@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { AlertTriangle, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +28,7 @@ interface ServerSettingsPaneProps {
 }
 
 export default function ServerSettingsPane({ instanceId, canDelete }: ServerSettingsPaneProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const instance = useHostedServer(instanceId);
   const updateInstance = useUpdateInstance();
@@ -41,7 +43,11 @@ export default function ServerSettingsPane({ instanceId, canDelete }: ServerSett
   const [deleteData, setDeleteData] = useState(false);
 
   if (!instance) {
-    return <p className="text-muted-foreground py-8 text-center text-sm">Instance not found.</p>;
+    return (
+      <p className="text-muted-foreground py-8 text-center text-sm">
+        {t("hosting.instanceNotFound")}
+      </p>
+    );
   }
 
   const name = editedName ?? instance.name;
@@ -60,12 +66,12 @@ export default function ServerSettingsPane({ instanceId, canDelete }: ServerSett
         },
       },
       {
-        onError: (err) => toast.error(`Failed to save settings: ${String(err)}`),
+        onError: (err) => toast.error(t("hosting.settings.saveFailed", { message: String(err) })),
         onSuccess: () => {
           setEditedName(null);
           setEditedPort(null);
           setEditedBindIp(null);
-          toast.success("Settings saved");
+          toast.success(t("hosting.settings.saved"));
         },
       },
     );
@@ -75,7 +81,7 @@ export default function ServerSettingsPane({ instanceId, canDelete }: ServerSett
     deleteInstance.mutate(
       { id: instanceId, deleteData },
       {
-        onError: (err) => toast.error(`Failed to delete instance: ${String(err)}`),
+        onError: (err) => toast.error(t("hosting.settings.deleteFailed", { message: String(err) })),
         onSuccess: () => {
           setDeleteOpen(false);
           void navigate({
@@ -92,7 +98,7 @@ export default function ServerSettingsPane({ instanceId, canDelete }: ServerSett
       <div className="grid gap-4">
         <div className="grid gap-1.5">
           <label className="text-xs font-medium" htmlFor="hosted-settings-name">
-            Name
+            {t("common.fields.name")}
           </label>
           <Input
             id="hosted-settings-name"
@@ -103,7 +109,7 @@ export default function ServerSettingsPane({ instanceId, canDelete }: ServerSett
         <div className="grid grid-cols-2 gap-3">
           <div className="grid gap-1.5">
             <label className="text-xs font-medium" htmlFor="hosted-settings-port">
-              Port
+              {t("common.fields.port")}
             </label>
             <Input
               id="hosted-settings-port"
@@ -114,7 +120,7 @@ export default function ServerSettingsPane({ instanceId, canDelete }: ServerSett
           </div>
           <div className="grid gap-1.5">
             <label className="text-xs font-medium" htmlFor="hosted-settings-bind-ip">
-              Bind IP
+              {t("hosting.settings.bindIp")}
             </label>
             <Input
               id="hosted-settings-bind-ip"
@@ -124,7 +130,7 @@ export default function ServerSettingsPane({ instanceId, canDelete }: ServerSett
           </div>
         </div>
         <div className="grid gap-1.5">
-          <span className="text-xs font-medium">Data directory</span>
+          <span className="text-xs font-medium">{t("hosting.settings.dataDirectory")}</span>
           <p className="bg-muted text-muted-foreground border p-2 font-mono text-[11px] break-all">
             {instance.data_dir}
           </p>
@@ -136,7 +142,7 @@ export default function ServerSettingsPane({ instanceId, canDelete }: ServerSett
             variant="accent-primary"
             onClick={handleSave}
           >
-            {updateInstance.isPending ? "Saving…" : "Save settings"}
+            {updateInstance.isPending ? t("hosting.settings.saving") : t("hosting.settings.save")}
           </Button>
         </div>
       </div>
@@ -145,22 +151,19 @@ export default function ServerSettingsPane({ instanceId, canDelete }: ServerSett
         <CardHeader>
           <CardTitle className="text-destructive flex items-center gap-2">
             <AlertTriangle className="size-4" />
-            Danger Zone
+            {t("hosting.settings.dangerZone")}
           </CardTitle>
-          <CardDescription>
-            Deleting an instance is permanent. You can optionally also delete all server data
-            (worlds, mods, config).
-          </CardDescription>
+          <CardDescription>{t("hosting.settings.dangerDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Button
             disabled={!canDelete}
             size="sm"
-            title={canDelete ? undefined : "Stop the server before deleting it"}
+            title={canDelete ? undefined : t("hosting.settings.stopBeforeDelete")}
             variant="destructive"
             onClick={() => setDeleteOpen(true)}
           >
-            <Trash2 /> Delete instance
+            <Trash2 /> {t("hosting.settings.deleteInstance")}
           </Button>
         </CardContent>
       </Card>
@@ -171,16 +174,14 @@ export default function ServerSettingsPane({ instanceId, canDelete }: ServerSett
       >
         <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-sm">
           <SheetHeader className="border-b">
-            <SheetTitle>Delete “{instance.name}”?</SheetTitle>
-            <SheetDescription>
-              This action cannot be undone. The instance configuration will be permanently removed.
-            </SheetDescription>
+            <SheetTitle>{t("hosting.settings.deleteTitle", { name: instance.name })}</SheetTitle>
+            <SheetDescription>{t("hosting.settings.deleteDescription")}</SheetDescription>
           </SheetHeader>
           <div className="flex items-center justify-between gap-4 p-4">
             <div className="grid gap-0.5">
-              <span className="text-xs font-medium">Also delete all server data</span>
+              <span className="text-xs font-medium">{t("hosting.settings.deleteData")}</span>
               <span className="text-muted-foreground text-[11px]">
-                Worlds, mods and config are removed from disk.
+                {t("hosting.settings.deleteDataDescription")}
               </span>
             </div>
             <Switch checked={deleteData} onCheckedChange={setDeleteData} />
@@ -191,7 +192,9 @@ export default function ServerSettingsPane({ instanceId, canDelete }: ServerSett
               variant="destructive"
               onClick={handleDelete}
             >
-              {deleteInstance.isPending ? "Deleting…" : "Delete"}
+              {deleteInstance.isPending
+                ? t("hosting.settings.deleting")
+                : t("common.actions.delete")}
             </Button>
           </SheetFooter>
         </SheetContent>

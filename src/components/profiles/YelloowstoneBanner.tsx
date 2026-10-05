@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 import { LauncherImportBanner } from "@/components/profiles/LauncherImportBanner";
 import {
   useYelloowstoneInstances,
@@ -7,6 +9,7 @@ import { useSettingsStore } from "@/stores/settings";
 
 /** Import banner for Yelloowstone (jgwoolley/vintage-story-launcher). */
 export default function YelloowstoneBanner() {
+  const { t } = useTranslation();
   const { data } = useYelloowstoneInstances();
   const dismissed = useSettingsStore((s) => s.yelloowstoneDismissed);
   const dismiss = useSettingsStore((s) => s.dismissYelloowstone);
@@ -18,8 +21,8 @@ export default function YelloowstoneBanner() {
       onDismiss={dismiss}
       source={{
         name: "Yelloowstone",
-        hint: "Instances from Yelloowstone (jgwoolley/vintage-story-launcher). Each instance's data folder becomes a profile.",
-        note: "The instance's runtime folder is a full game install: it is linked as a version, never moved, so Yelloowstone keeps working. Moving a data folder does remove it from Yelloowstone's list.",
+        hint: t("profiles.banners.yelloowstone.hint"),
+        note: t("profiles.banners.yelloowstone.note"),
         importCommand: "import_yelloowstone_instances",
         queryKey: yelloowstoneInstancesQueryKey,
       }}

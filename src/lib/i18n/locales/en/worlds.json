@@ -1,1 +1,87 @@
-{}
+{
+  "page": {
+    "searchAria": "Search worlds and maps",
+    "searchPlaceholder": "Search worlds and maps…",
+    "allProfiles": "All profiles",
+    "filterAria": "Filter by profile",
+    "loading": "Loading worlds…",
+    "worlds": "Worlds",
+    "worldsCount_one": "Worlds ({{count}})",
+    "worldsCount_other": "Worlds ({{count}})",
+    "mapsWithoutSaves_one": "Maps without saves ({{count}})",
+    "mapsWithoutSaves_other": "Maps without saves ({{count}})",
+    "empty": "No worlds found yet. Create a world in-game to get started.",
+    "noMatches": "No worlds match your filters."
+  },
+  "row": {
+    "seedTitle": "Seed {{seed}} — click to copy",
+    "copied": "Copied!",
+    "byline": "by <author>{{author}}</author> in {{version}}",
+    "lastPlayed": "Last played: {{time}}",
+    "differentVersion": "Different version {{worldVersion}} → {{profileVersion}}",
+    "versionMismatchTitle": "The profile version ({{profileVersion}}) differs from the world's last saved version ({{worldVersion}}).",
+    "playTitle": "Play {{world}} with {{profile}}",
+    "installTitle": "Game version {{version}} is not installed",
+    "noProfileTitle": "No matching profile found",
+    "noProfile": "No profile",
+    "viewMapAria": "View map",
+    "noMapTitle": "No map available for {{name}}",
+    "editAria": "Edit world",
+    "deleteAria": "Delete world"
+  },
+  "edit": {
+    "title": "Edit “{{name}}”",
+    "description": "Rename the world or move it to another profile. Renaming also renames the save file.",
+    "namePlaceholder": "My world",
+    "profile": "Profile",
+    "selectProfile": "Select profile",
+    "moveHint": "Moving the world transfers its map database along with the save file.",
+    "submit": "Update world",
+    "saving": "Saving…",
+    "failed": "Failed to update world",
+    "errors": {
+      "nameLength": "Name must be between 2 and 100 characters",
+      "profile": "Select a profile"
+    }
+  },
+  "delete": {
+    "title": "Delete <name>{{name}}</name>?",
+    "description": "This cannot be undone. The world save and its map database are permanently removed from Story Forge.",
+    "warning": "Warning:",
+    "warningText": "This deletes the world from your computer. If you want to keep a backup, export it before proceeding.",
+    "confirmAria": "Confirm world deletion",
+    "confirmLabel": "I understand that this action cannot be undone.",
+    "pending": "Deleting…",
+    "deleting": "Deleting world {{name}}…",
+    "failed": "Failed to delete world {{name}}",
+    "facts": {
+      "worldName": "World name",
+      "mapIdentifier": "Map identifier",
+      "worldType": "World type",
+      "playStyle": "Play style",
+      "createdBy": "Created by",
+      "lastPlayed": "Last played",
+      "lastSession": "Last session",
+      "seed": "Seed",
+      "createdVersion": "Created in version",
+      "lastSavedVersion": "Last saved in version"
+    }
+  },
+  "map": {
+    "defaultName": "Map",
+    "view": "View Map",
+    "viewTitle": "View map {{name}}",
+    "rowMeta": "{{profile}} · Standalone map · No save attached",
+    "title": "{{name}} — World Map",
+    "description": "Interactive map viewer · Drag to pan · Scroll to zoom",
+    "playerAria": "Player whose markers are shown",
+    "noPlayers": "No players found",
+    "showProspecting": "Show prospecting",
+    "loading": "Loading map…",
+    "noMapData": "No map data available yet. Explore the world in-game to generate the map!",
+    "loadError": "Error loading map: {{message}}",
+    "noTiles": "No map tiles found. Explore the world in-game to generate the map!",
+    "prospectingResults": "Prospecting Results:",
+    "panZoom": "Drag to pan · Scroll to zoom"
+  }
+}

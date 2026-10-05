@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { ChevronDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import type { ModInfo } from "@/lib/types";
 
@@ -78,6 +79,7 @@ interface ModpackModsListProps {
 
 /** Collapsible list of the mods a modpack version contains. */
 export default function ModpackModsList({ modsString, open, onOpenChange }: ModpackModsListProps) {
+  const { t } = useTranslation();
   if (!modsString) return null;
   const mods = parseMods(modsString);
   if (mods.length === 0) return null;
@@ -90,7 +92,7 @@ export default function ModpackModsList({ modsString, open, onOpenChange }: Modp
         onClick={() => onOpenChange(!open)}
       >
         <ChevronDown className={`size-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
-        {mods.length} mod{mods.length !== 1 ? "s" : ""}
+        {t("modpacks.modsList.count", { count: mods.length })}
       </button>
       {open && (
         <div className="bg-background/60 grid min-w-0 gap-1.5 border p-2">

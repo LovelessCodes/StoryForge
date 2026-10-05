@@ -1,5 +1,6 @@
 import { Check, ChevronsUpDown, ShieldCheck, UserPlus, UserRound, UserX } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,7 @@ import AddAccountSheet from "./AddAccountSheet";
  * cloud account used for modpacks).
  */
 export default function AccountMenu() {
+  const { t } = useTranslation();
   const { users, selectedUser, setSelectedUser, removeUser } = useAccountStore();
   const verify = useVerifyAuth();
   const [addOpen, setAddOpen] = useState(false);
@@ -30,7 +32,7 @@ export default function AccountMenu() {
 
   function verifySelected() {
     if (!selectedUser?.uid || !selectedUser.sessionkey) {
-      toast.error("This account has no saved session — sign in again.");
+      toast.error(t("auth.menu.noSavedSession"));
       return;
     }
     verify.mutate(
@@ -38,13 +40,13 @@ export default function AccountMenu() {
       {
         onError: (error: Error) => {
           if (error.message.includes("invalid_session")) {
-            toast.error("Session expired — please sign in again.");
+            toast.error(t("auth.menu.sessionExpired"));
             removeUser(selectedUser.uid);
           } else {
-            toast.error(`Could not verify session: ${error.message}`);
+            toast.error(t("auth.menu.verifyFailed", { message: error.message }));
           }
         },
-        onSuccess: () => toast.success("Session is valid"),
+        onSuccess: () => toast.success(t("auth.menu.sessionValid")),
       },
     );
   }
@@ -62,15 +64,15 @@ export default function AccountMenu() {
         >
           <span className="flex min-w-0 items-center gap-2">
             <UserRound className="text-muted-foreground size-4 shrink-0" />
-            <span className="truncate">{selectedUser?.playername ?? "Sign in"}</span>
+            <span className="truncate">{selectedUser?.playername ?? t("auth.actions.signIn")}</span>
           </span>
           <ChevronsUpDown className="text-muted-foreground size-4 shrink-0" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="min-w-56">
           <DropdownMenuGroup>
-            <DropdownMenuLabel>Vintage Story accounts</DropdownMenuLabel>
+            <DropdownMenuLabel>{t("auth.menu.label")}</DropdownMenuLabel>
             {users.length === 0 && (
-              <DropdownMenuItem disabled>No accounts signed in</DropdownMenuItem>
+              <DropdownMenuItem disabled>{t("auth.menu.empty")}</DropdownMenuItem>
             )}
             {users.map((user) => (
               <DropdownMenuItem
@@ -89,10 +91,10 @@ export default function AccountMenu() {
           {selectedUser && (
             <>
               <DropdownMenuItem disabled={verify.isPending} onClick={verifySelected}>
-                <ShieldCheck /> Verify session
+                <ShieldCheck /> {t("auth.actions.verifySession")}
               </DropdownMenuItem>
               <DropdownMenuItem variant="destructive" onClick={() => removeUser(selectedUser.uid)}>
-                <UserX /> Sign out
+                <UserX /> {t("auth.actions.signOut")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
             </>
@@ -103,7 +105,7 @@ export default function AccountMenu() {
               setAddOpen(true);
             }}
           >
-            <UserPlus /> Add account…
+            <UserPlus /> {t("auth.actions.addAccount")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 import { LauncherImportBanner } from "@/components/profiles/LauncherImportBanner";
 import {
   useVsLauncherInstallations,
@@ -7,6 +9,7 @@ import { useSettingsStore } from "@/stores/settings";
 
 /** Import banner for VS Launcher (XurxoMF) installations. */
 export default function VsLauncherBanner() {
+  const { t } = useTranslation();
   const { data } = useVsLauncherInstallations();
   const dismissed = useSettingsStore((s) => s.vsLauncherDismissed);
   const dismiss = useSettingsStore((s) => s.dismissVsLauncher);
@@ -18,8 +21,8 @@ export default function VsLauncherBanner() {
       onDismiss={dismiss}
       source={{
         name: "VS Launcher / RiftLauncher",
-        hint: "Installations from VS Launcher by XurxoMF and RiftLauncher by the Stratum team (its maintained continuation). Each one is imported as a profile — nothing is converted except the manifest.",
-        note: "Icons are not carried over (both use their own artwork). Playtime, launch parameters and environment variables are preserved.",
+        hint: t("profiles.banners.vsLauncher.hint"),
+        note: t("profiles.banners.vsLauncher.note"),
         importCommand: "import_vs_launcher_installations",
         queryKey: vsLauncherInstallationsQueryKey,
       }}

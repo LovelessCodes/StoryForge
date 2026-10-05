@@ -35,7 +35,9 @@
     "select": "Select",
     "stop": "Stop",
     "undo": "Undo",
-    "update": "Update"
+    "update": "Update",
+    "pause": "Pause",
+    "resume": "Resume"
   },
   "fields": {
     "author": "Author",
@@ -64,5 +66,6 @@
     "optional": "Optional",
     "required": "Required",
     "unknown": "Unknown"
-  }
+  },
+  "defaultProfileName": "Default"
 }

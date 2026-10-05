@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { Check, Loader2, X } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,7 @@ export default function ServerFormSheet({
   onOpenChangeComplete,
   server,
 }: ServerFormSheetProps) {
+  const { t } = useTranslation();
   const isEdit = server != null;
   const { profiles } = useProfiles();
   const { activeProfile } = useActiveProfile();
@@ -93,7 +95,9 @@ export default function ServerFormSheet({
       });
       setSniffResult(result);
     } catch (err) {
-      toast.error(`Failed to test server: ${err instanceof Error ? err.message : String(err)}`);
+      toast.error(
+        t("servers.form.testFailed", { error: err instanceof Error ? err.message : String(err) }),
+      );
       setSniffResult(null);
     } finally {
       setTesting(false);
@@ -101,10 +105,10 @@ export default function ServerFormSheet({
   }
 
   function validate(): string | null {
-    if (!name.trim()) return "Enter a server name";
-    if (!ip.trim()) return "Enter the server address";
-    if (port.length > 0 && parsePort() === null) return "Port must be a number";
-    if (!selectedProfile) return "Pick a profile";
+    if (!name.trim()) return t("servers.form.errorName");
+    if (!ip.trim()) return t("servers.form.errorAddress");
+    if (port.length > 0 && parsePort() === null) return t("servers.form.errorPort");
+    if (!selectedProfile) return t("servers.form.errorProfile");
     return null;
   }
 
@@ -151,7 +155,7 @@ export default function ServerFormSheet({
           { profileId: next.profileId, server: serverEntryString(next) },
           {
             onError: (err) =>
-              toast.error(`Failed to add server: ${err.message}`, {
+              toast.error(t("servers.form.addFailed", { error: err.message }), {
                 id: `add-server-${next.name}-${next.ip}`,
               }),
             onSuccess: () => {
@@ -172,11 +176,11 @@ export default function ServerFormSheet({
 
   const submitLabel = busy
     ? isEdit
-      ? "Updating…"
-      : "Adding…"
+      ? t("servers.form.updating")
+      : t("servers.form.adding")
     : isEdit
-      ? "Update server"
-      : "Add server";
+      ? t("servers.form.updateSubmit")
+      : t("servers.form.addSubmit");
 
   return (
     <Sheet
@@ -186,21 +190,23 @@ export default function ServerFormSheet({
     >
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b">
-          <SheetTitle>{isEdit ? `Edit “${server?.name}”` : "Add server"}</SheetTitle>
-          <SheetDescription>
-            The entry is written to the selected profile&apos;s clientsettings.json.
-          </SheetDescription>
+          <SheetTitle>
+            {isEdit
+              ? t("servers.form.editTitle", { name: server?.name ?? "" })
+              : t("servers.form.addTitle")}
+          </SheetTitle>
+          <SheetDescription>{t("servers.form.description")}</SheetDescription>
         </SheetHeader>
 
         <ScrollArea scrollFade className="min-h-0 flex-1">
           <div className="grid gap-4 p-4">
             <div className="grid gap-1.5">
               <label className="text-xs font-medium" htmlFor="server-name">
-                Name
+                {t("common.fields.name")}
               </label>
               <Input
                 id="server-name"
-                placeholder="My server"
+                placeholder={t("servers.form.namePlaceholder")}
                 value={name}
                 onChange={(event) => setName(event.target.value)}
               />
@@ -208,7 +214,8 @@ export default function ServerFormSheet({
 
             <div className="grid gap-1.5">
               <label className="text-xs font-medium" htmlFor="server-password">
-                Password <span className="text-muted-foreground">(optional)</span>
+                {t("common.fields.password")}{" "}
+                <span className="text-muted-foreground">({t("common.states.optional")})</span>
               </label>
               <Input
                 id="server-password"
@@ -221,7 +228,7 @@ export default function ServerFormSheet({
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-1.5">
                 <label className="text-xs font-medium" htmlFor="server-ip">
-                  IP address
+                  {t("servers.form.ipAddress")}
                 </label>
                 <Input
                   id="server-ip"
@@ -232,7 +239,7 @@ export default function ServerFormSheet({
               </div>
               <div className="grid gap-1.5">
                 <label className="text-xs font-medium" htmlFor="server-port">
-                  Port
+                  {t("common.fields.port")}
                 </label>
                 <Input
                   id="server-port"
@@ -245,7 +252,7 @@ export default function ServerFormSheet({
 
             <div className="grid gap-1.5">
               <span className="text-xs font-medium">
-                Profile <span className="text-destructive">*</span>
+                {t("servers.profile")} <span className="text-destructive">*</span>
               </span>
               <Select
                 items={profiles.map((p) => ({
@@ -255,7 +262,7 @@ export default function ServerFormSheet({
                 value={effectiveProfileId}
                 onValueChange={(value) => value && setProfileId(value)}
               >
-                <SelectTrigger className="w-full" aria-label="Profile">
+                <SelectTrigger className="w-full" aria-label={t("servers.profile")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -269,7 +276,7 @@ export default function ServerFormSheet({
               </Select>
               {profiles.length === 0 && (
                 <p className="text-muted-foreground text-[11px]">
-                  Create a profile first to store the server in.
+                  {t("servers.form.createProfileFirst")}
                 </p>
               )}
             </div>
@@ -283,10 +290,10 @@ export default function ServerFormSheet({
             >
               {testing ? (
                 <>
-                  <Loader2 className="animate-spin" /> Testing…
+                  <Loader2 className="animate-spin" /> {t("servers.form.testing")}
                 </>
               ) : (
-                "Test server"
+                t("servers.form.test")
               )}
             </Button>
 
@@ -314,40 +321,41 @@ export default function ServerFormSheet({
 
 /** Result of the Test server probe. */
 function SniffResultPanel({ result, version }: { result: SniffResult; version?: string }) {
+  const { t } = useTranslation();
   const versionMatches = sameMinorVersion(version, result.server_game_version ?? undefined);
 
   return (
     <div className="bg-muted/50 grid gap-1 border p-3 text-xs">
       {result.server_game_version && (
         <p>
-          <span className="text-muted-foreground">Version:</span>{" "}
+          <span className="text-muted-foreground">{t("servers.form.probeVersion")}</span>{" "}
           <span className="font-mono">v{result.server_game_version}</span>
           {version && (
             <span className={versionMatches ? "text-success ml-2" : "text-destructive ml-2"}>
-              {versionMatches ? "matches your profile" : "differs from your profile"}
+              {versionMatches ? t("servers.form.probeMatches") : t("servers.form.probeDiffers")}
             </span>
           )}
         </p>
       )}
       {result.password_protected && (
         <p className="flex items-center gap-1">
-          <span className="text-muted-foreground">Password:</span>
+          <span className="text-muted-foreground">{t("servers.form.probePassword")}</span>
           {result.password_valid === true ? (
             <span className="text-success flex items-center gap-1">
-              <Check className="size-3" /> Correct
+              <Check className="size-3" /> {t("servers.form.probeCorrect")}
             </span>
           ) : result.password_valid === false ? (
             <span className="text-destructive flex items-center gap-1">
-              <X className="size-3" /> Incorrect
+              <X className="size-3" /> {t("servers.form.probeIncorrect")}
             </span>
           ) : (
-            <span className="text-warning">Required (enter password to test)</span>
+            <span className="text-warning">{t("servers.form.probePasswordRequired")}</span>
           )}
         </p>
       )}
-      {result.whitelisted && <p className="text-warning">Server is whitelisted</p>}
-      {result.server_full && <p className="text-destructive">Server is full</p>}
-      {result.banned && <p className="text-destructive">You are banned</p>}
+      {result.whitelisted && <p className="text-warning">{t("servers.form.probeWhitelisted")}</p>}
+      {result.server_full && <p className="text-destructive">{t("servers.form.probeFull")}</p>}
+      {result.banned && <p className="text-destructive">{t("servers.form.probeBanned")}</p>}
       {result.disconnect_message && (
         <p className="text-muted-foreground truncate">{result.disconnect_message}</p>
       )}

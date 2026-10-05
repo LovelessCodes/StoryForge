@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 
+import { t } from "@/lib/i18n";
 import { toast } from "@/lib/notify";
 
 type ServerStore = {
@@ -54,7 +55,7 @@ export const useServerStore = create<ServerStore>()((set) => ({
           (s) => s.name === server.name && s.ip === server.ip && s.profileId === server.profileId,
         )
       ) {
-        toast.error(`Server "${server.name}" already exists in this profile`);
+        toast.error(t("servers.store.duplicate", { name: server.name }));
         cb?.(false);
         return state;
       }
@@ -122,7 +123,7 @@ export const useServerStore = create<ServerStore>()((set) => ({
         // optimistic update only touches the clicked row.
         invoke("set_server_favorite", { favorite: nextFavorite, id: server.id }).catch((e) => {
           console.error("Failed to save server favorite:", e);
-          toast.error("Failed to save favorite");
+          toast.error(t("servers.store.favoriteFailed"));
           // Roll the optimistic flip back; server_favorites.json is authoritative.
           set((state) => ({
             servers: state.servers.map((s) =>
@@ -143,7 +144,7 @@ export const useServerStore = create<ServerStore>()((set) => ({
   updateServer: (updatedServer, cb) =>
     set((state) => {
       if (!state.servers.find((s) => s.rowKey === updatedServer.rowKey)) {
-        toast.error("Server not found");
+        toast.error(t("servers.store.notFound"));
         cb?.(false);
         return state;
       }

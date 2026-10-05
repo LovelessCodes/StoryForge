@@ -1,1 +1,148 @@
-{}
+{
+  "standalone": "Standalone",
+  "loadingReleases": "Loading releases…",
+  "search": {
+    "placeholder": "Search mods…"
+  },
+  "filters": {
+    "count_one": "{{count}} mod",
+    "count_other": "{{count}} mods",
+    "gameVersions": {
+      "aria": "Filter by game version",
+      "empty": "No versions found.",
+      "placeholder": "Game versions…"
+    },
+    "tags": {
+      "aria": "Filter by tag",
+      "empty": "No tags found.",
+      "placeholder": "Mod tags…"
+    },
+    "sort": {
+      "aria": "Sort by",
+      "toggleDirection": "Toggle sort direction"
+    },
+    "category": {
+      "aria": "Category"
+    },
+    "side": {
+      "aria": "Filter by side",
+      "label": "Side"
+    }
+  },
+  "sort": {
+    "comments": "Comments",
+    "created": "Created",
+    "downloads": "Downloads",
+    "follows": "Follows",
+    "name": "Name",
+    "relevance": "Relevance",
+    "trending": "Trending",
+    "updated": "Last Updated"
+  },
+  "sortDirection": {
+    "ascending": "Ascending",
+    "descending": "Descending"
+  },
+  "category": {
+    "externaltool": "External Tool",
+    "mod": "Mod",
+    "other": "Other"
+  },
+  "side": {
+    "both": "Both",
+    "client": "Client",
+    "server": "Server"
+  },
+  "authorFilter": {
+    "aria": "Filter by author",
+    "clear": "Clear author filter",
+    "count_one": "{{count}} mod",
+    "count_other": "{{count}} mods",
+    "empty": "No authors found.",
+    "placeholder": "Filter author…"
+  },
+  "list": {
+    "empty": "No mods found. Try adjusting your search or filters."
+  },
+  "item": {
+    "add": "Add mod",
+    "addTo": "Add to {{destination}}",
+    "browseVersions": "Browse versions",
+    "browseVersionsTooltip": "Look through available versions",
+    "byAuthor": "by {{author}}",
+    "downloadLatest": "Download latest version",
+    "filterBy": "Filter by {{author}}",
+    "filterByAuthor": "Filter by author {{author}}",
+    "install": "Install mod",
+    "installLatest": "Install latest version",
+    "installTo": "Install to…",
+    "installToDestination": "Install to profile or hosted server",
+    "installedVersion": "Installed v{{version}}",
+    "pin": "Pin mod",
+    "pinTooltip": "Pin to v{{version}} (excluded from Update All)",
+    "pinnedTooltip": "Pinned to v{{version}} — Update All skips it",
+    "removeFrom": "Remove from {{destination}}",
+    "unpin": "Unpin mod",
+    "updateToLatest": "Update to latest version"
+  },
+  "versionPicker": {
+    "aria": "Select version",
+    "forVersion": "for {{version}}",
+    "moreTags_one": "(+{{count}} more)",
+    "moreTags_other": "(+{{count}} more)",
+    "placeholder": "Select version…"
+  },
+  "release": {
+    "downloads_one": "{{count}} download",
+    "downloads_other": "{{count}} downloads"
+  },
+  "addSheet": {
+    "description": "Select the version of {{name}} you want to add to {{destination}}.",
+    "submit": "Add Mod",
+    "title": "Add <name>{{name}}</name> to <destination>{{destination}}</destination>"
+  },
+  "removeSheet": {
+    "body": "This will permanently remove <name>{{name}}</name> from {{destination}}.",
+    "description": "This action cannot be undone.",
+    "title": "Remove <name>{{name}}</name> from <destination>{{destination}}</destination>?"
+  },
+  "updateSheet": {
+    "buttonDowngrade": "Downgrade Mod",
+    "buttonUpdate": "Update Mod",
+    "description": "Currently installed version: <version>{{version}}</version>. Select the version you want to change to.",
+    "titleDowngrade": "Downgrade <name>{{name}}</name> in <destination>{{destination}}</destination>",
+    "titleUpdate": "Update <name>{{name}}</name> in <destination>{{destination}}</destination>"
+  },
+  "standaloneInstall": {
+    "description": "No active profile. Choose where to install this mod and which version to use.",
+    "destination": "Destination",
+    "destinationAria": "Install destination",
+    "destinationPlaceholder": "Select destination…",
+    "hostedServers": "Hosted Servers",
+    "noDestinations": "No profiles or hosted servers available.",
+    "noDownload": "No download available for {{name}}",
+    "profiles": "Profiles",
+    "title": "Install <name>{{name}}</name>"
+  },
+  "updateAll": {
+    "button_one": "Update All ({{count}})",
+    "button_other": "Update All ({{count}})",
+    "confirm": "Yes, really"
+  },
+  "dependencies": {
+    "installMissing": "Install missing",
+    "missing_one": "{{count}} missing dependency in {{destination}}",
+    "missing_other": "{{count}} missing dependencies in {{destination}}",
+    "more": "+{{count}} more",
+    "requiredBy": "required by {{names}}"
+  },
+  "errors": {
+    "add": "Error adding {{name}} to {{destination}}: {{message}}",
+    "downgrading": "Error downgrading {{name}} to {{destination}}: {{message}}",
+    "install": "Error installing {{name}} to {{destination}}: {{message}}",
+    "remove": "Error removing {{name}} from {{destination}}: {{message}}",
+    "update": "Error updating {{name}} in {{destination}}: {{message}}",
+    "updateIn": "Error updating mod in {{destination}}: {{message}}",
+    "upgrading": "Error upgrading {{name}} to {{destination}}: {{message}}"
+  }
+}

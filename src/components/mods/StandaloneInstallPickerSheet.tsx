@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { useMemo, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -46,6 +47,7 @@ export function StandaloneInstallPickerSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useTranslation();
   const { profiles } = useProfiles();
   const { data: hostedInstances } = useHostedServers();
   const { data: modInfo } = useQuery({
@@ -77,12 +79,13 @@ export function StandaloneInstallPickerSheet({
   const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null);
   const [userSelectedVersion, setUserSelectedVersion] = useState<Release | null>(null);
   const selectedVersion = userSelectedVersion ?? latestRelease(modInfo?.mod.releases) ?? null;
+  const name = modInfo?.mod.name ?? mod.name;
   const { startModDownload } = useDownloadManager();
 
   const { mutate: installMod, isPending } = useMutation({
     mutationFn: async ({ dest, release }: { dest: Destination; release: Release }) => {
       if (!release.mainfile) {
-        throw new Error(`No download available for ${modInfo?.mod.name ?? mod.name}`);
+        throw new Error(t("mods.standaloneInstall.noDownload", { name }));
       }
       // The destination ends in `/Mods`; the profile/server root is what the
       // mod lists are keyed by.
@@ -94,7 +97,7 @@ export function StandaloneInstallPickerSheet({
       // happen in the Downloads sheet.
       startModDownload({
         token: `mod:${mod.modid}:${release.modversion}:${hashPath(dest.path)}`,
-        label: `${modInfo?.mod.name ?? mod.name} v${release.modversion}`,
+        label: `${name} v${release.modversion}`,
         detail: dest.name,
         url: release.mainfile,
         destpath: dest.path,
@@ -105,7 +108,11 @@ export function StandaloneInstallPickerSheet({
     onError: (error, variables) => {
       if (error.message === "Download cancelled") return;
       toast.error(
-        `Error installing ${modInfo?.mod.name ?? mod.name} to ${variables.dest.name}: ${error.message}`,
+        t("mods.errors.install", {
+          name,
+          destination: variables.dest.name,
+          message: error.message,
+        }),
         { id: `standalone-install-${mod.modid}-${variables.dest.id}` },
       );
     },
@@ -119,17 +126,19 @@ export function StandaloneInstallPickerSheet({
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b">
           <SheetTitle>
-            Install <span className="text-accent-amber">{modInfo?.mod.name ?? mod.name}</span>
+            <Trans
+              components={{ name: <span className="text-accent-amber" /> }}
+              i18nKey="mods.standaloneInstall.title"
+              values={{ name }}
+            />
           </SheetTitle>
-          <SheetDescription>
-            No active profile. Choose where to install this mod and which version to use.
-          </SheetDescription>
+          <SheetDescription>{t("mods.standaloneInstall.description")}</SheetDescription>
         </SheetHeader>
         <ScrollArea scrollFade className="min-h-0 flex-1">
           <div className="grid gap-4 p-4">
             <div className="grid gap-1.5">
               <p className="text-muted-foreground text-[10px] font-medium tracking-widest uppercase">
-                Destination
+                {t("mods.standaloneInstall.destination")}
               </p>
               <Select
                 onValueChange={(value) => {
@@ -138,15 +147,19 @@ export function StandaloneInstallPickerSheet({
                 }}
                 value={selectedDestination?.id ?? null}
               >
-                <SelectTrigger className="w-full" aria-label="Install destination">
+                <SelectTrigger
+                  className="w-full"
+                  aria-label={t("mods.standaloneInstall.destinationAria")}
+                >
                   <span className="truncate">
-                    {selectedDestination?.name ?? "Select destination..."}
+                    {selectedDestination?.name ??
+                      t("mods.standaloneInstall.destinationPlaceholder")}
                   </span>
                 </SelectTrigger>
                 <SelectContent alignItemWithTrigger={false}>
                   {destinationProfiles.length > 0 && (
                     <SelectGroup>
-                      <SelectLabel>Profiles</SelectLabel>
+                      <SelectLabel>{t("mods.standaloneInstall.profiles")}</SelectLabel>
                       {destinationProfiles.map((dest) => (
                         <SelectItem key={dest.id} value={dest.id}>
                           {dest.name}
@@ -156,7 +169,7 @@ export function StandaloneInstallPickerSheet({
                   )}
                   {destinationHosted.length > 0 && (
                     <SelectGroup>
-                      <SelectLabel>Hosted Servers</SelectLabel>
+                      <SelectLabel>{t("mods.standaloneInstall.hostedServers")}</SelectLabel>
                       {destinationHosted.map((dest) => (
                         <SelectItem key={dest.id} value={dest.id}>
                           {dest.name}
@@ -166,7 +179,7 @@ export function StandaloneInstallPickerSheet({
                   )}
                   {destinations.length === 0 && (
                     <div className="text-muted-foreground px-2 py-3 text-xs">
-                      No profiles or hosted servers available.
+                      {t("mods.standaloneInstall.noDestinations")}
                     </div>
                   )}
                 </SelectContent>
@@ -175,7 +188,7 @@ export function StandaloneInstallPickerSheet({
 
             <div className="grid gap-1.5">
               <p className="text-muted-foreground text-[10px] font-medium tracking-widest uppercase">
-                Version
+                {t("common.fields.version")}
               </p>
               <ModVersionPicker
                 onSelect={setUserSelectedVersion}
@@ -195,7 +208,7 @@ export function StandaloneInstallPickerSheet({
               }
             }}
           >
-            Install
+            {t("common.actions.install")}
           </Button>
         </SheetFooter>
       </SheetContent>

@@ -4,6 +4,7 @@ import { cn } from "cn";
 import insane from "insane";
 import { Send } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ function logColor(line: string) {
 }
 
 export default function ServerConsole({ instanceId }: { instanceId: number }) {
+  const { t } = useTranslation();
   const [logLines, setLogLines] = useState<LogEntry[]>([]);
   const [command, setCommand] = useState("");
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -72,7 +74,9 @@ export default function ServerConsole({ instanceId }: { instanceId: number }) {
       <ScrollArea viewportRef={viewportRef} scrollFade className="min-h-0">
         <div className="grid gap-0.5 p-3 font-mono text-[11px] leading-relaxed">
           {logLines.length === 0 ? (
-            <p className="text-muted-foreground font-sans text-xs">Waiting for output…</p>
+            <p className="text-muted-foreground font-sans text-xs">
+              {t("hosting.console.waiting")}
+            </p>
           ) : (
             logLines.map((entry, index) => (
               <span
@@ -94,7 +98,9 @@ export default function ServerConsole({ instanceId }: { instanceId: number }) {
         <Input
           className="font-mono"
           disabled={!isRunning}
-          placeholder={isRunning ? "Type a server command (e.g. /help)" : "Server not running"}
+          placeholder={
+            isRunning ? t("hosting.console.commandPlaceholder") : t("hosting.console.notRunning")
+          }
           value={command}
           onChange={(event) => setCommand(event.target.value)}
           onKeyDown={(event) => {
@@ -102,7 +108,7 @@ export default function ServerConsole({ instanceId }: { instanceId: number }) {
           }}
         />
         <Button disabled={!isRunning || sendCommand.isPending} size="sm" onClick={handleSend}>
-          <Send /> Send
+          <Send /> {t("hosting.console.send")}
         </Button>
       </div>
     </div>

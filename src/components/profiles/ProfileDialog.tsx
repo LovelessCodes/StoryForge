@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +48,7 @@ export default function ProfileDialog({
   onOpenChangeComplete,
   profile,
 }: ProfileDialogProps) {
+  const { t } = useTranslation();
   const isEdit = profile != null;
   const { data: gameVersions } = useQuery(gameVersionsQuery);
   const installedNames = useInstalledVersionNames();
@@ -73,15 +75,15 @@ export default function ProfileDialog({
   async function submit() {
     const trimmedName = name.trim();
     if (trimmedName.length < 2) {
-      setError("Name must be at least 2 characters");
+      setError(t("profiles.dialog.nameTooShort"));
       return;
     }
     if (!version) {
-      setError("Pick a game version");
+      setError(t("profiles.dialog.pickVersion"));
       return;
     }
     if (!isEdit && !appFolder) {
-      setError("Could not resolve the app data folder");
+      setError(t("profiles.dialog.noAppFolder"));
       return;
     }
     setError(null);
@@ -96,7 +98,7 @@ export default function ProfileDialog({
             profilesSubdir,
           );
 
-      setBusy(isEdit ? "Saving…" : "Creating profile…");
+      setBusy(isEdit ? t("profiles.dialog.saving") : t("profiles.dialog.creating"));
       if (!isEdit) {
         await invoke("initialize_game", { path });
       } else {
@@ -155,7 +157,7 @@ export default function ProfileDialog({
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       setError(message);
-      toast.error(isEdit ? "Failed to save profile" : "Failed to create profile", {
+      toast.error(isEdit ? t("profiles.dialog.saveFailed") : t("profiles.dialog.createFailed"), {
         description: message,
       });
     } finally {
@@ -171,38 +173,41 @@ export default function ProfileDialog({
     >
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b">
-          <SheetTitle>{isEdit ? `Edit "${profile.name}"` : "New profile"}</SheetTitle>
-          <SheetDescription>
-            A profile is an isolated Vintage Story data folder with its own mods, worlds and
-            settings.
-          </SheetDescription>
+          <SheetTitle>
+            {isEdit
+              ? t("profiles.dialog.editTitle", { name: profile.name })
+              : t("profiles.dialog.newTitle")}
+          </SheetTitle>
+          <SheetDescription>{t("profiles.dialog.description")}</SheetDescription>
         </SheetHeader>
 
         <ScrollArea scrollFade className="min-h-0 flex-1">
           <div className="grid gap-4 p-4">
             <div className="grid gap-1.5">
               <label className="text-xs font-medium" htmlFor="profile-name">
-                Name
+                {t("common.fields.name")}
               </label>
               <Input
                 id="profile-name"
-                placeholder="My profile"
+                placeholder={t("profiles.dialog.namePlaceholder")}
                 value={name}
                 onChange={(event) => setName(event.target.value)}
               />
             </div>
 
             <div className="grid gap-1.5">
-              <span className="text-xs font-medium">Game version</span>
+              <span className="text-xs font-medium">{t("profiles.fields.gameVersion")}</span>
               <Select
                 items={(gameVersions ?? []).toSorted(compareSemverDesc).map((v) => ({
-                  label: installedSet.has(v) ? `${v} (installed)` : v,
+                  label: installedSet.has(v)
+                    ? t("profiles.fields.installedVersion", { version: v })
+                    : v,
                   value: v,
                 }))}
                 value={version}
                 onValueChange={(value) => value && setVersion(value)}
               >
-                <SelectTrigger className="w-full" aria-label="Game version">
+                <SelectTrigger className="w-full" aria-label={t("profiles.fields.gameVersion")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -210,7 +215,9 @@ export default function ProfileDialog({
                     <SelectItem key={v} value={v}>
                       {v}
                       {installedSet.has(v) && (
-                        <span className="text-muted-foreground ml-2 text-xs">(installed)</span>
+                        <span className="text-muted-foreground ml-2 text-xs">
+                          {t("profiles.fields.installed")}
+                        </span>
                       )}
                     </SelectItem>
                   ))}
@@ -218,22 +225,21 @@ export default function ProfileDialog({
               </Select>
               {version && !installedSet.has(version) && (
                 <p className="text-muted-foreground text-[11px]">
-                  Version {version} is not installed yet — the sidebar offers a download button for
-                  it when you are ready.
+                  {t("profiles.dialog.versionNotInstalled", { version })}
                 </p>
               )}
             </div>
 
             <div className="grid gap-1.5">
-              <span className="text-xs font-medium">Icon</span>
+              <span className="text-xs font-medium">{t("profiles.dialog.icon")}</span>
               <ProfileIconPicker value={icon} onChange={setIcon} />
             </div>
 
             <div className="flex items-center justify-between gap-4">
               <div className="grid gap-0.5">
-                <span className="text-xs font-medium">Favorite</span>
+                <span className="text-xs font-medium">{t("profiles.dialog.favorite")}</span>
                 <span className="text-muted-foreground text-[11px]">
-                  Favorites sort first in lists.
+                  {t("profiles.dialog.favoriteHint")}
                 </span>
               </div>
               <Switch checked={favorite} onCheckedChange={setFavorite} />
@@ -241,25 +247,28 @@ export default function ProfileDialog({
 
             <div className="grid gap-1.5">
               <label className="text-xs font-medium" htmlFor="profile-start-params">
-                Launch parameters <span className="text-muted-foreground">(optional)</span>
+                {t("profiles.dialog.launchParameters")}{" "}
+                <span className="text-muted-foreground">({t("profiles.dialog.optional")})</span>
               </label>
               <Input
                 id="profile-start-params"
                 className="font-mono"
-                placeholder="--some-flag value"
+                placeholder={t("profiles.dialog.startParamsPlaceholder")}
                 value={startParams}
                 onChange={(event) => setStartParams(event.target.value)}
               />
             </div>
 
             <div className="grid gap-1.5">
-              <span className="text-xs font-medium">Environment variables</span>
+              <span className="text-xs font-medium">
+                {t("profiles.dialog.environmentVariables")}
+              </span>
               <EnvVarsEditor entries={envEntries} onChange={setEnvEntries} />
             </div>
 
             {isEdit && (
               <div className="grid gap-1.5">
-                <span className="text-xs font-medium">Folder</span>
+                <span className="text-xs font-medium">{t("common.fields.folder")}</span>
                 <p className="bg-muted text-muted-foreground border p-2 font-mono text-[11px] break-all">
                   {profile.path}
                 </p>
@@ -272,7 +281,7 @@ export default function ProfileDialog({
 
         <SheetFooter className="border-t">
           <Button variant="accent-primary" disabled={busy !== null} onClick={() => void submit()}>
-            {busy ?? (isEdit ? "Save changes" : "Create profile")}
+            {busy ?? (isEdit ? t("profiles.dialog.saveChanges") : t("profiles.dialog.create"))}
           </Button>
         </SheetFooter>
       </SheetContent>

@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { Link2, X } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import { useSettingsStore } from "@/stores/settings";
  * moved or deleted.
  */
 export default function LinkVersionsBanner() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: detected } = useLinkableVersions();
   const dismissed = useSettingsStore((s) => s.linkVersionsDismissed);
@@ -51,7 +53,7 @@ export default function LinkVersionsBanner() {
       await queryClient.invalidateQueries({ queryKey: installedVersionsQueryKey() });
       await queryClient.invalidateQueries({ queryKey: linkableVersionsQueryKey });
       if (result.skipped.length > 0) {
-        toast.error(`${result.skipped.length} could not be linked`, {
+        toast.error(t("versions.toast.linkSkipped", { count: result.skipped.length }), {
           description: result.skipped.map((skip) => `${skip.name}: ${skip.reason}`).join(", "),
         });
       } else {
@@ -59,7 +61,7 @@ export default function LinkVersionsBanner() {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      toast.error("Linking failed", { description: message });
+      toast.error(t("versions.toast.linkFailed"), { description: message });
     } finally {
       setBusy(false);
     }
@@ -72,12 +74,9 @@ export default function LinkVersionsBanner() {
           <Link2 className="text-accent-primary size-4 shrink-0" />
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium">
-              {pending.length} game version{pending.length === 1 ? "" : "s"} from other launchers
-              found
+              {t("versions.banner.found", { count: pending.length })}
             </p>
-            <p className="text-muted-foreground text-[11px]">
-              Link them in place — no re-download, nothing is copied.
-            </p>
+            <p className="text-muted-foreground text-[11px]">{t("versions.banner.hint")}</p>
           </div>
           <Button
             size="sm"
@@ -87,9 +86,14 @@ export default function LinkVersionsBanner() {
               setOpen(true);
             }}
           >
-            Link…
+            {t("versions.banner.action")}
           </Button>
-          <Button aria-label="Dismiss" size="icon-sm" variant="ghost" onClick={dismiss}>
+          <Button
+            aria-label={t("common.actions.dismiss")}
+            size="icon-sm"
+            variant="ghost"
+            onClick={dismiss}
+          >
             <X />
           </Button>
         </div>
@@ -98,11 +102,8 @@ export default function LinkVersionsBanner() {
       <Sheet open={open} onOpenChange={(next) => !busy && setOpen(next)}>
         <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-lg">
           <SheetHeader className="border-b">
-            <SheetTitle>Link existing game versions</SheetTitle>
-            <SheetDescription>
-              These installs already exist on disk. Linking registers them with Story Forge so
-              profiles can launch without downloading them again.
-            </SheetDescription>
+            <SheetTitle>{t("versions.banner.title")}</SheetTitle>
+            <SheetDescription>{t("versions.banner.description")}</SheetDescription>
           </SheetHeader>
 
           <ScrollArea scrollFade className="min-h-0 flex-1">
@@ -116,10 +117,14 @@ export default function LinkVersionsBanner() {
                         {item.source}
                       </Badge>
                       {item.installed && (
-                        <span className="text-muted-foreground text-[11px]">already installed</span>
+                        <span className="text-muted-foreground text-[11px]">
+                          {t("versions.banner.alreadyInstalled")}
+                        </span>
                       )}
                       {item.linked && (
-                        <span className="text-[11px] text-[var(--color-success)]">Linked</span>
+                        <span className="text-[11px] text-[var(--color-success)]">
+                          {t("versions.linked")}
+                        </span>
                       )}
                     </div>
                     <span className="text-muted-foreground truncate text-[11px]" title={item.path}>
@@ -129,16 +134,12 @@ export default function LinkVersionsBanner() {
                 ))}
               </div>
 
-              <p className="text-muted-foreground text-[11px]">
-                Story Forge stores only a reference to these folders. Unlinking later leaves every
-                file where it is; the launcher that installed them keeps working.
-              </p>
+              <p className="text-muted-foreground text-[11px]">{t("versions.banner.note")}</p>
 
               {report && report.skipped.length > 0 && (
                 <div className="border-destructive/30 bg-destructive/5 border p-3">
                   <p className="text-destructive text-xs font-medium">
-                    {report.skipped.length} version{report.skipped.length === 1 ? "" : "s"} could
-                    not be linked
+                    {t("versions.banner.skipped", { count: report.skipped.length })}
                   </p>
                   <ul className="text-muted-foreground mt-1 grid gap-0.5 text-[11px]">
                     {report.skipped.map((skip) => (
@@ -160,8 +161,8 @@ export default function LinkVersionsBanner() {
               onClick={() => void linkAll()}
             >
               {busy
-                ? "Linking…"
-                : `Link ${pending.length} version${pending.length === 1 ? "" : "s"}`}
+                ? t("versions.linking")
+                : t("versions.banner.linkVersions", { count: pending.length })}
             </Button>
           </SheetFooter>
         </SheetContent>

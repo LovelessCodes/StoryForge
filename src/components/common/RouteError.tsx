@@ -1,9 +1,11 @@
 import { Link, type ErrorComponentProps } from "@tanstack/react-router";
 import { RotateCcw, TriangleAlert } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { Button, buttonVariants } from "../ui/button";
 
 export default function RouteError({ error, reset }: ErrorComponentProps) {
+  const { t } = useTranslation();
   const message = error instanceof Error ? error.message : String(error);
   return (
     <div className="bg-background flex h-svh items-center justify-center p-6">
@@ -13,10 +15,8 @@ export default function RouteError({ error, reset }: ErrorComponentProps) {
         </div>
 
         <div className="grid gap-1.5">
-          <h1 className="text-lg font-semibold">Something went wrong</h1>
-          <p className="text-muted-foreground text-sm">
-            Story Forge hit an unexpected error while loading this page.
-          </p>
+          <h1 className="text-lg font-semibold">{t("layout.errors.title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("layout.errors.description")}</p>
         </div>
 
         <pre className="bg-muted text-muted-foreground max-h-40 w-full overflow-auto border p-3 text-left text-xs whitespace-pre-wrap">
@@ -26,10 +26,10 @@ export default function RouteError({ error, reset }: ErrorComponentProps) {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={reset}>
             <RotateCcw />
-            Try again
+            {t("layout.errors.tryAgain")}
           </Button>
           <Link to="/profiles" className={buttonVariants({ variant: "amber", size: "sm" })}>
-            Back to Profiles
+            {t("layout.errors.backToProfiles")}
           </Link>
         </div>
       </div>

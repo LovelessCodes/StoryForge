@@ -1,5 +1,6 @@
 import { type UseMutationOptions, useMutation } from "@tanstack/react-query";
 
+import { t } from "@/lib/i18n";
 import { toast } from "@/lib/notify";
 import { useDownloadStore } from "@/stores/downloads";
 
@@ -34,7 +35,7 @@ export const useDownloadVersion = (props?: UseMutationOptions<string, Error, str
     onError: (error, version) => {
       // Cancelling is deliberate; the sheet already dropped the entry.
       if (error.message === "Download cancelled") return;
-      toast.error(`Error downloading game version ${version}`, {
+      toast.error(t("versions.toast.downloadFailed", { version }), {
         description: error.message,
         id: `download-game-version-${version}`,
       });

@@ -1,11 +1,31 @@
-/** Shared status presentation for hosted server instances. */
+import { t } from "@/lib/i18n";
+
+/**
+ * Shared status presentation for hosted server instances.
+ *
+ * The labels are getters so each access resolves through the live translator
+ * and reflects the current language; unknown statuses still fall back to the
+ * raw status string at the call site.
+ */
 export const statusLabels: Record<string, string> = {
-  crashed: "Crashed",
-  not_installed: "Not installed",
-  running: "Running",
-  starting: "Starting",
-  stopped: "Stopped",
-  stopping: "Stopping",
+  get crashed() {
+    return t("hosting.status.crashed");
+  },
+  get not_installed() {
+    return t("hosting.status.notInstalled");
+  },
+  get running() {
+    return t("hosting.status.running");
+  },
+  get starting() {
+    return t("hosting.status.starting");
+  },
+  get stopped() {
+    return t("hosting.status.stopped");
+  },
+  get stopping() {
+    return t("hosting.status.stopping");
+  },
 };
 
 export const statusDot: Record<string, string> = {

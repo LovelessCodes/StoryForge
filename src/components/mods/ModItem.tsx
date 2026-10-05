@@ -13,6 +13,7 @@ import {
   Pin,
   PinOff,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,7 @@ export function ModItem({
   onRemove: (mod: Mod, installedMod: OutputMod) => void;
   onStandaloneInstall: (mod: Mod) => void;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const modIdStrings = new Set(mod.modidstrs);
   const installedMod = installedMods.find(
@@ -87,9 +89,16 @@ export function ModItem({
 
   const { mutate: addUpdate, isPending: updatePending } = useAddModUpdateToProfile({
     onError: (error) => {
-      toast.error(`Error updating ${mod.name} in ${destinationLabel}: ${error.message}`, {
-        id: `add-mod-${mod.modid}-${pathHash}`,
-      });
+      toast.error(
+        t("mods.errors.update", {
+          name: mod.name,
+          destination: destinationLabel,
+          message: error.message,
+        }),
+        {
+          id: `add-mod-${mod.modid}-${pathHash}`,
+        },
+      );
     },
   });
 
@@ -100,7 +109,11 @@ export function ModItem({
       }),
     onError: (error, variables) => {
       toast.error(
-        `Error removing ${variables.modpath} from ${destinationLabel}: ${error.message}`,
+        t("mods.errors.remove", {
+          name: variables.modpath,
+          destination: destinationLabel,
+          message: error.message,
+        }),
         {
           id: `mod-remove-${variables.path}-${variables.modpath}`,
         },
@@ -167,7 +180,7 @@ export function ModItem({
             <TooltipTrigger
               render={
                 <Button
-                  aria-label="Update to latest version"
+                  aria-label={t("mods.item.updateToLatest")}
                   disabled={removeUpdatePending || updatePending}
                   onClick={() =>
                     removeThenUpdate({
@@ -188,7 +201,7 @@ export function ModItem({
                 <span className="font-mono">
                   {installedMod.version} → {updateMod.modversion}
                 </span>
-                <span>Update to latest version</span>
+                <span>{t("mods.item.updateToLatest")}</span>
               </span>
             </TooltipContent>
           </Tooltip>
@@ -197,7 +210,7 @@ export function ModItem({
             <TooltipTrigger
               render={
                 <Button
-                  aria-label="Download latest version"
+                  aria-label={t("mods.item.downloadLatest")}
                   disabled={isDownloading}
                   onClick={() => downloadLatest({ path: `${modsDirectory}${pathDelimiter}Mods` })}
                   size="icon-sm"
@@ -207,14 +220,14 @@ export function ModItem({
             >
               <DownloadCloudIcon aria-hidden="true" />
             </TooltipTrigger>
-            <TooltipContent>Install latest version</TooltipContent>
+            <TooltipContent>{t("mods.item.installLatest")}</TooltipContent>
           </Tooltip>
         ) : (
           <Tooltip>
             <TooltipTrigger
               render={
                 <Button
-                  aria-label="Install to..."
+                  aria-label={t("mods.item.installTo")}
                   onClick={() => onStandaloneInstall(mod)}
                   size="icon-sm"
                   variant="outline-accent-primary"
@@ -223,7 +236,7 @@ export function ModItem({
             >
               <DownloadCloudIcon aria-hidden="true" />
             </TooltipTrigger>
-            <TooltipContent>Install to profile or hosted server</TooltipContent>
+            <TooltipContent>{t("mods.item.installToDestination")}</TooltipContent>
           </Tooltip>
         )}
 
@@ -233,7 +246,7 @@ export function ModItem({
               <TooltipTrigger
                 render={
                   <Button
-                    aria-label={pinned ? "Unpin mod" : "Pin mod"}
+                    aria-label={pinned ? t("mods.item.unpin") : t("mods.item.pin")}
                     onClick={() => toggleModPin(modsDirectory, installedMod.modid)}
                     size="icon-sm"
                     variant={pinned ? "outline-amber" : "outline"}
@@ -244,15 +257,15 @@ export function ModItem({
               </TooltipTrigger>
               <TooltipContent>
                 {pinned
-                  ? `Pinned to v${installedMod.version} — Update All skips it`
-                  : `Pin to v${installedMod.version} (excluded from Update All)`}
+                  ? t("mods.item.pinnedTooltip", { version: installedMod.version })
+                  : t("mods.item.pinTooltip", { version: installedMod.version })}
               </TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger
                 render={
                   <Button
-                    aria-label="Browse versions"
+                    aria-label={t("mods.item.browseVersions")}
                     onClick={() => onUpdate(mod, installedMod)}
                     size="icon-sm"
                     variant="outline"
@@ -261,13 +274,13 @@ export function ModItem({
               >
                 <PackageSearchIcon aria-hidden="true" />
               </TooltipTrigger>
-              <TooltipContent>Look through available versions</TooltipContent>
+              <TooltipContent>{t("mods.item.browseVersionsTooltip")}</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger
                 render={
                   <Button
-                    aria-label="Remove"
+                    aria-label={t("common.actions.remove")}
                     onClick={() => onRemove(mod, installedMod)}
                     size="icon-sm"
                     variant="destructive"
@@ -276,7 +289,9 @@ export function ModItem({
               >
                 <PackageMinusIcon aria-hidden="true" />
               </TooltipTrigger>
-              <TooltipContent>Remove from {destinationLabel}</TooltipContent>
+              <TooltipContent>
+                {t("mods.item.removeFrom", { destination: destinationLabel })}
+              </TooltipContent>
             </Tooltip>
           </>
         ) : modsDirectory ? (
@@ -284,7 +299,7 @@ export function ModItem({
             <TooltipTrigger
               render={
                 <Button
-                  aria-label="Add mod"
+                  aria-label={t("mods.item.add")}
                   onClick={() => onAdd(mod)}
                   size="icon-sm"
                   variant="outline"
@@ -293,14 +308,16 @@ export function ModItem({
             >
               <PackagePlusIcon aria-hidden="true" />
             </TooltipTrigger>
-            <TooltipContent>Add to {destinationLabel}</TooltipContent>
+            <TooltipContent>
+              {t("mods.item.addTo", { destination: destinationLabel })}
+            </TooltipContent>
           </Tooltip>
         ) : (
           <Tooltip>
             <TooltipTrigger
               render={
                 <Button
-                  aria-label="Install mod"
+                  aria-label={t("mods.item.install")}
                   onClick={() => onStandaloneInstall(mod)}
                   size="icon-sm"
                   variant="outline"
@@ -309,7 +326,7 @@ export function ModItem({
             >
               <PackagePlusIcon aria-hidden="true" />
             </TooltipTrigger>
-            <TooltipContent>Install to profile or hosted server</TooltipContent>
+            <TooltipContent>{t("mods.item.installToDestination")}</TooltipContent>
           </Tooltip>
         )}
       </div>
@@ -335,6 +352,7 @@ function ModSummary({
   tagByName: Record<string, ModTag>;
   tagColorMap: Record<string, string>;
 }) {
+  const { t } = useTranslation();
   const modUrl = `https://mods.vintagestory.at/${mod.urlalias ?? `show/mod/${mod.assetid}`}`;
 
   return (
@@ -350,10 +368,10 @@ function ModSummary({
         </a>
         {installedMod && (
           <Badge
-            aria-label={`Installed v${installedMod.version}`}
+            aria-label={t("mods.item.installedVersion", { version: installedMod.version })}
             variant="outline"
             className="border-success/40 text-success gap-1 px-1.5 text-[10px]"
-            title={`Installed v${installedMod.version}`}
+            title={t("mods.item.installedVersion", { version: installedMod.version })}
           >
             <Check className="size-3" aria-hidden="true" />v{installedMod.version}
           </Badge>
@@ -370,16 +388,16 @@ function ModSummary({
             <TooltipTrigger
               render={
                 <button
-                  aria-label={`Filter by ${mod.author}`}
+                  aria-label={t("mods.item.filterBy", { author: mod.author })}
                   className="text-muted-foreground hover:text-accent-amber max-w-[45%] shrink-0 cursor-pointer truncate text-xs"
                   onClick={() => onAuthorClick(mod.author)}
                   type="button"
                 />
               }
             >
-              by {mod.author}
+              {t("mods.item.byAuthor", { author: mod.author })}
             </TooltipTrigger>
-            <TooltipContent>Filter by author {mod.author}</TooltipContent>
+            <TooltipContent>{t("mods.item.filterByAuthor", { author: mod.author })}</TooltipContent>
           </Tooltip>
         </div>
         <p className="text-muted-foreground line-clamp-1 text-xs">{mod.summary}</p>

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { addSeconds, formatDistance, formatDistanceToNow } from "date-fns";
 import { useId, useState, type ReactNode } from "react";
+import { Trans, useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -14,6 +15,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
+import { useDateLocale } from "@/lib/i18n/date-locale";
 import { toast } from "@/lib/notify";
 import type { World } from "@/lib/types";
 
@@ -36,6 +38,8 @@ function Fact({ label, value }: { label: string; value: ReactNode }) {
 }
 
 export default function DeleteWorldSheet({ open, onOpenChange, world }: DeleteWorldSheetProps) {
+  const { t } = useTranslation();
+  const dateLocale = useDateLocale();
   const confirmId = useId();
   const [sure, setSure] = useState(false);
   const queryClient = useQueryClient();
@@ -54,10 +58,10 @@ export default function DeleteWorldSheet({ open, onOpenChange, world }: DeleteWo
   const remove = useMutation({
     mutationFn: () => invoke("remove_world", { worldPath: world.path }),
     onMutate: () => {
-      toast.loading(`Deleting world ${data.world_name}…`, { id: toastId });
+      toast.loading(t("worlds.delete.deleting", { name: data.world_name }), { id: toastId });
     },
     onError: (error) => {
-      toast.error(`Failed to delete world ${data.world_name}`, {
+      toast.error(t("worlds.delete.failed", { name: data.world_name }), {
         description: error.message,
         id: toastId,
       });
@@ -74,42 +78,59 @@ export default function DeleteWorldSheet({ open, onOpenChange, world }: DeleteWo
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b">
           <SheetTitle>
-            Delete <span className="text-destructive">{data.world_name}</span>?
+            <Trans
+              components={{ name: <span className="text-destructive" /> }}
+              i18nKey="worlds.delete.title"
+              values={{ name: data.world_name }}
+            />
           </SheetTitle>
-          <SheetDescription>
-            This cannot be undone. The world save and its map database are permanently removed from
-            Story Forge.
-          </SheetDescription>
+          <SheetDescription>{t("worlds.delete.description")}</SheetDescription>
         </SheetHeader>
 
         <ScrollArea scrollFade className="min-h-0 flex-1">
           <div className="grid gap-4 p-4">
             <div className="border-warning/40 bg-warning/10 grid gap-3 border p-3 text-[11px]">
               <p className="text-[var(--color-warning)]">
-                <b>Warning:</b> This deletes the world from your computer. If you want to keep a
-                backup, export it before proceeding.
+                <b>{t("worlds.delete.warning")}</b> {t("worlds.delete.warningText")}
               </p>
               <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-                <Fact label="World name" value={data.world_name} />
-                <Fact label="Map identifier" value={data.savegame_identifier} />
-                <Fact label="World type" value={data.world_type} />
-                <Fact label="Play style" value={data.play_style} />
-                <Fact label="Created by" value={data.created_by_player_name} />
+                <Fact label={t("worlds.delete.facts.worldName")} value={data.world_name} />
                 <Fact
-                  label="Last played"
+                  label={t("worlds.delete.facts.mapIdentifier")}
+                  value={data.savegame_identifier}
+                />
+                <Fact label={t("worlds.delete.facts.worldType")} value={data.world_type} />
+                <Fact label={t("worlds.delete.facts.playStyle")} value={data.play_style} />
+                <Fact
+                  label={t("worlds.delete.facts.createdBy")}
+                  value={data.created_by_player_name}
+                />
+                <Fact
+                  label={t("worlds.delete.facts.lastPlayed")}
                   value={
                     data.last_played
-                      ? formatDistanceToNow(new Date(data.last_played), { addSuffix: true })
-                      : "Never"
+                      ? formatDistanceToNow(new Date(data.last_played), {
+                          addSuffix: true,
+                          locale: dateLocale,
+                        })
+                      : t("common.states.never")
                   }
                 />
                 <Fact
-                  label="Last session"
-                  value={formatDistance(EPOCH, addSeconds(EPOCH, data.total_seconds_played))}
+                  label={t("worlds.delete.facts.lastSession")}
+                  value={formatDistance(EPOCH, addSeconds(EPOCH, data.total_seconds_played), {
+                    locale: dateLocale,
+                  })}
                 />
-                <Fact label="Seed" value={data.seed} />
-                <Fact label="Created in version" value={data.created_game_version} />
-                <Fact label="Last saved in version" value={data.last_saved_game_version ?? "—"} />
+                <Fact label={t("worlds.delete.facts.seed")} value={data.seed} />
+                <Fact
+                  label={t("worlds.delete.facts.createdVersion")}
+                  value={data.created_game_version}
+                />
+                <Fact
+                  label={t("worlds.delete.facts.lastSavedVersion")}
+                  value={data.last_saved_game_version ?? "—"}
+                />
               </dl>
             </div>
 
@@ -119,9 +140,9 @@ export default function DeleteWorldSheet({ open, onOpenChange, world }: DeleteWo
                 id={confirmId}
                 onCheckedChange={setSure}
                 size="sm"
-                aria-label="Confirm world deletion"
+                aria-label={t("worlds.delete.confirmAria")}
               />
-              I understand that this action cannot be undone.
+              {t("worlds.delete.confirmLabel")}
             </label>
           </div>
         </ScrollArea>
@@ -133,14 +154,14 @@ export default function DeleteWorldSheet({ open, onOpenChange, world }: DeleteWo
               disabled={remove.isPending}
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {t("common.actions.cancel")}
             </Button>
             <Button
               variant="destructive"
               disabled={remove.isPending || !sure}
               onClick={() => remove.mutate()}
             >
-              {remove.isPending ? "Deleting…" : "Delete"}
+              {remove.isPending ? t("worlds.delete.pending") : t("common.actions.delete")}
             </Button>
           </div>
         </SheetFooter>

@@ -1,5 +1,6 @@
 import { ChevronDownIcon, ChevronRightIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ export default function LiveEditor({
   file: string;
   onSave: (params: SaveParams) => void;
 }) {
+  const { t } = useTranslation();
   const [parseError, setParseError] = useState<string | null>(null);
   const [data, setData] = useState<JSONValue>(() => safeInitialParse(code, setParseError));
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -121,7 +123,7 @@ export default function LiveEditor({
           <div className="flex items-center gap-2">
             <Button
               aria-expanded={!isCol}
-              aria-label={isCol ? "Expand array" : "Collapse array"}
+              aria-label={isCol ? t("config.live.expandArray") : t("config.live.collapseArray")}
               onClick={() => toggleCollapse(path)}
               size="icon-xs"
               variant="outline"
@@ -138,7 +140,7 @@ export default function LiveEditor({
               size="xs"
               variant="outline"
             >
-              <PlusIcon /> Add
+              <PlusIcon /> {t("common.actions.add")}
             </Button>
           </div>
           {!isCol && (
@@ -147,7 +149,7 @@ export default function LiveEditor({
                 <div className="flex items-start gap-2" key={arrayItemKey(path, idx)}>
                   <div className="min-w-0 flex-1">{renderValue(item, [...path, idx], idx)}</div>
                   <Button
-                    aria-label={`Remove item ${idx}`}
+                    aria-label={t("config.live.removeItem", { index: idx })}
                     onClick={() => removeArrayItem(path, idx)}
                     size="icon-xs"
                     variant="destructive"
@@ -157,7 +159,7 @@ export default function LiveEditor({
                 </div>
               ))}
               {value.length === 0 && (
-                <p className="text-muted-foreground text-[11px]">Empty array</p>
+                <p className="text-muted-foreground text-[11px]">{t("config.live.emptyArray")}</p>
               )}
             </div>
           )}
@@ -172,7 +174,7 @@ export default function LiveEditor({
           <div className="flex items-center gap-2">
             <Button
               aria-expanded={!isCol}
-              aria-label={isCol ? "Expand object" : "Collapse object"}
+              aria-label={isCol ? t("config.live.expandObject") : t("config.live.collapseObject")}
               onClick={() => toggleCollapse(path)}
               size="icon-xs"
               variant="outline"
@@ -274,12 +276,10 @@ export default function LiveEditor({
       ) : Array.isArray(data) ? (
         <div className="grid gap-2">{data.map((v, i) => renderValue(v, [i], i))}</div>
       ) : (
-        <p className="text-muted-foreground text-xs">
-          Root is a primitive value; editing is not supported here.
-        </p>
+        <p className="text-muted-foreground text-xs">{t("config.live.primitiveRoot")}</p>
       )}
 
-      <p className="text-muted-foreground text-right text-[11px]">Auto-saved on change</p>
+      <p className="text-muted-foreground text-right text-[11px]">{t("config.live.autoSaved")}</p>
     </div>
   );
 }

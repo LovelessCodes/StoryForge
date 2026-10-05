@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Check, ChevronsUpDown, IdCard, Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +21,7 @@ import { useActiveProfile } from "@/hooks/use-active-profile";
  * disk), so it is always safe.
  */
 export default function ProfileSelector() {
+  const { t } = useTranslation();
   const { activeProfile, profiles, setActiveProfileId } = useActiveProfile();
 
   function select(id: number) {
@@ -29,7 +31,7 @@ export default function ProfileSelector() {
     if (profile) {
       notify("active-profile", {
         type: "success",
-        title: `Switched to "${profile.name}"`,
+        title: t("profiles.selector.switched", { name: profile.name }),
         timeout: 2500,
       });
     }
@@ -44,14 +46,18 @@ export default function ProfileSelector() {
       >
         <span className="flex min-w-0 items-center gap-2">
           <IdCard className="text-muted-foreground size-4 shrink-0" />
-          <span className="truncate">{activeProfile?.name ?? "No profile"}</span>
+          <span className="truncate">
+            {activeProfile?.name ?? t("profiles.selector.noProfile")}
+          </span>
         </span>
         <ChevronsUpDown className="text-muted-foreground size-4 shrink-0" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-56">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>Profiles</DropdownMenuLabel>
-          {profiles.length === 0 && <DropdownMenuItem disabled>No profiles yet</DropdownMenuItem>}
+          <DropdownMenuLabel>{t("layout.nav.profiles")}</DropdownMenuLabel>
+          {profiles.length === 0 && (
+            <DropdownMenuItem disabled>{t("profiles.page.emptyTitle")}</DropdownMenuItem>
+          )}
           {profiles.map((profile) => (
             <DropdownMenuItem key={profile.id} onClick={() => select(profile.id)}>
               <span className="min-w-0 flex-1">
@@ -65,7 +71,7 @@ export default function ProfileSelector() {
         <DropdownMenuSeparator />
         <DropdownMenuItem render={<Link to="/profiles" />}>
           <Plus />
-          Manage profiles
+          {t("profiles.selector.manage")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

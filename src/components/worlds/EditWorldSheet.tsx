@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,7 @@ export default function EditWorldSheet({
   world,
   profiles,
 }: EditWorldSheetProps) {
+  const { t } = useTranslation();
   const matchedProfileId = profiles.find(
     (profile) => pathBasename(profile.path) === world.profile_name,
   )?.id;
@@ -60,7 +62,7 @@ export default function EditWorldSheet({
   const update = useUpdateWorld({
     onError: (err) => {
       setError(err.message);
-      toast.error("Failed to update world", { description: err.message });
+      toast.error(t("worlds.edit.failed"), { description: err.message });
     },
     onSuccess: () => {
       onOpenChange(false);
@@ -70,12 +72,12 @@ export default function EditWorldSheet({
   function submit() {
     const trimmed = name.trim();
     if (trimmed.length < 2 || trimmed.length > 100) {
-      setError("Name must be between 2 and 100 characters");
+      setError(t("worlds.edit.errors.nameLength"));
       return;
     }
     const id = Number(profileId);
     if (!profileId || !Number.isInteger(id)) {
-      setError("Select a profile");
+      setError(t("worlds.edit.errors.profile"));
       return;
     }
     setError(null);
@@ -96,21 +98,19 @@ export default function EditWorldSheet({
     <Sheet open={open} onOpenChange={(next) => !update.isPending && onOpenChange(next)}>
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b">
-          <SheetTitle>Edit “{world.data.world_name}”</SheetTitle>
-          <SheetDescription>
-            Rename the world or move it to another profile. Renaming also renames the save file.
-          </SheetDescription>
+          <SheetTitle>{t("worlds.edit.title", { name: world.data.world_name })}</SheetTitle>
+          <SheetDescription>{t("worlds.edit.description")}</SheetDescription>
         </SheetHeader>
 
         <ScrollArea scrollFade className="min-h-0 flex-1">
           <div className="grid gap-4 p-4">
             <div className="grid gap-1.5">
               <label className="text-xs font-medium" htmlFor="world-name">
-                Name
+                {t("common.fields.name")}
               </label>
               <Input
                 id="world-name"
-                placeholder="My world"
+                placeholder={t("worlds.edit.namePlaceholder")}
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 onKeyDown={(event) => {
@@ -123,14 +123,14 @@ export default function EditWorldSheet({
             </div>
 
             <div className="grid gap-1.5">
-              <span className="text-xs font-medium">Profile</span>
+              <span className="text-xs font-medium">{t("worlds.edit.profile")}</span>
               <Select
                 items={profileItems}
                 value={profileId}
                 onValueChange={(value) => setProfileId(value ?? "")}
               >
-                <SelectTrigger className="w-full" aria-label="Profile">
-                  <SelectValue placeholder="Select profile" />
+                <SelectTrigger className="w-full" aria-label={t("worlds.edit.profile")}>
+                  <SelectValue placeholder={t("worlds.edit.selectProfile")} />
                 </SelectTrigger>
                 <SelectContent>
                   {profileItems.map((profile) => (
@@ -140,9 +140,7 @@ export default function EditWorldSheet({
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-muted-foreground text-[11px]">
-                Moving the world transfers its map database along with the save file.
-              </p>
+              <p className="text-muted-foreground text-[11px]">{t("worlds.edit.moveHint")}</p>
             </div>
 
             {error && <p className="text-destructive text-xs">{error}</p>}
@@ -151,7 +149,7 @@ export default function EditWorldSheet({
 
         <SheetFooter className="border-t">
           <Button variant="accent-primary" disabled={update.isPending} onClick={submit}>
-            {update.isPending ? "Saving…" : "Update world"}
+            {update.isPending ? t("worlds.edit.saving") : t("worlds.edit.submit")}
           </Button>
         </SheetFooter>
       </SheetContent>

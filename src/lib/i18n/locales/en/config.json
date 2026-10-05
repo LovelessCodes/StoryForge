@@ -1,1 +1,32 @@
-{}
+{
+  "noActiveProfile": "No active profile",
+  "noActiveProfileDescription": "Create or select a profile to edit its mod config files.",
+  "goToProfiles": "Go to Profiles",
+  "liveEditor": "Live editor",
+  "codeEditor": "Code editor",
+  "loading": "Loading configurations…",
+  "noConfigFiles": "No config files",
+  "readFailed": "Could not read mod configs: {{message}}",
+  "noConfigFilesHint": "Mods that ship configurable JSON files will show them here.",
+  "files": "Files",
+  "toasts": {
+    "saving": "Saving…",
+    "saved": "Saved!",
+    "saveFailed": "Failed to save: {{message}}"
+  },
+  "live": {
+    "expandArray": "Expand array",
+    "collapseArray": "Collapse array",
+    "expandObject": "Expand object",
+    "collapseObject": "Collapse object",
+    "emptyArray": "Empty array",
+    "primitiveRoot": "Root is a primitive value; editing is not supported here.",
+    "autoSaved": "Auto-saved on change",
+    "removeItem": "Remove item {{index}}"
+  },
+  "code": {
+    "loading": "Loading code editor…",
+    "unsaved": "Unsaved changes",
+    "saved": "All changes saved"
+  }
+}

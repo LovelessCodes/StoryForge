@@ -1,5 +1,6 @@
 import { AlertTriangle, Download, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { useDownloadManager } from "@/hooks/use-download-manager";
@@ -7,13 +8,6 @@ import type { MissingDependency } from "@/lib/mod-dependencies";
 
 /** How many entries the summary line names before it truncates. */
 const SUMMARY_LIMIT = 3;
-
-function describeDependency(dependency: MissingDependency): string {
-  const version = dependency.constraint ? ` ${dependency.constraint}` : "";
-  const requiredBy =
-    dependency.requiredBy.length > 0 ? ` — required by ${dependency.requiredBy.join(", ")}` : "";
-  return `${dependency.modid}${version}${requiredBy}`;
-}
 
 /**
  * Strip above the mod list that offers to install dependencies the installed
@@ -29,8 +23,18 @@ export default function MissingDependenciesBanner({
   missing: MissingDependency[];
   modsDirectory: string;
 }) {
+  const { t } = useTranslation();
   const { installDependencies } = useDownloadManager();
   const [busy, setBusy] = useState(false);
+
+  function describeDependency(dependency: MissingDependency): string {
+    const version = dependency.constraint ? ` ${dependency.constraint}` : "";
+    const requiredBy =
+      dependency.requiredBy.length > 0
+        ? ` — ${t("mods.dependencies.requiredBy", { names: dependency.requiredBy.join(", ") })}`
+        : "";
+    return `${dependency.modid}${version}${requiredBy}`;
+  }
 
   if (missing.length === 0) return null;
 
@@ -57,20 +61,22 @@ export default function MissingDependenciesBanner({
       <AlertTriangle className="size-4 shrink-0 text-[var(--color-warning)]" />
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium">
-          {missing.length} missing dependenc{missing.length === 1 ? "y" : "ies"} in{" "}
-          {destinationLabel}
+          {t("mods.dependencies.missing", {
+            count: missing.length,
+            destination: destinationLabel,
+          })}
         </p>
         <p
           className="text-muted-foreground truncate text-[11px]"
           title={missing.map(describeDependency).join("\n")}
         >
           {summary}
-          {more > 0 && ` · +${more} more`}
+          {more > 0 && ` · ${t("mods.dependencies.more", { count: more })}`}
         </p>
       </div>
       <Button disabled={busy} onClick={() => void install()} size="sm" variant="outline-warning">
         {busy ? <Loader2 className="animate-spin" /> : <Download />}
-        Install missing
+        {t("mods.dependencies.installMissing")}
       </Button>
     </div>
   );

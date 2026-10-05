@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { OTPInput, type SlotProps } from "input-otp";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ export default function AddAccountSheet({
   onOpenChange,
   initialEmail,
 }: AddAccountSheetProps) {
+  const { t } = useTranslation();
   const { addUser, users } = useAccountStore();
   const [email, setEmail] = useState(initialEmail ?? "");
   const [password, setPassword] = useState("");
@@ -70,15 +72,15 @@ export default function AddAccountSheet({
         setPreloginToken(extra.prelogintoken ?? "");
         setChallenge("totp");
         setTotpCode("");
-        toast.info("Enter your authenticator code to continue.");
+        toast.info(t("auth.addAccount.totpPrompt"));
       } else if (message.includes("wrongtotpcode")) {
         setTotpCode("");
-        setError("Invalid authenticator code — try again.");
+        setError(t("auth.addAccount.errors.wrongTotp"));
       } else if (message.includes("ipchanged")) {
         setTotpCode("");
-        setError("Your IP changed — sign in again.");
+        setError(t("auth.addAccount.errors.ipChanged"));
       } else if (message.includes("invalidemailorpassword")) {
-        setError("Invalid email or password.");
+        setError(t("auth.addAccount.errors.invalidCredentials"));
       } else {
         setError(message);
       }
@@ -93,15 +95,15 @@ export default function AddAccountSheet({
         <SheetHeader className="border-b">
           <SheetTitle>
             {challenge === "totp"
-              ? "Enter authenticator code"
+              ? t("auth.addAccount.totpTitle")
               : users.length > 0
-                ? "Add account"
-                : "Sign in"}
+                ? t("auth.addAccount.title")
+                : t("auth.actions.signIn")}
           </SheetTitle>
           <SheetDescription>
             {challenge === "totp"
-              ? "Check your authenticator app and type the 6-digit code."
-              : "Sign in with your Vintage Story account. Credentials are only sent to vintagestory.at."}
+              ? t("auth.addAccount.totpDescription")
+              : t("auth.addAccount.description")}
           </SheetDescription>
         </SheetHeader>
 
@@ -129,12 +131,12 @@ export default function AddAccountSheet({
               <>
                 <div className="grid gap-1.5">
                   <label className="text-xs font-medium" htmlFor="account-email">
-                    Email
+                    {t("common.fields.email")}
                   </label>
                   <Input
                     id="account-email"
                     autoComplete="email"
-                    placeholder="player@example.com"
+                    placeholder={t("auth.addAccount.emailPlaceholder")}
                     type="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
@@ -143,7 +145,7 @@ export default function AddAccountSheet({
                 <div className="grid gap-1.5">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-medium" htmlFor="account-password">
-                      Password
+                      {t("common.fields.password")}
                     </label>
                     <a
                       className="text-muted-foreground text-[11px] underline-offset-4 hover:underline"
@@ -151,7 +153,7 @@ export default function AddAccountSheet({
                       rel="noopener noreferrer"
                       target="_blank"
                     >
-                      Forgot password?
+                      {t("auth.addAccount.forgotPassword")}
                     </a>
                   </div>
                   <Input
@@ -186,7 +188,11 @@ export default function AddAccountSheet({
             }
             onClick={() => void signIn()}
           >
-            {busy ? "Signing in…" : challenge === "totp" ? "Verify code" : "Sign in"}
+            {busy
+              ? t("auth.actions.signingIn")
+              : challenge === "totp"
+                ? t("auth.actions.verifyCode")
+                : t("auth.actions.signIn")}
           </Button>
         </SheetFooter>
       </SheetContent>

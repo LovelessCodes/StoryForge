@@ -2,6 +2,7 @@ import { useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { Copy, FolderDown, FolderInput, X } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,6 +58,7 @@ export function LauncherImportBanner({
   dismissed,
   onDismiss,
 }: LauncherImportBannerProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { loadProfiles } = useProfilesStore();
   const [open, setOpen] = useState(false);
@@ -80,7 +82,7 @@ export function LauncherImportBanner({
       await loadProfiles();
       await queryClient.invalidateQueries({ queryKey: source.queryKey });
       if (result.skipped.length > 0) {
-        toast.error(`${result.skipped.length} could not be imported`, {
+        toast.error(t("profiles.import.skipped", { count: result.skipped.length }), {
           description: result.skipped.map((skip) => `${skip.name}: ${skip.reason}`).join(", "),
         });
       } else {
@@ -88,7 +90,7 @@ export function LauncherImportBanner({
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      toast.error("Import failed", { description: message });
+      toast.error(t("profiles.errors.importFailed"), { description: message });
     } finally {
       setBusy(false);
     }
@@ -101,10 +103,10 @@ export function LauncherImportBanner({
           <FolderDown className="text-accent-primary size-4 shrink-0" />
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium">
-              {pending.length} {pending.length === 1 ? "item" : "items"} from {source.name} found
+              {t("profiles.launcher.found", { count: pending.length, name: source.name })}
             </p>
             <p className="text-muted-foreground text-[11px]">
-              Import them with their mods, worlds and settings.
+              {t("profiles.import.bannerDescription")}
             </p>
           </div>
           <Button
@@ -115,9 +117,14 @@ export function LauncherImportBanner({
               setOpen(true);
             }}
           >
-            Import…
+            {t("profiles.import.action")}
           </Button>
-          <Button aria-label="Dismiss" size="icon-sm" variant="ghost" onClick={onDismiss}>
+          <Button
+            aria-label={t("common.actions.dismiss")}
+            size="icon-sm"
+            variant="ghost"
+            onClick={onDismiss}
+          >
             <X />
           </Button>
         </div>
@@ -126,7 +133,7 @@ export function LauncherImportBanner({
       <Sheet open={open} onOpenChange={(next) => !busy && setOpen(next)}>
         <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-lg">
           <SheetHeader className="border-b">
-            <SheetTitle>Import from {source.name}</SheetTitle>
+            <SheetTitle>{t("profiles.launcher.title", { name: source.name })}</SheetTitle>
             <SheetDescription>{source.hint}</SheetDescription>
           </SheetHeader>
 
@@ -134,7 +141,7 @@ export function LauncherImportBanner({
             <div className="grid gap-4 p-4">
               {modes.length > 1 && (
                 <div className="grid gap-2">
-                  <span className="text-xs font-medium">How should the folders be imported?</span>
+                  <span className="text-xs font-medium">{t("profiles.import.modeQuestion")}</span>
                   <ToggleGroup
                     variant="outline"
                     size="sm"
@@ -145,16 +152,16 @@ export function LauncherImportBanner({
                     }}
                   >
                     <ToggleGroupItem value="move">
-                      <FolderInput /> Move
+                      <FolderInput /> {t("common.actions.move")}
                     </ToggleGroupItem>
                     <ToggleGroupItem value="copy">
-                      <Copy /> Copy
+                      <Copy /> {t("common.actions.copy")}
                     </ToggleGroupItem>
                   </ToggleGroup>
                   <p className="text-muted-foreground text-[11px]">
                     {activeMode === "move"
-                      ? `Relocates the folders into your profiles directory — fast and uses no extra disk, but ${source.name} will no longer see them.`
-                      : `Copies the folders and leaves ${source.name} untouched — safe, but uses extra disk space.`}
+                      ? t("profiles.launcher.modeMoveHint", { name: source.name })
+                      : t("profiles.launcher.modeCopyHint", { name: source.name })}
                   </p>
                 </div>
               )}
@@ -172,13 +179,11 @@ export function LauncherImportBanner({
                       <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 text-[11px]">
                         {item.version && <span className="font-mono">v{item.version}</span>}
                         <span>{item.size_display}</span>
-                        <span>
-                          {item.mod_count} mod{item.mod_count === 1 ? "" : "s"}
-                        </span>
-                        {item.has_saves && <span>has worlds</span>}
+                        <span>{t("profiles.modCount", { count: item.mod_count })}</span>
+                        {item.has_saves && <span>{t("profiles.hasWorlds")}</span>}
                         {item.is_default_game_data && (
                           <span className="text-[var(--color-warning)]">
-                            game&apos;s default data folder
+                            {t("profiles.launcher.defaultDataFolder")}
                           </span>
                         )}
                       </div>
@@ -188,7 +193,7 @@ export function LauncherImportBanner({
                         variant="outline"
                         className="border-[var(--color-success)]/40 text-[var(--color-success)]"
                       >
-                        Imported
+                        {t("profiles.import.imported")}
                       </Badge>
                     )}
                   </div>
@@ -200,8 +205,7 @@ export function LauncherImportBanner({
               {report && report.skipped.length > 0 && (
                 <div className="border-destructive/30 bg-destructive/5 border p-3">
                   <p className="text-destructive text-xs font-medium">
-                    {report.skipped.length} folder{report.skipped.length === 1 ? "" : "s"} were not
-                    imported
+                    {t("profiles.import.skippedFolders", { count: report.skipped.length })}
                   </p>
                   <ul className="text-muted-foreground mt-1 grid gap-0.5 text-[11px]">
                     {report.skipped.map((skip) => (
@@ -223,8 +227,8 @@ export function LauncherImportBanner({
               onClick={() => void runImport()}
             >
               {busy
-                ? "Importing…"
-                : `Import ${pending.length} profile${pending.length === 1 ? "" : "s"}`}
+                ? t("profiles.import.importingBusy")
+                : t("profiles.import.submitCount", { count: pending.length })}
             </Button>
           </SheetFooter>
         </SheetContent>

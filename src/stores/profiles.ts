@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { create } from "zustand/react";
 
 import { makeStringFolderSafe, pathDelimiter } from "@/lib/helpers";
+import { t } from "@/lib/i18n";
 import { toast } from "@/lib/notify";
 
 /**
@@ -84,17 +85,17 @@ export const useProfilesStore = create<ProfilesStore>((set) => ({
   addProfile: (profile, cb) =>
     set((state) => {
       if (state.profiles.find((s) => s.path === profile.path)) {
-        toast.error(`Profile with path "${profile.path}" already exists`);
+        toast.error(t("profiles.store.pathExists", { path: profile.path }));
         cb?.(false);
         return state;
       }
       if (state.profiles.find((s) => s.id === profile.id)) {
-        toast.error(`Profile with ID "${profile.id}" already exists`);
+        toast.error(t("profiles.store.idExists", { id: profile.id }));
         cb?.(false);
         return state;
       }
       if (state.profiles.find((s) => s.name === profile.name)) {
-        toast.error(`Profile with name "${profile.name}" already exists`);
+        toast.error(t("profiles.store.nameExists", { name: profile.name }));
         cb?.(false);
         return state;
       }
@@ -188,12 +189,12 @@ export const useProfilesStore = create<ProfilesStore>((set) => ({
   updateProfile: (profile, cb) =>
     set((state) => {
       if (state.profiles.find((s) => s.path === profile.path && s.id !== profile.id)) {
-        toast.error(`Profile with path "${profile.path}" already exists`);
+        toast.error(t("profiles.store.pathExists", { path: profile.path }));
         cb?.(false);
         return state;
       }
       if (state.profiles.find((s) => s.name === profile.name && s.id !== profile.id)) {
-        toast.error(`Profile with name "${profile.name}" already exists`);
+        toast.error(t("profiles.store.nameExists", { name: profile.name }));
         cb?.(false);
         return state;
       }
