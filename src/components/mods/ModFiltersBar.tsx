@@ -345,7 +345,7 @@ export function ModFiltersBar({
             <ModpackMenu
               destinationLabel={destinationLabel}
               gameVersion={gameVersion}
-              installedMods={instMods?.mods ?? []}
+              installedMods={instMods?.mods}
               modsDirectory={modsDirectory}
             />
           )}

@@ -21,7 +21,7 @@
 //! RiftLauncher also writes optional `servers` and `settings` blocks, ignored
 //! here: unknown fields are skipped so a stranger's pack imports as-is.
 
-use std::fs;
+use std::{collections::HashSet, fs};
 
 use serde::{Deserialize, Serialize};
 use tauri::command;
@@ -91,6 +91,12 @@ impl ModpackManifest {
                 .map(|name| clamp(name.trim(), MAX_DISPLAY_NAME))
                 .filter(|name| !name.is_empty());
         }
+        // A pack names each mod at most once. A duplicate would install twice
+        // and could leave two zips for the same modid in the profile; the first
+        // occurrence wins so manifest order is kept.
+        let mut seen = HashSet::new();
+        self.mods
+            .retain(|entry| seen.insert(entry.modid.to_lowercase()));
         Ok(self)
     }
 }
@@ -180,6 +186,25 @@ mod tests {
             "gameVersion": "1.21.3",
         }))
         .is_err());
+    }
+
+    #[test]
+    fn deduplicates_repeated_modids_keeping_the_first() {
+        let manifest = parse(serde_json::json!({
+            "name": "Pack",
+            "gameVersion": "1.21.3",
+            "mods": [
+                { "modid": "carryon", "version": "1.0.0" },
+                { "modid": "CarryOn", "version": "2.0.0" },
+                { "modid": "xlib", "version": "0.9.0" },
+            ],
+        }))
+        .unwrap();
+
+        assert_eq!(manifest.mods.len(), 2);
+        assert_eq!(manifest.mods[0].modid, "carryon");
+        assert_eq!(manifest.mods[0].version, "1.0.0");
+        assert_eq!(manifest.mods[1].modid, "xlib");
     }
 
     #[test]

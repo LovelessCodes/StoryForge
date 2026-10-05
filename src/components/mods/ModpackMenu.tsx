@@ -31,12 +31,18 @@ export function ModpackMenu({
 }: {
   destinationLabel: string;
   gameVersion: string;
-  installedMods: OutputMod[];
+  installedMods: OutputMod[] | undefined;
   modsDirectory: string;
 }) {
   const { t } = useTranslation();
   const [importRequest, setImportRequest] = useState<ImportRequest | null>(null);
   const [picking, setPicking] = useState(false);
+
+  // Exporting or planning an import against a half-loaded mod list would write
+  // an empty pack or re-download everything; the menu stays shut until the
+  // installed-mods query has answered.
+  const ready = installedMods !== undefined;
+  const mods = installedMods ?? [];
 
   async function exportModpack() {
     try {
@@ -47,7 +53,7 @@ export function ModpackMenu({
       if (!path) return;
       await invoke("write_modpack_manifest", {
         path,
-        manifest: buildManifest(destinationLabel, gameVersion, installedMods),
+        manifest: buildManifest(destinationLabel, gameVersion, mods),
       });
       toast.success(t("mods.modpackIO.exported"));
     } catch (error) {
@@ -83,7 +89,7 @@ export function ModpackMenu({
           render={
             <Button
               aria-label={t("mods.modpackIO.menuTrigger")}
-              disabled={picking}
+              disabled={picking || !ready}
               size="icon-sm"
               title={t("mods.modpackIO.menuTrigger")}
               variant="outline"
@@ -106,7 +112,7 @@ export function ModpackMenu({
         <ImportModpackSheet
           destinationLabel={destinationLabel}
           gameVersion={gameVersion}
-          installedMods={installedMods}
+          installedMods={mods}
           manifest={importRequest.manifest}
           modsDirectory={modsDirectory}
           onOpenChange={(next) => {
