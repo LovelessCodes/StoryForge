@@ -9,6 +9,7 @@ import CommandPalette from "../command-palette";
 import { CommandRuntimeProvider } from "../command-runtime";
 import { ScrollArea } from "../ui/scroll-area";
 import { SidebarInset, SidebarProvider } from "../ui/sidebar";
+import DeepLinkHandler from "./DeepLinkHandler";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import Titlebar from "./Titlebar";
@@ -46,6 +47,7 @@ export default function MainLayout() {
   return (
     <SidebarProvider className="h-svh overflow-hidden">
       <CommandRuntimeProvider onCommandOpenChange={setCommandOpen}>
+        <DeepLinkHandler />
         <Titlebar />
         <Sidebar />
         <SidebarInset data-tauri-drag-region={false} className="min-w-0 overflow-hidden">

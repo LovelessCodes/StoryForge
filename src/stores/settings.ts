@@ -71,6 +71,9 @@ type SettingsStore = {
   /** Read the source profile's account session too. */
   gameDefaultsIncludeAccount: boolean;
   setGameDefaultsIncludeAccount: (include: boolean) => void;
+  /** Mod id from a `storyforge://install?mod=…` link, for the Mods page. */
+  pendingDeepLinkMod: string | null;
+  setPendingDeepLinkMod: (modid: string | null) => void;
   profilesParent: string | null;
   profilesSubdir: string;
   setProfilesParent: (path: string | null, config?: SetParentConfigProps) => Promise<void>;
@@ -142,6 +145,8 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
   gameDefaultsIncludeAccount: false,
   setGameDefaultsIncludeAccount: (gameDefaultsIncludeAccount) =>
     set(() => ({ gameDefaultsIncludeAccount })),
+  pendingDeepLinkMod: null,
+  setPendingDeepLinkMod: (pendingDeepLinkMod) => set(() => ({ pendingDeepLinkMod })),
   profilesParent: null,
   profilesSubdir: "profiles",
   setProfilesParent: async (path, config) => {

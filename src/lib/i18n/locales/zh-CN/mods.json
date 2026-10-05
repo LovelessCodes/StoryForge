@@ -184,5 +184,8 @@
     "confirmRemove": "真的要删除吗？",
     "removeFailed": "无法删除 {{file}}：{{message}}",
     "hint": "删除文件后无法恢复。"
+  },
+  "deepLink": {
+    "failed": "无法通过链接打开 {{modid}}"
   }
 }

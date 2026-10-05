@@ -192,5 +192,8 @@
     "confirmRemove": "Remover mesmo?",
     "removeFailed": "Não foi possível remover {{file}}: {{message}}",
     "hint": "Remover um arquivo é permanente."
+  },
+  "deepLink": {
+    "failed": "Não foi possível abrir {{modid}} pelo link"
   }
 }

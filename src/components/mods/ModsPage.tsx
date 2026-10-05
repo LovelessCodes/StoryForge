@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useActiveProfile } from "@/hooks/use-active-profile";
 import { pathBasename } from "@/lib/helpers";
-import type { Mod, OutputMod } from "@/lib/types";
+import { toast } from "@/lib/notify";
+import type { Mod, ModInfo, OutputMod } from "@/lib/types";
 import { useSettingsStore } from "@/stores/settings";
 
 import { AddModSheet } from "./AddModSheet";
@@ -69,6 +71,44 @@ export default function ModsPage({ targetPath, targetLabel, targetVersion }: Mod
     setSheet(request);
     setSheetOpen(true);
   };
+
+  // A deep link (`storyforge://install?mod=…`) queued a mod id; open the add
+  // sheet for it once this page is mounted.
+  const pendingDeepLinkMod = useSettingsStore((s) => s.pendingDeepLinkMod);
+  const setPendingDeepLinkMod = useSettingsStore((s) => s.setPendingDeepLinkMod);
+  useEffect(() => {
+    const modid = pendingDeepLinkMod;
+    if (!modid) return;
+    setPendingDeepLinkMod(null);
+    void (async () => {
+      try {
+        const info = await invoke<ModInfo>("fetch_mod_info", { modid });
+        const mod: Mod = {
+          assetid: info.mod.assetid,
+          author: info.mod.author,
+          comments: info.mod.comments,
+          downloads: info.mod.downloads,
+          follows: info.mod.follows,
+          lastreleased: info.mod.lastreleased,
+          logo: info.mod.logofile,
+          modid: info.mod.modid,
+          modidstrs: [modid],
+          name: info.mod.name,
+          side: info.mod.side,
+          summary: (info.mod.text ?? "").slice(0, 240),
+          tags: info.mod.tags,
+          trendingpoints: info.mod.trendingpoints,
+          type: info.mod.type,
+          urlalias: info.mod.urlalias ?? null,
+        };
+        openSheet(profilePath ? { kind: "add", mod } : { kind: "standalone", mod });
+      } catch (error) {
+        toast.error(t("mods.deepLink.failed", { modid }), { description: String(error) });
+      }
+    })();
+    // Consumed once per queued id; the sheet state is local to this page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingDeepLinkMod]);
 
   return (
     <TooltipProvider>

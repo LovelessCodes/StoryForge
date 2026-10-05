@@ -68,6 +68,7 @@ shell-words = "1"
 zip = { version = "8", default-features = false, features = ["deflate"] }
 uuid = { version = "1", features = ["v4"] }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
 futures-util = "0.3"
 walkdir = "2"
 dunce = "1"

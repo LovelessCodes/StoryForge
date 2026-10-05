@@ -19,6 +19,7 @@ const CACHE_KEY = "storyforge-query-cache";
 const EXCLUDED_ROOTS = new Set([
   "app-folder",
   "app-version",
+  "launcherLogins",
   "modpack-slug-availability",
   "profileLog",
   "profileLogs",

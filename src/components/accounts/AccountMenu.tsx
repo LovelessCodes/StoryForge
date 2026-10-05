@@ -1,4 +1,12 @@
-import { Check, ChevronsUpDown, ShieldCheck, UserPlus, UserRound, UserX } from "lucide-react";
+import {
+  Check,
+  ChevronsUpDown,
+  Download,
+  ShieldCheck,
+  UserPlus,
+  UserRound,
+  UserX,
+} from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -17,6 +25,7 @@ import { toast } from "@/lib/notify";
 import { useAccountStore } from "@/stores/accounts";
 
 import AddAccountSheet from "./AddAccountSheet";
+import ImportLoginsSheet from "./ImportLoginsSheet";
 
 /**
  * Vintage Story account switcher (game accounts, separate from the optional
@@ -29,6 +38,7 @@ export default function AccountMenu() {
   const [addOpen, setAddOpen] = useState(false);
   /** Bumped per open so the sheet remounts with a clean form. */
   const [addSession, setAddSession] = useState(0);
+  const [importOpen, setImportOpen] = useState(false);
 
   function verifySelected() {
     if (!selectedUser?.uid || !selectedUser.sessionkey) {
@@ -107,11 +117,15 @@ export default function AccountMenu() {
           >
             <UserPlus /> {t("auth.actions.addAccount")}
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setImportOpen(true)}>
+            <Download /> {t("auth.actions.importLogins")}
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
       {/* Remount on every open so the form starts clean (no reset effect). */}
       <AddAccountSheet key={addSession} open={addOpen} onOpenChange={setAddOpen} />
+      <ImportLoginsSheet open={importOpen} onOpenChange={setImportOpen} />
     </>
   );
 }

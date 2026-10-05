@@ -192,5 +192,8 @@
     "confirmRemove": "Wirklich entfernen?",
     "removeFailed": "{{file}} konnte nicht entfernt werden: {{message}}",
     "hint": "Das Entfernen einer Datei ist endgültig."
+  },
+  "deepLink": {
+    "failed": "{{modid}} konnte nicht über den Link geöffnet werden"
   }
 }
