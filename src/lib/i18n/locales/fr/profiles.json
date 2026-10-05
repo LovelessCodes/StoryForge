@@ -81,6 +81,8 @@
     "icon": "Icône",
     "favorite": "Favori",
     "favoriteHint": "Les favoris apparaissent en premier dans les listes.",
+    "ignoreGameDefaults": "Ne pas appliquer les réglages par défaut",
+    "ignoreGameDefaultsHint": "Conserver les raccourcis et réglages propres à ce profil.",
     "launchParameters": "Paramètres de lancement",
     "optional": "facultatif",
     "startParamsPlaceholder": "--some-flag value",

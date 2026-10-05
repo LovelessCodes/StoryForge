@@ -60,6 +60,24 @@
       "updated": "最近更新"
     }
   },
+  "gameDefaults": {
+    "title": "游戏默认设置",
+    "description": "所有档案共用同一套按键绑定以及游戏和画面设置。",
+    "applyLabel": "启动时应用",
+    "applyDescription": "在游戏启动前将默认设置合并到档案设置中。档案可在各自的设置中选择不应用。",
+    "none": "尚未捕获默认设置。",
+    "capturedFrom": "捕获自 {{name}}",
+    "counts": "{{keys}} 项按键绑定 · {{settings}} 项设置",
+    "capture": "从档案捕获…",
+    "recapture": "重新捕获…",
+    "clear": "清除",
+    "sheetTitle": "捕获游戏默认设置",
+    "sheetDescription": "将所选档案的按键绑定以及游戏和画面设置保存为启动时应用的默认设置。账户数据、模组路径、已禁用模组和服务器列表永远不会被复制。",
+    "profileLabel": "档案",
+    "captured": "已捕获游戏默认设置",
+    "captureFailed": "无法捕获设置",
+    "cleared": "已清除游戏默认设置"
+  },
   "updates": {
     "title": "更新",
     "label": "更新",

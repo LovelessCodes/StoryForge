@@ -25,6 +25,7 @@ import { useSettingsStore } from "@/stores/settings";
 
 import AccountCard from "./AccountCard";
 import DataFoldersCard from "./DataFoldersCard";
+import GameDefaultsCard from "./GameDefaultsCard";
 import LogViewer from "./LogViewer";
 
 function SettingRow({
@@ -264,6 +265,7 @@ export default function SettingsPage() {
       <DataFoldersCard />
       <AppearanceCard />
       <BehaviourCard />
+      <GameDefaultsCard />
       <UpdatesCard />
       <LogViewer />
       <AccountCard />

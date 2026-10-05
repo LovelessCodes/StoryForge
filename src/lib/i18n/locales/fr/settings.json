@@ -60,6 +60,24 @@
       "updated": "Dernière mise à jour"
     }
   },
+  "gameDefaults": {
+    "title": "Réglages par défaut",
+    "description": "Un seul jeu de raccourcis, de réglages de jeu et d'affichage partagé par tous les profils.",
+    "applyLabel": "Appliquer au lancement",
+    "applyDescription": "Fusionne les réglages par défaut dans les paramètres du profil juste avant le lancement. Les profils peuvent refuser dans leurs propres réglages.",
+    "none": "Aucun réglage par défaut enregistré.",
+    "capturedFrom": "Enregistré depuis {{name}}",
+    "counts": "{{keys}} raccourcis · {{settings}} réglages",
+    "capture": "Enregistrer depuis un profil…",
+    "recapture": "Réenregistrer…",
+    "clear": "Effacer",
+    "sheetTitle": "Enregistrer les réglages par défaut",
+    "sheetDescription": "Enregistre les raccourcis et les réglages de jeu et d'affichage du profil choisi comme réglages par défaut appliqués au lancement. Les données de compte, chemins de mods, mods désactivés et listes de serveurs ne sont jamais copiés.",
+    "profileLabel": "Profil",
+    "captured": "Réglages par défaut enregistrés",
+    "captureFailed": "Impossible d'enregistrer les réglages",
+    "cleared": "Réglages par défaut effacés"
+  },
   "updates": {
     "title": "Mises à jour",
     "label": "Mises à jour",

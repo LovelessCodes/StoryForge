@@ -60,6 +60,24 @@
       "updated": "Last Updated"
     }
   },
+  "gameDefaults": {
+    "title": "Game defaults",
+    "description": "One set of key bindings, game and video settings shared by every profile.",
+    "applyLabel": "Apply on launch",
+    "applyDescription": "Merge the defaults into a profile's settings right before the game starts. Profiles can opt out in their own settings.",
+    "none": "No defaults captured yet.",
+    "capturedFrom": "Captured from {{name}}",
+    "counts": "{{keys}} key bindings · {{settings}} settings",
+    "capture": "Capture from profile…",
+    "recapture": "Recapture…",
+    "clear": "Clear",
+    "sheetTitle": "Capture game defaults",
+    "sheetDescription": "Saves the key bindings, game and video settings of the chosen profile as the defaults applied on launch. Account data, mod paths, disabled mods and server lists are never copied.",
+    "profileLabel": "Profile",
+    "captured": "Game defaults captured",
+    "captureFailed": "Could not capture the settings",
+    "cleared": "Game defaults cleared"
+  },
   "updates": {
     "title": "Updates",
     "label": "Updates",

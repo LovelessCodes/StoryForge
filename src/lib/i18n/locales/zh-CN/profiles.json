@@ -80,6 +80,8 @@
     "icon": "图标",
     "favorite": "收藏",
     "favoriteHint": "收藏的配置档在列表中排序靠前。",
+    "ignoreGameDefaults": "不应用游戏默认设置",
+    "ignoreGameDefaultsHint": "保留此档案自己的按键绑定和设置。",
     "launchParameters": "启动参数",
     "optional": "可选",
     "startParamsPlaceholder": "--some-flag value",

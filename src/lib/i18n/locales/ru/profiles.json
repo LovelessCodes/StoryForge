@@ -83,6 +83,8 @@
     "icon": "Значок",
     "favorite": "Избранное",
     "favoriteHint": "Избранное отображается первым в списках.",
+    "ignoreGameDefaults": "Не применять общие настройки",
+    "ignoreGameDefaultsHint": "Сохранить собственные привязки и настройки этого профиля.",
     "launchParameters": "Параметры запуска",
     "optional": "необязательно",
     "startParamsPlaceholder": "--some-flag value",

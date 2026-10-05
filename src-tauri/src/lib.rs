@@ -1,8 +1,8 @@
 pub mod modules;
 use modules::{
-    auth, backups, cairn, download, game_data, gruntlauncher, legacy, lithic, maps, modpack_io,
-    mods, mvl, news, profile_ops, profiles, rustory, saves, server_hosting, servers, sniffer,
-    versions, vs_launcher, waxlight, yelloowstone,
+    auth, backups, cairn, download, game_data, game_defaults, gruntlauncher, legacy, lithic, maps,
+    modpack_io, mods, mvl, news, profile_ops, profiles, rustory, saves, server_hosting, servers,
+    sniffer, versions, vs_launcher, waxlight, yelloowstone,
 };
 use tauri::RunEvent;
 
@@ -345,6 +345,8 @@ pub fn run() {
             auth::load_accounts,
             // News
             news::fetch_news,
+            // Game defaults (shared client settings applied on launch)
+            game_defaults::capture_game_defaults,
             // Mods
             mods::fetch_mod_tags,
             mods::fetch_mods,
@@ -385,6 +387,7 @@ pub fn run() {
             // Profiles
             profiles::get_all_profiles,
             profiles::save_profile,
+            profiles::set_profile_game_defaults,
             profiles::import_profile,
             profiles::play_game,
             profiles::confirm_vintage_story_exe,

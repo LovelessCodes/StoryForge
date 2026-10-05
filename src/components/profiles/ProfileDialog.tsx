@@ -66,6 +66,9 @@ export default function ProfileDialog({
   const [startParams, setStartParams] = useState(profile?.startParams ?? "");
   const [icon, setIcon] = useState<string | null>(profile?.icon ?? null);
   const [favorite, setFavorite] = useState(profile?.favorite ?? false);
+  const [ignoreGameDefaults, setIgnoreGameDefaults] = useState(
+    profile?.ignoreGameDefaults ?? false,
+  );
   const [envEntries, setEnvEntries] = useState<EnvVarEntry[]>(
     mapToEnvEntries(profile?.environmentVariables),
   );
@@ -127,8 +130,16 @@ export default function ProfileDialog({
 
       await loadProfiles();
       const saved = useProfilesStore.getState().profiles.find((p) => p.path === path);
-      if (saved) setActiveProfileId(saved.id);
-      else if (!isEdit) {
+      if (saved) {
+        if (saved.ignoreGameDefaults !== ignoreGameDefaults) {
+          await invoke("set_profile_game_defaults", {
+            profileId: saved.id,
+            ignoreGameDefaults,
+          });
+          await loadProfiles();
+        }
+        setActiveProfileId(saved.id);
+      } else if (!isEdit) {
         // The scan may not have picked it up yet (first profile on a custom
         // root): insert a minimal record so the UI has something to show.
         addProfile({
@@ -150,6 +161,7 @@ export default function ProfileDialog({
           external: false,
           backupOnPlay: false,
           backupLimit: 5,
+          ignoreGameDefaults,
         });
       }
 
@@ -243,6 +255,18 @@ export default function ProfileDialog({
                 </span>
               </div>
               <Switch checked={favorite} onCheckedChange={setFavorite} />
+            </div>
+
+            <div className="flex items-center justify-between gap-4">
+              <div className="grid gap-0.5">
+                <span className="text-xs font-medium">
+                  {t("profiles.dialog.ignoreGameDefaults")}
+                </span>
+                <span className="text-muted-foreground text-[11px]">
+                  {t("profiles.dialog.ignoreGameDefaultsHint")}
+                </span>
+              </div>
+              <Switch checked={ignoreGameDefaults} onCheckedChange={setIgnoreGameDefaults} />
             </div>
 
             <div className="grid gap-1.5">

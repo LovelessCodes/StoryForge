@@ -5,6 +5,7 @@ pub mod dotnet;
 pub mod download;
 pub mod errors;
 pub mod game_data;
+pub mod game_defaults;
 pub mod gruntlauncher;
 pub mod legacy;
 pub mod lithic;

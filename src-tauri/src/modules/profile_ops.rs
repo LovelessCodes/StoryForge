@@ -191,6 +191,7 @@ fn profile_result_from_dir(dir: &Path) -> Result<ProfileResult, UiError> {
         external: false,
         backup_on_play: info.backup_on_play,
         backup_limit: info.backup_limit,
+        ignore_game_defaults: info.ignore_game_defaults,
     })
 }
 

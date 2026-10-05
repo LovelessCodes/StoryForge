@@ -81,6 +81,8 @@
     "icon": "Icon",
     "favorite": "Favorite",
     "favoriteHint": "Favorites sort first in lists.",
+    "ignoreGameDefaults": "Don't apply game defaults",
+    "ignoreGameDefaultsHint": "Keep this profile's own key bindings and settings.",
     "launchParameters": "Launch parameters",
     "optional": "optional",
     "startParamsPlaceholder": "--some-flag value",

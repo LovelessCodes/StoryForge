@@ -205,6 +205,7 @@ fn adopt_blocking(
         external: true,
         backup_on_play: info.backup_on_play,
         backup_limit: info.backup_limit,
+        ignore_game_defaults: info.ignore_game_defaults,
     })
 }
 

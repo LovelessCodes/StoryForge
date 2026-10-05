@@ -60,6 +60,24 @@
       "updated": "Zuletzt aktualisiert"
     }
   },
+  "gameDefaults": {
+    "title": "Spiel-Standardwerte",
+    "description": "Ein Satz Tastenbelegungen sowie Spiel- und Videoeinstellungen für alle Profile.",
+    "applyLabel": "Beim Start anwenden",
+    "applyDescription": "Führt die Standardwerte direkt vor dem Spielstart in die Einstellungen eines Profils ein. Profile können dies in ihren eigenen Einstellungen deaktivieren.",
+    "none": "Noch keine Standardwerte erfasst.",
+    "capturedFrom": "Erfasst aus {{name}}",
+    "counts": "{{keys}} Tastenbelegungen · {{settings}} Einstellungen",
+    "capture": "Aus Profil erfassen…",
+    "recapture": "Neu erfassen…",
+    "clear": "Löschen",
+    "sheetTitle": "Spiel-Standardwerte erfassen",
+    "sheetDescription": "Speichert die Tastenbelegungen sowie Spiel- und Videoeinstellungen des gewählten Profils als Standardwerte für den Start. Kontodaten, Mod-Pfade, deaktivierte Mods und Serverlisten werden nie kopiert.",
+    "profileLabel": "Profil",
+    "captured": "Spiel-Standardwerte erfasst",
+    "captureFailed": "Einstellungen konnten nicht erfasst werden",
+    "cleared": "Spiel-Standardwerte gelöscht"
+  },
   "updates": {
     "title": "Updates",
     "label": "Updates",

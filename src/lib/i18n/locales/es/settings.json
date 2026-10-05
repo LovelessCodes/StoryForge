@@ -60,6 +60,24 @@
       "updated": "Última actualización"
     }
   },
+  "gameDefaults": {
+    "title": "Ajustes predeterminados",
+    "description": "Un único conjunto de atajos y ajustes de juego y vídeo compartido por todos los perfiles.",
+    "applyLabel": "Aplicar al iniciar",
+    "applyDescription": "Fusiona los valores predeterminados en los ajustes del perfil justo antes de iniciar el juego. Los perfiles pueden desactivarlo en sus propios ajustes.",
+    "none": "Aún no hay valores predeterminados.",
+    "capturedFrom": "Capturado de {{name}}",
+    "counts": "{{keys}} atajos · {{settings}} ajustes",
+    "capture": "Capturar de un perfil…",
+    "recapture": "Volver a capturar…",
+    "clear": "Borrar",
+    "sheetTitle": "Capturar ajustes predeterminados",
+    "sheetDescription": "Guarda los atajos y los ajustes de juego y vídeo del perfil elegido como valores predeterminados que se aplican al iniciar. Los datos de cuenta, rutas de mods, mods desactivados y listas de servidores nunca se copian.",
+    "profileLabel": "Perfil",
+    "captured": "Ajustes predeterminados capturados",
+    "captureFailed": "No se pudieron capturar los ajustes",
+    "cleared": "Ajustes predeterminados borrados"
+  },
   "updates": {
     "title": "Actualizaciones",
     "label": "Actualizaciones",

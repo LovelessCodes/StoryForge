@@ -60,6 +60,24 @@
       "updated": "Última atualização"
     }
   },
+  "gameDefaults": {
+    "title": "Padrões do jogo",
+    "description": "Um único conjunto de teclas e configurações de jogo e vídeo compartilhado por todos os perfis.",
+    "applyLabel": "Aplicar ao iniciar",
+    "applyDescription": "Mescla os padrões nas configurações do perfil pouco antes de iniciar o jogo. Os perfis podem recusar nas próprias configurações.",
+    "none": "Nenhum padrão capturado ainda.",
+    "capturedFrom": "Capturado de {{name}}",
+    "counts": "{{keys}} teclas · {{settings}} configurações",
+    "capture": "Capturar de um perfil…",
+    "recapture": "Capturar novamente…",
+    "clear": "Limpar",
+    "sheetTitle": "Capturar padrões do jogo",
+    "sheetDescription": "Salva as teclas e as configurações de jogo e vídeo do perfil escolhido como padrões aplicados ao iniciar. Dados de conta, caminhos de mods, mods desativados e listas de servidores nunca são copiados.",
+    "profileLabel": "Perfil",
+    "captured": "Padrões do jogo capturados",
+    "captureFailed": "Não foi possível capturar as configurações",
+    "cleared": "Padrões do jogo limpos"
+  },
   "updates": {
     "title": "Atualizações",
     "label": "Atualizações",

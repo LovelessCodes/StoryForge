@@ -43,6 +43,8 @@ export type Profile = {
   backupOnPlay: boolean;
   /** Keep at most this many backups (0 keeps them all). */
   backupLimit: number;
+  /** Skip the shared game defaults when this profile launches. */
+  ignoreGameDefaults: boolean;
 };
 
 type ProfileResult = {
@@ -63,6 +65,7 @@ type ProfileResult = {
   external?: boolean;
   backup_on_play?: boolean;
   backup_limit?: number;
+  ignore_game_defaults?: boolean;
 };
 
 type ProfilesStore = {
@@ -134,6 +137,7 @@ export const useProfilesStore = create<ProfilesStore>((set) => ({
             external: r.external ?? existing?.external ?? false,
             backupOnPlay: r.backup_on_play ?? existing?.backupOnPlay ?? false,
             backupLimit: r.backup_limit ?? existing?.backupLimit ?? 5,
+            ignoreGameDefaults: r.ignore_game_defaults ?? existing?.ignoreGameDefaults ?? false,
           };
         });
         return { profiles };

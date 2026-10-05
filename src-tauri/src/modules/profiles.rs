@@ -22,6 +22,7 @@ use super::auth::SavedAccount;
 use super::backups;
 use super::dotnet;
 use super::errors::UiError;
+use super::game_defaults;
 use super::mods;
 use super::paths::{self, clientsettings_path, mods_dir, profile_json_path};
 use super::utils::{
@@ -79,6 +80,9 @@ pub struct ProfileInfo {
     /// Keep at most this many backups (0 keeps them all).
     #[serde(default = "default_backup_limit")]
     pub backup_limit: u32,
+    /// Skip the shared game defaults when this profile launches.
+    #[serde(default)]
+    pub ignore_game_defaults: bool,
 }
 
 fn default_backup_limit() -> u32 {
@@ -100,6 +104,7 @@ impl Default for ProfileInfo {
             env_vars: HashMap::new(),
             backup_on_play: false,
             backup_limit: default_backup_limit(),
+            ignore_game_defaults: false,
         }
     }
 }
@@ -131,6 +136,9 @@ pub struct ProfileResult {
     /// Keep at most this many backups (0 keeps them all).
     #[serde(default)]
     pub backup_limit: u32,
+    /// Skip the shared game defaults when this profile launches.
+    #[serde(default)]
+    pub ignore_game_defaults: bool,
 }
 pub fn read_profile_json(dir: &Path) -> Result<ProfileInfo, UiError> {
     let file_path = profile_json_path(dir);
@@ -356,6 +364,7 @@ pub async fn get_all_profiles(app: AppHandle) -> Result<Vec<ProfileResult>, UiEr
             external: true,
             backup_on_play: info.backup_on_play,
             backup_limit: info.backup_limit,
+            ignore_game_defaults: info.ignore_game_defaults,
         });
     }
 
@@ -446,6 +455,7 @@ fn scan_profiles(profiles_dir: &Path) -> Result<Vec<ProfileResult>, UiError> {
                 external: false,
                 backup_on_play: info.backup_on_play,
                 backup_limit: info.backup_limit,
+                ignore_game_defaults: info.ignore_game_defaults,
             });
         }
     }
@@ -483,6 +493,7 @@ pub fn save_profile(
         existing_env_vars,
         backup_on_play,
         backup_limit,
+        existing_ignore_game_defaults,
     ) = read_profile_json(&dir)
         .map(|existing| {
             (
@@ -493,6 +504,7 @@ pub fn save_profile(
                 existing.env_vars,
                 existing.backup_on_play,
                 existing.backup_limit,
+                existing.ignore_game_defaults,
             )
         })
         .unwrap_or((
@@ -503,6 +515,7 @@ pub fn save_profile(
             HashMap::new(),
             false,
             default_backup_limit(),
+            false,
         ));
     let info = ProfileInfo {
         name,
@@ -517,7 +530,21 @@ pub fn save_profile(
         env_vars: env_vars.unwrap_or(existing_env_vars),
         backup_on_play,
         backup_limit,
+        ignore_game_defaults: existing_ignore_game_defaults,
     };
+    write_profile_json(&dir, &info)
+}
+
+/// Persists the per-profile game-defaults opt-out without touching the rest of
+/// the profile (the dialog rewrites everything else through `save_profile`).
+#[command]
+pub fn set_profile_game_defaults(
+    app: AppHandle,
+    profile_id: u64,
+    ignore_game_defaults: bool,
+) -> Result<(), UiError> {
+    let (dir, mut info) = find_profile_by_id(&app, profile_id)?;
+    info.ignore_game_defaults = ignore_game_defaults;
     write_profile_json(&dir, &info)
 }
 
@@ -643,6 +670,7 @@ pub async fn import_profile(
         env_vars: HashMap::new(),
         backup_on_play: false,
         backup_limit: default_backup_limit(),
+        ignore_game_defaults: false,
     };
     write_profile_json(&inst_dir, &info)?;
 
@@ -914,6 +942,7 @@ pub async fn import_profile(
         external: false,
         backup_on_play: false,
         backup_limit: default_backup_limit(),
+        ignore_game_defaults: false,
     };
 
     let _ = app.emit(
@@ -1210,10 +1239,13 @@ async fn prepare_clientsettings(
     _options: &PlayGameParams,
 ) -> Result<(), UiError> {
     let account = load_selected_account(app);
+    // The shared game defaults are read here, on the main thread, because the
+    // write below happens on a blocking task without an AppHandle.
+    let (apply_game_defaults, defaults) = game_defaults::launch_defaults(app);
     tokio::task::spawn_blocking({
         let pb = pb.to_path_buf();
         let profile = profile.clone();
-        move || write_clientsettings(&pb, &profile, &account)
+        move || write_clientsettings(&pb, &profile, &account, &defaults, apply_game_defaults)
     })
     .await
     .map_err(|e| UiError::new("internal_error", format!("spawn blocking error: {e}")))?
@@ -1221,8 +1253,10 @@ async fn prepare_clientsettings(
 
 fn write_clientsettings(
     pb: &Path,
-    _profile: &ProfileInfo,
+    profile: &ProfileInfo,
     account: &Option<SavedAccount>,
+    defaults: &Option<Value>,
+    apply_game_defaults: bool,
 ) -> Result<(), UiError> {
     let settings_path = clientsettings_path(pb);
     log_info!("[play_game] clientsettings.json path: {:?}", settings_path);
@@ -1311,6 +1345,21 @@ fn write_clientsettings(
                 "[play_game] no selected account — writing modPaths only (no account injection)"
             );
         }
+    }
+
+    // Finally merge the shared game defaults (key bindings + game/video
+    // settings). Account keys were stripped at capture time and are skipped
+    // again on apply; mod paths and per-profile lists are never touched.
+    if apply_game_defaults && !profile.ignore_game_defaults {
+        if let Some(defaults) = defaults.as_ref() {
+            let written = game_defaults::apply_defaults(&mut settings_json, defaults);
+            log_info!(
+                "[play_game] applied {} shared game default settings",
+                written
+            );
+        }
+    } else if apply_game_defaults {
+        log_info!("[play_game] game defaults skipped — profile opted out");
     }
 
     write(&settings_path, to_string_pretty(&settings_json).unwrap()).map_err(|e| {

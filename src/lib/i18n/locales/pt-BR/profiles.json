@@ -81,6 +81,8 @@
     "icon": "Ícone",
     "favorite": "Favorito",
     "favoriteHint": "Favoritos aparecem primeiro nas listas.",
+    "ignoreGameDefaults": "Não aplicar os padrões do jogo",
+    "ignoreGameDefaultsHint": "Manter as teclas e configurações próprias deste perfil.",
     "launchParameters": "Parâmetros de inicialização",
     "optional": "opcional",
     "startParamsPlaceholder": "--some-flag value",

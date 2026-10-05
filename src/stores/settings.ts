@@ -3,6 +3,7 @@ import { appDataDir } from "@tauri-apps/api/path";
 import { createTauriStore } from "@tauri-store/zustand";
 import { create } from "zustand";
 
+import type { GameDefaults } from "@/lib/game-defaults";
 import { logToFile } from "@/lib/logger";
 import type { SortBy } from "@/lib/mod-sort";
 
@@ -59,6 +60,12 @@ type SettingsStore = {
   toggleModPin: (path: string, modid: string) => void;
   defaultModSortBy: SortBy;
   setDefaultModSortBy: (sortBy: SortBy) => void;
+  /** Merge captured game defaults into a profile's client settings on launch. */
+  applyGameDefaults: boolean;
+  setApplyGameDefaults: (applyGameDefaults: boolean) => void;
+  /** Sanitized snapshot of one profile's client settings, or null. */
+  gameDefaults: GameDefaults | null;
+  setGameDefaults: (gameDefaults: GameDefaults | null) => void;
   profilesParent: string | null;
   profilesSubdir: string;
   setProfilesParent: (path: string | null, config?: SetParentConfigProps) => Promise<void>;
@@ -113,6 +120,10 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
     }),
   defaultModSortBy: "trending",
   setDefaultModSortBy: (sortBy) => set(() => ({ defaultModSortBy: sortBy })),
+  applyGameDefaults: false,
+  setApplyGameDefaults: (applyGameDefaults) => set(() => ({ applyGameDefaults })),
+  gameDefaults: null,
+  setGameDefaults: (gameDefaults) => set(() => ({ gameDefaults })),
   profilesParent: null,
   profilesSubdir: "profiles",
   setProfilesParent: async (path, config) => {
