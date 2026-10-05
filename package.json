@@ -15,6 +15,7 @@
     "lint:fix": "oxlint --fix",
     "screenshots": "bun scripts/screenshots.ts",
     "screenshots:capture": "bun scripts/screenshots/capture.ts",
+    "screenshots:platforms": "bun scripts/screenshots/platforms.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "bump": "bun run scripts/bump-version.ts"

@@ -57,6 +57,8 @@ code that ships.
 - `scripts/screenshots/fixtures.ts` — one response per command the frontend
   calls: profiles, installed versions, the mod database page, installed mods,
   updates, saves, saved/public/hosted servers, mod configs and news.
+- `scripts/screenshots/tauri-mock.ts` — the fake IPC bridge; it stubs
+  `platform()` too, so the same captures can render macOS, Windows or Linux.
 - `capture.ts`'s `shots` array — one entry per committed image. Each entry opens
   its hash route and waits for a marker that proves the page finished loading.
 
@@ -68,6 +70,24 @@ deterministic — dates are fixed ISO strings that the UI renders as relative
 time, and the light/dark captures must show the exact same state or the diagonal
 seam won't line up. Local paths in fixtures use `/Users/you/…` so published
 images don't leak a real username.
+
+## Platform chrome preview
+
+`bun run screenshots:platforms` renders the app once per OS and writes
+`screenshots/platforms/platforms.webp`: three rows (macOS, Windows, Linux),
+each showing the top of the window in light (left half) and dark (right half).
+
+The rows differ only in window chrome, which is the point:
+
+- **macOS** floats native traffic lights over the strip — drawn into the sheet,
+  since the real ones are OS-drawn.
+- **Windows** runs frameless and draws its own minimize/maximize/close buttons
+  at the right edge.
+- **Linux** keeps native decorations, so the OS title bar sits above the
+  webview (not part of the render) and the strip drops the macOS-only padding.
+
+`--route <name>` captures another page, `--keep` keeps the six full 1200×800
+PNG captures, and `--out`/`--port`/`--base-url` behave like the capture script.
 
 ## Why WebP
 

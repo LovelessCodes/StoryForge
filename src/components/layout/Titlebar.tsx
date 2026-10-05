@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { notify } from "@/components/ui/toast";
 import { useUpdater } from "@/hooks/use-updater";
-import { isMac, isWindows } from "@/lib/helpers";
+import { isMac, isWindows, modifierLabel } from "@/lib/helpers";
 import { useDownloadStore } from "@/stores/downloads";
 
 export default function Titlebar() {
@@ -147,7 +147,7 @@ export default function Titlebar() {
           <Search />
           <span className="hidden sm:inline">Search</span>
           <kbd className="pointer-events-none hidden rounded-none border px-1 font-sans text-[10px] sm:inline">
-            ⌘K
+            {modifierLabel}K
           </kbd>
         </Button>
         <ThemeToggle />

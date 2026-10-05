@@ -6,6 +6,7 @@ import { chromium, type Page } from "playwright";
 import { preview } from "vite";
 
 import { createFixtures } from "./fixtures";
+import { installTauriMock } from "./tauri-mock";
 
 /**
  * Headless README screenshot capture.
@@ -185,72 +186,6 @@ const shots: Shot[] = [
   },
 ];
 
-/**
- * Runs inside the page before any app code. Installs a fake Tauri IPC bridge
- * backed by `window.__SCREENSHOT_FIXTURES__` so `invoke()` resolves locally.
- */
-function installTauriMock(): void {
-  interface ScreenshotWindow extends Window {
-    __SCREENSHOT_FIXTURES__: Record<string, unknown>;
-    __TAURI_INTERNALS__: Record<string, unknown>;
-    isTauri?: boolean;
-  }
-  const w = window as unknown as ScreenshotWindow;
-  const fixtures = w.__SCREENSHOT_FIXTURES__;
-  const callbacks = new Map<number, (payload: unknown) => void>();
-  let nextCallbackId = 1;
-
-  (w as unknown as Record<string, unknown>).__TAURI_EVENT_PLUGIN_INTERNALS__ = {
-    unregisterListener: () => {},
-  };
-
-  // `platform()` is read at module scope (shortcut labels, path helpers), so
-  // the OS plugin internals must exist before the frontend runs. Linux keeps
-  // local and CI captures identical.
-  (w as unknown as Record<string, unknown>).__TAURI_OS_PLUGIN_INTERNALS__ = {
-    platform: "linux",
-    version: "1.0.0",
-    arch: "x86_64",
-    family: "unix",
-    osType: "linux",
-    locale: "en-US",
-  };
-
-  w.__TAURI_INTERNALS__ = {
-    // Some APIs (event listeners, webview drag-drop) read window metadata at
-    // module or mount time, so it must exist before the frontend runs.
-    metadata: {
-      currentWindow: { label: "main" },
-      currentWebview: { windowLabel: "main", label: "main" },
-    },
-    invoke: (cmd: string, args: Record<string, unknown> = {}) => {
-      // The one command keyed by argument: resolve the requested mod.
-      if (cmd === "fetch_mod_info") {
-        const infos = fixtures[cmd] as Record<string, unknown>;
-        return Promise.resolve(infos[String(args.modid)] ?? null);
-      }
-      if (Object.prototype.hasOwnProperty.call(fixtures, cmd)) {
-        return Promise.resolve(structuredClone(fixtures[cmd]));
-      }
-      // Unmocked plugin commands (events, updater, dialogs) resolve to null.
-      return Promise.resolve(null);
-    },
-    transformCallback: (callback: (payload: unknown) => void, once = false) => {
-      const id = nextCallbackId++;
-      callbacks.set(id, (payload) => {
-        callback(payload);
-        if (once) callbacks.delete(id);
-      });
-      return id;
-    },
-    unregisterCallback: (id: number) => {
-      callbacks.delete(id);
-    },
-    convertFileSrc: (path: string) => path,
-  };
-  w.isTauri = true;
-}
-
 if (!existsSync("dist/index.html")) {
   abort("No dist/ build found. Run `bun run build` first.");
 }
@@ -299,7 +234,7 @@ try {
           },
           { fixtures, theme },
         );
-        await context.addInitScript(installTauriMock);
+        await context.addInitScript(installTauriMock, "linux");
 
         const page = await context.newPage();
         await page.goto(`${baseUrl}#/${shot.route}`, { waitUntil: "domcontentloaded" });
