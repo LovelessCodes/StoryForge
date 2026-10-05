@@ -43,31 +43,33 @@ export default function ProfileScreenshotsSheet({
 
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
-      <SheetContent side="right" className="relative w-full gap-0 p-0 sm:max-w-2xl">
-        <SheetHeader className="border-b">
-          <SheetTitle>{t("profiles.screenshots.title", { name: profile.name })}</SheetTitle>
-          <SheetDescription>{t("profiles.screenshots.description")}</SheetDescription>
-        </SheetHeader>
-        <ScrollArea scrollFade className="min-h-0 flex-1">
-          <div className="p-4">
-            {isPending ? (
-              <p className="text-muted-foreground text-sm">…</p>
-            ) : screenshots && screenshots.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {screenshots.map((shot) => (
-                  <ScreenshotThumb key={shot.path} onOpen={() => setSelected(shot)} shot={shot} />
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center gap-3 border border-dashed p-10 text-center">
-                <Camera className="text-muted-foreground size-6" />
-                <p className="text-muted-foreground text-xs">{t("profiles.screenshots.empty")}</p>
-              </div>
-            )}
-          </div>
-        </ScrollArea>
+      <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-2xl">
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          <SheetHeader className="border-b">
+            <SheetTitle>{t("profiles.screenshots.title", { name: profile.name })}</SheetTitle>
+            <SheetDescription>{t("profiles.screenshots.description")}</SheetDescription>
+          </SheetHeader>
+          <ScrollArea scrollFade className="min-h-0 flex-1">
+            <div className="p-4">
+              {isPending ? (
+                <p className="text-muted-foreground text-sm">…</p>
+              ) : screenshots && screenshots.length > 0 ? (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {screenshots.map((shot) => (
+                    <ScreenshotThumb key={shot.path} onOpen={() => setSelected(shot)} shot={shot} />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-3 border border-dashed p-10 text-center">
+                  <Camera className="text-muted-foreground size-6" />
+                  <p className="text-muted-foreground text-xs">{t("profiles.screenshots.empty")}</p>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
 
-        {selected && <FullScreenshot onClose={() => setSelected(null)} shot={selected} />}
+          {selected && <FullScreenshot onClose={() => setSelected(null)} shot={selected} />}
+        </div>
       </SheetContent>
     </Sheet>
   );
