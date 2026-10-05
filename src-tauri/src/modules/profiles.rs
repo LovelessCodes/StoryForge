@@ -1348,15 +1348,24 @@ fn write_clientsettings(
     }
 
     // Finally merge the shared game defaults (key bindings + game/video
-    // settings). Account keys were stripped at capture time and are skipped
-    // again on apply; mod paths and per-profile lists are never touched.
+    // settings). Account keys were stripped at capture time unless the capture
+    // opted into the session bundle; the account merge above injects the
+    // selected launcher account's session, so a copied session only applies
+    // when no account is selected.
     if apply_game_defaults && !profile.ignore_game_defaults {
         if let Some(defaults) = defaults.as_ref() {
-            let written = game_defaults::apply_defaults(&mut settings_json, defaults);
+            let allow_session = account.is_none();
+            let written =
+                game_defaults::apply_defaults(&mut settings_json, defaults, allow_session);
             log_info!(
                 "[play_game] applied {} shared game default settings",
                 written
             );
+            if game_defaults::includes_account(defaults) && !allow_session {
+                log_info!(
+                    "[play_game] copied account session skipped — a launcher account is selected"
+                );
+            }
         }
     } else if apply_game_defaults {
         log_info!("[play_game] game defaults skipped — profile opted out");

@@ -14,6 +14,7 @@ describe("gameDefaultsCounts", () => {
         // Meta fields are not settings and must not be counted.
         capturedAt: 123,
         sourceProfile: "Main",
+        includesAccount: true,
       }),
     ).toEqual({ keyBindings: 2, settings: 5 });
   });

@@ -45,7 +45,19 @@ export default function GameDefaultsCard() {
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [sourceId, setSourceId] = useState<number | null>(null);
+  const [includeSession, setIncludeSession] = useState(false);
   const [capturing, setCapturing] = useState(false);
+
+  // Reset the form every time the sheet opens (render-time reset keeps the
+  // previous pick from leaking into the next capture).
+  const [prevPickerOpen, setPrevPickerOpen] = useState(pickerOpen);
+  if (pickerOpen !== prevPickerOpen) {
+    setPrevPickerOpen(pickerOpen);
+    if (pickerOpen) {
+      setSourceId(null);
+      setIncludeSession(false);
+    }
+  }
 
   const counts = gameDefaults ? gameDefaultsCounts(gameDefaults) : null;
   const capturedAgo =
@@ -62,10 +74,12 @@ export default function GameDefaultsCard() {
     try {
       const snapshot = await invoke<GameDefaults>("capture_game_defaults", {
         profileId: sourceId,
+        includeAccountSession: includeSession,
       });
       setGameDefaults(snapshot);
       setPickerOpen(false);
       setSourceId(null);
+      setIncludeSession(false);
       toast.success(t("settings.gameDefaults.captured"));
     } catch (error) {
       toast.error(t("settings.gameDefaults.captureFailed"), {
@@ -115,6 +129,9 @@ export default function GameDefaultsCard() {
                   keys: counts.keyBindings,
                   settings: counts.settings,
                 })}
+                {gameDefaults.includesAccount
+                  ? ` · ${t("settings.gameDefaults.includesSession")}`
+                  : ""}
                 {capturedAgo ? ` · ${capturedAgo}` : ""}
               </span>
             )}
@@ -135,6 +152,7 @@ export default function GameDefaultsCard() {
               <Button
                 onClick={() => {
                   setGameDefaults(null);
+                  setApplyGameDefaults(false);
                   toast.success(t("settings.gameDefaults.cleared"));
                 }}
                 size="sm"
@@ -181,6 +199,18 @@ export default function GameDefaultsCard() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="flex items-center justify-between gap-4">
+              <div className="grid gap-0.5">
+                <span className="text-xs font-medium">
+                  {t("settings.gameDefaults.includeSession")}
+                </span>
+                <span className="text-muted-foreground text-[11px]">
+                  {t("settings.gameDefaults.includeSessionHint")}
+                </span>
+              </div>
+              <Switch checked={includeSession} onCheckedChange={setIncludeSession} />
             </div>
           </div>
           <SheetFooter className="border-t">

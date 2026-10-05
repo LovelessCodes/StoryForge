@@ -1,12 +1,14 @@
 /**
  * Shared game defaults: a sanitized snapshot of one profile's client settings
  * (key bindings + game/video settings) merged into profiles on launch.
- * Account/session keys and per-profile lists never appear here — the Rust
- * side strips them on capture and skips them again on apply.
+ * Account/session keys are only present when the capture explicitly opted in
+ * (`includesAccount`); per-profile lists never appear here.
  */
 export type GameDefaults = {
   capturedAt?: number;
   sourceProfile?: string;
+  /** True when the capture included the account session bundle. */
+  includesAccount?: boolean;
   keyMapping?: Record<string, unknown>;
   intSettings?: Record<string, unknown>;
   boolSettings?: Record<string, unknown>;
