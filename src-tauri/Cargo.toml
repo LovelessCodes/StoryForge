@@ -66,6 +66,7 @@ quick-xml = { version = "0.42", default-features = false, features = ["serialize
 which = "8"
 shell-words = "1"
 zip = { version = "8", default-features = false, features = ["deflate"] }
+uuid = { version = "1", features = ["v4"] }
 futures-util = "0.3"
 walkdir = "2"
 dunce = "1"

@@ -42,6 +42,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "toml 0.8.2",
+ "uuid",
  "walkdir",
  "which",
  "zip 8.6.0",

@@ -1,7 +1,8 @@
-import { Globe, Search } from "lucide-react";
+import { Globe, Search, Upload } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import {
   Select,
@@ -14,6 +15,7 @@ import { useActiveProfile } from "@/hooks/use-active-profile";
 import { useSaves } from "@/hooks/use-saves";
 import { useAllMaps } from "@/hooks/use-world-map";
 
+import ImportWorldSheet from "./ImportWorldSheet";
 import MapRow from "./MapRow";
 import WorldRow from "./WorldRow";
 import { findWorldProfile } from "./worlds-utils";
@@ -24,6 +26,7 @@ export default function WorldsPage() {
   const { t } = useTranslation();
   const [searchText, setSearchText] = useState("");
   const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const { activeProfile, profiles } = useActiveProfile();
   const { data: worlds, isPending } = useSaves();
@@ -106,6 +109,10 @@ export default function WorldsPage() {
             ))}
           </SelectContent>
         </Select>
+
+        <Button className="ms-auto" onClick={() => setImportOpen(true)} size="sm" variant="outline">
+          <Upload /> {t("worlds.import.button")}
+        </Button>
       </div>
 
       {isPending ? (
@@ -160,6 +167,8 @@ export default function WorldsPage() {
           )}
         </>
       )}
+
+      <ImportWorldSheet onOpenChange={setImportOpen} open={importOpen} profiles={profiles} />
     </div>
   );
 }

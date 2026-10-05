@@ -39,6 +39,14 @@
     "deleteCurrent": "Eliminar (perfil actual)",
     "openFolderFailed": "No se pudo abrir la carpeta"
   },
+  "screenshots": {
+    "menu": "Capturas de pantalla",
+    "title": "Capturas — {{name}}",
+    "description": "Capturas hechas en este perfil.",
+    "empty": "Aún no hay capturas: pulsa F12 en el juego.",
+    "reveal": "Mostrar en la carpeta",
+    "close": "Cerrar"
+  },
   "export": {
     "filterName": "Exportación de perfil",
     "exported": "Perfil exportado",

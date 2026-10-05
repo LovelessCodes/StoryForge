@@ -25,7 +25,10 @@
     "viewMapAria": "查看地图",
     "noMapTitle": "{{name}} 没有可用的地图",
     "editAria": "编辑世界",
-    "deleteAria": "删除世界"
+    "deleteAria": "删除世界",
+    "actionsAria": "更多世界操作",
+    "duplicate": "复制…",
+    "backup": "备份为 zip…"
   },
   "edit": {
     "title": "编辑“{{name}}”",
@@ -81,5 +84,34 @@
     "noTiles": "未找到地图图块。在游戏内探索世界以生成地图！",
     "prospectingResults": "探矿结果：",
     "panZoom": "拖动平移 · 滚动缩放"
+  },
+  "duplicate": {
+    "title": "复制 <name>{{name}}</name>",
+    "description": "创建带有独立存档 ID 的副本，地图进度互不影响。",
+    "nameLabel": "新名称",
+    "submit": "复制世界",
+    "done": "已复制为 {{name}}",
+    "failed": "无法复制世界",
+    "noProfile": "找不到此世界的档案。"
+  },
+  "backup": {
+    "filterName": "世界存档",
+    "backedUp": "世界已备份",
+    "failed": "无法备份世界",
+    "noProfile": "找不到此世界的档案。"
+  },
+  "import": {
+    "button": "导入世界…",
+    "title": "导入世界",
+    "description": "将 .vcdbs 存档或 Story Forge 世界压缩包添加到档案。",
+    "fileLabel": "世界文件",
+    "chooseFile": "选择文件…",
+    "noFile": "未选择文件",
+    "filterName": "存档或压缩包",
+    "profileLabel": "档案",
+    "profilePlaceholder": "选择档案…",
+    "submit": "导入世界",
+    "imported": "世界已导入",
+    "failed": "无法导入世界"
   }
 }

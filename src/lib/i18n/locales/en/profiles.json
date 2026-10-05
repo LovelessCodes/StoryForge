@@ -39,6 +39,14 @@
     "deleteCurrent": "Delete (current profile)",
     "openFolderFailed": "Could not open folder"
   },
+  "screenshots": {
+    "menu": "Screenshots",
+    "title": "Screenshots — {{name}}",
+    "description": "Screenshots taken in this profile.",
+    "empty": "No screenshots yet — press F12 in game to take one.",
+    "reveal": "Show in folder",
+    "close": "Close"
+  },
   "export": {
     "filterName": "Profile export",
     "exported": "Profile exported",

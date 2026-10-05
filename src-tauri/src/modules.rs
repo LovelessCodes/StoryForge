@@ -21,6 +21,7 @@ pub mod profiles;
 pub mod proto;
 pub mod rustory;
 pub mod saves;
+pub mod screenshots;
 pub mod server_hosting;
 pub mod server_hosting_actor;
 pub mod servers;

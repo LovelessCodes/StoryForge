@@ -27,7 +27,10 @@
     "viewMapAria": "View map",
     "noMapTitle": "No map available for {{name}}",
     "editAria": "Edit world",
-    "deleteAria": "Delete world"
+    "deleteAria": "Delete world",
+    "actionsAria": "More world actions",
+    "duplicate": "Duplicate…",
+    "backup": "Back up as zip…"
   },
   "edit": {
     "title": "Edit “{{name}}”",
@@ -83,5 +86,34 @@
     "noTiles": "No map tiles found. Explore the world in-game to generate the map!",
     "prospectingResults": "Prospecting Results:",
     "panZoom": "Drag to pan · Scroll to zoom"
+  },
+  "duplicate": {
+    "title": "Duplicate <name>{{name}}</name>",
+    "description": "Creates a copy with its own save id, so map progress stays separate.",
+    "nameLabel": "New name",
+    "submit": "Duplicate world",
+    "done": "Duplicated as {{name}}",
+    "failed": "Could not duplicate the world",
+    "noProfile": "This world's profile could not be found."
+  },
+  "backup": {
+    "filterName": "World archive",
+    "backedUp": "World backed up",
+    "failed": "Could not back up the world",
+    "noProfile": "This world's profile could not be found."
+  },
+  "import": {
+    "button": "Import world…",
+    "title": "Import world",
+    "description": "Adds a .vcdbs save or a Story Forge world zip to a profile.",
+    "fileLabel": "World file",
+    "chooseFile": "Choose file…",
+    "noFile": "No file chosen",
+    "filterName": "World save or archive",
+    "profileLabel": "Profile",
+    "profilePlaceholder": "Choose a profile…",
+    "submit": "Import world",
+    "imported": "World imported",
+    "failed": "Could not import the world"
   }
 }

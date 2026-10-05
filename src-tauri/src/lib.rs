@@ -1,8 +1,8 @@
 pub mod modules;
 use modules::{
     auth, backups, cairn, download, game_data, game_defaults, gruntlauncher, legacy, lithic, maps,
-    modpack_io, mods, mvl, news, profile_ops, profiles, rustory, saves, server_hosting, servers,
-    sniffer, versions, vs_launcher, waxlight, yelloowstone,
+    modpack_io, mods, mvl, news, profile_ops, profiles, rustory, saves, screenshots,
+    server_hosting, servers, sniffer, versions, vs_launcher, waxlight, yelloowstone,
 };
 use tauri::RunEvent;
 
@@ -463,6 +463,13 @@ pub fn run() {
             saves::get_all_saves,
             saves::update_world,
             saves::remove_world,
+            saves::duplicate_world,
+            saves::backup_world,
+            saves::import_world,
+            // Screenshots
+            screenshots::get_profile_screenshots,
+            screenshots::get_screenshot_thumbnail,
+            screenshots::read_screenshot,
             // Server Hosting
             server_hosting::create_hosted_server,
             server_hosting::get_all_hosted_servers,

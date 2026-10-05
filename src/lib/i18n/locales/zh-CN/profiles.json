@@ -38,6 +38,14 @@
     "deleteCurrent": "删除（当前配置档）",
     "openFolderFailed": "无法打开文件夹"
   },
+  "screenshots": {
+    "menu": "截图",
+    "title": "截图 — {{name}}",
+    "description": "此档案中拍摄的截图。",
+    "empty": "还没有截图——在游戏内按 F12。",
+    "reveal": "在文件夹中显示",
+    "close": "关闭"
+  },
   "export": {
     "filterName": "配置档导出",
     "exported": "配置档已导出",

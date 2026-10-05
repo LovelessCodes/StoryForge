@@ -27,7 +27,10 @@
     "viewMapAria": "Ver mapa",
     "noMapTitle": "No hay mapa disponible para {{name}}",
     "editAria": "Editar mundo",
-    "deleteAria": "Eliminar mundo"
+    "deleteAria": "Eliminar mundo",
+    "actionsAria": "Más acciones del mundo",
+    "duplicate": "Duplicar…",
+    "backup": "Guardar como zip…"
   },
   "edit": {
     "title": "Editar “{{name}}”",
@@ -83,5 +86,34 @@
     "noTiles": "No se encontraron mosaicos de mapa. ¡Explora el mundo en el juego para generar el mapa!",
     "prospectingResults": "Resultados de prospección:",
     "panZoom": "Arrastra para desplazar · Desplázate para acercar"
+  },
+  "duplicate": {
+    "title": "Duplicar <name>{{name}}</name>",
+    "description": "Crea una copia con su propio id de guardado, para que el progreso del mapa quede separado.",
+    "nameLabel": "Nuevo nombre",
+    "submit": "Duplicar mundo",
+    "done": "Duplicado como {{name}}",
+    "failed": "No se pudo duplicar el mundo",
+    "noProfile": "No se encontró el perfil de este mundo."
+  },
+  "backup": {
+    "filterName": "Archivo de mundo",
+    "backedUp": "Mundo guardado",
+    "failed": "No se pudo guardar el mundo",
+    "noProfile": "No se encontró el perfil de este mundo."
+  },
+  "import": {
+    "button": "Importar mundo…",
+    "title": "Importar mundo",
+    "description": "Añade una partida .vcdbs o un zip de mundo de Story Forge a un perfil.",
+    "fileLabel": "Archivo de mundo",
+    "chooseFile": "Elegir archivo…",
+    "noFile": "Ningún archivo elegido",
+    "filterName": "Partida o archivo",
+    "profileLabel": "Perfil",
+    "profilePlaceholder": "Elige un perfil…",
+    "submit": "Importar mundo",
+    "imported": "Mundo importado",
+    "failed": "No se pudo importar el mundo"
   }
 }

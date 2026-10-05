@@ -27,7 +27,10 @@
     "viewMapAria": "Voir la carte",
     "noMapTitle": "Aucune carte disponible pour {{name}}",
     "editAria": "Modifier le monde",
-    "deleteAria": "Supprimer le monde"
+    "deleteAria": "Supprimer le monde",
+    "actionsAria": "Autres actions de monde",
+    "duplicate": "Dupliquer…",
+    "backup": "Sauvegarder en zip…"
   },
   "edit": {
     "title": "Modifier « {{name}} »",
@@ -83,5 +86,34 @@
     "noTiles": "Aucune tuile de carte trouvée. Explorez le monde en jeu pour générer la carte !",
     "prospectingResults": "Résultats de prospection :",
     "panZoom": "Glissez pour déplacer · Molette pour zoomer"
+  },
+  "duplicate": {
+    "title": "Dupliquer <name>{{name}}</name>",
+    "description": "Crée une copie avec son propre identifiant de sauvegarde, pour que la carte reste séparée.",
+    "nameLabel": "Nouveau nom",
+    "submit": "Dupliquer le monde",
+    "done": "Dupliqué sous {{name}}",
+    "failed": "Impossible de dupliquer le monde",
+    "noProfile": "Le profil de ce monde est introuvable."
+  },
+  "backup": {
+    "filterName": "Archive de monde",
+    "backedUp": "Monde sauvegardé",
+    "failed": "Impossible de sauvegarder le monde",
+    "noProfile": "Le profil de ce monde est introuvable."
+  },
+  "import": {
+    "button": "Importer un monde…",
+    "title": "Importer un monde",
+    "description": "Ajoute une sauvegarde .vcdbs ou une archive de monde Story Forge à un profil.",
+    "fileLabel": "Fichier de monde",
+    "chooseFile": "Choisir un fichier…",
+    "noFile": "Aucun fichier choisi",
+    "filterName": "Sauvegarde ou archive",
+    "profileLabel": "Profil",
+    "profilePlaceholder": "Choisir un profil…",
+    "submit": "Importer le monde",
+    "imported": "Monde importé",
+    "failed": "Impossible d'importer le monde"
   }
 }

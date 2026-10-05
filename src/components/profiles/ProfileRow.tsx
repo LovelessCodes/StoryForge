@@ -6,6 +6,7 @@ import { save } from "@tauri-apps/plugin-dialog";
 import { formatDistanceToNow } from "date-fns";
 import {
   Archive,
+  Camera,
   Copy,
   Ellipsis,
   FileText,
@@ -50,6 +51,7 @@ import { useSettingsStore } from "@/stores/settings";
 import ProfileBackupsSheet from "./ProfileBackupsSheet";
 import { PROFILE_ICON_BASE } from "./ProfileIconPicker";
 import ProfileLogsSheet from "./ProfileLogsSheet";
+import ProfileScreenshotsSheet from "./ProfileScreenshotsSheet";
 
 interface ProfileRowProps {
   profile: Profile;
@@ -70,6 +72,7 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
 
   const [logsOpen, setLogsOpen] = useState(false);
   const [backupsOpen, setBackupsOpen] = useState(false);
+  const [screenshotsOpen, setScreenshotsOpen] = useState(false);
   const [cloneOpen, setCloneOpen] = useState(false);
   const [cloneName, setCloneName] = useState(
     t("profiles.clone.defaultName", { name: profile.name }),
@@ -283,6 +286,9 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
           <DropdownMenuItem onClick={() => setBackupsOpen(true)} className="text-nowrap">
             <Archive /> {t("profiles.row.backups")}
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setScreenshotsOpen(true)} className="text-nowrap">
+            <Camera /> {t("profiles.screenshots.menu")}
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => void exportFile()} className="text-nowrap">
             <Share2 /> {t("profiles.row.exportFile")}
@@ -319,6 +325,11 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
 
       <ProfileLogsSheet open={logsOpen} onOpenChange={setLogsOpen} profile={profile} />
       <ProfileBackupsSheet open={backupsOpen} onOpenChange={setBackupsOpen} profile={profile} />
+      <ProfileScreenshotsSheet
+        open={screenshotsOpen}
+        onOpenChange={setScreenshotsOpen}
+        profile={profile}
+      />
 
       <Sheet open={cloneOpen} onOpenChange={(next) => !cloneBusy && setCloneOpen(next)}>
         <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-sm">

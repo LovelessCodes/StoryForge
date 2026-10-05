@@ -39,6 +39,14 @@
     "deleteCurrent": "Supprimer (profil actuel)",
     "openFolderFailed": "Impossible d'ouvrir le dossier"
   },
+  "screenshots": {
+    "menu": "Captures d'écran",
+    "title": "Captures d'écran — {{name}}",
+    "description": "Captures prises dans ce profil.",
+    "empty": "Aucune capture pour l'instant — appuyez sur F12 en jeu.",
+    "reveal": "Afficher dans le dossier",
+    "close": "Fermer"
+  },
   "export": {
     "filterName": "Export de profil",
     "exported": "Profil exporté",

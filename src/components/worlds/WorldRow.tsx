@@ -1,19 +1,39 @@
+import { save } from "@tauri-apps/plugin-dialog";
 import { formatDistanceToNow } from "date-fns";
-import { FileDown, Map as MapIcon, Pencil, Play, Sprout, Trash2 } from "lucide-react";
+import {
+  Archive,
+  Copy,
+  Ellipsis,
+  FileDown,
+  Map as MapIcon,
+  Pencil,
+  Play,
+  Sprout,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { usePlayProfile } from "@/hooks/use-play-profile";
+import { useBackupWorld } from "@/hooks/use-world-ops";
 import { useDateLocale } from "@/lib/i18n/date-locale";
+import { toast } from "@/lib/notify";
 import type { World } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/stores/profiles";
 
 import DeleteWorldSheet from "./DeleteWorldSheet";
+import DuplicateWorldSheet from "./DuplicateWorldSheet";
 import EditWorldSheet from "./EditWorldSheet";
 import ViewMapSheet from "./ViewMapSheet";
 import { findWorldProfile, worldSaveName } from "./worlds-utils";
@@ -33,15 +53,39 @@ export default function WorldRow({ world, profiles, activeProfile }: WorldRowPro
   const download = useDownloadVersion();
   const [copiedSeed, copySeed] = useCopyToClipboard();
 
+  const backup = useBackupWorld({
+    onError: (error) => {
+      toast.error(t("worlds.backup.failed"), { description: error.message });
+    },
+    onSuccess: () => {
+      toast.success(t("worlds.backup.backedUp"));
+    },
+  });
+
   const [mapOpen, setMapOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
 
   const data = world.data;
   const profile = findWorldProfile(profiles, world) ?? activeProfile;
   const versionInstalled = profile ? installedNames.includes(profile.version) : false;
   const versionMismatch =
     !!profile && !!data.last_saved_game_version && data.last_saved_game_version !== profile.version;
+
+  async function backupWorld() {
+    if (!profile) {
+      toast.error(t("worlds.backup.noProfile"));
+      return;
+    }
+    const safeName = data.world_name.replace(/[\\/:*?"<>|]/g, "_");
+    const path = await save({
+      defaultPath: `${safeName}.sfworld.zip`,
+      filters: [{ name: t("worlds.backup.filterName"), extensions: ["zip"] }],
+    });
+    if (!path || Array.isArray(path)) return;
+    backup.mutate({ profileId: profile.id, worldPath: world.path, destPath: path });
+  }
 
   const seed = String(data.seed);
   const copied = copiedSeed === seed;
@@ -185,7 +229,32 @@ export default function WorldRow({ world, profiles, activeProfile }: WorldRowPro
         >
           <Trash2 />
         </Button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button aria-label={t("worlds.row.actionsAria")} size="icon-sm" variant="ghost" />
+            }
+          >
+            <Ellipsis />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setDuplicateOpen(true)}>
+              <Copy /> {t("worlds.row.duplicate")}
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={!profile} onClick={() => void backupWorld()}>
+              <Archive /> {t("worlds.row.backup")}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+
+      <DuplicateWorldSheet
+        onOpenChange={setDuplicateOpen}
+        open={duplicateOpen}
+        profiles={profiles}
+        world={world}
+      />
 
       <ViewMapSheet open={mapOpen} onOpenChange={setMapOpen} world={world} />
       <EditWorldSheet

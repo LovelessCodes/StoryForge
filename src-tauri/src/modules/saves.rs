@@ -2,13 +2,16 @@ use prost::Message;
 use serde::{Deserialize, Serialize};
 use std::{
     ffi::OsStr,
-    fs::{create_dir_all, read_dir, remove_file, rename, Metadata},
+    fs::{copy, create_dir_all, read_dir, remove_file, rename, File, Metadata},
     hash::{Hash, Hasher},
+    io,
     path::{Path, PathBuf},
     sync::{Mutex, OnceLock},
     time::UNIX_EPOCH,
 };
 use tauri::{command, AppHandle};
+use zip::write::SimpleFileOptions;
+use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
 use super::errors::UiError;
 use super::paths;
@@ -468,6 +471,418 @@ pub fn remove_world(app: AppHandle, world_path: String) -> Result<(), UiError> {
         log_error!("saves: Remove file error: {e}");
         UiError::new("io_error", format!("Remove file error: {e}"))
     })?;
+    invalidate_saves_cache();
+    Ok(())
+}
+
+// ── Per-world operations ──
+
+/// Sanitized file stem for a new world file, matching `update_world`'s rules.
+fn world_file_stem(name: &str) -> String {
+    name.replace(
+        |c: char| !c.is_ascii_alphanumeric() && c != ' ' && c != '_' && c != '-',
+        "",
+    )
+    .to_lowercase()
+}
+
+/// Sidecar files of a save: every `<stem>.vcdbs*` except the save itself
+/// (e.g. `my world.vcdbs-x-playerdata-1-data.bin`).
+fn world_sidecars(saves_dir: &Path, stem: &str) -> Result<Vec<PathBuf>, UiError> {
+    let prefix = format!("{stem}.vcdbs");
+    let mut sidecars = Vec::new();
+    if !saves_dir.exists() {
+        return Ok(sidecars);
+    }
+    for entry in read_dir(saves_dir).map_err(|e| {
+        log_error!("saves: Read dir error: {e}");
+        UiError::new("io_error", format!("Read dir error: {e}"))
+    })? {
+        let entry = entry.map_err(|e| {
+            log_error!("saves: Dir entry error: {e}");
+            UiError::new("io_error", format!("Dir entry error: {e}"))
+        })?;
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let file_name = entry.file_name().to_string_lossy().into_owned();
+        if file_name != prefix && file_name.starts_with(&prefix) {
+            sidecars.push(path);
+        }
+    }
+    Ok(sidecars)
+}
+
+/// A free `<stem>.vcdbs` path in `saves_dir`, suffixed when the name is taken.
+fn unique_world_path(saves_dir: &Path, stem: &str) -> Result<PathBuf, UiError> {
+    let mut candidate = saves_dir.join(format!("{stem}.vcdbs"));
+    let mut index = 2;
+    while candidate.exists() {
+        candidate = saves_dir.join(format!("{stem} {index}.vcdbs"));
+        index += 1;
+        if index > 100 {
+            return Err(UiError::new(
+                "name_taken",
+                "Too many worlds share that name already",
+            ));
+        }
+    }
+    Ok(candidate)
+}
+
+fn ensure_world_save(world_path: &Path) -> Result<(), UiError> {
+    if !world_path.exists() || !world_path.is_file() {
+        return Err(UiError::new(
+            "world_not_found",
+            format!("World path {} not found", world_path.display()),
+        ));
+    }
+    if world_path.extension() != Some(OsStr::new("vcdbs")) {
+        return Err(UiError::new(
+            "invalid_world_file",
+            format!("World file {} is not a .vcdbs file", world_path.display()),
+        ));
+    }
+    Ok(())
+}
+
+/// Copy a world (save + sidecars) under a new name. The copy gets a fresh
+/// savegame identifier so map progress never bleeds between the two.
+#[command]
+pub fn duplicate_world(
+    app: AppHandle,
+    profile_id: u64,
+    world_path: String,
+    name: String,
+) -> Result<(), UiError> {
+    log_info!("duplicate_world: {}", name);
+    let (pb, _profile) = find_profile_by_id(&app, profile_id)?;
+    let saves_path = paths::saves_dir(&pb);
+    create_dir_all(&saves_path).map_err(|e| {
+        log_error!("saves: Create dir error: {e}");
+        UiError::new("io_error", format!("Create dir error: {e}"))
+    })?;
+    let world_path = Path::new(&world_path);
+    require_managed_path(&app, world_path, "World path")?;
+    ensure_world_save(world_path)?;
+
+    let new_stem = world_file_stem(&name);
+    if new_stem.is_empty() {
+        return Err(UiError::new(
+            "invalid_name",
+            "World name has no usable characters",
+        ));
+    }
+    let new_path = saves_path.join(format!("{new_stem}.vcdbs"));
+    if new_path.exists() {
+        return Err(UiError::new(
+            "name_taken",
+            format!("A world named \"{new_stem}\" already exists"),
+        ));
+    }
+
+    copy(world_path, &new_path).map_err(|e| {
+        log_error!("saves: Copy error: {e}");
+        UiError::new("io_error", format!("Copy error: {e}"))
+    })?;
+
+    let old_stem = world_path
+        .file_stem()
+        .map(|stem| stem.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let old_prefix = format!("{old_stem}.vcdbs");
+    for sidecar in world_sidecars(&saves_path, &old_stem)? {
+        let file_name = sidecar
+            .file_name()
+            .map(|name| name.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        let suffix = file_name.strip_prefix(&old_prefix).unwrap_or("");
+        let dest = saves_path.join(format!("{new_stem}.vcdbs{suffix}"));
+        copy(&sidecar, &dest).map_err(|e| {
+            log_error!("saves: Copy error: {e}");
+            UiError::new("io_error", format!("Copy error: {e}"))
+        })?;
+    }
+
+    {
+        let conn = vcdbs::open(&new_path, true)?;
+        let mut gamedata = vcdbs::read_gamedata(&conn)?;
+        gamedata.world_name = name;
+        gamedata.savegame_identifier = uuid::Uuid::new_v4().to_string();
+        vcdbs::write_gamedata(&conn, &gamedata)?;
+    }
+
+    invalidate_saves_cache();
+    Ok(())
+}
+
+/// Zip a world (save, sidecars and its map database) to a chosen file.
+#[command]
+pub fn backup_world(
+    app: AppHandle,
+    profile_id: u64,
+    world_path: String,
+    dest_path: String,
+) -> Result<(), UiError> {
+    log_info!("backup_world: {}", dest_path);
+    let (pb, _profile) = find_profile_by_id(&app, profile_id)?;
+    let saves_path = paths::saves_dir(&pb);
+    let world_path = Path::new(&world_path);
+    ensure_world_save(world_path)?;
+
+    let conn = vcdbs::open(world_path, false)?;
+    let gamedata = vcdbs::read_gamedata(&conn)?;
+    let stem = world_path
+        .file_stem()
+        .map(|stem| stem.to_string_lossy().into_owned())
+        .unwrap_or_default();
+
+    let mut entries: Vec<(String, PathBuf)> =
+        vec![(format!("{stem}.vcdbs"), world_path.to_path_buf())];
+    for sidecar in world_sidecars(&saves_path, &stem)? {
+        let name = sidecar
+            .file_name()
+            .map(|name| name.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        entries.push((name, sidecar));
+    }
+    if !gamedata.savegame_identifier.is_empty() {
+        let map_path = pb
+            .join(paths::MAPS_DIR)
+            .join(format!("{}.db", gamedata.savegame_identifier));
+        if map_path.is_file() {
+            entries.push((
+                format!("Maps/{}.db", gamedata.savegame_identifier),
+                map_path,
+            ));
+        }
+    }
+
+    let file = File::create(&dest_path).map_err(|e| {
+        log_error!("saves: Create file error: {e}");
+        UiError::new("io_error", format!("Create file error: {e}"))
+    })?;
+    let mut writer = ZipWriter::new(file);
+    let options = || SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+    for (name, path) in entries {
+        writer.start_file(&name, options()).map_err(|e| {
+            log_error!("saves: Write zip error: {e}");
+            UiError::new("io_error", format!("Write zip error: {e}"))
+        })?;
+        let mut source = File::open(&path).map_err(|e| {
+            log_error!("saves: Open file error: {e}");
+            UiError::new("io_error", format!("Open file error: {e}"))
+        })?;
+        io::copy(&mut source, &mut writer).map_err(|e| {
+            log_error!("saves: Copy error: {e}");
+            UiError::new("io_error", format!("Copy error: {e}"))
+        })?;
+    }
+    writer.finish().map_err(|e| {
+        log_error!("saves: Finalize zip error: {e}");
+        UiError::new("io_error", format!("Finalize zip error: {e}"))
+    })?;
+    Ok(())
+}
+
+/// Extract a world archive exported by `backup_world`.
+///
+/// Every entry is validated first and only a `.vcdbs` save, its sidecars and
+/// `Maps/<id>.db` are accepted; entry names never touch the filesystem as
+/// paths, so a hostile archive cannot escape the profile.
+fn extract_world_zip(source: &Path, saves_dir: &Path, maps_dir: &Path) -> Result<(), UiError> {
+    let file = File::open(source).map_err(|e| {
+        log_error!("saves: Open file error: {e}");
+        UiError::new("io_error", format!("Open file error: {e}"))
+    })?;
+    let mut archive = ZipArchive::new(file).map_err(|e| {
+        log_error!("saves: Read zip error: {e}");
+        UiError::new(
+            "invalid_archive",
+            format!("Not a readable zip archive: {e}"),
+        )
+    })?;
+
+    let mut stem: Option<String> = None;
+    let mut save_entries: Vec<(String, usize)> = Vec::new();
+    let mut map_entries: Vec<(String, usize)> = Vec::new();
+    for index in 0..archive.len() {
+        let entry = archive.by_index(index).map_err(|e| {
+            log_error!("saves: Zip entry error: {e}");
+            UiError::new("invalid_archive", format!("Zip entry error: {e}"))
+        })?;
+        if entry.is_dir() {
+            continue;
+        }
+        let raw = entry.name().replace('\\', "/");
+        let parts: Vec<&str> = raw
+            .split('/')
+            .filter(|part| !part.is_empty() && *part != ".")
+            .collect();
+        if parts.contains(&"..") {
+            return Err(UiError::new(
+                "invalid_archive",
+                format!("Unexpected path in world archive: {raw}"),
+            ));
+        }
+        match parts.as_slice() {
+            [name] => {
+                if name.ends_with(".vcdbs") {
+                    let entry_stem = name.trim_end_matches(".vcdbs").to_string();
+                    match &stem {
+                        None => stem = Some(entry_stem),
+                        Some(existing) if *existing != entry_stem => {
+                            return Err(UiError::new(
+                                "invalid_archive",
+                                "The archive contains more than one world save",
+                            ));
+                        }
+                        Some(_) => {}
+                    }
+                }
+                save_entries.push(((*name).to_string(), index));
+            }
+            ["Maps", name] if name.ends_with(".db") => {
+                map_entries.push(((*name).to_string(), index));
+            }
+            _ => {
+                return Err(UiError::new(
+                    "invalid_archive",
+                    format!("Unexpected path in world archive: {raw}"),
+                ));
+            }
+        }
+    }
+
+    let stem = stem.ok_or_else(|| {
+        UiError::new(
+            "invalid_archive",
+            "The archive does not contain a world save",
+        )
+    })?;
+    let dest = unique_world_path(saves_dir, &world_file_stem(&stem))?;
+    let dest_stem = dest
+        .file_stem()
+        .map(|stem| stem.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let old_prefix = format!("{stem}.vcdbs");
+
+    for (name, index) in save_entries {
+        let target_name = if name == old_prefix {
+            format!("{dest_stem}.vcdbs")
+        } else {
+            name.replacen(&old_prefix, &format!("{dest_stem}.vcdbs"), 1)
+        };
+        let mut entry = archive.by_index(index).map_err(|e| {
+            log_error!("saves: Zip entry error: {e}");
+            UiError::new("invalid_archive", format!("Zip entry error: {e}"))
+        })?;
+        let target = saves_dir.join(&target_name);
+        let mut out = File::create(&target).map_err(|e| {
+            log_error!("saves: Create file error: {e}");
+            UiError::new("io_error", format!("Create file error: {e}"))
+        })?;
+        io::copy(&mut entry, &mut out).map_err(|e| {
+            log_error!("saves: Extract error: {e}");
+            UiError::new("io_error", format!("Extract error: {e}"))
+        })?;
+    }
+
+    for (name, index) in map_entries {
+        if !maps_dir.exists() {
+            create_dir_all(maps_dir).map_err(|e| {
+                log_error!("saves: Create dir error: {e}");
+                UiError::new("io_error", format!("Create dir error: {e}"))
+            })?;
+        }
+        let target = maps_dir.join(&name);
+        // Keep existing map progress when the identifier is already here.
+        if target.exists() {
+            continue;
+        }
+        let mut entry = archive.by_index(index).map_err(|e| {
+            log_error!("saves: Zip entry error: {e}");
+            UiError::new("invalid_archive", format!("Zip entry error: {e}"))
+        })?;
+        let mut out = File::create(&target).map_err(|e| {
+            log_error!("saves: Create file error: {e}");
+            UiError::new("io_error", format!("Create file error: {e}"))
+        })?;
+        io::copy(&mut entry, &mut out).map_err(|e| {
+            log_error!("saves: Extract error: {e}");
+            UiError::new("io_error", format!("Extract error: {e}"))
+        })?;
+    }
+    Ok(())
+}
+
+/// Import a `.vcdbs` save (with sidecars sitting next to it) or a `.zip`
+/// exported by `backup_world` into a profile.
+#[command]
+pub fn import_world(app: AppHandle, profile_id: u64, source_path: String) -> Result<(), UiError> {
+    log_info!("import_world: {}", source_path);
+    let (pb, _profile) = find_profile_by_id(&app, profile_id)?;
+    let saves_path = paths::saves_dir(&pb);
+    create_dir_all(&saves_path).map_err(|e| {
+        log_error!("saves: Create dir error: {e}");
+        UiError::new("io_error", format!("Create dir error: {e}"))
+    })?;
+    let maps_path = pb.join(paths::MAPS_DIR);
+    let source = Path::new(&source_path);
+    if !source.exists() || !source.is_file() {
+        return Err(UiError::new(
+            "file_not_found",
+            format!("Import file {} not found", source.display()),
+        ));
+    }
+
+    match source.extension().and_then(OsStr::to_str) {
+        Some("vcdbs") => {
+            let raw_stem = source
+                .file_stem()
+                .map(|stem| stem.to_string_lossy().into_owned())
+                .unwrap_or_default();
+            let sanitized = world_file_stem(&raw_stem);
+            let stem = if sanitized.is_empty() {
+                "world".to_string()
+            } else {
+                sanitized
+            };
+            let dest = unique_world_path(&saves_path, &stem)?;
+            copy(source, &dest).map_err(|e| {
+                log_error!("saves: Copy error: {e}");
+                UiError::new("io_error", format!("Copy error: {e}"))
+            })?;
+            let dest_stem = dest
+                .file_stem()
+                .map(|stem| stem.to_string_lossy().into_owned())
+                .unwrap_or_default();
+            if let Some(parent) = source.parent() {
+                let old_prefix = format!("{raw_stem}.vcdbs");
+                for sidecar in world_sidecars(parent, &raw_stem)? {
+                    let file_name = sidecar
+                        .file_name()
+                        .map(|name| name.to_string_lossy().into_owned())
+                        .unwrap_or_default();
+                    let suffix = file_name.strip_prefix(&old_prefix).unwrap_or("");
+                    let target = saves_path.join(format!("{dest_stem}.vcdbs{suffix}"));
+                    copy(&sidecar, &target).map_err(|e| {
+                        log_error!("saves: Copy error: {e}");
+                        UiError::new("io_error", format!("Copy error: {e}"))
+                    })?;
+                }
+            }
+        }
+        Some("zip") => extract_world_zip(source, &saves_path, &maps_path)?,
+        _ => {
+            return Err(UiError::new(
+                "unsupported_file",
+                "Pick a .vcdbs save or a .zip exported by Story Forge",
+            ));
+        }
+    }
+
     invalidate_saves_cache();
     Ok(())
 }
