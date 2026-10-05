@@ -78,9 +78,16 @@ the look & feel of Macheim (see `../macheim`). The core domain concept is the **
 | :----------------------------: | :------------------------------------: |
 | ![News](screenshots/news.webp) | ![Settings](screenshots/settings.webp) |
 
+The window chrome adapts per platform — native traffic lights on macOS, controls drawn by the app
+in the frameless Windows build, and native decorations on Linux (traffic lights simulated in the
+render):
+
+![Window chrome on macOS, Windows and Linux](screenshots/platforms/platforms.webp)
+
 All screenshots are 1200×800 captures of the app UI, split light/dark along the diagonal; they are
 refreshed headlessly on every published release. See
-[screenshots/README.md](screenshots/README.md) for the pipeline.
+[screenshots/README.md](screenshots/README.md) for the pipeline, including the platform chrome
+preview (`bun run screenshots:platforms`).
 
 ## Development
 
