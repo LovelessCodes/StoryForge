@@ -79,6 +79,7 @@ fs_extra = "1.3.0"
 semver = "1.0.28"
 libc = "0.2"
 base64 = "0.22"
+sha2 = "0.10"
 
 [target.'cfg(windows)'.dependencies]
 rusqlite = { version = "0.40", features = ["bundled"] }

@@ -384,6 +384,90 @@ pub async fn download_mod_file(
     Ok(filename)
 }
 
+/// Lowercase hex sha256 of a byte slice.
+pub fn sha256_hex(bytes: &[u8]) -> String {
+    use sha2::{Digest, Sha256};
+    format!("{:x}", Sha256::digest(bytes))
+}
+
+/// Downloads a mod from an explicit manifest URL, verifying size and sha256
+/// when the manifest provides them. Returns the stored filename.
+pub async fn download_manifest_mod_file(
+    client: &reqwest::Client,
+    url: &str,
+    filename: &str,
+    expected_sha256: Option<&str>,
+    expected_size: Option<u64>,
+    mods_dir: &Path,
+) -> Result<String, UiError> {
+    if !mods_dir.exists() {
+        create_dir_all(mods_dir).map_err(|e| UiError {
+            name: "create_dir_failed".into(),
+            message: format!("Failed to create Mods directory: {e}"),
+        })?;
+    }
+
+    let response = client
+        .get(url)
+        .send()
+        .await
+        .map_err(|e| UiError::new("request_error", format!("Download request error: {e}")))?;
+
+    if !response.status().is_success() {
+        return Err(UiError {
+            name: "http_error".into(),
+            message: format!("Download HTTP error: {}", response.status()),
+        });
+    }
+
+    let content = response.bytes().await.map_err(|e| UiError {
+        name: "read_response_failed".into(),
+        message: format!("Failed to read response: {e}"),
+    })?;
+
+    if let Some(expected) = expected_size {
+        if content.len() as u64 != expected {
+            return Err(UiError {
+                name: "size_mismatch".into(),
+                message: format!(
+                    "Size mismatch for {filename}: expected {expected} bytes, got {}",
+                    content.len()
+                ),
+            });
+        }
+    }
+
+    if let Some(expected) = expected_sha256 {
+        let actual = sha256_hex(&content);
+        if !actual.eq_ignore_ascii_case(expected) {
+            return Err(UiError {
+                name: "hash_mismatch".into(),
+                message: format!(
+                    "sha256 mismatch for {filename}: expected {expected}, got {actual}"
+                ),
+            });
+        }
+    }
+
+    // The name comes from the manifest; reduce it to a single component so it
+    // cannot escape the Mods directory.
+    let filename = safe_file_name(filename)?;
+    let filepath = mods_dir.join(&filename);
+
+    let mut file = File::create(&filepath).map_err(|e| UiError {
+        name: "create_file_failed".into(),
+        message: format!("Failed to create file: {e}"),
+    })?;
+    file.write_all(&content).map_err(|e| UiError {
+        name: "write_file_failed".into(),
+        message: format!("Failed to write file: {e}"),
+    })?;
+
+    log_info!("download_manifest_mod_file: saved to {:?}", filepath);
+    invalidate_mods_cache(mods_dir);
+    Ok(filename)
+}
+
 // ── Mods scan cache ──
 // Opening every zip and parsing modinfo.json is the expensive part of the
 // mods list; result entries are keyed by a fingerprint of the zip files.
@@ -997,6 +1081,15 @@ mod tests {
 
         invalidate_mods_cache(&dir);
         assert!(try_cached_mods(&dir).is_none());
+    }
+
+    #[test]
+    fn hashes_bytes_with_sha256() {
+        // Known vector: sha256("abc").
+        assert_eq!(
+            sha256_hex(b"abc"),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
     }
 
     #[test]

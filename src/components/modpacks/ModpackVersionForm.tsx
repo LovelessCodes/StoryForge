@@ -102,6 +102,8 @@ export default function ModpackVersionForm({
     setSaving(true);
     try {
       let configUrl = parsed.data.modConfigsUrl;
+      let configSha256: string | undefined;
+      let configSize: number | undefined;
 
       // Upload the picked profile's ModConfig folder if requested.
       if (uploadModConfig && pickedProfileId !== null) {
@@ -117,6 +119,9 @@ export default function ModpackVersionForm({
             if (upload.data?.url) {
               configUrl = upload.data.url;
             }
+            // The hash/size let installers verify the config archive.
+            configSha256 = upload.data?.sha256;
+            configSize = upload.data?.size;
           } catch {
             toast.error(t("modpacks.versionForm.uploadConfigFailed"));
           }
@@ -130,12 +135,16 @@ export default function ModpackVersionForm({
           modsString: parsed.data.modsString,
           modpack: modpackSlug,
           version: parsed.data.version,
+          ...(configSha256 !== undefined ? { modConfigsSha256: configSha256 } : {}),
+          ...(configSize !== undefined ? { modConfigsSize: configSize } : {}),
         });
       } else {
         await authClient.updateModpackVersion(modpackSlug, parsed.data.version, {
           gameVersion: parsed.data.gameVersion,
           modConfigsUrl: configUrl,
           modsString: parsed.data.modsString,
+          ...(configSha256 !== undefined ? { modConfigsSha256: configSha256 } : {}),
+          ...(configSize !== undefined ? { modConfigsSize: configSize } : {}),
         });
       }
       onSuccess();

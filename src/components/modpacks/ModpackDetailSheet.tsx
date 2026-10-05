@@ -23,6 +23,7 @@ import { useDownloadVersion } from "@/hooks/use-download-version";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import type { ModpackItem } from "@/hooks/use-modpacks";
 import { authClient } from "@/lib/auth";
+import type { ModpackManifestMod } from "@/lib/auth/plugins/modpacks";
 import { buildProfilePath, makeStringFolderSafe } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
 import { useProfiles, useProfilesStore } from "@/stores/profiles";
@@ -118,6 +119,22 @@ export default function ModpackDetailSheet({
     setImporting(true);
     setImportProgress(null);
 
+    // Structured manifests (manifestVersion 1) let the Rust side download
+    // exact files and verify sha256. Legacy versions fall back to modsString.
+    let manifestMods: ModpackManifestMod[] | null = null;
+    let manifestModConfigsUrl: string | null = null;
+    let modConfigsSha256: string | null = null;
+    try {
+      const { data: manifest } = await authClient.getModpackManifest(modpack.slug, version.version);
+      if (manifest && manifest.manifestVersion === 1) {
+        manifestMods = manifest.mods;
+        manifestModConfigsUrl = manifest.modConfigs?.url ?? null;
+        modConfigsSha256 = manifest.modConfigs?.sha256 ?? null;
+      }
+    } catch {
+      // Best-effort: older API deployments may not serve manifests yet.
+    }
+
     try {
       if (!installedVersionsSet.has(version.gameVersion)) {
         await downloadVersion(version.gameVersion);
@@ -141,7 +158,9 @@ export default function ModpackDetailSheet({
       await invoke("import_profile", {
         params: {
           emitevent,
-          modConfigUrl: version.modConfigsUrl || null,
+          manifestMods,
+          modConfigUrl: manifestModConfigsUrl ?? (version.modConfigsUrl || null),
+          modConfigsSha256,
           modpackSlug: modpack.slug,
           modpackVersion: version.version,
           mods: version.modsString,

@@ -27,6 +27,11 @@ type Version = {
   modsString: string;
   downloads: number;
   modpack: string;
+  changelog?: string | null;
+  manifestVersion?: number;
+  manifestHash?: string | null;
+  modConfigsSha256?: string | null;
+  modConfigsSize?: number | null;
   createdAt: number;
   updatedAt: number;
 };

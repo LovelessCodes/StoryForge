@@ -536,6 +536,40 @@ pub fn set_profile_backup_settings(
     write_profile_json(&dir, &info)
 }
 
+/// One mod entry from a structured (manifestVersion 1) modpack manifest.
+/// Only the fields the installer acts on are modeled; unknown fields ignored.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ManifestModParam {
+    pub mod_id_str: String,
+    pub mod_version: String,
+    pub filename: String,
+    pub url: String,
+    #[serde(default)]
+    pub sha256: Option<String>,
+    #[serde(default)]
+    pub size: Option<u64>,
+    /// Where the mod runs. `"server"` entries belong to a hosted server, not
+    /// to the client profile this command installs.
+    #[serde(default)]
+    pub side: Option<String>,
+    /// ModDB compatibility with the pack's game version, when resolved.
+    /// `Some(false)` would break the pack, so the entry is left out.
+    #[serde(default)]
+    pub compatible: Option<bool>,
+}
+
+/// Why a manifest entry is not installed into a client profile, if it isn't.
+fn manifest_skip_reason(entry: &ManifestModParam) -> Option<&'static str> {
+    if entry.side.as_deref() == Some("server") {
+        return Some("server-side mod");
+    }
+    if entry.compatible == Some(false) {
+        return Some("not compatible with the selected game version");
+    }
+    None
+}
+
 /// Arguments for [`import_profile`].
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -552,6 +586,12 @@ pub struct ImportProfileParams {
     pub modpack_version: Option<String>,
     #[serde(default)]
     pub mod_config_url: Option<String>,
+    /// Structured mod list (manifestVersion 1). When absent/empty the legacy
+    /// `mods` string is used instead.
+    #[serde(default)]
+    pub manifest_mods: Option<Vec<ManifestModParam>>,
+    #[serde(default)]
+    pub mod_configs_sha256: Option<String>,
 }
 
 #[command]
@@ -569,6 +609,8 @@ pub async fn import_profile(
         modpack_slug,
         modpack_version,
         mod_config_url,
+        manifest_mods,
+        mod_configs_sha256,
     } = params;
     log_info!(
         "import_profile: name={} version={} mods={} mod_config_url={:?}",
@@ -637,6 +679,18 @@ pub async fn import_profile(
                 message: format!("Failed to read ModConfig body: {e}"),
             })?;
 
+            if let Some(expected) = &mod_configs_sha256 {
+                let actual = mods::sha256_hex(&bytes);
+                if !actual.eq_ignore_ascii_case(expected) {
+                    return Err(UiError {
+                        name: "modconfig_hash_mismatch".into(),
+                        message: format!(
+                            "ModConfig sha256 mismatch: expected {expected}, got {actual}"
+                        ),
+                    });
+                }
+            }
+
             // Save to temp zip file
             write(&config_zip_path, &bytes).map_err(|e| UiError {
                 name: "modconfig_write_failed".into(),
@@ -701,68 +755,141 @@ pub async fn import_profile(
 
     let id = profile_id_for_dir(&inst_dir);
 
-    // 5. Parse mods: "modid@version,modid@version,..."
-    let mod_entries: Vec<(&str, &str)> = mods
-        .split(',')
-        .filter_map(|entry| {
-            let trimmed = entry.trim();
-            if trimmed.is_empty() {
-                return None;
-            }
-            let mut parts = trimmed.splitn(2, '@');
-            let modid = parts.next().unwrap_or("");
-            let version = parts.next().unwrap_or("");
-            if modid.is_empty() || version.is_empty() {
-                None
-            } else {
-                Some((modid, version))
-            }
-        })
-        .collect();
-
-    let total = mod_entries.len();
-    log_info!("import_profile: {} mods to download", total);
-
-    // 6. Download each mod with progress events
+    // 5. Download mods. Prefer structured manifest entries (exact URL +
+    // sha256); fall back to the legacy "modid@version,..." list.
     let mut downloaded: Vec<String> = Vec::new();
     let mut errors: Vec<String> = Vec::new();
+    let mut skipped: Vec<String> = Vec::new();
     let client = app.state::<Arc<reqwest::Client>>().clone();
 
-    for (i, (modid, version_str)) in mod_entries.iter().enumerate() {
-        let current = (i + 1) as u32;
+    let manifest_mods = manifest_mods.filter(|entries| !entries.is_empty());
+    if let Some(entries) = manifest_mods.as_ref() {
+        let total = entries.len();
+        log_info!("import_profile: {} manifest mods to download", total);
 
-        let _ = app.emit(
-            &emitevent,
-            json!({
-                "phase": "downloading",
-                "current": current,
-                "total": total,
-                "modid": modid,
-                "version": version_str,
-            }),
-        );
+        for (i, entry) in entries.iter().enumerate() {
+            let current = (i + 1) as u32;
 
-        match mods::download_mod_file(&client, modid, version_str, &mods_dir).await {
-            Ok(filename) => {
+            if let Some(reason) = manifest_skip_reason(entry) {
                 log_info!(
-                    "import_profile: [{}/{}] downloaded {}@{}",
-                    current,
-                    total,
-                    modid,
-                    version_str
+                    "import_profile: skipping {}@{}: {}",
+                    entry.mod_id_str,
+                    entry.mod_version,
+                    reason
                 );
-                downloaded.push(filename);
+                skipped.push(format!(
+                    "{}@{}: {reason}",
+                    entry.mod_id_str, entry.mod_version
+                ));
+                continue;
             }
-            Err(e) => {
-                log_error!(
-                    "import_profile: [{}/{}] failed {}@{}: {}",
-                    current,
-                    total,
-                    modid,
-                    version_str,
-                    e.message
-                );
-                errors.push(format!("{}@{}: {}", modid, version_str, e.message));
+
+            let _ = app.emit(
+                &emitevent,
+                json!({
+                    "phase": "downloading",
+                    "current": current,
+                    "total": total,
+                    "modid": entry.mod_id_str,
+                    "version": entry.mod_version,
+                }),
+            );
+
+            match mods::download_manifest_mod_file(
+                &client,
+                &entry.url,
+                &entry.filename,
+                entry.sha256.as_deref(),
+                entry.size,
+                &mods_dir,
+            )
+            .await
+            {
+                Ok(filename) => {
+                    log_info!(
+                        "import_profile: [{}/{}] verified {}@{}",
+                        current,
+                        total,
+                        entry.mod_id_str,
+                        entry.mod_version
+                    );
+                    downloaded.push(filename);
+                }
+                Err(e) => {
+                    log_error!(
+                        "import_profile: [{}/{}] failed {}@{}: {}",
+                        current,
+                        total,
+                        entry.mod_id_str,
+                        entry.mod_version,
+                        e.message
+                    );
+                    errors.push(format!(
+                        "{}@{}: {}",
+                        entry.mod_id_str, entry.mod_version, e.message
+                    ));
+                }
+            }
+        }
+    } else {
+        // Legacy path: parse "modid@version" and resolve each against moddb.
+        let mod_entries: Vec<(&str, &str)> = mods
+            .split(',')
+            .filter_map(|entry| {
+                let trimmed = entry.trim();
+                if trimmed.is_empty() {
+                    return None;
+                }
+                let mut parts = trimmed.splitn(2, '@');
+                let modid = parts.next().unwrap_or("");
+                let version = parts.next().unwrap_or("");
+                if modid.is_empty() || version.is_empty() {
+                    None
+                } else {
+                    Some((modid, version))
+                }
+            })
+            .collect();
+
+        let total = mod_entries.len();
+        log_info!("import_profile: {} mods to download", total);
+
+        for (i, (modid, version_str)) in mod_entries.iter().enumerate() {
+            let current = (i + 1) as u32;
+
+            let _ = app.emit(
+                &emitevent,
+                json!({
+                    "phase": "downloading",
+                    "current": current,
+                    "total": total,
+                    "modid": modid,
+                    "version": version_str,
+                }),
+            );
+
+            match mods::download_mod_file(&client, modid, version_str, &mods_dir).await {
+                Ok(filename) => {
+                    log_info!(
+                        "import_profile: [{}/{}] downloaded {}@{}",
+                        current,
+                        total,
+                        modid,
+                        version_str
+                    );
+                    downloaded.push(filename);
+                }
+                Err(e) => {
+                    log_error!(
+                        "import_profile: [{}/{}] failed {}@{}: {}",
+                        current,
+                        total,
+                        modid,
+                        version_str,
+                        e.message
+                    );
+                    errors.push(format!("{}@{}: {}", modid, version_str, e.message));
+                }
             }
         }
     }
@@ -803,6 +930,7 @@ pub async fn import_profile(
             "downloaded": downloaded.len(),
             "failed": errors.len(),
             "errors": errors,
+            "skipped": skipped,
         }),
     );
 
@@ -1905,5 +2033,35 @@ mod tests {
         let id = profile_id_for_dir(&dir);
         assert_eq!(find_dir_by_id(tmp.path(), id).unwrap(), Some(dir));
         assert_ne!(id, generate_id("My World"));
+    }
+
+    /// Client profiles take client/both entries only, and never a release the
+    /// manifest resolved as incompatible with the pack's game version.
+    #[test]
+    fn manifest_skip_reason_flags_server_side_and_incompatible() {
+        let entry = |side: Option<&str>, compatible: Option<bool>| ManifestModParam {
+            mod_id_str: "testmod".into(),
+            mod_version: "1.0.0".into(),
+            filename: "testmod.zip".into(),
+            url: "https://mods.vintagestory.at/testmod.zip".into(),
+            sha256: None,
+            size: None,
+            side: side.map(str::to_string),
+            compatible,
+        };
+
+        assert_eq!(
+            manifest_skip_reason(&entry(Some("server"), None)),
+            Some("server-side mod")
+        );
+        assert_eq!(
+            manifest_skip_reason(&entry(Some("both"), Some(false))),
+            Some("not compatible with the selected game version")
+        );
+        assert_eq!(
+            manifest_skip_reason(&entry(Some("client"), Some(true))),
+            None
+        );
+        assert_eq!(manifest_skip_reason(&entry(None, None)), None);
     }
 }
