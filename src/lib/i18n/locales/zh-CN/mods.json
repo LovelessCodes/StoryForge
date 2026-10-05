@@ -23,6 +23,10 @@
     "category": {
       "aria": "分类"
     },
+    "favorites": {
+      "aria": "仅显示收藏",
+      "label": "收藏"
+    },
     "side": {
       "aria": "按适用端筛选",
       "label": "适用端"
@@ -69,6 +73,7 @@
     "browseVersionsTooltip": "查看可用版本",
     "byAuthor": "作者：{{author}}",
     "downloadLatest": "下载最新版本",
+    "favorite": "添加到收藏",
     "filterBy": "按 {{author}} 筛选",
     "filterByAuthor": "按作者 {{author}} 筛选",
     "install": "安装模组",
@@ -76,18 +81,21 @@
     "installTo": "安装到…",
     "installToDestination": "安装到配置档或托管的服务器",
     "installedVersion": "已安装 v{{version}}",
+    "openOnModDB": "在模组数据库中打开",
     "pin": "固定模组",
     "pinTooltip": "固定到 v{{version}}（从全部更新中排除）",
     "pinnedTooltip": "已固定到 v{{version}}，全部更新会跳过它",
     "removeFrom": "从 {{destination}} 移除",
     "unpin": "取消固定",
+    "unfavorite": "取消收藏",
     "updateToLatest": "更新到最新版本"
   },
   "versionPicker": {
     "aria": "选择版本",
     "forVersion": "适用于 {{version}}",
     "moreTags_other": "（+{{count}} 个）",
-    "placeholder": "选择版本…"
+    "placeholder": "选择版本…",
+    "changelog": "更新日志"
   },
   "release": {
     "downloads_other": "{{count}} 次下载"
@@ -167,5 +175,14 @@
     "update": "在 {{destination}} 中更新 {{name}} 时出错：{{message}}",
     "updateIn": "更新 {{destination}} 中的模组时出错：{{message}}",
     "upgrading": "将 {{name}} 升级到 {{destination}} 时出错：{{message}}"
+  },
+  "issues": {
+    "title": "{{destination}} 中的模组文件问题",
+    "description": "无法读取的文件不会被加载；重复的模组 ID 可能只会加载一个。",
+    "duplicateDetail": "重复：{{modid}}",
+    "remove": "删除文件",
+    "confirmRemove": "真的要删除吗？",
+    "removeFailed": "无法删除 {{file}}：{{message}}",
+    "hint": "删除文件后无法恢复。"
   }
 }

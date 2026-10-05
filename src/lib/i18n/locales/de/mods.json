@@ -24,6 +24,10 @@
     "category": {
       "aria": "Kategorie"
     },
+    "favorites": {
+      "aria": "Nur Favoriten anzeigen",
+      "label": "Favoriten"
+    },
     "side": {
       "aria": "Nach Seite filtern",
       "label": "Seite"
@@ -71,6 +75,7 @@
     "browseVersionsTooltip": "Verfügbare Versionen ansehen",
     "byAuthor": "von {{author}}",
     "downloadLatest": "Neueste Version herunterladen",
+    "favorite": "Zu Favoriten hinzufügen",
     "filterBy": "Nach {{author}} filtern",
     "filterByAuthor": "Nach Autor {{author}} filtern",
     "install": "Mod installieren",
@@ -78,11 +83,13 @@
     "installTo": "Installieren in…",
     "installToDestination": "In Profil oder gehosteten Server installieren",
     "installedVersion": "Installiert: v{{version}}",
+    "openOnModDB": "In der Mod-Datenbank öffnen",
     "pin": "Mod anpinnen",
     "pinTooltip": "An v{{version}} anpinnen (von „Alle aktualisieren“ ausgenommen)",
     "pinnedTooltip": "An v{{version}} angepinnt — „Alle aktualisieren“ überspringt sie",
     "removeFrom": "Aus {{destination}} entfernen",
     "unpin": "Pin entfernen",
+    "unfavorite": "Aus Favoriten entfernen",
     "updateToLatest": "Auf neueste Version aktualisieren"
   },
   "versionPicker": {
@@ -90,7 +97,8 @@
     "forVersion": "für {{version}}",
     "moreTags_one": "(+{{count}} weitere)",
     "moreTags_other": "(+{{count}} weitere)",
-    "placeholder": "Version auswählen…"
+    "placeholder": "Version auswählen…",
+    "changelog": "Änderungen"
   },
   "release": {
     "downloads_one": "{{count}} Download",
@@ -175,5 +183,14 @@
     "update": "Fehler beim Aktualisieren von {{name}} in {{destination}}: {{message}}",
     "updateIn": "Fehler beim Aktualisieren der Mod in {{destination}}: {{message}}",
     "upgrading": "Fehler beim Upgraden von {{name}} in {{destination}}: {{message}}"
+  },
+  "issues": {
+    "title": "Probleme mit Mod-Dateien in {{destination}}",
+    "description": "Unlesbare Dateien werden nicht geladen; bei doppelten Mod-IDs wird möglicherweise nur eine Kopie geladen.",
+    "duplicateDetail": "Doppelt: {{modid}}",
+    "remove": "Datei entfernen",
+    "confirmRemove": "Wirklich entfernen?",
+    "removeFailed": "{{file}} konnte nicht entfernt werden: {{message}}",
+    "hint": "Das Entfernen einer Datei ist endgültig."
   }
 }

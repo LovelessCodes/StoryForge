@@ -26,6 +26,10 @@
     "category": {
       "aria": "Категория"
     },
+    "favorites": {
+      "aria": "Показывать только избранное",
+      "label": "Избранное"
+    },
     "side": {
       "aria": "Фильтр по стороне",
       "label": "Сторона"
@@ -75,6 +79,7 @@
     "browseVersionsTooltip": "Посмотреть доступные версии",
     "byAuthor": "от {{author}}",
     "downloadLatest": "Скачать последнюю версию",
+    "favorite": "Добавить в избранное",
     "filterBy": "Фильтр по {{author}}",
     "filterByAuthor": "Фильтр по автору {{author}}",
     "install": "Установить мод",
@@ -82,11 +87,13 @@
     "installTo": "Установить в…",
     "installToDestination": "Установить в профиль или на собственный сервер",
     "installedVersion": "Установлена v{{version}}",
+    "openOnModDB": "Открыть в базе модов",
     "pin": "Закрепить мод",
     "pinTooltip": "Закрепить на v{{version}} (исключается из «Обновить все»)",
     "pinnedTooltip": "Закреплено на v{{version}} — «Обновить все» пропускает его",
     "removeFrom": "Убрать из {{destination}}",
     "unpin": "Открепить мод",
+    "unfavorite": "Убрать из избранного",
     "updateToLatest": "Обновить до последней версии"
   },
   "versionPicker": {
@@ -96,7 +103,8 @@
     "moreTags_few": "(+{{count}} ещё)",
     "moreTags_many": "(+{{count}} ещё)",
     "moreTags_other": "(+{{count}} ещё)",
-    "placeholder": "Выбрать версию…"
+    "placeholder": "Выбрать версию…",
+    "changelog": "Изменения"
   },
   "release": {
     "downloads_one": "{{count}} скачивание",
@@ -191,5 +199,14 @@
     "update": "Ошибка обновления {{name}} в {{destination}}: {{message}}",
     "updateIn": "Ошибка обновления мода в {{destination}}: {{message}}",
     "upgrading": "Ошибка обновления {{name}} в {{destination}}: {{message}}"
+  },
+  "issues": {
+    "title": "Проблемы с файлами модов в {{destination}}",
+    "description": "Нечитаемые файлы не загружаются; при повторяющихся ID модов загрузится только одна копия.",
+    "duplicateDetail": "Дубликат: {{modid}}",
+    "remove": "Удалить файл",
+    "confirmRemove": "Точно удалить?",
+    "removeFailed": "Не удалось удалить {{file}}: {{message}}",
+    "hint": "Удаление файла необратимо."
   }
 }

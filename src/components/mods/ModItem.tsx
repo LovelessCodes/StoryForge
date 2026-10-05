@@ -1,10 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { cn } from "cn";
 import {
   Check,
   Download,
   DownloadCloudIcon,
+  ExternalLink,
   Heart,
   MessageSquare,
   PackageMinusIcon,
@@ -12,6 +14,7 @@ import {
   PackageSearchIcon,
   Pin,
   PinOff,
+  Star,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -146,6 +149,12 @@ export function ModItem({
       : false,
   );
   const toggleModPin = useSettingsStore((s) => s.toggleModPin);
+  const favoriteMods = useSettingsStore((s) => s.favoriteMods);
+  const toggleFavoriteMod = useSettingsStore((s) => s.toggleFavoriteMod);
+  // Favourites are keyed by the primary modidstr so they survive profile
+  // changes and match the same listing across search results and installs.
+  const favoriteKey = (mod.modidstrs[0] ?? mod.urlalias ?? String(mod.modid)).toLowerCase();
+  const isFavorite = favoriteMods.includes(favoriteKey);
 
   return (
     <div
@@ -175,6 +184,46 @@ export function ModItem({
       />
 
       <div className="flex shrink-0 items-center gap-1.5 self-center">
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                aria-label={t(isFavorite ? "mods.item.unfavorite" : "mods.item.favorite")}
+                onClick={() => toggleFavoriteMod(favoriteKey)}
+                size="icon-sm"
+                variant="ghost"
+              />
+            }
+          >
+            <Star
+              className={
+                isFavorite
+                  ? "fill-[var(--color-accent-amber)] text-[var(--color-accent-amber)]"
+                  : undefined
+              }
+            />
+          </TooltipTrigger>
+          <TooltipContent>
+            {t(isFavorite ? "mods.item.unfavorite" : "mods.item.favorite")}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                aria-label={t("mods.item.openOnModDB")}
+                onClick={() =>
+                  void openUrl(`https://mods.vintagestory.at/${mod.urlalias ?? mod.modid}`)
+                }
+                size="icon-sm"
+                variant="ghost"
+              />
+            }
+          >
+            <ExternalLink />
+          </TooltipTrigger>
+          <TooltipContent>{t("mods.item.openOnModDB")}</TooltipContent>
+        </Tooltip>
         {canUpdate && installedMod && updateMod ? (
           <Tooltip>
             <TooltipTrigger

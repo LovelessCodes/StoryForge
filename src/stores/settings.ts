@@ -57,6 +57,9 @@ type SettingsStore = {
    */
   pinnedMods: Record<string, string[]>;
   toggleModPin: (path: string, modid: string) => void;
+  /** Favourite mod listings (lowercased modidstrs), shared across profiles. */
+  favoriteMods: string[];
+  toggleFavoriteMod: (modidstr: string) => void;
   defaultModSortBy: SortBy;
   setDefaultModSortBy: (sortBy: SortBy) => void;
   /** Apply the source profile's settings to every other profile on launch. */
@@ -119,6 +122,16 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
       if (next.length > 0) pinnedMods[path] = next;
       else delete pinnedMods[path];
       return { pinnedMods };
+    }),
+  favoriteMods: [],
+  toggleFavoriteMod: (modidstr) =>
+    set((state) => {
+      const id = modidstr.toLowerCase();
+      return {
+        favoriteMods: state.favoriteMods.includes(id)
+          ? state.favoriteMods.filter((favorite) => favorite !== id)
+          : [...state.favoriteMods, id],
+      };
     }),
   defaultModSortBy: "trending",
   setDefaultModSortBy: (sortBy) => set(() => ({ defaultModSortBy: sortBy })),

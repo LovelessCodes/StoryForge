@@ -24,6 +24,10 @@
     "category": {
       "aria": "Catégorie"
     },
+    "favorites": {
+      "aria": "Afficher uniquement les favoris",
+      "label": "Favoris"
+    },
     "side": {
       "aria": "Filtrer par côté",
       "label": "Côté"
@@ -71,6 +75,7 @@
     "browseVersionsTooltip": "Consulter les versions disponibles",
     "byAuthor": "par {{author}}",
     "downloadLatest": "Télécharger la dernière version",
+    "favorite": "Ajouter aux favoris",
     "filterBy": "Filtrer par {{author}}",
     "filterByAuthor": "Filtrer par l'auteur {{author}}",
     "install": "Installer le mod",
@@ -78,11 +83,13 @@
     "installTo": "Installer dans…",
     "installToDestination": "Installer dans un profil ou un serveur hébergé",
     "installedVersion": "v{{version}} installée",
+    "openOnModDB": "Ouvrir sur la base de données des mods",
     "pin": "Épingler le mod",
     "pinTooltip": "Épingler à la v{{version}} (exclu de Tout mettre à jour)",
     "pinnedTooltip": "Épinglé à la v{{version}} — Tout mettre à jour l'ignore",
     "removeFrom": "Retirer de {{destination}}",
     "unpin": "Désépingler le mod",
+    "unfavorite": "Retirer des favoris",
     "updateToLatest": "Mettre à jour vers la dernière version"
   },
   "versionPicker": {
@@ -90,7 +97,8 @@
     "forVersion": "pour {{version}}",
     "moreTags_one": "(+{{count}} autre)",
     "moreTags_other": "(+{{count}} autres)",
-    "placeholder": "Sélectionner une version…"
+    "placeholder": "Sélectionner une version…",
+    "changelog": "Nouveautés"
   },
   "release": {
     "downloads_one": "{{count}} téléchargement",
@@ -175,5 +183,14 @@
     "update": "Erreur lors de la mise à jour de {{name}} dans {{destination}} : {{message}}",
     "updateIn": "Erreur lors de la mise à jour du mod dans {{destination}} : {{message}}",
     "upgrading": "Erreur lors de la mise à niveau de {{name}} dans {{destination}} : {{message}}"
+  },
+  "issues": {
+    "title": "Problèmes de fichiers de mods dans {{destination}}",
+    "description": "Les fichiers illisibles ne sont pas chargés ; en cas d'identifiants de mods en double, une seule copie peut être chargée.",
+    "duplicateDetail": "En double : {{modid}}",
+    "remove": "Supprimer le fichier",
+    "confirmRemove": "Vraiment supprimer ?",
+    "removeFailed": "Impossible de supprimer {{file}} : {{message}}",
+    "hint": "La suppression d'un fichier est définitive."
   }
 }

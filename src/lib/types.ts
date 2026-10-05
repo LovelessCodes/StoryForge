@@ -265,6 +265,13 @@ export type OutputMod = {
   dependencies?: Record<string, string>;
 };
 
+/** One `.zip` in a profile's Mods folder that could not be scanned. */
+export type ModScanError = {
+  file: string;
+  stage: string;
+  message: string;
+};
+
 /** A mod as returned by the mod database search endpoint. */
 export type Mod = {
   modid: number;

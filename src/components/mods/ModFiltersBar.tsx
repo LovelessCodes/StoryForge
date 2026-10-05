@@ -5,6 +5,7 @@ import {
   CalendarDays,
   FolderOpen,
   ListFilter,
+  Star,
   Tags,
 } from "lucide-react";
 import { useMemo, useRef } from "react";
@@ -75,12 +76,14 @@ export function ModFiltersBar({
   const {
     author,
     category,
+    favoritesOnly,
     orderDirection,
     searchText,
     selectedGameVersions,
     selectedModTags,
     setAuthor,
     setCategory,
+    setFavoritesOnly,
     setOrderDirection,
     setSearchText,
     setSelectedGameVersions,
@@ -282,6 +285,16 @@ export function ModFiltersBar({
           variant="outline"
         >
           {orderDirection === "descending" ? <ArrowDownNarrowWide /> : <ArrowUpNarrowWide />}
+        </Button>
+
+        <Button
+          aria-label={t("mods.filters.favorites.aria")}
+          onClick={() => setFavoritesOnly(!favoritesOnly)}
+          size="icon-sm"
+          title={t("mods.filters.favorites.label")}
+          variant={favoritesOnly ? "outline-amber" : "outline"}
+        >
+          <Star className={favoritesOnly ? "fill-current" : undefined} />
         </Button>
 
         <Select

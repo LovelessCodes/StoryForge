@@ -9,7 +9,7 @@ import { findMissingDependencies } from "@/lib/mod-dependencies";
 import { updateCheckParams } from "@/lib/mod-pins";
 import { relevanceRank, type SortBy } from "@/lib/mod-sort";
 import { gameVersionsQuery, modTagsQuery } from "@/lib/queries";
-import type { Mod, ModTag } from "@/lib/types";
+import type { Mod, ModTag, OutputMod } from "@/lib/types";
 import { useSettingsStore } from "@/stores/settings";
 
 /** Stable empty array so the pin selector doesn't churn identities. */
@@ -44,6 +44,7 @@ export function useModFilters(defaultSortBy: SortBy) {
   const [searchText, setSearchText] = useState("");
   const [selectedModTags, setSelectedModTags] = useState<ModTag[]>([]);
   const [selectedGameVersions, setSelectedGameVersions] = useState<string[]>([]);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const selectedGameVersionsSet = useMemo(
     () => new Set(selectedGameVersions),
     [selectedGameVersions],
@@ -81,6 +82,7 @@ export function useModFilters(defaultSortBy: SortBy) {
     addModTag,
     author,
     category,
+    favoritesOnly,
     handleTagClick,
     orderDirection,
     removeGameVersion,
@@ -92,6 +94,7 @@ export function useModFilters(defaultSortBy: SortBy) {
     selectedTagNames,
     setAuthor,
     setCategory,
+    setFavoritesOnly,
     setOrderDirection,
     setSearchText,
     setSelectedGameVersions,
@@ -109,6 +112,7 @@ export type ModFiltersState = ReturnType<typeof useModFilters>;
 export function useModsData({
   author,
   category,
+  favoritesOnly,
   modsDirectory,
   orderDirection,
   searchText,
@@ -119,6 +123,7 @@ export function useModsData({
 }: {
   author: string;
   category: Category;
+  favoritesOnly: boolean;
   modsDirectory: string | undefined;
   orderDirection: OrderDirection;
   searchText: string;
@@ -142,6 +147,8 @@ export function useModsData({
   const pinnedMods = useSettingsStore((s) =>
     modsDirectory ? (s.pinnedMods[modsDirectory] ?? NO_PINS) : NO_PINS,
   );
+  const favoriteMods = useSettingsStore((s) => s.favoriteMods);
+  const favoriteSet = useMemo(() => new Set(favoriteMods), [favoriteMods]);
   // Pinned mods are left out of the update check entirely, so they never show
   // an update badge and "Update All" skips them.
   const updateParams = useMemo(
@@ -174,6 +181,13 @@ export function useModsData({
         if (author && !mod.author.toLowerCase().includes(author.toLowerCase())) return false;
         // Only filter by category when side is not "installed"
         if (category && side !== "installed" && mod.type !== category) return false;
+        if (favoritesOnly) {
+          const favoriteKeys = mod.modidstrs.map((id) => id.toLowerCase());
+          if (mod.urlalias) favoriteKeys.push(mod.urlalias.toLowerCase());
+          if (!favoriteKeys.some((key) => favoriteSet.has(key))) {
+            return false;
+          }
+        }
         if (side !== "installed") {
           if (side !== "any" && mod.side !== side) return false;
         } else if (
@@ -240,6 +254,8 @@ export function useModsData({
     sortBy,
     orderDirection,
     searchText,
+    favoritesOnly,
+    favoriteSet,
   ]);
 
   const tagColorMap = useMemo(() => {
@@ -260,10 +276,29 @@ export function useModsData({
   // the missing-dependencies banner above the list).
   const missingDependencies = useMemo(() => findMissingDependencies(instMods?.mods), [instMods]);
 
+  // Several zips providing the same modid: the game may load only one, so the
+  // banner above the list offers to remove the extras.
+  const duplicateMods = useMemo(() => {
+    const byId = new Map<string, OutputMod[]>();
+    for (const mod of instMods?.mods ?? []) {
+      const key = mod.modid.toLowerCase();
+      const existing = byId.get(key);
+      if (existing) existing.push(mod);
+      else byId.set(key, [mod]);
+    }
+    return [...byId.entries()]
+      .filter(([, mods]) => mods.length > 1)
+      .map(([modid, mods]) => ({ modid, mods }));
+  }, [instMods]);
+
+  const modErrors = instMods?.errors ?? [];
+
   return {
+    duplicateMods,
     gameVersions,
     instMods,
     missingDependencies,
+    modErrors,
     modTags,
     modsList,
     modUpdates,

@@ -24,6 +24,10 @@
     "category": {
       "aria": "Category"
     },
+    "favorites": {
+      "aria": "Show favorites only",
+      "label": "Favorites"
+    },
     "side": {
       "aria": "Filter by side",
       "label": "Side"
@@ -71,6 +75,7 @@
     "browseVersionsTooltip": "Look through available versions",
     "byAuthor": "by {{author}}",
     "downloadLatest": "Download latest version",
+    "favorite": "Add to favorites",
     "filterBy": "Filter by {{author}}",
     "filterByAuthor": "Filter by author {{author}}",
     "install": "Install mod",
@@ -78,11 +83,13 @@
     "installTo": "Install to…",
     "installToDestination": "Install to profile or hosted server",
     "installedVersion": "Installed v{{version}}",
+    "openOnModDB": "Open on the Mod Database",
     "pin": "Pin mod",
     "pinTooltip": "Pin to v{{version}} (excluded from Update All)",
     "pinnedTooltip": "Pinned to v{{version}} — Update All skips it",
     "removeFrom": "Remove from {{destination}}",
     "unpin": "Unpin mod",
+    "unfavorite": "Remove from favorites",
     "updateToLatest": "Update to latest version"
   },
   "versionPicker": {
@@ -90,7 +97,8 @@
     "forVersion": "for {{version}}",
     "moreTags_one": "(+{{count}} more)",
     "moreTags_other": "(+{{count}} more)",
-    "placeholder": "Select version…"
+    "placeholder": "Select version…",
+    "changelog": "Changelog"
   },
   "release": {
     "downloads_one": "{{count}} download",
@@ -175,5 +183,14 @@
     "update": "Error updating {{name}} in {{destination}}: {{message}}",
     "updateIn": "Error updating mod in {{destination}}: {{message}}",
     "upgrading": "Error upgrading {{name}} to {{destination}}: {{message}}"
+  },
+  "issues": {
+    "title": "Mod file issues in {{destination}}",
+    "description": "Unreadable files are not loaded; duplicate mod ids may load only one copy.",
+    "duplicateDetail": "Duplicates {{modid}}",
+    "remove": "Remove file",
+    "confirmRemove": "Really remove?",
+    "removeFailed": "Could not remove {{file}}: {{message}}",
+    "hint": "Removing a file is permanent."
   }
 }

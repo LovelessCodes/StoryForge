@@ -24,6 +24,10 @@
     "category": {
       "aria": "Categoría"
     },
+    "favorites": {
+      "aria": "Mostrar solo favoritos",
+      "label": "Favoritos"
+    },
     "side": {
       "aria": "Filtrar por lado",
       "label": "Lado"
@@ -71,6 +75,7 @@
     "browseVersionsTooltip": "Consultar las versiones disponibles",
     "byAuthor": "por {{author}}",
     "downloadLatest": "Descargar la última versión",
+    "favorite": "Añadir a favoritos",
     "filterBy": "Filtrar por {{author}}",
     "filterByAuthor": "Filtrar por el autor {{author}}",
     "install": "Instalar mod",
@@ -78,11 +83,13 @@
     "installTo": "Instalar en…",
     "installToDestination": "Instalar en un perfil o servidor alojado",
     "installedVersion": "Instalado v{{version}}",
+    "openOnModDB": "Abrir en la base de datos de mods",
     "pin": "Fijar mod",
     "pinTooltip": "Fijar a v{{version}} (excluido de Actualizar todo)",
     "pinnedTooltip": "Fijado a v{{version}} — Actualizar todo lo omite",
     "removeFrom": "Quitar de {{destination}}",
     "unpin": "Desfijar mod",
+    "unfavorite": "Quitar de favoritos",
     "updateToLatest": "Actualizar a la última versión"
   },
   "versionPicker": {
@@ -90,7 +97,8 @@
     "forVersion": "para {{version}}",
     "moreTags_one": "(+{{count}} más)",
     "moreTags_other": "(+{{count}} más)",
-    "placeholder": "Seleccionar versión…"
+    "placeholder": "Seleccionar versión…",
+    "changelog": "Novedades"
   },
   "release": {
     "downloads_one": "{{count}} descarga",
@@ -175,5 +183,14 @@
     "update": "Error al actualizar {{name}} en {{destination}}: {{message}}",
     "updateIn": "Error al actualizar el mod en {{destination}}: {{message}}",
     "upgrading": "Error al actualizar {{name}} a {{destination}}: {{message}}"
+  },
+  "issues": {
+    "title": "Problemas de archivos de mods en {{destination}}",
+    "description": "Los archivos ilegibles no se cargan; con ids de mods duplicados puede cargarse solo una copia.",
+    "duplicateDetail": "Duplicado: {{modid}}",
+    "remove": "Eliminar archivo",
+    "confirmRemove": "¿Seguro que quieres eliminarlo?",
+    "removeFailed": "No se pudo eliminar {{file}}: {{message}}",
+    "hint": "Eliminar un archivo es permanente."
   }
 }

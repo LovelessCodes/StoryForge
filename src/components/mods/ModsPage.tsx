@@ -8,6 +8,7 @@ import type { Mod, OutputMod } from "@/lib/types";
 import { useSettingsStore } from "@/stores/settings";
 
 import { AddModSheet } from "./AddModSheet";
+import BrokenModsBanner from "./BrokenModsBanner";
 import MissingDependenciesBanner from "./MissingDependenciesBanner";
 import { ModFiltersBar } from "./ModFiltersBar";
 import { ModList } from "./ModList";
@@ -51,6 +52,7 @@ export default function ModsPage({ targetPath, targetLabel, targetVersion }: Mod
   const data = useModsData({
     author: filters.author,
     category: filters.category,
+    favoritesOnly: filters.favoritesOnly,
     modsDirectory: profilePath,
     orderDirection: filters.orderDirection,
     searchText: filters.searchText,
@@ -86,6 +88,14 @@ export default function ModsPage({ targetPath, targetLabel, targetVersion }: Mod
           <MissingDependenciesBanner
             destinationLabel={destinationLabel}
             missing={data.missingDependencies}
+            modsDirectory={profilePath}
+          />
+        )}
+        {profilePath && (
+          <BrokenModsBanner
+            destinationLabel={destinationLabel}
+            duplicates={data.duplicateMods}
+            errors={data.modErrors}
             modsDirectory={profilePath}
           />
         )}
