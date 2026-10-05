@@ -36,6 +36,7 @@ import { sortOptions, type SortBy } from "@/lib/mod-sort";
 import type { ModTag } from "@/lib/types";
 
 import { ModAuthorFilter } from "./ModAuthorFilter";
+import { ModpackMenu } from "./ModpackMenu";
 import { ModSearchInput } from "./ModSearchInput";
 import { UpdateAllButton } from "./UpdateAllButton";
 import {
@@ -50,6 +51,7 @@ import {
 export function ModFiltersBar({
   destinationLabel,
   filters,
+  gameVersion,
   gameVersions,
   instMods,
   modCount,
@@ -58,6 +60,7 @@ export function ModFiltersBar({
   modsDirectory,
 }: {
   filters: ModFiltersState;
+  gameVersion: string;
   gameVersions: string[] | undefined;
   modTags: ModsData["modTags"];
   instMods: ModsData["instMods"];
@@ -336,6 +339,14 @@ export function ModFiltersBar({
               installedMods={instMods.mods}
               modsDirectory={modsDirectory}
               updates={modUpdates}
+            />
+          )}
+          {showInstalled && modsDirectory && (
+            <ModpackMenu
+              destinationLabel={destinationLabel}
+              gameVersion={gameVersion}
+              installedMods={instMods?.mods ?? []}
+              modsDirectory={modsDirectory}
             />
           )}
         </div>

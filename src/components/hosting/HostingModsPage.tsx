@@ -36,7 +36,11 @@ export default function HostingModsPage() {
       </div>
 
       {instance ? (
-        <ModsPage targetLabel={instance.name} targetPath={instance.data_dir} />
+        <ModsPage
+          targetLabel={instance.name}
+          targetPath={instance.data_dir}
+          targetVersion={instance.version}
+        />
       ) : isPending ? (
         <ListSkeleton rows={5} />
       ) : (

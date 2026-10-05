@@ -24,6 +24,8 @@ export type ModsPageProps = {
   targetPath?: string;
   /** Human label for the target shown where the folder basename used to be. */
   targetLabel?: string;
+  /** Pinned game version of the target, used when exporting a modpack. */
+  targetVersion?: string;
 };
 
 type SheetRequest =
@@ -32,7 +34,7 @@ type SheetRequest =
   | { kind: "remove"; mod: Mod; installedMod: OutputMod }
   | { kind: "standalone"; mod: Mod };
 
-export default function ModsPage({ targetPath, targetLabel }: ModsPageProps) {
+export default function ModsPage({ targetPath, targetLabel, targetVersion }: ModsPageProps) {
   const { t } = useTranslation();
   const { activeProfile } = useActiveProfile();
   const defaultModSortBy = useSettingsStore((s) => s.defaultModSortBy);
@@ -44,6 +46,7 @@ export default function ModsPage({ targetPath, targetLabel }: ModsPageProps) {
   const destinationLabel =
     targetLabel ??
     (targetPath ? pathBasename(targetPath) : (activeProfile?.name ?? t("mods.standalone")));
+  const gameVersion = targetVersion ?? activeProfile?.version ?? "";
 
   const data = useModsData({
     author: filters.author,
@@ -71,6 +74,7 @@ export default function ModsPage({ targetPath, targetLabel }: ModsPageProps) {
         <ModFiltersBar
           destinationLabel={destinationLabel}
           filters={filters}
+          gameVersion={gameVersion}
           gameVersions={data.gameVersions}
           instMods={data.instMods}
           modCount={data.modsList.length}

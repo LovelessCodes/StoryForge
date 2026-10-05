@@ -129,6 +129,37 @@
     "button_other": "Actualizar todo ({{count}})",
     "confirm": "Sí, de verdad"
   },
+  "modpackIO": {
+    "menuTrigger": "Modpack",
+    "import": "Importar modpack…",
+    "export": "Exportar modpack…",
+    "jsonFilter": "Archivo de modpack",
+    "exported": "Modpack exportado",
+    "exportFailed": "No se pudo exportar el modpack",
+    "readFailed": "Ese archivo no es un manifiesto de modpack",
+    "importSheet": {
+      "title": "Importar modpack",
+      "description": "{{name}} · para Vintage Story {{version}}",
+      "gameVersionMismatch": "Este paquete es para Vintage Story {{packVersion}}, pero este perfil usa {{profileVersion}}.",
+      "empty": "Este paquete no incluye ningún mod.",
+      "alreadyInstalled": "Ya instalado",
+      "replace": "Reemplazar {{from}} → {{to}}",
+      "willInstall": "Se instalará",
+      "importing": "Importando…",
+      "done": "Instalado",
+      "failed": "Error",
+      "missingVersion": "La versión {{version}} no está disponible en la base de datos de mods",
+      "confirm": "Importar mods",
+      "nothing": "Nada que importar",
+      "progress": "{{done}} / {{total}}",
+      "summary_one": "{{count}} mod importado",
+      "summary_other": "{{count}} mods importados",
+      "summaryFailed_one": "No se pudo importar {{count}} mod",
+      "summaryFailed_other": "No se pudieron importar {{count}} mods",
+      "upToDate": "Todo ya está instalado",
+      "close": "Listo"
+    }
+  },
   "dependencies": {
     "installMissing": "Instalar las faltantes",
     "missing_one": "{{count}} dependencia faltante en {{destination}}",

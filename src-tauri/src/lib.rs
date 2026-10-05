@@ -1,8 +1,8 @@
 pub mod modules;
 use modules::{
-    auth, backups, cairn, download, game_data, gruntlauncher, legacy, lithic, maps, mods, mvl,
-    news, profile_ops, profiles, rustory, saves, server_hosting, servers, sniffer, versions,
-    vs_launcher, waxlight, yelloowstone,
+    auth, backups, cairn, download, game_data, gruntlauncher, legacy, lithic, maps, modpack_io,
+    mods, mvl, news, profile_ops, profiles, rustory, saves, server_hosting, servers, sniffer,
+    versions, vs_launcher, waxlight, yelloowstone,
 };
 use tauri::RunEvent;
 
@@ -359,6 +359,9 @@ pub fn run() {
             mods::download_mod,
             mods::remove_mod_from_profile,
             mods::save_mod_config,
+            // Modpack manifests (RiftLauncher-compatible import/export)
+            modpack_io::read_modpack_manifest,
+            modpack_io::write_modpack_manifest,
             // Download
             download::get_download_links,
             download::get_download_link,

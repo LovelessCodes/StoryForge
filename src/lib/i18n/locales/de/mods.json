@@ -129,6 +129,37 @@
     "button_other": "Alle aktualisieren ({{count}})",
     "confirm": "Ja, wirklich"
   },
+  "modpackIO": {
+    "menuTrigger": "Modpack",
+    "import": "Modpack importieren…",
+    "export": "Modpack exportieren…",
+    "jsonFilter": "Modpack-Datei",
+    "exported": "Modpack exportiert",
+    "exportFailed": "Modpack konnte nicht exportiert werden",
+    "readFailed": "Diese Datei ist kein Modpack-Manifest",
+    "importSheet": {
+      "title": "Modpack importieren",
+      "description": "{{name}} · für Vintage Story {{version}}",
+      "gameVersionMismatch": "Dieses Paket ist für Vintage Story {{packVersion}}, aber dieses Profil verwendet {{profileVersion}}.",
+      "empty": "Dieses Paket enthält keine Mods.",
+      "alreadyInstalled": "Bereits installiert",
+      "replace": "Ersetzen {{from}} → {{to}}",
+      "willInstall": "Wird installiert",
+      "importing": "Wird importiert…",
+      "done": "Installiert",
+      "failed": "Fehlgeschlagen",
+      "missingVersion": "Version {{version}} ist nicht in der Mod-Datenbank verfügbar",
+      "confirm": "Mods importieren",
+      "nothing": "Nichts zu importieren",
+      "progress": "{{done}} / {{total}}",
+      "summary_one": "{{count}} Mod importiert",
+      "summary_other": "{{count}} Mods importiert",
+      "summaryFailed_one": "{{count}} Mod konnte nicht importiert werden",
+      "summaryFailed_other": "{{count}} Mods konnten nicht importiert werden",
+      "upToDate": "Alles ist bereits installiert",
+      "close": "Fertig"
+    }
+  },
   "dependencies": {
     "installMissing": "Fehlende installieren",
     "missing_one": "{{count}} fehlende Abhängigkeit in {{destination}}",

@@ -124,6 +124,35 @@
     "button_other": "全部更新（{{count}}）",
     "confirm": "是的，确定"
   },
+  "modpackIO": {
+    "menuTrigger": "整合包",
+    "import": "导入整合包…",
+    "export": "导出整合包…",
+    "jsonFilter": "整合包文件",
+    "exported": "整合包已导出",
+    "exportFailed": "无法导出整合包",
+    "readFailed": "该文件不是整合包清单",
+    "importSheet": {
+      "title": "导入整合包",
+      "description": "{{name}} · 适用于 Vintage Story {{version}}",
+      "gameVersionMismatch": "此整合包面向 Vintage Story {{packVersion}}，但当前档案运行 {{profileVersion}}。",
+      "empty": "此整合包未包含任何模组。",
+      "alreadyInstalled": "已安装",
+      "replace": "替换 {{from}} → {{to}}",
+      "willInstall": "将安装",
+      "importing": "正在导入…",
+      "done": "已安装",
+      "failed": "失败",
+      "missingVersion": "模组数据库中不存在版本 {{version}}",
+      "confirm": "导入模组",
+      "nothing": "没有可导入的内容",
+      "progress": "{{done}} / {{total}}",
+      "summary_other": "已导入 {{count}} 个模组",
+      "summaryFailed_other": "有 {{count}} 个模组无法导入",
+      "upToDate": "所有内容均已安装",
+      "close": "完成"
+    }
+  },
   "dependencies": {
     "installMissing": "安装缺失项",
     "missing_other": "{{destination}} 中缺少 {{count}} 个依赖项",
