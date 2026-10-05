@@ -85,6 +85,16 @@ Reference implementations in macheim: `components/profiles/ProfileManager.tsx`,
 `components/mods/{ModGrid,ModCard,ModDetail}.tsx`, `components/saves/SavesPage.tsx`,
 `components/layout/SettingsPage.tsx`, `components/mods/ModToolbar.tsx`.
 
+## Window chrome (per platform)
+
+- **macOS**: `titleBarStyle: "Overlay"` in `tauri.conf.json` — native traffic lights
+  float over the app; the titlebar strip keeps `pl-19` clear of them.
+- **Windows**: `tauri.windows.conf.json` sets `decorations: false` (the platform file
+  replaces the window entry wholesale), and `Titlebar.tsx` renders its own
+  minimize/maximize/close buttons at the right edge.
+- **Linux**: native decorations are kept (as in test-app) — no custom buttons, and the
+  strip only drops the macOS-only left padding.
+
 ## Backend command changes (installation → profile)
 
 Renamed 1:1: `get_all_profiles`, `save_profile`, `import_profile`, `remove_profile`,

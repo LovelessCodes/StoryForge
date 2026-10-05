@@ -1,4 +1,6 @@
-import { Clock, Download, Loader2, Pause, RotateCcw, Search } from "lucide-react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { cn } from "cn";
+import { Clock, Download, Loader2, Minus, Pause, RotateCcw, Search, Square, X } from "lucide-react";
 import { useState } from "react";
 
 import { useRunCommand } from "@/components/command-runtime";
@@ -10,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { notify } from "@/components/ui/toast";
 import { useUpdater } from "@/hooks/use-updater";
+import { isMac, isWindows } from "@/lib/helpers";
 import { useDownloadStore } from "@/stores/downloads";
 
 export default function Titlebar() {
@@ -94,7 +97,13 @@ export default function Titlebar() {
 
   return (
     <div
-      className="fixed inset-x-0 top-0 z-20 flex h-8 items-center gap-2 pr-2 pl-19 select-none"
+      className={cn(
+        "fixed inset-x-0 top-0 z-20 flex h-8 items-center gap-2 select-none",
+        // macOS: keep clear of the native traffic lights (overlay title bar).
+        // Windows: frameless window, so our own controls sit flush right.
+        // Linux: native decorations, just don't reserve traffic light space.
+        isMac ? "pr-2 pl-19" : isWindows ? "pr-0 pl-2" : "pr-2 pl-2",
+      )}
       data-tauri-drag-region="deep"
     >
       <SidebarTrigger />
@@ -142,6 +151,37 @@ export default function Titlebar() {
           </kbd>
         </Button>
         <ThemeToggle />
+        {isWindows && (
+          <>
+            <Button
+              aria-label="Minimize window"
+              className="text-muted-foreground hover:text-warning"
+              onClick={() => void getCurrentWindow().minimize()}
+              size="icon-sm"
+              variant="ghost"
+            >
+              <Minus />
+            </Button>
+            <Button
+              aria-label="Maximize window"
+              className="text-muted-foreground hover:text-success"
+              onClick={() => void getCurrentWindow().toggleMaximize()}
+              size="icon-sm"
+              variant="ghost"
+            >
+              <Square />
+            </Button>
+            <Button
+              aria-label="Close window"
+              className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => void getCurrentWindow().close()}
+              size="icon-sm"
+              variant="ghost"
+            >
+              <X />
+            </Button>
+          </>
+        )}
       </div>
 
       <DownloadsSheet open={downloadsOpen} onOpenChange={setDownloadsOpen} />
