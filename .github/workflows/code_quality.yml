@@ -58,3 +58,6 @@ jobs:
 
       - name: Run Format Check
         run: bun run fmt:check
+
+      - name: Check translation catalogs
+        run: bun run check:i18n

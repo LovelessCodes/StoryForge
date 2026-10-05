@@ -1,1 +1,84 @@
-{}
+{
+  "add": {
+    "action": "Version hinzufügen",
+    "allInstalledOrDownloading": "Jede verfügbare Version ist bereits installiert oder wird heruntergeladen.",
+    "description": "Lade einen Vintage Story Build herunter. Bereits installierte Versionen sind markiert und können nicht erneut ausgewählt werden.",
+    "gameVersion": "Spielversion",
+    "installedOption": "{{version}} (installiert)",
+    "installedTag": "(installiert)",
+    "macWarning": "Diese Version benötigt unter macOS möglicherweise zusätzliche Einrichtung. Siehe den Wiki-Artikel <wiki>Vintage Story unter macOS installieren</wiki>.",
+    "macWarningTitle": "macOS: Version unter 1.19.0",
+    "pickPlaceholder": "Spielversion auswählen",
+    "title": "Version hinzufügen"
+  },
+  "banner": {
+    "action": "Verknüpfen…",
+    "hint": "An Ort und Stelle verknüpfen — kein erneuter Download, nichts wird kopiert.",
+    "alreadyInstalled": "bereits installiert",
+    "description": "Diese Installationen existieren bereits auf der Festplatte. Beim Verknüpfen werden sie bei Story Forge registriert, damit Profile ohne erneuten Download starten können.",
+    "found_one": "{{count}} Spielversion von anderen Launchern gefunden",
+    "found_other": "{{count}} Spielversionen von anderen Launchern gefunden",
+    "linkVersions_one": "{{count}} Version verknüpfen",
+    "linkVersions_other": "{{count}} Versionen verknüpfen",
+    "note": "Story Forge speichert nur einen Verweis auf diese Ordner. Beim späteren Trennen bleibt jede Datei, wo sie ist; der Launcher, der sie installiert hat, funktioniert weiter.",
+    "skipped_one": "{{count}} Version konnte nicht verknüpft werden",
+    "skipped_other": "{{count}} Versionen konnten nicht verknüpft werden",
+    "title": "Vorhandene Spielversionen verknüpfen"
+  },
+  "download": {
+    "pause": "Pausieren",
+    "resume": "Fortsetzen",
+    "status": {
+      "done": "Fertig",
+      "downloading": "Wird heruntergeladen",
+      "error": "Fehlgeschlagen",
+      "extracting": "Wird entpackt",
+      "paused": "Pausiert",
+      "pending": "In Warteschlange"
+    }
+  },
+  "linkExisting": {
+    "description": "Verweise Story Forge auf einen Vintage Story Installationsordner. Der Ordner wird an Ort und Stelle registriert — nichts wird kopiert oder verschoben.",
+    "folderHint": "Der Ordner sollte die Spieldateien enthalten (Vintagestory, Vintagestory.exe oder Vintage Story.app).",
+    "folderLabel": "Installationsordner",
+    "linkFailed": "Dieser Ordner konnte nicht verknüpft werden",
+    "nameHint": "Wird beim Auswählen einer Version für ein Profil verwendet; der Ordnername ist ein guter Standardwert.",
+    "nameLabel": "Versionsname",
+    "selectFolderTitle": "Vintage Story Installationsordner auswählen",
+    "submit": "Version verknüpfen",
+    "title": "Vorhandene Version verknüpfen"
+  },
+  "linked": "Verknüpft",
+  "linkedWithSource": "Verknüpft · {{source}}",
+  "linking": "Wird verknüpft…",
+  "page": {
+    "activeDownloads": "Aktive Downloads ({{count}})",
+    "emptyDescription": "Lade einen Build herunter, um Profile zu erstellen und das Spiel zu starten.",
+    "emptyTitle": "Noch keine Spielversionen installiert.",
+    "installedVersions": "Installierte Versionen",
+    "installedVersionsCount": "Installierte Versionen ({{count}})",
+    "linkExisting": "Vorhandene verknüpfen",
+    "macNote": "Unter macOS benötigen Versionen unter 1.19.0 zusätzliche Einrichtung. Siehe den Wiki-Artikel <wiki>Vintage Story unter macOS installieren</wiki>."
+  },
+  "row": {
+    "deleteNote": "Profile, die diese Version verwenden, funktionieren weiterhin; du kannst mit ihr nur keine neuen erstellen, bis sie neu installiert ist.",
+    "deleteVersion": "Version {{name}} löschen",
+    "folderMissing": "Ordner nicht gefunden — neu verknüpfen oder Verknüpfung aufheben",
+    "reallyDelete": "Wirklich löschen?",
+    "reallyUnlink": "Verknüpfung wirklich aufheben?",
+    "releaseCandidate": "Release Candidate",
+    "unlink": "Verknüpfung aufheben",
+    "unlinkNote": "Story Forge verwendet diesen Ordner nicht mehr; auf der Festplatte ändert sich nichts und der Launcher, der ihn installiert hat, funktioniert weiter.",
+    "unlinkVersion": "Verknüpfung von Version {{name}} aufheben"
+  },
+  "toast": {
+    "deleteFailed": "Version {{name}} konnte nicht gelöscht werden: {{message}}",
+    "deleting": "Version {{name}} wird gelöscht…",
+    "downloadFailed": "Fehler beim Herunterladen der Spielversion {{version}}",
+    "linkFailed": "Verknüpfen fehlgeschlagen",
+    "linkSkipped_one": "{{count}} konnte nicht verknüpft werden",
+    "linkSkipped_other": "{{count}} konnten nicht verknüpft werden",
+    "unlinkFailed": "Verknüpfung von Version {{name}} konnte nicht aufgehoben werden: {{message}}",
+    "unlinking": "Verknüpfung von Version {{name}} wird aufgehoben…"
+  }
+}

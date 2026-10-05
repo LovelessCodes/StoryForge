@@ -1,1 +1,32 @@
-{}
+{
+  "noActiveProfile": "Kein aktives Profil",
+  "noActiveProfileDescription": "Erstelle oder wähle ein Profil, um die Mod-Konfigurationsdateien zu bearbeiten.",
+  "goToProfiles": "Zu den Profilen",
+  "liveEditor": "Live-Editor",
+  "codeEditor": "Code-Editor",
+  "loading": "Konfigurationen werden geladen…",
+  "noConfigFiles": "Keine Konfigurationsdateien",
+  "readFailed": "Mod-Konfigurationen konnten nicht gelesen werden: {{message}}",
+  "noConfigFilesHint": "Mods mit konfigurierbaren JSON-Dateien zeigen sie hier an.",
+  "files": "Dateien",
+  "toasts": {
+    "saving": "Wird gespeichert…",
+    "saved": "Gespeichert!",
+    "saveFailed": "Speichern fehlgeschlagen: {{message}}"
+  },
+  "live": {
+    "expandArray": "Array ausklappen",
+    "collapseArray": "Array einklappen",
+    "expandObject": "Objekt ausklappen",
+    "collapseObject": "Objekt einklappen",
+    "emptyArray": "Leeres Array",
+    "primitiveRoot": "Die Wurzel ist ein primitiver Wert; Bearbeiten wird hier nicht unterstützt.",
+    "autoSaved": "Automatisch bei Änderung gespeichert",
+    "removeItem": "Element {{index}} entfernen"
+  },
+  "code": {
+    "loading": "Code-Editor wird geladen…",
+    "unsaved": "Ungespeicherte Änderungen",
+    "saved": "Alle Änderungen gespeichert"
+  }
+}

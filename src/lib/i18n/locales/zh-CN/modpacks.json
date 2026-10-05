@@ -1,1 +1,114 @@
-{}
+{
+  "yours": "你的",
+  "noDescription": "无描述",
+  "downloads_other": "{{count}} 次下载",
+  "page": {
+    "guest": "正以访客身份浏览，任何人都可以安装。<signIn>登录</signIn>后可发布你自己的整合包。",
+    "newModpack": "新建整合包",
+    "searchAria": "搜索整合包",
+    "searchPlaceholder": "搜索整合包…",
+    "sortByAria": "排序方式",
+    "toggleSortAria": "切换排序方向",
+    "sortAsc": "排序方向：升序",
+    "sortDesc": "排序方向：降序",
+    "filterOwnerAria": "按拥有者筛选",
+    "filterOwnerPlaceholder": "筛选拥有者…",
+    "empty": "还没有整合包。",
+    "emptyFiltered": "没有符合筛选条件的整合包。",
+    "found_other": "找到 {{count}} 个整合包"
+  },
+  "sort": {
+    "created": "创建时间",
+    "downloads": "下载量",
+    "name": "名称",
+    "lastUpdated": "最近更新"
+  },
+  "card": {
+    "manage": "管理 {{name}}",
+    "draft": "草稿",
+    "byline": "作者：{{name}}"
+  },
+  "detail": {
+    "byline_other": "作者：{{name}} · {{count}} 次下载",
+    "bylineOwner_other": "作者：{{name}} · {{count}} 次下载 · 属于你",
+    "versionsCount_other": "版本（{{count}}）",
+    "addVersion": "添加版本",
+    "empty": "尚未发布任何版本。",
+    "emptyOwner": "尚未发布任何版本。添加一个版本，让此整合包可以安装。",
+    "forVs": "适用于 VS {{version}}",
+    "editVersion": "编辑版本 {{version}}",
+    "deleteVersion": "删除版本 {{version}}",
+    "needVs": "需要 VS {{version}}"
+  },
+  "modsList": {
+    "count_other": "{{count}} 个模组"
+  },
+  "install": {
+    "failed": "导入整合包失败",
+    "profileName": "配置档名称",
+    "profilePlaceholder": "我的配置档",
+    "confirmAria": "安装此版本",
+    "cancelAria": "取消安装",
+    "progress": "正在下载模组 {{current}}/{{total}}："
+  },
+  "form": {
+    "createTitle": "创建整合包",
+    "editTitle": "编辑整合包",
+    "createDescription": "发布一个新的模组合集供其他玩家使用。",
+    "editDescription": "在下方更新整合包详情。",
+    "namePlaceholder": "我的超棒整合包",
+    "slug": "Slug",
+    "suggestion": "建议：",
+    "alternatives": "备选：",
+    "descriptionPlaceholder": "一组模组，用于…",
+    "imageUrl": "图片 URL",
+    "imageHint": "将图片上传到 <site>mods.vintagestory.at</site> 并在此粘贴链接。不接受外部 URL。",
+    "saving": "正在保存…",
+    "saveChanges": "保存更改",
+    "createSubmit": "创建整合包",
+    "imageHostError": "图片 URL 必须来自 moddbcdn.vintagestory.at",
+    "imageHostHint": "请先将图片上传到 https://mods.vintagestory.at/edit/mod。",
+    "slugUnavailable": "该 Slug 不可用",
+    "slugUnavailableHint": "请从 Slug 字段下方的建议或备选方案中选择一个。",
+    "updateFailed": "更新整合包失败",
+    "createFailed": "创建整合包失败",
+    "errors": {
+      "nameRequired": "名称为必填项",
+      "slugRequired": "Slug 为必填项",
+      "slugFormat": "Slug 只能使用小写字母、数字和连字符"
+    }
+  },
+  "versionForm": {
+    "newTitle": "新版本",
+    "editTitle": "编辑 v{{version}}",
+    "pickFromProfile": "从配置档选择",
+    "selectProfile": "选择配置档…",
+    "gameVersion": "游戏版本",
+    "modsString": "模组字符串",
+    "modConfigsUrl": "模组配置 URL",
+    "uploadModConfig": "从配置档上传 ModConfig 文件夹",
+    "saving": "正在保存…",
+    "readModsFailed": "读取已安装模组失败",
+    "uploadConfigFailed": "上传 ModConfig 失败",
+    "saveFailed": "保存版本失败",
+    "errors": {
+      "versionRequired": "版本为必填项",
+      "invalidSemver": "语义化版本无效"
+    }
+  },
+  "delete": {
+    "title": "删除整合包",
+    "description": "这将永久删除 <strong>{{name}}</strong> 及其所有版本。此操作无法撤销。",
+    "confirmLabel": "输入 <wrap><code>{{slug}}</code><copy/></wrap> 以确认",
+    "copyAria": "复制 Slug",
+    "pending": "正在删除…",
+    "submit": "删除整合包",
+    "failed": "删除整合包失败"
+  },
+  "deleteVersion": {
+    "confirm": "永久删除 <strong>v{{version}}</strong>？此操作无法撤销。",
+    "confirmPlaceholder": "输入 {{version}} 以确认",
+    "pending": "正在删除…",
+    "failed": "删除版本失败"
+  }
+}

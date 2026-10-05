@@ -1,1 +1,142 @@
-{}
+{
+  "standalone": "独立",
+  "loadingReleases": "正在加载发行版本…",
+  "search": {
+    "placeholder": "搜索模组…"
+  },
+  "filters": {
+    "count_other": "{{count}} 个模组",
+    "gameVersions": {
+      "aria": "按游戏版本筛选",
+      "empty": "未找到版本。",
+      "placeholder": "游戏版本…"
+    },
+    "tags": {
+      "aria": "按标签筛选",
+      "empty": "未找到标签。",
+      "placeholder": "模组标签…"
+    },
+    "sort": {
+      "aria": "排序方式",
+      "toggleDirection": "切换排序方向"
+    },
+    "category": {
+      "aria": "分类"
+    },
+    "side": {
+      "aria": "按适用端筛选",
+      "label": "适用端"
+    }
+  },
+  "sort": {
+    "comments": "评论",
+    "created": "创建时间",
+    "downloads": "下载量",
+    "follows": "关注数",
+    "name": "名称",
+    "relevance": "相关度",
+    "trending": "热门",
+    "updated": "最近更新"
+  },
+  "sortDirection": {
+    "ascending": "升序",
+    "descending": "降序"
+  },
+  "category": {
+    "externaltool": "外部工具",
+    "mod": "模组",
+    "other": "其他"
+  },
+  "side": {
+    "both": "两者",
+    "client": "客户端",
+    "server": "服务器"
+  },
+  "authorFilter": {
+    "aria": "按作者筛选",
+    "clear": "清除作者筛选",
+    "count_other": "{{count}} 个模组",
+    "empty": "未找到作者。",
+    "placeholder": "筛选作者…"
+  },
+  "list": {
+    "empty": "未找到模组。请尝试调整搜索或筛选条件。"
+  },
+  "item": {
+    "add": "添加模组",
+    "addTo": "添加到 {{destination}}",
+    "browseVersions": "浏览版本",
+    "browseVersionsTooltip": "查看可用版本",
+    "byAuthor": "作者：{{author}}",
+    "downloadLatest": "下载最新版本",
+    "filterBy": "按 {{author}} 筛选",
+    "filterByAuthor": "按作者 {{author}} 筛选",
+    "install": "安装模组",
+    "installLatest": "安装最新版本",
+    "installTo": "安装到…",
+    "installToDestination": "安装到配置档或托管的服务器",
+    "installedVersion": "已安装 v{{version}}",
+    "pin": "固定模组",
+    "pinTooltip": "固定到 v{{version}}（从全部更新中排除）",
+    "pinnedTooltip": "已固定到 v{{version}}，全部更新会跳过它",
+    "removeFrom": "从 {{destination}} 移除",
+    "unpin": "取消固定",
+    "updateToLatest": "更新到最新版本"
+  },
+  "versionPicker": {
+    "aria": "选择版本",
+    "forVersion": "适用于 {{version}}",
+    "moreTags_other": "（+{{count}} 个）",
+    "placeholder": "选择版本…"
+  },
+  "release": {
+    "downloads_other": "{{count}} 次下载"
+  },
+  "addSheet": {
+    "description": "选择要添加到 {{destination}} 的 {{name}} 版本。",
+    "submit": "添加模组",
+    "title": "将 <name>{{name}}</name> 添加到 <destination>{{destination}}</destination>"
+  },
+  "removeSheet": {
+    "body": "这将从 {{destination}} 中永久移除 <name>{{name}}</name>。",
+    "description": "此操作无法撤销。",
+    "title": "从 <destination>{{destination}}</destination> 移除 <name>{{name}}</name>？"
+  },
+  "updateSheet": {
+    "buttonDowngrade": "降级模组",
+    "buttonUpdate": "更新模组",
+    "description": "当前安装的版本：<version>{{version}}</version>。选择要切换到的版本。",
+    "titleDowngrade": "在 <destination>{{destination}}</destination> 中将 <name>{{name}}</name> 降级",
+    "titleUpdate": "在 <destination>{{destination}}</destination> 中更新 <name>{{name}}</name>"
+  },
+  "standaloneInstall": {
+    "description": "没有活动配置档。选择该模组的安装位置和使用的版本。",
+    "destination": "目标位置",
+    "destinationAria": "安装目标位置",
+    "destinationPlaceholder": "选择目标位置…",
+    "hostedServers": "托管的服务器",
+    "noDestinations": "没有可用的配置档或托管服务器。",
+    "noDownload": "{{name}} 没有可用的下载",
+    "profiles": "配置档",
+    "title": "安装 <name>{{name}}</name>"
+  },
+  "updateAll": {
+    "button_other": "全部更新（{{count}}）",
+    "confirm": "是的，确定"
+  },
+  "dependencies": {
+    "installMissing": "安装缺失项",
+    "missing_other": "{{destination}} 中缺少 {{count}} 个依赖项",
+    "more": "+{{count}} 个",
+    "requiredBy": "被 {{names}} 依赖"
+  },
+  "errors": {
+    "add": "将 {{name}} 添加到 {{destination}} 时出错：{{message}}",
+    "downgrading": "将 {{name}} 降级到 {{destination}} 时出错：{{message}}",
+    "install": "将 {{name}} 安装到 {{destination}} 时出错：{{message}}",
+    "remove": "从 {{destination}} 移除 {{name}} 时出错：{{message}}",
+    "update": "在 {{destination}} 中更新 {{name}} 时出错：{{message}}",
+    "updateIn": "更新 {{destination}} 中的模组时出错：{{message}}",
+    "upgrading": "将 {{name}} 升级到 {{destination}} 时出错：{{message}}"
+  }
+}

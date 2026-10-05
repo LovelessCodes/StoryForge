@@ -1,1 +1,84 @@
-{}
+{
+  "appearance": {
+    "title": "外观",
+    "darkMode": "深色模式",
+    "darkModeDescription": "在整个应用中使用深色主题。",
+    "language": "语言",
+    "languageDescription": "菜单和界面语言。",
+    "systemLanguage": "跟随系统"
+  },
+  "folders": {
+    "title": "数据文件夹",
+    "description": "Story Forge 保存配置档和游戏版本的位置。默认为应用数据目录。",
+    "useAppDirectory": "使用应用数据目录",
+    "useAppDirectoryDescription": "将配置档和版本存储在 Story Forge 自己的文件夹中。",
+    "profilesLabel": "配置档父目录",
+    "versionsLabel": "版本父目录",
+    "hintAppDirectory": "正在使用应用数据目录。会在其中创建“{{subdir}}”文件夹。",
+    "hintDefault": "默认为应用数据目录。",
+    "hintInside": "会在此目录中创建“{{subdir}}”文件夹。",
+    "browseProfilesTitle": "选择配置档父目录",
+    "browseVersionsTitle": "选择版本父目录",
+    "dialog": {
+      "title": "你希望如何处理现有数据？",
+      "description": "数据目前位于你即将离开的文件夹中。一旦删除将无法撤销。",
+      "keep": "保留当前数据（不移动也不删除）",
+      "copy": "将当前数据复制到新位置",
+      "delete": "从旧位置删除当前数据"
+    },
+    "toast": {
+      "profilesMoving": "正在移动配置档文件夹…",
+      "profilesDeleting": "正在删除配置档数据…",
+      "profilesSetting": "正在设置配置档文件夹…",
+      "profilesMoveFailed": "移动配置档文件夹失败：{{message}}",
+      "profilesDeleteFailed": "删除配置档数据失败：{{message}}",
+      "profilesSetFailed": "设置配置档文件夹失败：{{message}}",
+      "versionsMoving": "正在移动版本文件夹…",
+      "versionsDeleting": "正在删除版本数据…",
+      "versionsSetting": "正在设置版本文件夹…",
+      "versionsMoveFailed": "移动版本文件夹失败：{{message}}",
+      "versionsDeleteFailed": "删除版本数据失败：{{message}}",
+      "versionsSetFailed": "设置版本文件夹失败：{{message}}"
+    }
+  },
+  "behaviour": {
+    "title": "行为",
+    "streamMode": "直播模式",
+    "streamModeDescription": "在服务器列表中隐藏服务器地址，例如直播时使用。",
+    "systemDotnet": "使用系统 .NET",
+    "systemDotnetDescription": "优先尝试系统中的 .NET 运行时，再考虑下载。",
+    "defaultModSort": "默认模组排序",
+    "defaultModSortDescription": "打开模组浏览器时使用的排序方式。",
+    "sort": {
+      "comments": "评论",
+      "created": "创建时间",
+      "downloads": "下载量",
+      "follows": "关注数",
+      "name": "名称",
+      "relevance": "相关度",
+      "trending": "热门",
+      "updated": "最近更新"
+    }
+  },
+  "updates": {
+    "title": "更新",
+    "label": "更新",
+    "appVersion": "应用版本",
+    "appVersionDescription": "当前安装的版本。",
+    "description": "静默检查；更新会在标题栏中提示。",
+    "check": "检查更新",
+    "checking": "正在检查…",
+    "checkingToast": "正在检查更新…",
+    "checkComplete": "更新检查完成",
+    "checkFailed": "更新检查失败：{{message}}"
+  },
+  "logs": {
+    "title": "应用日志",
+    "description": "实时应用输出，每 5 秒刷新一次。",
+    "copy": "复制日志",
+    "refresh": "刷新日志",
+    "copied": "日志已复制到剪贴板",
+    "copyFailed": "复制日志失败",
+    "empty": "还没有日志…"
+  }
+}

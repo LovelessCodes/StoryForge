@@ -1,1 +1,249 @@
-{}
+{
+  "modCount_one": "{{count}} Mod",
+  "modCount_other": "{{count}} Mods",
+  "hasWorlds": "hat Welten",
+  "noWorlds": "noch keine Welten",
+  "fields": {
+    "gameVersion": "Spielversion",
+    "installed": "(installiert)",
+    "installedVersion": "{{version}} (installiert)",
+    "profileName": "Profilname"
+  },
+  "errors": {
+    "importFailed": "Import fehlgeschlagen",
+    "purgeFailed": "Endgültiges Löschen fehlgeschlagen",
+    "restoreFailed": "Wiederherstellen fehlgeschlagen"
+  },
+  "page": {
+    "import": "Importieren",
+    "newProfile": "Neues Profil",
+    "emptyTitle": "Noch keine Profile",
+    "emptyDescription": "Erstelle ein Profil, um eine Spielversion auszuwählen und Mods hinzuzufügen.",
+    "createFirst": "Erstes Profil erstellen"
+  },
+  "row": {
+    "active": "Aktiv",
+    "existingData": "Vorhandene Daten",
+    "notInstalled": "Nicht installiert",
+    "switch": "Wechseln",
+    "switchFirstTitle": "Zuerst zu einem anderen Profil wechseln",
+    "neverPlayed": "Nie gespielt",
+    "played": "Gespielt {{time}}",
+    "actionsFor": "Aktionen für {{name}}",
+    "manageMods": "Mods verwalten",
+    "configureMods": "Mods konfigurieren",
+    "viewLogs": "Logs anzeigen",
+    "backups": "Backups",
+    "exportFile": "Als Datei exportieren…",
+    "copyShareCode": "Share-Code kopieren",
+    "deleteCurrent": "Löschen (aktuelles Profil)",
+    "openFolderFailed": "Ordner konnte nicht geöffnet werden"
+  },
+  "export": {
+    "filterName": "Profil-Export",
+    "exported": "Profil exportiert",
+    "failed": "Export fehlgeschlagen",
+    "shareCodeCopied": "Share-Code in die Zwischenablage kopiert",
+    "shareCodeFailed": "Share-Code konnte nicht erstellt werden"
+  },
+  "clone": {
+    "menu": "Klonen…",
+    "title": "„{{name}}“ klonen",
+    "defaultName": "{{name}} Kopie",
+    "description": "Kopiert den gesamten Profilordner — inklusive Mods, Konfigurationen und Welten.",
+    "newName": "Neuer Name",
+    "busy": "Wird geklont…",
+    "submit": "Profil klonen",
+    "failed": "Klonen fehlgeschlagen"
+  },
+  "delete": {
+    "switchFirst": "Wechsle zu einem anderen Profil, bevor du dieses löschst",
+    "deleted": "\"{{name}}\" gelöscht",
+    "description": "Der Ordner wurde in den Papierkorb verschoben — du kannst das rückgängig machen.",
+    "undo": "Rückgängig",
+    "restored": "\"{{name}}\" wiederhergestellt",
+    "failed": "Löschen fehlgeschlagen",
+    "removeTitle": "„{{name}}“ aus Story Forge entfernen?",
+    "deleteTitle": "„{{name}}“ löschen?",
+    "externalDescription": "Dieses Profil verweist auf deinen vorhandenen Vintage Story Datenordner. Beim Entfernen verwaltet Story Forge den Ordner nur nicht mehr — nichts darin wird verschoben oder gelöscht.",
+    "folderDescription": "Der Profilordner wird innerhalb deines Profilverzeichnisses in den Papierkorb verschoben. Du kannst das über die Benachrichtigung oder den Abschnitt „Gelöschte Profile“ rückgängig machen.",
+    "removing": "Wird entfernt…",
+    "deleting": "Wird gelöscht…",
+    "removeAction": "Aus Story Forge entfernen",
+    "moveToTrash": "In den Papierkorb verschieben"
+  },
+  "dialog": {
+    "editTitle": "„{{name}}“ bearbeiten",
+    "newTitle": "Neues Profil",
+    "description": "Ein Profil ist ein isolierter Vintage Story Datenordner mit eigenen Mods, Welten und Einstellungen.",
+    "namePlaceholder": "Mein Profil",
+    "versionNotInstalled": "Version {{version}} ist noch nicht installiert — die Seitenleiste bietet dafür einen Download-Button, sobald du bereit bist.",
+    "icon": "Icon",
+    "favorite": "Favorit",
+    "favoriteHint": "Favoriten werden in Listen zuerst sortiert.",
+    "launchParameters": "Startparameter",
+    "optional": "optional",
+    "startParamsPlaceholder": "--some-flag value",
+    "environmentVariables": "Umgebungsvariablen",
+    "nameTooShort": "Name muss mindestens 2 Zeichen lang sein",
+    "pickVersion": "Spielversion auswählen",
+    "noAppFolder": "Der App-Datenordner konnte nicht ermittelt werden",
+    "saving": "Wird gespeichert…",
+    "creating": "Profil wird erstellt…",
+    "saveFailed": "Profil konnte nicht gespeichert werden",
+    "createFailed": "Profil konnte nicht erstellt werden",
+    "saveChanges": "Änderungen speichern",
+    "create": "Profil erstellen"
+  },
+  "selector": {
+    "switched": "Zu „{{name}}“ gewechselt",
+    "noProfile": "Kein Profil",
+    "manage": "Profile verwalten"
+  },
+  "iconPicker": {
+    "noIcon": "Kein Icon"
+  },
+  "logs": {
+    "title": "Logs — {{name}}",
+    "description": "Spiel-Logs, die in den Logs-Ordner des Profils geschrieben werden.",
+    "refresh": "Logs aktualisieren",
+    "empty": "Keine Logs gefunden.",
+    "select": "Wähle ein Log aus, um den Inhalt anzuzeigen."
+  },
+  "backups": {
+    "title": "Backups — {{name}}",
+    "description": "Snapshots der Mods, Welten und Konfigurationen dieses Profils. Logs sind ausgenommen.",
+    "autoLabel": "Vor jedem Start ein Backup erstellen",
+    "autoHint": "Läuft direkt vor dem Spielstart.",
+    "keepLabel": "Letzte behalten",
+    "keepHint": "Ältere Backups werden automatisch gelöscht.",
+    "backupNow": "Jetzt sichern",
+    "backingUpProgress": "Backup läuft… {{percent}} %",
+    "restoringProgress": "Wird wiederhergestellt… {{percent}} %",
+    "emptyTitle": "Noch keine Backups",
+    "emptyDescription": "Erstelle eines vor riskanten Änderungen oder sichere vor jedem Start.",
+    "count_one": "{{count}} Backup · neueste zuerst",
+    "count_other": "{{count}} Backups · neueste zuerst",
+    "deleteBackup": "Backup löschen",
+    "confirmRestore": "Diesen Snapshot wiederherstellen? Darin enthaltene Dateien werden überschrieben; seither hinzugefügte Dateien bleiben erhalten.",
+    "restoreBackup": "Backup wiederherstellen",
+    "confirmDelete": "Dieses Backup löschen? Das kann nicht rückgängig gemacht werden.",
+    "backupFailed": "Backup fehlgeschlagen",
+    "restored": "Backup wiederhergestellt",
+    "restoredDescription": "Der Profilordner entspricht jetzt dem Snapshot.",
+    "deleteFailed": "Backup konnte nicht gelöscht werden",
+    "settingsFailed": "Backup-Einstellungen konnten nicht gespeichert werden"
+  },
+  "deleted": {
+    "heading": "Gelöschte Profile ({{total}})",
+    "purgeAll": "Alle endgültig löschen",
+    "confirmPurgeAll": "Wirklich alle endgültig löschen?",
+    "confirmYes": "Ja",
+    "confirmNo": "Nein",
+    "deletedAt": "Gelöscht {{time}}",
+    "deletePermanently": "{{name}} endgültig löschen"
+  },
+  "envVars": {
+    "empty": "Keine Umgebungsvariablen. Diese werden beim Start an den Spielprozess übergeben.",
+    "keyLabel": "Variablenname",
+    "keyPlaceholder": "KEY",
+    "valueLabel": "Variablenwert",
+    "valuePlaceholder": "Wert",
+    "remove": "Variable entfernen",
+    "add": "Variable hinzufügen"
+  },
+  "import": {
+    "title": "Profil importieren",
+    "description": "Füge einen Share-Code oder exportiertes JSON ein oder wähle eine exportierte Datei. Mods werden automatisch heruntergeladen.",
+    "placeholder": "SF1.… Share-Code oder Profil-JSON-Export",
+    "chooseFile": "Datei auswählen…",
+    "shareCodeHint": "Share-Codes beginnen mit SF1.",
+    "decodingShareCode": "Share-Code wird entschlüsselt…",
+    "invalid": "Das sieht nicht nach einem Profil-Export aus",
+    "downloadingVersion": "Spielversion {{version}} wird heruntergeladen…",
+    "importing": "„{{name}}“ wird importiert…",
+    "downloadingMod": "Mod {{current}} von {{total}} wird heruntergeladen:",
+    "readFailed": "Exportdatei konnte nicht gelesen werden",
+    "submit": "Profil importieren",
+    "action": "Importieren…",
+    "importingBusy": "Wird importiert…",
+    "bannerDescription": "Importiere sie mit ihren Mods, Welten und Einstellungen.",
+    "modeQuestion": "Wie sollen die Ordner importiert werden?",
+    "imported": "Importiert",
+    "skipped_one": "{{count}} konnte nicht importiert werden",
+    "skipped_other": "{{count}} konnten nicht importiert werden",
+    "skippedFolders_one": "{{count}} Ordner wurde nicht importiert",
+    "skippedFolders_other": "{{count}} Ordner wurden nicht importiert",
+    "submitCount_one": "{{count}} Profil importieren",
+    "submitCount_other": "{{count}} Profile importieren"
+  },
+  "gameData": {
+    "foundTitle": "Vorhandene Vintage Story Daten gefunden",
+    "foundDescription": "{{path}} — ohne Kopieren als Profil verwenden.",
+    "foundDescriptionMore": "{{path}} (+{{more}} weitere) — ohne Kopieren als Profil verwenden.",
+    "use": "Verwenden",
+    "title": "Vorhandene Spieldaten verwenden",
+    "description": "Story Forge verweist auf den Ordner, statt ihn zu kopieren — deine Mods, Welten und Einstellungen bleiben genau dort, wo sie sind.",
+    "folderAria": "Spieldaten-Ordner",
+    "versionHint": "Dein Datenordner speichert seine Spielversion nicht — wähle die Version, die du spielst. Sie wird beim ersten Start heruntergeladen, wenn sie noch nicht installiert ist.",
+    "linking": "Wird verknüpft…",
+    "useAs": "Als „{{name}}“ verwenden",
+    "defaultName": "Profil",
+    "adoptFailed": "Dieser Ordner konnte nicht verwendet werden"
+  },
+  "legacy": {
+    "found_one": "{{count}} Profil aus einer früheren Story Forge-Version gefunden",
+    "found_other": "{{count}} Profile aus einer früheren Story Forge-Version gefunden",
+    "title": "Aus einer früheren Story Forge-Version importieren",
+    "description": "Diese Ordner enthalten dieselben Daten wie Profile — Mods, Welten und Konfiguration. Jeder wird als neues Profil importiert.",
+    "modeMoveHint": "Verschiebt die Ordner in dein Profilverzeichnis — schnell und ohne zusätzlichen Speicherplatz, aber die vorherige App sieht sie dann nicht mehr.",
+    "modeCopyHint": "Kopiert die Ordner und lässt die vorherige App unberührt — sicher, benötigt aber zusätzlichen Speicherplatz."
+  },
+  "launcher": {
+    "found_one": "{{count}} Element von {{name}} gefunden",
+    "found_other": "{{count}} Elemente von {{name}} gefunden",
+    "title": "Aus {{name}} importieren",
+    "modeMoveHint": "Verschiebt die Ordner in dein Profilverzeichnis — schnell und ohne zusätzlichen Speicherplatz, aber {{name}} sieht sie dann nicht mehr.",
+    "modeCopyHint": "Kopiert die Ordner und lässt {{name}} unberührt — sicher, benötigt aber zusätzlichen Speicherplatz.",
+    "defaultDataFolder": "Standard-Datenordner des Spiels"
+  },
+  "banners": {
+    "cairn": {
+      "hint": "Packs von Cairn von cairns-gg (github.com/cairns-gg/cairn-app). Jedes Pack wird als Profil importiert — sein Datenordner und seine Mods werden kopiert.",
+      "note": "Packs werden kopiert, nie verschoben: Der Pack-Ordner enthält auch Cairns Manifest- und Lock-Dateien, daher gibt es nichts zu verschieben, ohne Cairn zu beschädigen. Cairn funktioniert mit seinen Packs unverändert weiter."
+    },
+    "gruntLauncher": {
+      "hint": "Instanzen von GruntLauncher von renarin-kholin. Jeder Instanzordner wird zu einem Profil mit seinen Mods, Einstellungen und Welten.",
+      "note": "Die eigene Instanzdatei von GruntLauncher und der Mod-Logo-Cache werden aus dem importierten Profil entfernt. Spielversionen aus seinem Installationsordner können auf der Seite „Versionen“ verknüpft werden."
+    },
+    "lithic": {
+      "hint": "Instanzen von Lithic von NotAShelf (CLI und GUI). Der Datenordner jeder Instanz wird als Profil importiert.",
+      "note": "Instanzen werden kopiert, nie verschoben: Der Instanzordner enthält auch Lithics eigene Einstellungs- und Lock-Dateien. Spielzeit, Startargumente und Umgebungsvariablen bleiben erhalten; Mods, die in Lithic deaktiviert wurden, werden nach mods-disabled/ kopiert und bleiben deaktiviert, und Start-Wrapper (gamemoderun, prime-run) werden nicht übernommen. Spielversionen können auf der Seite „Versionen“ verknüpft werden."
+    },
+    "mvl": {
+      "hint": "Modpacks von MVL von scgm0 (github.com/scgm0/MVL). Jedes wird als Profil importiert — außer dem Manifest wird nichts konvertiert.",
+      "note": "Das Modpack-Icon von MVL und der VSRun-Startbefehl werden nicht übernommen — Story Forge bestimmt, wie Profile starten. Namen, Spielversionen, Mods und Welten bleiben erhalten."
+    },
+    "rustory": {
+      "hint": "Instanzen von Rustory von XurxoMF (rustory.xyz), dem Nachfolger von VS Launcher. Der Spieldatenordner jeder Instanz wird als Profil importiert.",
+      "note": "Instanzen werden kopiert, nie verschoben: Der Instanzordner enthält auch Rustorys eigenes Manifest und Backups, daher gibt es nichts zu verschieben, ohne Rustory zu beschädigen. Spielzeit, Startparameter und Umgebungsvariablen bleiben erhalten. Von Rustory installierte Spielversionen können auf der Seite „Versionen“ verknüpft werden."
+    },
+    "vsLauncher": {
+      "hint": "Installationen von VS Launcher von XurxoMF und RiftLauncher vom Stratum-Team (deren gepflegte Fortführung). Jede wird als Profil importiert — außer dem Manifest wird nichts konvertiert.",
+      "note": "Icons werden nicht übernommen (beide verwenden eigene Grafiken). Spielzeit, Startparameter und Umgebungsvariablen bleiben erhalten."
+    },
+    "waxlight": {
+      "hint": "Instanzen von Waxlight Launcher von AmadoMuerte (github.com/AmadoMuerte/Waxlight-launcher). Jede wird als Profil importiert — außer dem Manifest wird nichts konvertiert.",
+      "note": "Waxlight-Cover werden nicht übernommen. Startargumente, Umgebungsvariablen, Pin-Status und Spielzeit bleiben erhalten."
+    },
+    "yelloowstone": {
+      "hint": "Instanzen von Yelloowstone (jgwoolley/vintage-story-launcher). Der Datenordner jeder Instanz wird zu einem Profil.",
+      "note": "Der Runtime-Ordner der Instanz ist eine vollständige Spielinstallation: Er wird als Version verknüpft, nie verschoben, damit Yelloowstone weiter funktioniert. Das Verschieben eines Datenordners entfernt ihn allerdings aus Yelloowstones Liste."
+    }
+  },
+  "store": {
+    "pathExists": "Profil mit Pfad \"{{path}}\" existiert bereits",
+    "idExists": "Profil mit ID \"{{id}}\" existiert bereits",
+    "nameExists": "Profil mit Name \"{{name}}\" existiert bereits"
+  }
+}

@@ -1,1 +1,87 @@
-{}
+{
+  "page": {
+    "searchAria": "Buscar mundos y mapas",
+    "searchPlaceholder": "Buscar mundos y mapas…",
+    "allProfiles": "Todos los perfiles",
+    "filterAria": "Filtrar por perfil",
+    "loading": "Cargando mundos…",
+    "worlds": "Mundos",
+    "worldsCount_one": "Mundos ({{count}})",
+    "worldsCount_other": "Mundos ({{count}})",
+    "mapsWithoutSaves_one": "Mapas sin partidas guardadas ({{count}})",
+    "mapsWithoutSaves_other": "Mapas sin partidas guardadas ({{count}})",
+    "empty": "Aún no se encontraron mundos. Crea un mundo en el juego para empezar.",
+    "noMatches": "Ningún mundo coincide con tus filtros."
+  },
+  "row": {
+    "seedTitle": "Semilla {{seed}} — clic para copiar",
+    "copied": "¡Copiado!",
+    "byline": "por <author>{{author}}</author> en {{version}}",
+    "lastPlayed": "Última vez jugado: {{time}}",
+    "differentVersion": "Versión diferente {{worldVersion}} → {{profileVersion}}",
+    "versionMismatchTitle": "La versión del perfil ({{profileVersion}}) difiere de la última versión guardada del mundo ({{worldVersion}}).",
+    "playTitle": "Jugar {{world}} con {{profile}}",
+    "installTitle": "La versión del juego {{version}} no está instalada",
+    "noProfileTitle": "No se encontró un perfil compatible",
+    "noProfile": "Sin perfil",
+    "viewMapAria": "Ver mapa",
+    "noMapTitle": "No hay mapa disponible para {{name}}",
+    "editAria": "Editar mundo",
+    "deleteAria": "Eliminar mundo"
+  },
+  "edit": {
+    "title": "Editar “{{name}}”",
+    "description": "Cambia el nombre del mundo o muévelo a otro perfil. Cambiar el nombre también renombra el archivo de guardado.",
+    "namePlaceholder": "Mi mundo",
+    "profile": "Perfil",
+    "selectProfile": "Seleccionar perfil",
+    "moveHint": "Mover el mundo transfiere su base de datos del mapa junto con el archivo de guardado.",
+    "submit": "Actualizar mundo",
+    "saving": "Guardando…",
+    "failed": "No se pudo actualizar el mundo",
+    "errors": {
+      "nameLength": "El nombre debe tener entre 2 y 100 caracteres",
+      "profile": "Selecciona un perfil"
+    }
+  },
+  "delete": {
+    "title": "¿Eliminar <name>{{name}}</name>?",
+    "description": "Esta acción no se puede deshacer. La partida guardada del mundo y su base de datos de mapa se eliminan permanentemente de Story Forge.",
+    "warning": "Advertencia:",
+    "warningText": "Esto elimina el mundo de tu computadora. Si quieres conservar una copia de seguridad, expórtalo antes de continuar.",
+    "confirmAria": "Confirmar eliminación del mundo",
+    "confirmLabel": "Entiendo que esta acción no se puede deshacer.",
+    "pending": "Eliminando…",
+    "deleting": "Eliminando el mundo {{name}}…",
+    "failed": "No se pudo eliminar el mundo {{name}}",
+    "facts": {
+      "worldName": "Nombre del mundo",
+      "mapIdentifier": "Identificador del mapa",
+      "worldType": "Tipo de mundo",
+      "playStyle": "Estilo de juego",
+      "createdBy": "Creado por",
+      "lastPlayed": "Última vez jugado",
+      "lastSession": "Última sesión",
+      "seed": "Semilla",
+      "createdVersion": "Creado en la versión",
+      "lastSavedVersion": "Guardado por última vez en la versión"
+    }
+  },
+  "map": {
+    "defaultName": "Mapa",
+    "view": "Ver mapa",
+    "viewTitle": "Ver el mapa {{name}}",
+    "rowMeta": "{{profile}} · Mapa independiente · Sin guardado adjunto",
+    "title": "{{name}} — Mapa del mundo",
+    "description": "Visor de mapa interactivo · Arrastra para desplazar · Desplázate para acercar",
+    "playerAria": "Jugador cuyos marcadores se muestran",
+    "noPlayers": "No se encontraron jugadores",
+    "showProspecting": "Mostrar prospección",
+    "loading": "Cargando mapa…",
+    "noMapData": "Aún no hay datos de mapa disponibles. ¡Explora el mundo en el juego para generar el mapa!",
+    "loadError": "Error al cargar el mapa: {{message}}",
+    "noTiles": "No se encontraron mosaicos de mapa. ¡Explora el mundo en el juego para generar el mapa!",
+    "prospectingResults": "Resultados de prospección:",
+    "panZoom": "Arrastra para desplazar · Desplázate para acercar"
+  }
+}

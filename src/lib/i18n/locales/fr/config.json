@@ -1,1 +1,32 @@
-{}
+{
+  "noActiveProfile": "Aucun profil actif",
+  "noActiveProfileDescription": "Créez ou sélectionnez un profil pour modifier ses fichiers de config de mods.",
+  "goToProfiles": "Aller aux profils",
+  "liveEditor": "Éditeur visuel",
+  "codeEditor": "Éditeur de code",
+  "loading": "Chargement des configurations…",
+  "noConfigFiles": "Aucun fichier de config",
+  "readFailed": "Impossible de lire les configs de mods : {{message}}",
+  "noConfigFilesHint": "Les mods qui fournissent des fichiers JSON configurables les afficheront ici.",
+  "files": "Fichiers",
+  "toasts": {
+    "saving": "Enregistrement…",
+    "saved": "Enregistré !",
+    "saveFailed": "Échec de l'enregistrement : {{message}}"
+  },
+  "live": {
+    "expandArray": "Développer le tableau",
+    "collapseArray": "Réduire le tableau",
+    "expandObject": "Développer l'objet",
+    "collapseObject": "Réduire l'objet",
+    "emptyArray": "Tableau vide",
+    "primitiveRoot": "La racine est une valeur primitive ; la modification n'est pas prise en charge ici.",
+    "autoSaved": "Enregistré automatiquement à chaque modification",
+    "removeItem": "Supprimer l'élément {{index}}"
+  },
+  "code": {
+    "loading": "Chargement de l'éditeur de code…",
+    "unsaved": "Modifications non enregistrées",
+    "saved": "Toutes les modifications sont enregistrées"
+  }
+}

@@ -1,1 +1,148 @@
-{}
+{
+  "standalone": "Independente",
+  "loadingReleases": "Carregando versões…",
+  "search": {
+    "placeholder": "Buscar mods…"
+  },
+  "filters": {
+    "count_one": "{{count}} mod",
+    "count_other": "{{count}} mods",
+    "gameVersions": {
+      "aria": "Filtrar por versão do jogo",
+      "empty": "Nenhuma versão encontrada.",
+      "placeholder": "Versões do jogo…"
+    },
+    "tags": {
+      "aria": "Filtrar por tag",
+      "empty": "Nenhuma tag encontrada.",
+      "placeholder": "Tags de mods…"
+    },
+    "sort": {
+      "aria": "Ordenar por",
+      "toggleDirection": "Alternar direção da ordenação"
+    },
+    "category": {
+      "aria": "Categoria"
+    },
+    "side": {
+      "aria": "Filtrar por lado",
+      "label": "Lado"
+    }
+  },
+  "sort": {
+    "comments": "Comentários",
+    "created": "Criado",
+    "downloads": "Downloads",
+    "follows": "Seguidores",
+    "name": "Nome",
+    "relevance": "Relevância",
+    "trending": "Em alta",
+    "updated": "Última atualização"
+  },
+  "sortDirection": {
+    "ascending": "Crescente",
+    "descending": "Decrescente"
+  },
+  "category": {
+    "externaltool": "Ferramenta externa",
+    "mod": "Mod",
+    "other": "Outro"
+  },
+  "side": {
+    "both": "Ambos",
+    "client": "Cliente",
+    "server": "Servidor"
+  },
+  "authorFilter": {
+    "aria": "Filtrar por autor",
+    "clear": "Limpar filtro de autor",
+    "count_one": "{{count}} mod",
+    "count_other": "{{count}} mods",
+    "empty": "Nenhum autor encontrado.",
+    "placeholder": "Filtrar autor…"
+  },
+  "list": {
+    "empty": "Nenhum mod encontrado. Tente ajustar sua busca ou filtros."
+  },
+  "item": {
+    "add": "Adicionar mod",
+    "addTo": "Adicionar a {{destination}}",
+    "browseVersions": "Ver versões",
+    "browseVersionsTooltip": "Veja as versões disponíveis",
+    "byAuthor": "por {{author}}",
+    "downloadLatest": "Baixar a versão mais recente",
+    "filterBy": "Filtrar por {{author}}",
+    "filterByAuthor": "Filtrar por autor {{author}}",
+    "install": "Instalar mod",
+    "installLatest": "Instalar a versão mais recente",
+    "installTo": "Instalar em…",
+    "installToDestination": "Instalar em perfil ou servidor hospedado",
+    "installedVersion": "v{{version}} instalada",
+    "pin": "Fixar mod",
+    "pinTooltip": "Fixar em v{{version}} (excluído de Atualizar tudo)",
+    "pinnedTooltip": "Fixado em v{{version}} — Atualizar tudo o ignora",
+    "removeFrom": "Remover de {{destination}}",
+    "unpin": "Desafixar mod",
+    "updateToLatest": "Atualizar para a versão mais recente"
+  },
+  "versionPicker": {
+    "aria": "Selecionar versão",
+    "forVersion": "para {{version}}",
+    "moreTags_one": "(+{{count}} a mais)",
+    "moreTags_other": "(+{{count}} a mais)",
+    "placeholder": "Selecionar versão…"
+  },
+  "release": {
+    "downloads_one": "{{count}} download",
+    "downloads_other": "{{count}} downloads"
+  },
+  "addSheet": {
+    "description": "Selecione a versão de {{name}} que você deseja adicionar a {{destination}}.",
+    "submit": "Adicionar mod",
+    "title": "Adicionar <name>{{name}}</name> a <destination>{{destination}}</destination>"
+  },
+  "removeSheet": {
+    "body": "Isso removerá permanentemente <name>{{name}}</name> de {{destination}}.",
+    "description": "Esta ação não pode ser desfeita.",
+    "title": "Remover <name>{{name}}</name> de <destination>{{destination}}</destination>?"
+  },
+  "updateSheet": {
+    "buttonDowngrade": "Reverter mod",
+    "buttonUpdate": "Atualizar mod",
+    "description": "Versão instalada no momento: <version>{{version}}</version>. Selecione a versão para a qual deseja mudar.",
+    "titleDowngrade": "Reverter <name>{{name}}</name> em <destination>{{destination}}</destination>",
+    "titleUpdate": "Atualizar <name>{{name}}</name> em <destination>{{destination}}</destination>"
+  },
+  "standaloneInstall": {
+    "description": "Nenhum perfil ativo. Escolha onde instalar este mod e qual versão usar.",
+    "destination": "Destino",
+    "destinationAria": "Destino da instalação",
+    "destinationPlaceholder": "Selecionar destino…",
+    "hostedServers": "Servidores hospedados",
+    "noDestinations": "Nenhum perfil ou servidor hospedado disponível.",
+    "noDownload": "Nenhum download disponível para {{name}}",
+    "profiles": "Perfis",
+    "title": "Instalar <name>{{name}}</name>"
+  },
+  "updateAll": {
+    "button_one": "Atualizar tudo ({{count}})",
+    "button_other": "Atualizar tudo ({{count}})",
+    "confirm": "Sim, de verdade"
+  },
+  "dependencies": {
+    "installMissing": "Instalar pendentes",
+    "missing_one": "{{count}} dependência ausente em {{destination}}",
+    "missing_other": "{{count}} dependências ausentes em {{destination}}",
+    "more": "+{{count}} a mais",
+    "requiredBy": "exigido por {{names}}"
+  },
+  "errors": {
+    "add": "Erro ao adicionar {{name}} a {{destination}}: {{message}}",
+    "downgrading": "Erro ao reverter {{name}} em {{destination}}: {{message}}",
+    "install": "Erro ao instalar {{name}} em {{destination}}: {{message}}",
+    "remove": "Erro ao remover {{name}} de {{destination}}: {{message}}",
+    "update": "Erro ao atualizar {{name}} em {{destination}}: {{message}}",
+    "updateIn": "Erro ao atualizar mod em {{destination}}: {{message}}",
+    "upgrading": "Erro ao atualizar {{name}} em {{destination}}: {{message}}"
+  }
+}

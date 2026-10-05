@@ -1,1 +1,85 @@
-{}
+{
+  "page": {
+    "searchAria": "搜索世界和地图",
+    "searchPlaceholder": "搜索世界和地图…",
+    "allProfiles": "所有配置档",
+    "filterAria": "按配置档筛选",
+    "loading": "正在加载世界…",
+    "worlds": "世界",
+    "worldsCount_other": "世界（{{count}}）",
+    "mapsWithoutSaves_other": "没有存档的地图（{{count}}）",
+    "empty": "还没有找到世界。在游戏内创建一个世界即可开始。",
+    "noMatches": "没有符合筛选条件的世界。"
+  },
+  "row": {
+    "seedTitle": "种子 {{seed}}，点击复制",
+    "copied": "已复制！",
+    "byline": "由 <author>{{author}}</author> 创建于 {{version}}",
+    "lastPlayed": "上次游玩：{{time}}",
+    "differentVersion": "版本不同 {{worldVersion}} → {{profileVersion}}",
+    "versionMismatchTitle": "配置档版本（{{profileVersion}}）与世界上次保存的版本（{{worldVersion}}）不同。",
+    "playTitle": "用 {{profile}} 游玩 {{world}}",
+    "installTitle": "游戏版本 {{version}} 未安装",
+    "noProfileTitle": "未找到匹配的配置档",
+    "noProfile": "无配置档",
+    "viewMapAria": "查看地图",
+    "noMapTitle": "{{name}} 没有可用的地图",
+    "editAria": "编辑世界",
+    "deleteAria": "删除世界"
+  },
+  "edit": {
+    "title": "编辑“{{name}}”",
+    "description": "重命名世界或将其移动到其他配置档。重命名也会同时重命名存档文件。",
+    "namePlaceholder": "我的世界",
+    "profile": "配置档",
+    "selectProfile": "选择配置档",
+    "moveHint": "移动世界时，地图数据库会随存档文件一起转移。",
+    "submit": "更新世界",
+    "saving": "正在保存…",
+    "failed": "更新世界失败",
+    "errors": {
+      "nameLength": "名称长度必须介于 2 到 100 个字符之间",
+      "profile": "请选择一个配置档"
+    }
+  },
+  "delete": {
+    "title": "删除 <name>{{name}}</name>？",
+    "description": "此操作无法撤销。世界存档及其地图数据库将从 Story Forge 中永久移除。",
+    "warning": "警告：",
+    "warningText": "这将从你的电脑上删除该世界。如果想保留备份，请先导出再继续。",
+    "confirmAria": "确认删除世界",
+    "confirmLabel": "我明白此操作无法撤销。",
+    "pending": "正在删除…",
+    "deleting": "正在删除世界 {{name}}…",
+    "failed": "删除世界 {{name}} 失败",
+    "facts": {
+      "worldName": "世界名称",
+      "mapIdentifier": "地图标识符",
+      "worldType": "世界类型",
+      "playStyle": "游玩风格",
+      "createdBy": "创建者",
+      "lastPlayed": "上次游玩",
+      "lastSession": "上次会话",
+      "seed": "种子",
+      "createdVersion": "创建于版本",
+      "lastSavedVersion": "最后保存于版本"
+    }
+  },
+  "map": {
+    "defaultName": "地图",
+    "view": "查看地图",
+    "viewTitle": "查看地图 {{name}}",
+    "rowMeta": "{{profile}} · 独立地图 · 无存档关联",
+    "title": "{{name}} — 世界地图",
+    "description": "交互式地图查看器 · 拖动平移 · 滚动缩放",
+    "playerAria": "显示标记的玩家",
+    "noPlayers": "未找到玩家",
+    "showProspecting": "显示探矿结果",
+    "loading": "正在加载地图…",
+    "noMapData": "还没有地图数据。在游戏内探索世界以生成地图！",
+    "loadError": "加载地图出错：{{message}}",
+    "noTiles": "未找到地图图块。在游戏内探索世界以生成地图！",
+    "prospectingResults": "探矿结果：",
+    "panZoom": "拖动平移 · 滚动缩放"
+  }
+}

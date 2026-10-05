@@ -1,1 +1,120 @@
-{}
+{
+  "yours": "Tuyo",
+  "noDescription": "Sin descripción",
+  "downloads_one": "{{count}} descarga",
+  "downloads_other": "{{count}} descargas",
+  "page": {
+    "guest": "Explorando como invitado — cualquiera puede instalar. <signIn>Inicia sesión</signIn> para publicar tus propios modpacks.",
+    "newModpack": "Nuevo modpack",
+    "searchAria": "Buscar modpacks",
+    "searchPlaceholder": "Buscar modpacks…",
+    "sortByAria": "Ordenar por",
+    "toggleSortAria": "Cambiar dirección de orden",
+    "sortAsc": "Dirección de orden: ascendente",
+    "sortDesc": "Dirección de orden: descendente",
+    "filterOwnerAria": "Filtrar por propietario",
+    "filterOwnerPlaceholder": "Filtrar por propietario…",
+    "empty": "Aún no hay modpacks.",
+    "emptyFiltered": "Ningún modpack coincide con tus filtros.",
+    "found_one": "{{count}} modpack encontrado",
+    "found_other": "{{count}} modpacks encontrados"
+  },
+  "sort": {
+    "created": "Creado",
+    "downloads": "Descargas",
+    "name": "Nombre",
+    "lastUpdated": "Última actualización"
+  },
+  "card": {
+    "manage": "Gestionar {{name}}",
+    "draft": "Borrador",
+    "byline": "por {{name}}"
+  },
+  "detail": {
+    "byline_one": "por {{name}} · {{count}} descarga",
+    "byline_other": "por {{name}} · {{count}} descargas",
+    "bylineOwner_one": "por {{name}} · {{count}} descarga · Tuyo",
+    "bylineOwner_other": "por {{name}} · {{count}} descargas · Tuyo",
+    "versionsCount_one": "Versiones ({{count}})",
+    "versionsCount_other": "Versiones ({{count}})",
+    "addVersion": "Agregar versión",
+    "empty": "Aún no hay versiones publicadas.",
+    "emptyOwner": "Aún no hay versiones publicadas. Agrega una para que este modpack se pueda instalar.",
+    "forVs": "para VS {{version}}",
+    "editVersion": "Editar la versión {{version}}",
+    "deleteVersion": "Eliminar la versión {{version}}",
+    "needVs": "Se necesita VS {{version}}"
+  },
+  "modsList": {
+    "count_one": "{{count}} mod",
+    "count_other": "{{count}} mods"
+  },
+  "install": {
+    "failed": "No se pudo importar el modpack",
+    "profileName": "Nombre del perfil",
+    "profilePlaceholder": "Mi perfil",
+    "confirmAria": "Instalar esta versión",
+    "cancelAria": "Cancelar la instalación",
+    "progress": "Descargando el mod {{current}} de {{total}}:"
+  },
+  "form": {
+    "createTitle": "Crear modpack",
+    "editTitle": "Editar modpack",
+    "createDescription": "Publica una nueva colección de mods para otros jugadores.",
+    "editDescription": "Actualiza los detalles del modpack a continuación.",
+    "namePlaceholder": "Mi modpack increíble",
+    "slug": "Slug",
+    "suggestion": "Sugerencia:",
+    "alternatives": "Alternativas:",
+    "descriptionPlaceholder": "Una colección de mods para…",
+    "imageUrl": "URL de la imagen",
+    "imageHint": "Sube tu imagen a <site>mods.vintagestory.at</site> y pega el enlace aquí. No se aceptan URLs externas.",
+    "saving": "Guardando…",
+    "saveChanges": "Guardar cambios",
+    "createSubmit": "Crear modpack",
+    "imageHostError": "Las URLs de imagen deben ser de moddbcdn.vintagestory.at",
+    "imageHostHint": "Sube tu imagen primero en https://mods.vintagestory.at/edit/mod.",
+    "slugUnavailable": "Ese slug no está disponible",
+    "slugUnavailableHint": "Elige la sugerencia o una de las alternativas debajo del campo Slug.",
+    "updateFailed": "No se pudo actualizar el modpack",
+    "createFailed": "No se pudo crear el modpack",
+    "errors": {
+      "nameRequired": "El nombre es obligatorio",
+      "slugRequired": "El slug es obligatorio",
+      "slugFormat": "El slug debe ser alfanumérico en minúsculas con guiones"
+    }
+  },
+  "versionForm": {
+    "newTitle": "Nueva versión",
+    "editTitle": "Editar v{{version}}",
+    "pickFromProfile": "Elegir de un perfil",
+    "selectProfile": "Selecciona un perfil…",
+    "gameVersion": "Versión del juego",
+    "modsString": "Cadena de mods",
+    "modConfigsUrl": "URL de configuración de mods",
+    "uploadModConfig": "Subir la carpeta ModConfig del perfil",
+    "saving": "Guardando…",
+    "readModsFailed": "No se pudieron leer los mods instalados",
+    "uploadConfigFailed": "No se pudo subir ModConfig",
+    "saveFailed": "No se pudo guardar la versión",
+    "errors": {
+      "versionRequired": "La versión es obligatoria",
+      "invalidSemver": "Versión semántica no válida"
+    }
+  },
+  "delete": {
+    "title": "Eliminar modpack",
+    "description": "Esto elimina permanentemente <strong>{{name}}</strong> y todas sus versiones. Esta acción no se puede deshacer.",
+    "confirmLabel": "Escribe <wrap><code>{{slug}}</code><copy/></wrap> para confirmar",
+    "copyAria": "Copiar slug",
+    "pending": "Eliminando…",
+    "submit": "Eliminar modpack",
+    "failed": "No se pudo eliminar el modpack"
+  },
+  "deleteVersion": {
+    "confirm": "¿Eliminar permanentemente <strong>v{{version}}</strong>? Esta acción no se puede deshacer.",
+    "confirmPlaceholder": "Escribe {{version}} para confirmar",
+    "pending": "Eliminando…",
+    "failed": "No se pudo eliminar la versión"
+  }
+}

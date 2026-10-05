@@ -1,1 +1,92 @@
-{}
+{
+  "add": {
+    "action": "Добавить версию",
+    "allInstalledOrDownloading": "Все доступные версии уже установлены или скачиваются.",
+    "description": "Скачайте сборку Vintage Story. Установленные версии отмечены, и их нельзя выбрать повторно.",
+    "gameVersion": "Версия игры",
+    "installedOption": "{{version}} (установлено)",
+    "installedTag": "(установлено)",
+    "macWarning": "Для запуска этой версии на macOS может потребоваться дополнительная настройка. См. статью вики <wiki>Installing Vintage Story on macOS</wiki>.",
+    "macWarningTitle": "macOS: версия ниже 1.19.0",
+    "pickPlaceholder": "Выберите версию игры",
+    "title": "Добавить версию"
+  },
+  "banner": {
+    "action": "Привязать…",
+    "hint": "Привяжите их на месте — без повторного скачивания и копирования.",
+    "alreadyInstalled": "уже установлено",
+    "description": "Эти установки уже есть на диске. Привязка регистрирует их в Story Forge, чтобы профили могли запускать их без повторного скачивания.",
+    "found_one": "Найдена {{count}} версия игры от других лаунчеров",
+    "found_few": "Найдено {{count}} версии игры от других лаунчеров",
+    "found_many": "Найдено {{count}} версий игры от других лаунчеров",
+    "found_other": "Найдено {{count}} версии игры от других лаунчеров",
+    "linkVersions_one": "Привязать {{count}} версию",
+    "linkVersions_few": "Привязать {{count}} версии",
+    "linkVersions_many": "Привязать {{count}} версий",
+    "linkVersions_other": "Привязать {{count}} версии",
+    "note": "Story Forge хранит только ссылку на эти папки. После отвязки все файлы останутся на месте; лаунчер, установивший их, продолжит работать.",
+    "skipped_one": "{{count}} версию не удалось привязать",
+    "skipped_few": "{{count}} версии не удалось привязать",
+    "skipped_many": "{{count}} версий не удалось привязать",
+    "skipped_other": "{{count}} версии не удалось привязать",
+    "title": "Привязать существующие версии игры"
+  },
+  "download": {
+    "pause": "Пауза",
+    "resume": "Продолжить",
+    "status": {
+      "done": "Готово",
+      "downloading": "Скачивание",
+      "error": "Ошибка",
+      "extracting": "Распаковка",
+      "paused": "Приостановлено",
+      "pending": "В очереди"
+    }
+  },
+  "linkExisting": {
+    "description": "Укажите Story Forge папку с установленной Vintage Story. Папка регистрируется на месте — ничего не копируется и не перемещается.",
+    "folderHint": "В папке должны быть файлы игры (Vintagestory, Vintagestory.exe или Vintage Story.app).",
+    "folderLabel": "Папка установки",
+    "linkFailed": "Не удалось привязать эту папку",
+    "nameHint": "Используется при выборе версии для профиля; имя папки — хороший вариант по умолчанию.",
+    "nameLabel": "Название версии",
+    "selectFolderTitle": "Выберите папку установки Vintage Story",
+    "submit": "Привязать версию",
+    "title": "Привязать существующую версию"
+  },
+  "linked": "Привязано",
+  "linkedWithSource": "Привязано · {{source}}",
+  "linking": "Привязка…",
+  "page": {
+    "activeDownloads": "Активные загрузки ({{count}})",
+    "emptyDescription": "Скачайте сборку, чтобы создавать профили и запускать игру.",
+    "emptyTitle": "Версии игры ещё не установлены.",
+    "installedVersions": "Установленные версии",
+    "installedVersionsCount": "Установленные версии ({{count}})",
+    "linkExisting": "Привязать существующую",
+    "macNote": "На macOS для версий ниже 1.19.0 требуется дополнительная настройка. См. статью вики <wiki>Installing Vintage Story on macOS</wiki>."
+  },
+  "row": {
+    "deleteNote": "Профили, использующие эту версию, продолжат работать; нельзя будет только создавать новые, пока она не будет установлена заново.",
+    "deleteVersion": "Удалить версию {{name}}",
+    "folderMissing": "Папка не найдена — привяжите её заново или отвяжите",
+    "reallyDelete": "Точно удалить?",
+    "reallyUnlink": "Точно отвязать?",
+    "releaseCandidate": "Кандидат в релизы",
+    "unlink": "Отвязать",
+    "unlinkNote": "Story Forge перестанет использовать эту папку; на диске ничего не изменится, и лаунчер, установивший её, продолжит работать.",
+    "unlinkVersion": "Отвязать версию {{name}}"
+  },
+  "toast": {
+    "deleteFailed": "Не удалось удалить версию {{name}}: {{message}}",
+    "deleting": "Удаление версии {{name}}…",
+    "downloadFailed": "Ошибка скачивания версии игры {{version}}",
+    "linkFailed": "Не удалось привязать",
+    "linkSkipped_one": "Не удалось привязать: {{count}}",
+    "linkSkipped_few": "Не удалось привязать: {{count}}",
+    "linkSkipped_many": "Не удалось привязать: {{count}}",
+    "linkSkipped_other": "Не удалось привязать: {{count}}",
+    "unlinkFailed": "Не удалось отвязать версию {{name}}: {{message}}",
+    "unlinking": "Отвязка версии {{name}}…"
+  }
+}

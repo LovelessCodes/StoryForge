@@ -1,1 +1,148 @@
-{}
+{
+  "standalone": "Standalone",
+  "loadingReleases": "Releases werden geladen…",
+  "search": {
+    "placeholder": "Mods durchsuchen…"
+  },
+  "filters": {
+    "count_one": "{{count}} Mod",
+    "count_other": "{{count}} Mods",
+    "gameVersions": {
+      "aria": "Nach Spielversion filtern",
+      "empty": "Keine Versionen gefunden.",
+      "placeholder": "Spielversionen…"
+    },
+    "tags": {
+      "aria": "Nach Tag filtern",
+      "empty": "Keine Tags gefunden.",
+      "placeholder": "Mod-Tags…"
+    },
+    "sort": {
+      "aria": "Sortieren nach",
+      "toggleDirection": "Sortierrichtung umschalten"
+    },
+    "category": {
+      "aria": "Kategorie"
+    },
+    "side": {
+      "aria": "Nach Seite filtern",
+      "label": "Seite"
+    }
+  },
+  "sort": {
+    "comments": "Kommentare",
+    "created": "Erstellt",
+    "downloads": "Downloads",
+    "follows": "Follower",
+    "name": "Name",
+    "relevance": "Relevanz",
+    "trending": "Im Trend",
+    "updated": "Zuletzt aktualisiert"
+  },
+  "sortDirection": {
+    "ascending": "Aufsteigend",
+    "descending": "Absteigend"
+  },
+  "category": {
+    "externaltool": "Externes Tool",
+    "mod": "Mod",
+    "other": "Sonstiges"
+  },
+  "side": {
+    "both": "Beide",
+    "client": "Client",
+    "server": "Server"
+  },
+  "authorFilter": {
+    "aria": "Nach Autor filtern",
+    "clear": "Autorfilter zurücksetzen",
+    "count_one": "{{count}} Mod",
+    "count_other": "{{count}} Mods",
+    "empty": "Keine Autoren gefunden.",
+    "placeholder": "Autor filtern…"
+  },
+  "list": {
+    "empty": "Keine Mods gefunden. Passe deine Suche oder Filter an."
+  },
+  "item": {
+    "add": "Mod hinzufügen",
+    "addTo": "Zu {{destination}} hinzufügen",
+    "browseVersions": "Versionen durchsuchen",
+    "browseVersionsTooltip": "Verfügbare Versionen ansehen",
+    "byAuthor": "von {{author}}",
+    "downloadLatest": "Neueste Version herunterladen",
+    "filterBy": "Nach {{author}} filtern",
+    "filterByAuthor": "Nach Autor {{author}} filtern",
+    "install": "Mod installieren",
+    "installLatest": "Neueste Version installieren",
+    "installTo": "Installieren in…",
+    "installToDestination": "In Profil oder gehosteten Server installieren",
+    "installedVersion": "Installiert: v{{version}}",
+    "pin": "Mod anpinnen",
+    "pinTooltip": "An v{{version}} anpinnen (von „Alle aktualisieren“ ausgenommen)",
+    "pinnedTooltip": "An v{{version}} angepinnt — „Alle aktualisieren“ überspringt sie",
+    "removeFrom": "Aus {{destination}} entfernen",
+    "unpin": "Pin entfernen",
+    "updateToLatest": "Auf neueste Version aktualisieren"
+  },
+  "versionPicker": {
+    "aria": "Version auswählen",
+    "forVersion": "für {{version}}",
+    "moreTags_one": "(+{{count}} weitere)",
+    "moreTags_other": "(+{{count}} weitere)",
+    "placeholder": "Version auswählen…"
+  },
+  "release": {
+    "downloads_one": "{{count}} Download",
+    "downloads_other": "{{count}} Downloads"
+  },
+  "addSheet": {
+    "description": "Wähle die Version von {{name}}, die du zu {{destination}} hinzufügen möchtest.",
+    "submit": "Mod hinzufügen",
+    "title": "<name>{{name}}</name> zu <destination>{{destination}}</destination> hinzufügen"
+  },
+  "removeSheet": {
+    "body": "Dadurch wird <name>{{name}}</name> dauerhaft aus {{destination}} entfernt.",
+    "description": "Diese Aktion kann nicht rückgängig gemacht werden.",
+    "title": "<name>{{name}}</name> aus <destination>{{destination}}</destination> entfernen?"
+  },
+  "updateSheet": {
+    "buttonDowngrade": "Mod downgraden",
+    "buttonUpdate": "Mod aktualisieren",
+    "description": "Derzeit installierte Version: <version>{{version}}</version>. Wähle die Version aus, zu der gewechselt werden soll.",
+    "titleDowngrade": "<name>{{name}}</name> in <destination>{{destination}}</destination> downgraden",
+    "titleUpdate": "<name>{{name}}</name> in <destination>{{destination}}</destination> aktualisieren"
+  },
+  "standaloneInstall": {
+    "description": "Kein aktives Profil. Wähle, wo diese Mod installiert und welche Version verwendet werden soll.",
+    "destination": "Ziel",
+    "destinationAria": "Installationsziel",
+    "destinationPlaceholder": "Ziel auswählen…",
+    "hostedServers": "Gehostete Server",
+    "noDestinations": "Keine Profile oder gehosteten Server verfügbar.",
+    "noDownload": "Kein Download für {{name}} verfügbar",
+    "profiles": "Profile",
+    "title": "<name>{{name}}</name> installieren"
+  },
+  "updateAll": {
+    "button_one": "Alle aktualisieren ({{count}})",
+    "button_other": "Alle aktualisieren ({{count}})",
+    "confirm": "Ja, wirklich"
+  },
+  "dependencies": {
+    "installMissing": "Fehlende installieren",
+    "missing_one": "{{count}} fehlende Abhängigkeit in {{destination}}",
+    "missing_other": "{{count}} fehlende Abhängigkeiten in {{destination}}",
+    "more": "+{{count}} weitere",
+    "requiredBy": "benötigt von {{names}}"
+  },
+  "errors": {
+    "add": "Fehler beim Hinzufügen von {{name}} zu {{destination}}: {{message}}",
+    "downgrading": "Fehler beim Downgraden von {{name}} in {{destination}}: {{message}}",
+    "install": "Fehler beim Installieren von {{name}} in {{destination}}: {{message}}",
+    "remove": "Fehler beim Entfernen von {{name}} aus {{destination}}: {{message}}",
+    "update": "Fehler beim Aktualisieren von {{name}} in {{destination}}: {{message}}",
+    "updateIn": "Fehler beim Aktualisieren der Mod in {{destination}}: {{message}}",
+    "upgrading": "Fehler beim Upgraden von {{name}} in {{destination}}: {{message}}"
+  }
+}

@@ -1,1 +1,112 @@
-{}
+{
+  "status": {
+    "crashed": "Caído",
+    "notInstalled": "No instalado",
+    "running": "En ejecución",
+    "starting": "Iniciando",
+    "stopped": "Detenido",
+    "stopping": "Deteniéndose"
+  },
+  "instanceNotFound": "Instancia no encontrada.",
+  "sections": {
+    "console": "Consola",
+    "config": "Configuración",
+    "whitelist": "Lista blanca",
+    "settings": "Ajustes"
+  },
+  "detail": {
+    "backToServers": "Volver a Servidores",
+    "backToServersAria": "Volver a los servidores",
+    "pid": "PID {{pid}}",
+    "exitCode": "(código {{code}})",
+    "uptime": "activo {{duration}}",
+    "sectionAria": "Sección de la instancia",
+    "mods": "Mods",
+    "start": "Iniciar"
+  },
+  "mods": {
+    "backAria": "Volver a la instancia",
+    "title": "{{name}} — Mods",
+    "fallbackTitle": "Mods del servidor",
+    "description": "Instala y gestiona mods en la carpeta de datos de este servidor."
+  },
+  "config": {
+    "description": "Edita serverconfig.json. Los cambios se aplican en el próximo reinicio.",
+    "reset": "Restablecer",
+    "saving": "Guardando…",
+    "saveChanges": "Guardar cambios",
+    "noChanges": "No hay cambios que guardar",
+    "saveFailed": "No se pudo guardar: {{message}}",
+    "saved": "serverconfig.json guardado. Reinicia el servidor para aplicar los cambios."
+  },
+  "console": {
+    "waiting": "Esperando salida…",
+    "commandPlaceholder": "Escribe un comando de servidor (p. ej. /help)",
+    "notRunning": "El servidor no está en ejecución",
+    "send": "Enviar"
+  },
+  "settings": {
+    "bindIp": "IP de enlace",
+    "dataDirectory": "Directorio de datos",
+    "saving": "Guardando…",
+    "save": "Guardar ajustes",
+    "saveFailed": "No se pudieron guardar los ajustes: {{message}}",
+    "saved": "Ajustes guardados",
+    "deleteFailed": "No se pudo eliminar la instancia: {{message}}",
+    "dangerZone": "Zona de peligro",
+    "dangerDescription": "Eliminar una instancia es permanente. Opcionalmente también puedes eliminar todos los datos del servidor (mundos, mods, configuración).",
+    "stopBeforeDelete": "Detén el servidor antes de eliminarlo",
+    "deleteInstance": "Eliminar instancia",
+    "deleteTitle": "¿Eliminar “{{name}}”?",
+    "deleteDescription": "Esta acción no se puede deshacer. La configuración de la instancia se eliminará permanentemente.",
+    "deleteData": "Eliminar también todos los datos del servidor",
+    "deleteDataDescription": "Los mundos, mods y la configuración se eliminan del disco.",
+    "deleting": "Eliminando…"
+  },
+  "whitelist": {
+    "enabled": "Activada — solo pueden entrar los jugadores de la lista blanca",
+    "disabled": "Desactivada — cualquiera puede entrar",
+    "disable": "Desactivar",
+    "enable": "Activar",
+    "modeFailed": "No se pudo actualizar el modo de la lista blanca: {{message}}",
+    "loading": "Cargando la lista blanca…",
+    "emptyTitle": "No hay jugadores en la lista blanca",
+    "emptyDescription": "Agrega un jugador abajo o importa un archivo de lista blanca en bloque.",
+    "player": "Jugador",
+    "uid": "UID",
+    "addedBy": "Agregado por",
+    "unknown": "desconocido",
+    "removeFailed": "No se pudo quitar al jugador: {{message}}",
+    "removeCommandFailed": "El jugador se quitó del archivo, pero el comando en vivo falló (puede que el servidor no responda)",
+    "reallyRemove": "¿Quitar de verdad?",
+    "removeAria": "Quitar a {{name}} de la lista blanca",
+    "removeTitle": "Quitar de la lista blanca",
+    "playerNotFound": "No se encontró al jugador \"{{name}}\"",
+    "lookupFailed": "Falló la búsqueda: {{message}}",
+    "addFailed": "No se pudo agregar al jugador: {{message}}",
+    "addCommandFailed": "El jugador se agregó al archivo, pero el comando en vivo falló (puede que el servidor no responda)",
+    "addPlayer": "Agregar jugador",
+    "accountNamePlaceholder": "Nombre de cuenta de Vintage Story",
+    "lookupUid": "Buscar UID",
+    "orManual": "— o escribe manualmente —",
+    "uidPlaceholder": "UID del jugador",
+    "namePlaceholder": "Nombre del jugador (etiqueta)",
+    "addMe": "+ Agregarme",
+    "adding": "Agregando…",
+    "bulkImport": "Importación en bloque",
+    "bulkDescription": "Pega un arreglo JSON de entradas { uid, name }, o un objeto con un arreglo<code> entries </code>.",
+    "jsonPlaceholder": "[\n  { \"uid\": \"…\", \"name\": \"Player\" }\n]",
+    "importing": "Importando…",
+    "import": "Importar entradas",
+    "invalidJson": "JSON de lista blanca no válido: {{message}}",
+    "errorNotArray": "se esperaba un arreglo JSON o un objeto { entries: [...] }",
+    "errorNoEntries": "no se encontraron entradas con uid",
+    "importFailed": "Falló la importación: {{message}}"
+  },
+  "toasts": {
+    "startFailed": "No se pudo iniciar el servidor: {{message}}",
+    "stopFailed": "No se pudo detener el servidor: {{message}}",
+    "restartFailed": "No se pudo reiniciar el servidor",
+    "favoriteFailed": "No se pudo actualizar el favorito"
+  }
+}

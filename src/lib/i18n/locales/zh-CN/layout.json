@@ -1,1 +1,164 @@
-{}
+{
+  "nav": {
+    "profiles": "配置档",
+    "mods": "模组",
+    "modpacks": "整合包",
+    "versions": "版本",
+    "worlds": "世界",
+    "servers": "服务器",
+    "config": "模组配置",
+    "news": "新闻",
+    "settings": "设置"
+  },
+  "sidebar": {
+    "navigation": "导航",
+    "tagline": "Vintage Story 管理器",
+    "openProfilesFolderTitle": "打开配置档文件夹",
+    "play": "开始游戏 {{name}}",
+    "createProfileFirst": "请先创建一个配置档",
+    "launchTitle": "启动 {{name}}",
+    "pausedTitle": "游戏版本 {{version}} 的下载已暂停，请在版本页面继续",
+    "downloadTitle": "下载游戏版本 {{version}}，开始游玩 {{name}}",
+    "downloadPaused": "下载已暂停",
+    "downloading": "下载中… {{percent}}%",
+    "downloadingNoPercent": "下载中…",
+    "downloadVersion": "下载 v{{version}}",
+    "title": "侧边栏",
+    "description": "显示移动端侧边栏。",
+    "toggle": "切换侧边栏"
+  },
+  "titlebar": {
+    "update": "更新 v{{version}}",
+    "updateTitle": "更新到 Story Forge {{version}}",
+    "downloads": "下载",
+    "downloadProgress": "下载进度：{{percent}}%",
+    "search": "搜索",
+    "searchTitle": "搜索页面和操作",
+    "minimize": "最小化窗口",
+    "maximize": "最大化窗口",
+    "close": "关闭窗口"
+  },
+  "theme": {
+    "toggle": "切换主题",
+    "switchToLight": "切换到浅色模式",
+    "switchToDark": "切换到深色模式",
+    "light": "浅色",
+    "dark": "深色"
+  },
+  "commandPalette": {
+    "placeholder": "搜索 Story Forge…",
+    "empty": "未找到结果。",
+    "switchToTheme": "{{title}} — 切换到{{theme}}"
+  },
+  "commands": {
+    "groups": {
+      "goTo": "前往",
+      "application": "应用",
+      "appearance": "外观",
+      "game": "游戏"
+    },
+    "commandPalette": {
+      "title": "打开命令面板",
+      "description": "搜索页面和操作"
+    },
+    "toggleSidebar": "切换侧边栏",
+    "toggleTheme": {
+      "title": "切换主题",
+      "description": "在浅色和深色之间切换"
+    },
+    "checkForUpdates": "检查更新",
+    "refresh": "刷新数据",
+    "openProfilesFolder": "打开配置档文件夹",
+    "launchProfile": "启动当前配置档"
+  },
+  "updater": {
+    "checking": "正在检查更新…",
+    "downloading": "正在下载 Story Forge {{version}}…",
+    "downloadingPercent": "正在下载 Story Forge {{version}}… {{percent}}%",
+    "installed": "更新已安装，正在重启…",
+    "failed": "更新失败"
+  },
+  "noActiveProfile": {
+    "title": "无活动配置档",
+    "description": "请先创建或选择一个配置档。"
+  },
+  "launch": {
+    "errorPlaying": "使用配置档游玩时出错：{{message}}",
+    "downloadingDotnet": "正在下载 .NET 运行时… {{percent}}%",
+    "extractingDotnet": "正在解压 .NET 运行时…",
+    "launching": "正在启动 {{name}}…",
+    "launched": "已启动 {{name}}！",
+    "launchedWithWorld": "已用 {{name}} 启动世界 {{world}}！",
+    "launchedAndConnecting": "已启动 {{name}}，正在连接 {{server}}！",
+    "errorLaunching": "启动游戏出错：{{reason}}",
+    "errorConnecting": "连接服务器出错：{{message}}",
+    "backingUp": "正在备份 {{name}}… {{percent}}%",
+    "backupFailed": "启动前备份失败"
+  },
+  "reveal": {
+    "failed": "无法在文件管理器中定位：{{message}}"
+  },
+  "pages": {
+    "profiles": {
+      "title": "模组配置档",
+      "description": "为不同的游玩风格管理独立的模组配置。"
+    },
+    "mods": {
+      "title": "模组"
+    },
+    "modpacks": {
+      "title": "整合包",
+      "description": "浏览社区模组合集，并将它们安装为配置档。"
+    },
+    "versions": {
+      "title": "版本",
+      "description": "安装在本机的游戏构建。配置档使用其中一个版本启动。"
+    },
+    "worlds": {
+      "title": "世界",
+      "description": "浏览各配置档中的世界、启动它们并查看地图。"
+    },
+    "servers": {
+      "title": "服务器",
+      "description": "已保存的多人服务器、公共服务器浏览器以及你自行托管的实例。"
+    },
+    "serverHosting": {
+      "title": "服务器",
+      "description": "管理已保存的服务器和你托管的专用服务器。"
+    },
+    "config": {
+      "title": "模组配置",
+      "description": "当前活动配置档中的配置文件。"
+    },
+    "news": {
+      "title": "新闻",
+      "description": "来自 Vintage Story 论坛的最新公告。"
+    },
+    "settings": {
+      "title": "设置",
+      "description": "文件夹、外观、下载和应用账号。"
+    },
+    "auth": {
+      "title": "账号",
+      "description": "登录可选的 Story Forge 云服务以使用整合包。"
+    },
+    "default": {
+      "title": "Story Forge"
+    }
+  },
+  "header": {
+    "refreshing": "正在刷新…"
+  },
+  "errors": {
+    "title": "出错了",
+    "description": "Story Forge 在加载此页面时遇到了意外错误。",
+    "tryAgain": "重试",
+    "backToProfiles": "返回配置档",
+    "notFoundTitle": "页面未找到",
+    "notFoundDescription": "此页面不存在或已被移动。返回继续浏览模组吧。"
+  },
+  "scrollToTop": "回到顶部",
+  "toast": {
+    "close": "关闭提示"
+  }
+}

@@ -1,1 +1,112 @@
-{}
+{
+  "status": {
+    "crashed": "Сбой",
+    "notInstalled": "Не установлено",
+    "running": "Работает",
+    "starting": "Запускается",
+    "stopped": "Остановлен",
+    "stopping": "Останавливается"
+  },
+  "instanceNotFound": "Экземпляр не найден.",
+  "sections": {
+    "console": "Консоль",
+    "config": "Конфиг",
+    "whitelist": "Белый список",
+    "settings": "Настройки"
+  },
+  "detail": {
+    "backToServers": "Назад к серверам",
+    "backToServersAria": "Назад к серверам",
+    "pid": "PID {{pid}}",
+    "exitCode": "(код {{code}})",
+    "uptime": "работает {{duration}}",
+    "sectionAria": "Раздел экземпляра",
+    "mods": "Моды",
+    "start": "Запустить"
+  },
+  "mods": {
+    "backAria": "Назад к экземпляру",
+    "title": "{{name}} — моды",
+    "fallbackTitle": "Моды сервера",
+    "description": "Устанавливайте моды в папку данных этого сервера и управляйте ими."
+  },
+  "config": {
+    "description": "Редактирование serverconfig.json. Изменения применятся при следующем перезапуске.",
+    "reset": "Сбросить",
+    "saving": "Сохранение…",
+    "saveChanges": "Сохранить изменения",
+    "noChanges": "Нет изменений для сохранения",
+    "saveFailed": "Не удалось сохранить: {{message}}",
+    "saved": "serverconfig.json сохранён. Перезапустите сервер, чтобы применить изменения."
+  },
+  "console": {
+    "waiting": "Ожидание вывода…",
+    "commandPlaceholder": "Введите команду сервера (например, /help)",
+    "notRunning": "Сервер не запущен",
+    "send": "Отправить"
+  },
+  "settings": {
+    "bindIp": "IP для привязки",
+    "dataDirectory": "Папка данных",
+    "saving": "Сохранение…",
+    "save": "Сохранить настройки",
+    "saveFailed": "Не удалось сохранить настройки: {{message}}",
+    "saved": "Настройки сохранены",
+    "deleteFailed": "Не удалось удалить экземпляр: {{message}}",
+    "dangerZone": "Опасная зона",
+    "dangerDescription": "Удаление экземпляра необратимо. При желании можно также удалить все данные сервера (миры, моды, конфиг).",
+    "stopBeforeDelete": "Остановите сервер перед удалением",
+    "deleteInstance": "Удалить экземпляр",
+    "deleteTitle": "Удалить «{{name}}»?",
+    "deleteDescription": "Это действие нельзя отменить. Конфигурация экземпляра будет удалена навсегда.",
+    "deleteData": "Также удалить все данные сервера",
+    "deleteDataDescription": "Миры, моды и конфиг будут удалены с диска.",
+    "deleting": "Удаление…"
+  },
+  "whitelist": {
+    "enabled": "Включён — присоединиться могут только игроки из белого списка",
+    "disabled": "Отключён — присоединиться может любой",
+    "disable": "Отключить",
+    "enable": "Включить",
+    "modeFailed": "Не удалось изменить режим белого списка: {{message}}",
+    "loading": "Загрузка белого списка…",
+    "emptyTitle": "В белом списке нет игроков",
+    "emptyDescription": "Добавьте игрока ниже или импортируйте файл белого списка.",
+    "player": "Игрок",
+    "uid": "UID",
+    "addedBy": "Кем добавлен",
+    "unknown": "неизвестно",
+    "removeFailed": "Не удалось убрать игрока: {{message}}",
+    "removeCommandFailed": "Игрок удалён из файла, но живая команда не выполнена (возможно, сервер не отвечает)",
+    "reallyRemove": "Точно убрать?",
+    "removeAria": "Убрать {{name}} из белого списка",
+    "removeTitle": "Убрать из белого списка",
+    "playerNotFound": "Игрок «{{name}}» не найден",
+    "lookupFailed": "Не удалось найти: {{message}}",
+    "addFailed": "Не удалось добавить игрока: {{message}}",
+    "addCommandFailed": "Игрок добавлен в файл, но живая команда не выполнена (возможно, сервер не отвечает)",
+    "addPlayer": "Добавить игрока",
+    "accountNamePlaceholder": "Имя учётной записи Vintage Story",
+    "lookupUid": "Найти UID",
+    "orManual": "— или введите вручную —",
+    "uidPlaceholder": "UID игрока",
+    "namePlaceholder": "Имя игрока (метка)",
+    "addMe": "+ Добавить меня",
+    "adding": "Добавление…",
+    "bulkImport": "Массовый импорт",
+    "bulkDescription": "Вставьте массив JSON с записями { uid, name } или объект с массивом<code> entries </code>.",
+    "jsonPlaceholder": "[\n  { \"uid\": \"…\", \"name\": \"Player\" }\n]",
+    "importing": "Импорт…",
+    "import": "Импортировать записи",
+    "invalidJson": "Недопустимый JSON белого списка: {{message}}",
+    "errorNotArray": "ожидался массив JSON или объект { entries: [...] }",
+    "errorNoEntries": "не найдено записей с uid",
+    "importFailed": "Не удалось импортировать: {{message}}"
+  },
+  "toasts": {
+    "startFailed": "Не удалось запустить сервер: {{message}}",
+    "stopFailed": "Не удалось остановить сервер: {{message}}",
+    "restartFailed": "Не удалось перезапустить сервер",
+    "favoriteFailed": "Не удалось обновить избранное"
+  }
+}

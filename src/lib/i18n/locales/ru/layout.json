@@ -1,1 +1,164 @@
-{}
+{
+  "nav": {
+    "profiles": "Профили",
+    "mods": "Моды",
+    "modpacks": "Модпаки",
+    "versions": "Версии",
+    "worlds": "Миры",
+    "servers": "Серверы",
+    "config": "Конфиги модов",
+    "news": "Новости",
+    "settings": "Настройки"
+  },
+  "sidebar": {
+    "navigation": "Навигация",
+    "tagline": "Менеджер Vintage Story",
+    "openProfilesFolderTitle": "Открыть папку профилей",
+    "play": "Играть: {{name}}",
+    "createProfileFirst": "Сначала создайте профиль",
+    "launchTitle": "Запустить {{name}}",
+    "pausedTitle": "Скачивание версии игры {{version}} приостановлено — возобновите его на странице «Версии»",
+    "downloadTitle": "Скачайте версию игры {{version}}, чтобы играть в {{name}}",
+    "downloadPaused": "Скачивание приостановлено",
+    "downloading": "Скачивание… {{percent}}%",
+    "downloadingNoPercent": "Скачивание…",
+    "downloadVersion": "Скачать v{{version}}",
+    "title": "Боковая панель",
+    "description": "Отображает боковую панель на мобильных устройствах.",
+    "toggle": "Переключить боковую панель"
+  },
+  "titlebar": {
+    "update": "Обновить до v{{version}}",
+    "updateTitle": "Обновить до Story Forge {{version}}",
+    "downloads": "Загрузки",
+    "downloadProgress": "Прогресс загрузки: {{percent}}%",
+    "search": "Поиск",
+    "searchTitle": "Поиск по страницам и действиям",
+    "minimize": "Свернуть окно",
+    "maximize": "Развернуть окно",
+    "close": "Закрыть окно"
+  },
+  "theme": {
+    "toggle": "Переключить тему",
+    "switchToLight": "Переключиться на светлую тему",
+    "switchToDark": "Переключиться на тёмную тему",
+    "light": "светлую тему",
+    "dark": "тёмную тему"
+  },
+  "commandPalette": {
+    "placeholder": "Поиск в Story Forge…",
+    "empty": "Ничего не найдено.",
+    "switchToTheme": "{{title}} — переключиться на {{theme}}"
+  },
+  "commands": {
+    "groups": {
+      "goTo": "Перейти",
+      "application": "Приложение",
+      "appearance": "Оформление",
+      "game": "Игра"
+    },
+    "commandPalette": {
+      "title": "Открыть палитру команд",
+      "description": "Поиск по страницам и действиям"
+    },
+    "toggleSidebar": "Переключить боковую панель",
+    "toggleTheme": {
+      "title": "Переключить тему",
+      "description": "Переключение между светлой и тёмной темой"
+    },
+    "checkForUpdates": "Проверить обновления",
+    "refresh": "Обновить данные",
+    "openProfilesFolder": "Открыть папку профилей",
+    "launchProfile": "Запустить активный профиль"
+  },
+  "updater": {
+    "checking": "Проверка обновлений…",
+    "downloading": "Скачивание Story Forge {{version}}…",
+    "downloadingPercent": "Скачивание Story Forge {{version}}… {{percent}}%",
+    "installed": "Обновление установлено — перезапуск…",
+    "failed": "Не удалось обновить"
+  },
+  "noActiveProfile": {
+    "title": "Нет активного профиля",
+    "description": "Сначала создайте или выберите профиль."
+  },
+  "launch": {
+    "errorPlaying": "Ошибка запуска профиля: {{message}}",
+    "downloadingDotnet": "Скачивание среды .NET… {{percent}}%",
+    "extractingDotnet": "Распаковка среды .NET…",
+    "launching": "Запуск {{name}}…",
+    "launched": "{{name}} запущен!",
+    "launchedWithWorld": "Запущен мир {{world}} с профилем {{name}}!",
+    "launchedAndConnecting": "{{name}} запущен, идёт подключение к {{server}}!",
+    "errorLaunching": "Ошибка запуска игры: {{reason}}",
+    "errorConnecting": "Ошибка подключения к серверу: {{message}}",
+    "backingUp": "Резервное копирование {{name}}… {{percent}}%",
+    "backupFailed": "Не удалось создать резервную копию перед запуском"
+  },
+  "reveal": {
+    "failed": "Не удалось показать в проводнике: {{message}}"
+  },
+  "pages": {
+    "profiles": {
+      "title": "Профили модов",
+      "description": "Управляйте отдельными наборами модов для разных стилей игры."
+    },
+    "mods": {
+      "title": "Моды"
+    },
+    "modpacks": {
+      "title": "Модпаки",
+      "description": "Просматривайте коллекции модов сообщества и устанавливайте их как профили."
+    },
+    "versions": {
+      "title": "Версии",
+      "description": "Сборки игры, установленные на этом компьютере. Профили запускаются с одной из этих версий."
+    },
+    "worlds": {
+      "title": "Миры",
+      "description": "Просматривайте миры своих профилей, запускайте их и изучайте их карты."
+    },
+    "servers": {
+      "title": "Серверы",
+      "description": "Сохранённые многопользовательские серверы, список публичных серверов и ваши собственные экземпляры."
+    },
+    "serverHosting": {
+      "title": "Серверы",
+      "description": "Управляйте сохранёнными серверами и выделенными серверами, которые вы размещаете."
+    },
+    "config": {
+      "title": "Конфиги модов",
+      "description": "Файлы конфигурации в активном профиле."
+    },
+    "news": {
+      "title": "Новости",
+      "description": "Последние объявления с форумов Vintage Story."
+    },
+    "settings": {
+      "title": "Настройки",
+      "description": "Папки, оформление, загрузки и учётная запись приложения."
+    },
+    "auth": {
+      "title": "Учётная запись",
+      "description": "Войдите в необязательное облако Story Forge для модпаков."
+    },
+    "default": {
+      "title": "Story Forge"
+    }
+  },
+  "header": {
+    "refreshing": "Обновление…"
+  },
+  "errors": {
+    "title": "Что-то пошло не так",
+    "description": "При загрузке этой страницы в Story Forge произошла непредвиденная ошибка.",
+    "tryAgain": "Попробовать снова",
+    "backToProfiles": "Вернуться к профилям",
+    "notFoundTitle": "Страница не найдена",
+    "notFoundDescription": "Эта страница не существует или была перемещена. Вернитесь к просмотру модов."
+  },
+  "scrollToTop": "Прокрутить наверх",
+  "toast": {
+    "close": "Закрыть уведомление"
+  }
+}

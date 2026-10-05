@@ -1,1 +1,112 @@
-{}
+{
+  "status": {
+    "crashed": "已崩溃",
+    "notInstalled": "未安装",
+    "running": "运行中",
+    "starting": "正在启动",
+    "stopped": "已停止",
+    "stopping": "正在停止"
+  },
+  "instanceNotFound": "未找到实例。",
+  "sections": {
+    "console": "控制台",
+    "config": "配置",
+    "whitelist": "白名单",
+    "settings": "设置"
+  },
+  "detail": {
+    "backToServers": "返回服务器",
+    "backToServersAria": "返回服务器列表",
+    "pid": "PID {{pid}}",
+    "exitCode": "（代码 {{code}}）",
+    "uptime": "已运行 {{duration}}",
+    "sectionAria": "实例区域",
+    "mods": "模组",
+    "start": "启动"
+  },
+  "mods": {
+    "backAria": "返回实例",
+    "title": "{{name}} — 模组",
+    "fallbackTitle": "服务器模组",
+    "description": "在此服务器的数据文件夹中安装和管理模组。"
+  },
+  "config": {
+    "description": "编辑 serverconfig.json。更改将在下次重启后生效。",
+    "reset": "重置",
+    "saving": "正在保存…",
+    "saveChanges": "保存更改",
+    "noChanges": "没有需要保存的更改",
+    "saveFailed": "保存失败：{{message}}",
+    "saved": "serverconfig.json 已保存。重启服务器以应用更改。"
+  },
+  "console": {
+    "waiting": "等待输出…",
+    "commandPlaceholder": "输入服务器命令（例如 /help）",
+    "notRunning": "服务器未运行",
+    "send": "发送"
+  },
+  "settings": {
+    "bindIp": "绑定 IP",
+    "dataDirectory": "数据目录",
+    "saving": "正在保存…",
+    "save": "保存设置",
+    "saveFailed": "保存设置失败：{{message}}",
+    "saved": "设置已保存",
+    "deleteFailed": "删除实例失败：{{message}}",
+    "dangerZone": "危险区域",
+    "dangerDescription": "删除实例是永久性的。你还可以选择同时删除所有服务器数据（世界、模组、配置）。",
+    "stopBeforeDelete": "请先停止服务器再删除",
+    "deleteInstance": "删除实例",
+    "deleteTitle": "删除“{{name}}”？",
+    "deleteDescription": "此操作无法撤销。实例配置将被永久移除。",
+    "deleteData": "同时删除所有服务器数据",
+    "deleteDataDescription": "世界、模组和配置将从磁盘中移除。",
+    "deleting": "正在删除…"
+  },
+  "whitelist": {
+    "enabled": "已启用：仅白名单中的玩家可加入",
+    "disabled": "已禁用：任何人都可以加入",
+    "disable": "禁用",
+    "enable": "启用",
+    "modeFailed": "更新白名单模式失败：{{message}}",
+    "loading": "正在加载白名单…",
+    "emptyTitle": "白名单中没有玩家",
+    "emptyDescription": "在下方添加玩家，或批量导入白名单文件。",
+    "player": "玩家",
+    "uid": "UID",
+    "addedBy": "添加者",
+    "unknown": "未知",
+    "removeFailed": "移除玩家失败：{{message}}",
+    "removeCommandFailed": "已从文件中移除玩家，但实时命令执行失败（服务器可能未响应）",
+    "reallyRemove": "确定移除？",
+    "removeAria": "将 {{name}} 从白名单中移除",
+    "removeTitle": "从白名单中移除",
+    "playerNotFound": "未找到玩家“{{name}}”",
+    "lookupFailed": "查询失败：{{message}}",
+    "addFailed": "添加玩家失败：{{message}}",
+    "addCommandFailed": "已向文件中添加玩家，但实时命令执行失败（服务器可能未响应）",
+    "addPlayer": "添加玩家",
+    "accountNamePlaceholder": "Vintage Story 账号名",
+    "lookupUid": "查询 UID",
+    "orManual": "— 或手动输入 —",
+    "uidPlaceholder": "玩家 UID",
+    "namePlaceholder": "玩家名称（标签）",
+    "addMe": "+ 添加我",
+    "adding": "正在添加…",
+    "bulkImport": "批量导入",
+    "bulkDescription": "粘贴由 { uid, name } 条目组成的 JSON 数组，或带有<code> entries </code>数组的对象。",
+    "jsonPlaceholder": "[\n  { \"uid\": \"…\", \"name\": \"玩家\" }\n]",
+    "importing": "正在导入…",
+    "import": "导入条目",
+    "invalidJson": "白名单 JSON 无效：{{message}}",
+    "errorNotArray": "应为 JSON 数组或 { entries: [...] } 对象",
+    "errorNoEntries": "未找到包含 uid 的条目",
+    "importFailed": "导入失败：{{message}}"
+  },
+  "toasts": {
+    "startFailed": "启动服务器失败：{{message}}",
+    "stopFailed": "停止服务器失败：{{message}}",
+    "restartFailed": "重启服务器失败",
+    "favoriteFailed": "更新收藏失败"
+  }
+}

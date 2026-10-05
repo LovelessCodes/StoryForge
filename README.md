@@ -61,6 +61,8 @@ the look & feel of Macheim (see `../macheim`). The core domain concept is the **
   whitelist management and port checks.
 - **Mod configs** — live JSON editor and Monaco code editor for `ModConfig/*.json`.
 - **Accounts** — multiple Vintage Story accounts with TOTP support.
+- **Localized UI** — English, German, French, Spanish, Brazilian Portuguese, Russian and
+  Simplified Chinese. Follows the system language by default and switches live from Settings.
 - **Light & dark theme**, command palette (⌘K / Ctrl+K), keyboard shortcuts, auto-updater.
 
 ## Screenshots
@@ -91,6 +93,16 @@ All screenshots are 1200×800 captures of the app UI, split light/dark along the
 refreshed headlessly on every published release. See
 [screenshots/README.md](screenshots/README.md) for the pipeline, including the platform chrome
 preview (`bun run screenshots:platforms`).
+
+## Translations
+
+All UI strings live in per-area catalogs under `src/lib/i18n/locales/` — English is the source
+of truth and every other locale mirrors it (missing keys fall back to English). To add or update a
+language, see [src/lib/i18n/README.md](src/lib/i18n/README.md) and run the parity check:
+
+```sh
+bun run check:i18n        # keys, {{placeholders}} and <Trans> tags across all locales
+```
 
 ## Development
 

@@ -1,1 +1,80 @@
-{}
+{
+  "add": {
+    "action": "添加版本",
+    "allInstalledOrDownloading": "所有可用版本都已安装或正在下载。",
+    "description": "下载 Vintage Story 构建。已安装的版本会被标记，无法再次选择。",
+    "gameVersion": "游戏版本",
+    "installedOption": "{{version}}（已安装）",
+    "installedTag": "（已安装）",
+    "macWarning": "此版本在 macOS 上运行可能需要额外设置。请参阅 <wiki>在 macOS 上安装 Vintage Story</wiki> wiki 文章。",
+    "macWarningTitle": "macOS：低于 1.19.0 的版本",
+    "pickPlaceholder": "选择游戏版本",
+    "title": "添加版本"
+  },
+  "banner": {
+    "action": "链接…",
+    "hint": "就地链接：无需重新下载，也不会复制任何内容。",
+    "alreadyInstalled": "已安装",
+    "description": "这些安装已存在于磁盘上。链接会将它们注册到 Story Forge，配置档无需重新下载即可启动。",
+    "found_other": "发现 {{count}} 个来自其他启动器的游戏版本",
+    "linkVersions_other": "链接 {{count}} 个版本",
+    "note": "Story Forge 只保存对这些文件夹的引用。以后取消链接时所有文件都会留在原处；安装它们的启动器可继续正常工作。",
+    "skipped_other": "{{count}} 个版本无法链接",
+    "title": "链接现有的游戏版本"
+  },
+  "download": {
+    "pause": "暂停",
+    "resume": "继续",
+    "status": {
+      "done": "完成",
+      "downloading": "下载中",
+      "error": "失败",
+      "extracting": "解压中",
+      "paused": "已暂停",
+      "pending": "已排队"
+    }
+  },
+  "linkExisting": {
+    "description": "将 Story Forge 指向一个 Vintage Story 安装文件夹。该文件夹会被就地注册，不会复制或移动任何内容。",
+    "folderHint": "该文件夹应包含游戏文件（Vintagestory、Vintagestory.exe 或 Vintage Story.app）。",
+    "folderLabel": "安装文件夹",
+    "linkFailed": "无法链接该文件夹",
+    "nameHint": "在为配置档选择版本时使用；文件夹名称是不错的默认值。",
+    "nameLabel": "版本名称",
+    "selectFolderTitle": "选择 Vintage Story 安装文件夹",
+    "submit": "链接版本",
+    "title": "链接现有版本"
+  },
+  "linked": "已链接",
+  "linkedWithSource": "已链接 · {{source}}",
+  "linking": "正在链接…",
+  "page": {
+    "activeDownloads": "活动下载（{{count}}）",
+    "emptyDescription": "下载一个构建以创建配置档并启动游戏。",
+    "emptyTitle": "尚未安装任何游戏版本。",
+    "installedVersions": "已安装的版本",
+    "installedVersionsCount": "已安装的版本（{{count}}）",
+    "linkExisting": "链接现有版本",
+    "macNote": "在 macOS 上，低于 1.19.0 的版本需要额外设置才能运行。请参阅 <wiki>在 macOS 上安装 Vintage Story</wiki> wiki 文章。"
+  },
+  "row": {
+    "deleteNote": "使用此版本的配置档仍可继续工作；只是在重新安装之前无法用它创建新配置档。",
+    "deleteVersion": "删除版本 {{name}}",
+    "folderMissing": "未找到文件夹，请重新链接或取消链接",
+    "reallyDelete": "确定删除？",
+    "reallyUnlink": "确定取消链接？",
+    "releaseCandidate": "候选版本",
+    "unlink": "取消链接",
+    "unlinkNote": "Story Forge 将不再使用此文件夹；磁盘上的内容不会有任何变化，安装它的启动器可继续正常工作。",
+    "unlinkVersion": "取消链接版本 {{name}}"
+  },
+  "toast": {
+    "deleteFailed": "删除版本 {{name}} 失败：{{message}}",
+    "deleting": "正在删除版本 {{name}}…",
+    "downloadFailed": "下载游戏版本 {{version}} 时出错",
+    "linkFailed": "链接失败",
+    "linkSkipped_other": "{{count}} 个无法链接",
+    "unlinkFailed": "取消链接版本 {{name}} 失败：{{message}}",
+    "unlinking": "正在取消链接版本 {{name}}…"
+  }
+}

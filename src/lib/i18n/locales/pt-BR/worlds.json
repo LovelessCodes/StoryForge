@@ -1,1 +1,87 @@
-{}
+{
+  "page": {
+    "searchAria": "Buscar mundos e mapas",
+    "searchPlaceholder": "Buscar mundos e mapas…",
+    "allProfiles": "Todos os perfis",
+    "filterAria": "Filtrar por perfil",
+    "loading": "Carregando mundos…",
+    "worlds": "Mundos",
+    "worldsCount_one": "Mundos ({{count}})",
+    "worldsCount_other": "Mundos ({{count}})",
+    "mapsWithoutSaves_one": "Mapas sem saves ({{count}})",
+    "mapsWithoutSaves_other": "Mapas sem saves ({{count}})",
+    "empty": "Nenhum mundo encontrado ainda. Crie um mundo no jogo para começar.",
+    "noMatches": "Nenhum mundo corresponde aos seus filtros."
+  },
+  "row": {
+    "seedTitle": "Seed {{seed}} — clique para copiar",
+    "copied": "Copiado!",
+    "byline": "por <author>{{author}}</author> em {{version}}",
+    "lastPlayed": "Jogado pela última vez: {{time}}",
+    "differentVersion": "Versão diferente {{worldVersion}} → {{profileVersion}}",
+    "versionMismatchTitle": "A versão do perfil ({{profileVersion}}) difere da última versão salva do mundo ({{worldVersion}}).",
+    "playTitle": "Jogar {{world}} com {{profile}}",
+    "installTitle": "A versão do jogo {{version}} não está instalada",
+    "noProfileTitle": "Nenhum perfil correspondente encontrado",
+    "noProfile": "Nenhum perfil",
+    "viewMapAria": "Ver mapa",
+    "noMapTitle": "Nenhum mapa disponível para {{name}}",
+    "editAria": "Editar mundo",
+    "deleteAria": "Excluir mundo"
+  },
+  "edit": {
+    "title": "Editar “{{name}}”",
+    "description": "Renomeie o mundo ou mova-o para outro perfil. Renomear também renomeia o arquivo de save.",
+    "namePlaceholder": "Meu mundo",
+    "profile": "Perfil",
+    "selectProfile": "Selecionar perfil",
+    "moveHint": "Mover o mundo transfere seu banco de dados de mapa junto com o arquivo de save.",
+    "submit": "Atualizar mundo",
+    "saving": "Salvando…",
+    "failed": "Falha ao atualizar o mundo",
+    "errors": {
+      "nameLength": "O nome deve ter entre 2 e 100 caracteres",
+      "profile": "Selecione um perfil"
+    }
+  },
+  "delete": {
+    "title": "Excluir <name>{{name}}</name>?",
+    "description": "Isso não pode ser desfeito. O save do mundo e seu banco de dados de mapa são removidos permanentemente do Story Forge.",
+    "warning": "Aviso:",
+    "warningText": "Isso exclui o mundo do seu computador. Se quiser manter um backup, exporte-o antes de continuar.",
+    "confirmAria": "Confirmar exclusão do mundo",
+    "confirmLabel": "Entendo que esta ação não pode ser desfeita.",
+    "pending": "Excluindo…",
+    "deleting": "Excluindo o mundo {{name}}…",
+    "failed": "Falha ao excluir o mundo {{name}}",
+    "facts": {
+      "worldName": "Nome do mundo",
+      "mapIdentifier": "Identificador do mapa",
+      "worldType": "Tipo de mundo",
+      "playStyle": "Estilo de jogo",
+      "createdBy": "Criado por",
+      "lastPlayed": "Jogado pela última vez",
+      "lastSession": "Última sessão",
+      "seed": "Seed",
+      "createdVersion": "Criado na versão",
+      "lastSavedVersion": "Salvo pela última vez na versão"
+    }
+  },
+  "map": {
+    "defaultName": "Mapa",
+    "view": "Ver mapa",
+    "viewTitle": "Ver mapa {{name}}",
+    "rowMeta": "{{profile}} · Mapa independente · Nenhum save anexado",
+    "title": "{{name}} — Mapa do mundo",
+    "description": "Visualizador de mapa interativo · Arraste para mover · Role para ampliar",
+    "playerAria": "Jogador cujos marcadores são exibidos",
+    "noPlayers": "Nenhum jogador encontrado",
+    "showProspecting": "Mostrar prospecção",
+    "loading": "Carregando mapa…",
+    "noMapData": "Nenhum dado de mapa disponível ainda. Explore o mundo no jogo para gerar o mapa!",
+    "loadError": "Erro ao carregar o mapa: {{message}}",
+    "noTiles": "Nenhum tile de mapa encontrado. Explore o mundo no jogo para gerar o mapa!",
+    "prospectingResults": "Resultados da prospecção:",
+    "panZoom": "Arraste para mover · Role para ampliar"
+  }
+}

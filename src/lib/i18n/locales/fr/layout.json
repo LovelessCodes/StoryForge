@@ -1,1 +1,164 @@
-{}
+{
+  "nav": {
+    "profiles": "Profils",
+    "mods": "Mods",
+    "modpacks": "Modpacks",
+    "versions": "Versions",
+    "worlds": "Mondes",
+    "servers": "Serveurs",
+    "config": "Configs de mods",
+    "news": "Actualités",
+    "settings": "Paramètres"
+  },
+  "sidebar": {
+    "navigation": "Navigation",
+    "tagline": "Gestionnaire Vintage Story",
+    "openProfilesFolderTitle": "Ouvrir le dossier des profils",
+    "play": "Jouer à {{name}}",
+    "createProfileFirst": "Créez d'abord un profil",
+    "launchTitle": "Lancer {{name}}",
+    "pausedTitle": "Le téléchargement de la version {{version}} est en pause — reprenez-le sur la page Versions",
+    "downloadTitle": "Téléchargez la version {{version}} pour jouer à {{name}}",
+    "downloadPaused": "Téléchargement en pause",
+    "downloading": "Téléchargement… {{percent}} %",
+    "downloadingNoPercent": "Téléchargement…",
+    "downloadVersion": "Télécharger la v{{version}}",
+    "title": "Barre latérale",
+    "description": "Affiche la barre latérale mobile.",
+    "toggle": "Afficher/masquer la barre latérale"
+  },
+  "titlebar": {
+    "update": "Mettre à jour vers la v{{version}}",
+    "updateTitle": "Mettre à jour vers Story Forge {{version}}",
+    "downloads": "Téléchargements",
+    "downloadProgress": "Progression du téléchargement : {{percent}} %",
+    "search": "Rechercher",
+    "searchTitle": "Rechercher des pages et des actions",
+    "minimize": "Réduire la fenêtre",
+    "maximize": "Agrandir la fenêtre",
+    "close": "Fermer la fenêtre"
+  },
+  "theme": {
+    "toggle": "Changer de thème",
+    "switchToLight": "Passer en mode clair",
+    "switchToDark": "Passer en mode sombre",
+    "light": "clair",
+    "dark": "sombre"
+  },
+  "commandPalette": {
+    "placeholder": "Rechercher dans Story Forge…",
+    "empty": "Aucun résultat.",
+    "switchToTheme": "{{title}} — passer en mode {{theme}}"
+  },
+  "commands": {
+    "groups": {
+      "goTo": "Aller à",
+      "application": "Application",
+      "appearance": "Apparence",
+      "game": "Jeu"
+    },
+    "commandPalette": {
+      "title": "Ouvrir la palette de commandes",
+      "description": "Rechercher des pages et des actions"
+    },
+    "toggleSidebar": "Afficher/masquer la barre latérale",
+    "toggleTheme": {
+      "title": "Changer de thème",
+      "description": "Basculer entre le mode clair et le mode sombre"
+    },
+    "checkForUpdates": "Rechercher des mises à jour",
+    "refresh": "Actualiser les données",
+    "openProfilesFolder": "Ouvrir le dossier des profils",
+    "launchProfile": "Lancer le profil actif"
+  },
+  "updater": {
+    "checking": "Recherche de mises à jour…",
+    "downloading": "Téléchargement de Story Forge {{version}}…",
+    "downloadingPercent": "Téléchargement de Story Forge {{version}}… {{percent}} %",
+    "installed": "Mise à jour installée — redémarrage…",
+    "failed": "Échec de la mise à jour"
+  },
+  "noActiveProfile": {
+    "title": "Aucun profil actif",
+    "description": "Créez ou sélectionnez d'abord un profil."
+  },
+  "launch": {
+    "errorPlaying": "Erreur en jouant avec le profil : {{message}}",
+    "downloadingDotnet": "Téléchargement du runtime .NET… {{percent}} %",
+    "extractingDotnet": "Extraction du runtime .NET…",
+    "launching": "Lancement de {{name}}…",
+    "launched": "{{name}} lancé !",
+    "launchedWithWorld": "Monde {{world}} lancé avec {{name}} !",
+    "launchedAndConnecting": "{{name}} lancé et connexion à {{server}} !",
+    "errorLaunching": "Erreur au lancement du jeu : {{reason}}",
+    "errorConnecting": "Erreur de connexion au serveur : {{message}}",
+    "backingUp": "Sauvegarde de {{name}}… {{percent}} %",
+    "backupFailed": "Échec de la sauvegarde avant lancement"
+  },
+  "reveal": {
+    "failed": "Impossible d'afficher dans l'explorateur de fichiers : {{message}}"
+  },
+  "pages": {
+    "profiles": {
+      "title": "Profils de mods",
+      "description": "Gérez des configurations de mods distinctes pour différents styles de jeu."
+    },
+    "mods": {
+      "title": "Mods"
+    },
+    "modpacks": {
+      "title": "Modpacks",
+      "description": "Parcourez les collections de mods de la communauté et installez-les comme profils."
+    },
+    "versions": {
+      "title": "Versions",
+      "description": "Versions du jeu installées sur cette machine. Les profils se lancent avec l'une d'elles."
+    },
+    "worlds": {
+      "title": "Mondes",
+      "description": "Parcourez les mondes de vos profils, lancez-les et explorez leurs cartes."
+    },
+    "servers": {
+      "title": "Serveurs",
+      "description": "Serveurs multijoueurs enregistrés, navigateur de serveurs publics et vos propres instances hébergées."
+    },
+    "serverHosting": {
+      "title": "Serveurs",
+      "description": "Gérez les serveurs enregistrés et les serveurs dédiés que vous hébergez."
+    },
+    "config": {
+      "title": "Configs de mods",
+      "description": "Fichiers de configuration de votre profil actif."
+    },
+    "news": {
+      "title": "Actualités",
+      "description": "Dernières annonces des forums Vintage Story."
+    },
+    "settings": {
+      "title": "Paramètres",
+      "description": "Dossiers, apparence, téléchargements et compte de l'application."
+    },
+    "auth": {
+      "title": "Compte",
+      "description": "Connectez-vous au cloud facultatif de Story Forge pour les modpacks."
+    },
+    "default": {
+      "title": "Story Forge"
+    }
+  },
+  "header": {
+    "refreshing": "Actualisation…"
+  },
+  "errors": {
+    "title": "Une erreur est survenue",
+    "description": "Story Forge a rencontré une erreur inattendue lors du chargement de cette page.",
+    "tryAgain": "Réessayer",
+    "backToProfiles": "Retour aux profils",
+    "notFoundTitle": "Page introuvable",
+    "notFoundDescription": "Cette page n'existe pas ou a été déplacée. Revenez parcourir les mods."
+  },
+  "scrollToTop": "Remonter en haut",
+  "toast": {
+    "close": "Fermer la notification"
+  }
+}

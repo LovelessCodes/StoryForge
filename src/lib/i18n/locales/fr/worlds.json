@@ -1,1 +1,87 @@
-{}
+{
+  "page": {
+    "searchAria": "Rechercher des mondes et des cartes",
+    "searchPlaceholder": "Rechercher des mondes et des cartes…",
+    "allProfiles": "Tous les profils",
+    "filterAria": "Filtrer par profil",
+    "loading": "Chargement des mondes…",
+    "worlds": "Mondes",
+    "worldsCount_one": "Mondes ({{count}})",
+    "worldsCount_other": "Mondes ({{count}})",
+    "mapsWithoutSaves_one": "Cartes sans sauvegarde ({{count}})",
+    "mapsWithoutSaves_other": "Cartes sans sauvegarde ({{count}})",
+    "empty": "Aucun monde trouvé pour l'instant. Créez un monde en jeu pour commencer.",
+    "noMatches": "Aucun monde ne correspond à vos filtres."
+  },
+  "row": {
+    "seedTitle": "Graine {{seed}} — cliquez pour copier",
+    "copied": "Copié !",
+    "byline": "par <author>{{author}}</author> en {{version}}",
+    "lastPlayed": "Dernière partie : {{time}}",
+    "differentVersion": "Version différente {{worldVersion}} → {{profileVersion}}",
+    "versionMismatchTitle": "La version du profil ({{profileVersion}}) diffère de la dernière version sauvegardée du monde ({{worldVersion}}).",
+    "playTitle": "Jouer à {{world}} avec {{profile}}",
+    "installTitle": "La version du jeu {{version}} n'est pas installée",
+    "noProfileTitle": "Aucun profil correspondant trouvé",
+    "noProfile": "Aucun profil",
+    "viewMapAria": "Voir la carte",
+    "noMapTitle": "Aucune carte disponible pour {{name}}",
+    "editAria": "Modifier le monde",
+    "deleteAria": "Supprimer le monde"
+  },
+  "edit": {
+    "title": "Modifier « {{name}} »",
+    "description": "Renommez le monde ou déplacez-le vers un autre profil. Le renommage renomme aussi le fichier de sauvegarde.",
+    "namePlaceholder": "Mon monde",
+    "profile": "Profil",
+    "selectProfile": "Sélectionner un profil",
+    "moveHint": "Déplacer le monde transfère sa base de données de carte avec le fichier de sauvegarde.",
+    "submit": "Mettre à jour le monde",
+    "saving": "Enregistrement…",
+    "failed": "Échec de la mise à jour du monde",
+    "errors": {
+      "nameLength": "Le nom doit comporter entre 2 et 100 caractères",
+      "profile": "Sélectionnez un profil"
+    }
+  },
+  "delete": {
+    "title": "Supprimer <name>{{name}}</name> ?",
+    "description": "Cette action est irréversible. La sauvegarde du monde et sa base de données de carte sont définitivement supprimées de Story Forge.",
+    "warning": "Attention :",
+    "warningText": "Cela supprime le monde de votre ordinateur. Si vous souhaitez en conserver une copie, exportez-le avant de continuer.",
+    "confirmAria": "Confirmer la suppression du monde",
+    "confirmLabel": "Je comprends que cette action est irréversible.",
+    "pending": "Suppression…",
+    "deleting": "Suppression du monde {{name}}…",
+    "failed": "Échec de la suppression du monde {{name}}",
+    "facts": {
+      "worldName": "Nom du monde",
+      "mapIdentifier": "Identifiant de la carte",
+      "worldType": "Type de monde",
+      "playStyle": "Style de jeu",
+      "createdBy": "Créé par",
+      "lastPlayed": "Dernière partie",
+      "lastSession": "Dernière session",
+      "seed": "Graine",
+      "createdVersion": "Créé en version",
+      "lastSavedVersion": "Dernière sauvegarde en version"
+    }
+  },
+  "map": {
+    "defaultName": "Carte",
+    "view": "Voir la carte",
+    "viewTitle": "Voir la carte {{name}}",
+    "rowMeta": "{{profile}} · Carte autonome · Aucune sauvegarde associée",
+    "title": "{{name}} — Carte du monde",
+    "description": "Visionneuse de carte interactive · Glissez pour déplacer · Molette pour zoomer",
+    "playerAria": "Joueur dont les marqueurs sont affichés",
+    "noPlayers": "Aucun joueur trouvé",
+    "showProspecting": "Afficher la prospection",
+    "loading": "Chargement de la carte…",
+    "noMapData": "Aucune donnée de carte disponible pour l'instant. Explorez le monde en jeu pour générer la carte !",
+    "loadError": "Erreur de chargement de la carte : {{message}}",
+    "noTiles": "Aucune tuile de carte trouvée. Explorez le monde en jeu pour générer la carte !",
+    "prospectingResults": "Résultats de prospection :",
+    "panZoom": "Glissez pour déplacer · Molette pour zoomer"
+  }
+}

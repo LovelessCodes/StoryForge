@@ -1,1 +1,84 @@
-{}
+{
+  "add": {
+    "action": "Adicionar versão",
+    "allInstalledOrDownloading": "Todas as versões disponíveis já estão instaladas ou baixando.",
+    "description": "Baixe uma compilação do Vintage Story. Versões já instaladas são marcadas e não podem ser escolhidas novamente.",
+    "gameVersion": "Versão do jogo",
+    "installedOption": "{{version}} (instalada)",
+    "installedTag": "(instalada)",
+    "macWarning": "Esta versão pode precisar de configuração extra para rodar no macOS. Veja o artigo da wiki <wiki>Installing Vintage Story on macOS</wiki>.",
+    "macWarningTitle": "macOS: versão inferior à 1.19.0",
+    "pickPlaceholder": "Escolha uma versão do jogo",
+    "title": "Adicionar versão"
+  },
+  "banner": {
+    "action": "Vincular…",
+    "hint": "Vincule-as no lugar — sem baixar de novo, nada é copiado.",
+    "alreadyInstalled": "já instalada",
+    "description": "Estas instalações já existem no disco. Vinculá-las as registra no Story Forge para que os perfis possam iniciar sem baixá-las novamente.",
+    "found_one": "{{count}} versão do jogo de outros launchers encontrada",
+    "found_other": "{{count}} versões do jogo de outros launchers encontradas",
+    "linkVersions_one": "Vincular {{count}} versão",
+    "linkVersions_other": "Vincular {{count}} versões",
+    "note": "O Story Forge armazena apenas uma referência a estas pastas. Desvincular depois deixa todos os arquivos onde estão; o launcher que as instalou continua funcionando.",
+    "skipped_one": "{{count}} versão não pôde ser vinculada",
+    "skipped_other": "{{count}} versões não puderam ser vinculadas",
+    "title": "Vincular versões do jogo existentes"
+  },
+  "download": {
+    "pause": "Pausar",
+    "resume": "Retomar",
+    "status": {
+      "done": "Concluído",
+      "downloading": "Baixando",
+      "error": "Falhou",
+      "extracting": "Extraindo",
+      "paused": "Pausado",
+      "pending": "Na fila"
+    }
+  },
+  "linkExisting": {
+    "description": "Aponte o Story Forge para uma pasta de instalação do Vintage Story. A pasta é registrada no lugar — nada é copiado ou movido.",
+    "folderHint": "A pasta deve conter os arquivos do jogo (Vintagestory, Vintagestory.exe ou Vintage Story.app).",
+    "folderLabel": "Pasta de instalação",
+    "linkFailed": "Não foi possível vincular essa pasta",
+    "nameHint": "Usado ao escolher uma versão para um perfil; o nome da pasta é um bom padrão.",
+    "nameLabel": "Nome da versão",
+    "selectFolderTitle": "Selecione uma pasta de instalação do Vintage Story",
+    "submit": "Vincular versão",
+    "title": "Vincular uma versão existente"
+  },
+  "linked": "Vinculada",
+  "linkedWithSource": "Vinculada · {{source}}",
+  "linking": "Vinculando…",
+  "page": {
+    "activeDownloads": "Downloads ativos ({{count}})",
+    "emptyDescription": "Baixe uma compilação para criar perfis e iniciar o jogo.",
+    "emptyTitle": "Nenhuma versão do jogo instalada ainda.",
+    "installedVersions": "Versões instaladas",
+    "installedVersionsCount": "Versões instaladas ({{count}})",
+    "linkExisting": "Vincular existente",
+    "macNote": "No macOS, versões inferiores à 1.19.0 precisam de configuração extra para rodar. Veja o artigo da wiki <wiki>Installing Vintage Story on macOS</wiki>."
+  },
+  "row": {
+    "deleteNote": "Perfis que usam esta versão continuam funcionando; você só não pode criar novos com ela até que seja reinstalada.",
+    "deleteVersion": "Excluir a versão {{name}}",
+    "folderMissing": "Pasta não encontrada — vincule-a novamente ou desvincule",
+    "reallyDelete": "Excluir mesmo?",
+    "reallyUnlink": "Desvincular mesmo?",
+    "releaseCandidate": "Candidata a lançamento",
+    "unlink": "Desvincular",
+    "unlinkNote": "O Story Forge para de usar esta pasta; nada no disco é alterado e o launcher que a instalou continua funcionando.",
+    "unlinkVersion": "Desvincular a versão {{name}}"
+  },
+  "toast": {
+    "deleteFailed": "Falha ao excluir a versão {{name}}: {{message}}",
+    "deleting": "Excluindo a versão {{name}}…",
+    "downloadFailed": "Erro ao baixar a versão do jogo {{version}}",
+    "linkFailed": "Falha ao vincular",
+    "linkSkipped_one": "{{count}} não pôde ser vinculada",
+    "linkSkipped_other": "{{count}} não puderam ser vinculadas",
+    "unlinkFailed": "Falha ao desvincular a versão {{name}}: {{message}}",
+    "unlinking": "Desvinculando a versão {{name}}…"
+  }
+}

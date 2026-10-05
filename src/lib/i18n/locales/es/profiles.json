@@ -1,1 +1,249 @@
-{}
+{
+  "modCount_one": "{{count}} mod",
+  "modCount_other": "{{count}} mods",
+  "hasWorlds": "tiene mundos",
+  "noWorlds": "aún no tiene mundos",
+  "fields": {
+    "gameVersion": "Versión del juego",
+    "installed": "(instalada)",
+    "installedVersion": "{{version}} (instalada)",
+    "profileName": "Nombre del perfil"
+  },
+  "errors": {
+    "importFailed": "Error al importar",
+    "purgeFailed": "Error al eliminar permanentemente",
+    "restoreFailed": "Error al restaurar"
+  },
+  "page": {
+    "import": "Importar",
+    "newProfile": "Nuevo perfil",
+    "emptyTitle": "Aún no hay perfiles",
+    "emptyDescription": "Crea un perfil para elegir una versión del juego y empezar a agregar mods.",
+    "createFirst": "Crea tu primer perfil"
+  },
+  "row": {
+    "active": "Activo",
+    "existingData": "Datos existentes",
+    "notInstalled": "No instalada",
+    "switch": "Cambiar",
+    "switchFirstTitle": "Cambia a otro perfil primero",
+    "neverPlayed": "Nunca jugado",
+    "played": "Jugado {{time}}",
+    "actionsFor": "Acciones para {{name}}",
+    "manageMods": "Gestionar mods",
+    "configureMods": "Configurar mods",
+    "viewLogs": "Ver registros",
+    "backups": "Copias de seguridad",
+    "exportFile": "Exportar como archivo…",
+    "copyShareCode": "Copiar código para compartir",
+    "deleteCurrent": "Eliminar (perfil actual)",
+    "openFolderFailed": "No se pudo abrir la carpeta"
+  },
+  "export": {
+    "filterName": "Exportación de perfil",
+    "exported": "Perfil exportado",
+    "failed": "Error al exportar",
+    "shareCodeCopied": "Código para compartir copiado al portapapeles",
+    "shareCodeFailed": "No se pudo generar el código para compartir"
+  },
+  "clone": {
+    "menu": "Clonar…",
+    "title": "Clonar “{{name}}”",
+    "defaultName": "Copia de {{name}}",
+    "description": "Copia toda la carpeta del perfil, incluidos mods, configuraciones y mundos.",
+    "newName": "Nuevo nombre",
+    "busy": "Clonando…",
+    "submit": "Clonar perfil",
+    "failed": "Error al clonar"
+  },
+  "delete": {
+    "switchFirst": "Cambia a otro perfil antes de eliminar este",
+    "deleted": "Se eliminó \"{{name}}\"",
+    "description": "La carpeta se movió a la papelera — puedes deshacerlo.",
+    "undo": "Deshacer",
+    "restored": "Se restauró \"{{name}}\"",
+    "failed": "Error al eliminar",
+    "removeTitle": "¿Quitar “{{name}}” de Story Forge?",
+    "deleteTitle": "¿Eliminar “{{name}}”?",
+    "externalDescription": "Este perfil enlaza con tu carpeta de datos existente de Vintage Story. Quitarlo solo hace que Story Forge deje de gestionar la carpeta — nada dentro de ella se mueve ni se elimina.",
+    "folderDescription": "La carpeta del perfil se mueve a la papelera dentro de tu directorio de perfiles. Puedes deshacerlo desde la notificación o la sección “Perfiles eliminados”.",
+    "removing": "Quitando…",
+    "deleting": "Eliminando…",
+    "removeAction": "Quitar de Story Forge",
+    "moveToTrash": "Mover a la papelera"
+  },
+  "dialog": {
+    "editTitle": "Editar \"{{name}}\"",
+    "newTitle": "Nuevo perfil",
+    "description": "Un perfil es una carpeta de datos de Vintage Story aislada, con sus propios mods, mundos y ajustes.",
+    "namePlaceholder": "Mi perfil",
+    "versionNotInstalled": "La versión {{version}} aún no está instalada — la barra lateral ofrece un botón de descarga cuando estés listo.",
+    "icon": "Ícono",
+    "favorite": "Favorito",
+    "favoriteHint": "Los favoritos se ordenan primero en las listas.",
+    "launchParameters": "Parámetros de inicio",
+    "optional": "opcional",
+    "startParamsPlaceholder": "--some-flag value",
+    "environmentVariables": "Variables de entorno",
+    "nameTooShort": "El nombre debe tener al menos 2 caracteres",
+    "pickVersion": "Elige una versión del juego",
+    "noAppFolder": "No se pudo resolver la carpeta de datos de la aplicación",
+    "saving": "Guardando…",
+    "creating": "Creando perfil…",
+    "saveFailed": "No se pudo guardar el perfil",
+    "createFailed": "No se pudo crear el perfil",
+    "saveChanges": "Guardar cambios",
+    "create": "Crear perfil"
+  },
+  "selector": {
+    "switched": "Se cambió a \"{{name}}\"",
+    "noProfile": "Sin perfil",
+    "manage": "Gestionar perfiles"
+  },
+  "iconPicker": {
+    "noIcon": "Sin ícono"
+  },
+  "logs": {
+    "title": "Registros — {{name}}",
+    "description": "Registros del juego escritos en la carpeta Logs del perfil.",
+    "refresh": "Actualizar registros",
+    "empty": "No se encontraron registros.",
+    "select": "Selecciona un registro para ver su contenido."
+  },
+  "backups": {
+    "title": "Copias de seguridad — {{name}}",
+    "description": "Instantáneas de los mods, mundos y configuraciones de este perfil. Los registros quedan fuera.",
+    "autoLabel": "Copia de seguridad antes de cada inicio",
+    "autoHint": "Se ejecuta justo antes de que empiece el juego.",
+    "keepLabel": "Conservar las últimas",
+    "keepHint": "Las copias más antiguas se eliminan automáticamente.",
+    "backupNow": "Crear copia de seguridad ahora",
+    "backingUpProgress": "Creando copia de seguridad… {{percent}}%",
+    "restoringProgress": "Restaurando… {{percent}}%",
+    "emptyTitle": "Aún no hay copias de seguridad",
+    "emptyDescription": "Crea una antes de cambios riesgosos, o haz una copia antes de cada inicio.",
+    "count_one": "{{count}} copia de seguridad · más recientes primero",
+    "count_other": "{{count}} copias de seguridad · más recientes primero",
+    "deleteBackup": "Eliminar copia de seguridad",
+    "confirmRestore": "¿Restaurar esta instantánea? Los archivos que contiene se sobrescriben; los archivos agregados desde entonces se conservan.",
+    "restoreBackup": "Restaurar copia de seguridad",
+    "confirmDelete": "¿Eliminar esta copia de seguridad? Esta acción no se puede deshacer.",
+    "backupFailed": "Falló la copia de seguridad",
+    "restored": "Copia de seguridad restaurada",
+    "restoredDescription": "La carpeta del perfil ahora coincide con la instantánea.",
+    "deleteFailed": "No se pudo eliminar la copia de seguridad",
+    "settingsFailed": "No se pudo guardar la configuración de las copias de seguridad"
+  },
+  "deleted": {
+    "heading": "Perfiles eliminados ({{total}})",
+    "purgeAll": "Eliminar todo permanentemente",
+    "confirmPurgeAll": "¿Seguro que quieres eliminarlos todos?",
+    "confirmYes": "Sí",
+    "confirmNo": "No",
+    "deletedAt": "Eliminado {{time}}",
+    "deletePermanently": "Eliminar {{name}} permanentemente"
+  },
+  "envVars": {
+    "empty": "No hay variables de entorno. Se pasan al proceso del juego al iniciar.",
+    "keyLabel": "Nombre de la variable",
+    "keyPlaceholder": "CLAVE",
+    "valueLabel": "Valor de la variable",
+    "valuePlaceholder": "valor",
+    "remove": "Quitar variable",
+    "add": "Agregar variable"
+  },
+  "import": {
+    "title": "Importar un perfil",
+    "description": "Pega un código para compartir o un JSON exportado, o elige un archivo exportado. Los mods se descargan automáticamente.",
+    "placeholder": "Código para compartir SF1.… o exportación JSON del perfil",
+    "chooseFile": "Elegir archivo…",
+    "shareCodeHint": "Los códigos para compartir empiezan con SF1.",
+    "decodingShareCode": "Decodificando el código para compartir…",
+    "invalid": "Eso no parece una exportación de perfil",
+    "downloadingVersion": "Descargando la versión del juego {{version}}…",
+    "importing": "Importando \"{{name}}\"…",
+    "downloadingMod": "Descargando el mod {{current}} de {{total}}:",
+    "readFailed": "No se pudo leer el archivo exportado",
+    "submit": "Importar perfil",
+    "action": "Importar…",
+    "importingBusy": "Importando…",
+    "bannerDescription": "Impórtalos con sus mods, mundos y configuraciones.",
+    "modeQuestion": "¿Cómo se deben importar las carpetas?",
+    "imported": "Importado",
+    "skipped_one": "{{count}} no se pudo importar",
+    "skipped_other": "{{count}} no se pudieron importar",
+    "skippedFolders_one": "{{count}} carpeta no se importó",
+    "skippedFolders_other": "{{count}} carpetas no se importaron",
+    "submitCount_one": "Importar {{count}} perfil",
+    "submitCount_other": "Importar {{count}} perfiles"
+  },
+  "gameData": {
+    "foundTitle": "Se encontraron datos existentes de Vintage Story",
+    "foundDescription": "{{path}} — úsalos como perfil sin copiar nada.",
+    "foundDescriptionMore": "{{path}} (+{{more}} más) — úsalos como perfil sin copiar nada.",
+    "use": "Usar",
+    "title": "Usa tus datos de juego existentes",
+    "description": "Story Forge enlaza la carpeta en lugar de copiarla — tus mods, mundos y ajustes se quedan exactamente donde están.",
+    "folderAria": "Carpeta de datos del juego",
+    "versionHint": "Tu carpeta de datos no registra su versión del juego — elige la que juegas. Se descargará en el primer inicio si aún no está instalada.",
+    "linking": "Enlazando…",
+    "useAs": "Usar como \"{{name}}\"",
+    "defaultName": "perfil",
+    "adoptFailed": "No se pudo usar esa carpeta"
+  },
+  "legacy": {
+    "found_one": "{{count}} perfil de la versión anterior de Story Forge encontrado",
+    "found_other": "{{count}} perfiles de la versión anterior de Story Forge encontrados",
+    "title": "Importar desde la versión anterior de Story Forge",
+    "description": "Estas carpetas contienen los mismos datos que los perfiles — mods, mundos y configuración. Cada una se importa como un nuevo perfil.",
+    "modeMoveHint": "Reubica las carpetas dentro de tu directorio de perfiles — es rápido y no usa disco adicional, pero la aplicación anterior ya no las verá.",
+    "modeCopyHint": "Copia las carpetas y deja intacta la aplicación anterior — es seguro, pero usa más espacio en disco."
+  },
+  "launcher": {
+    "found_one": "{{count}} elemento de {{name}} encontrado",
+    "found_other": "{{count}} elementos de {{name}} encontrados",
+    "title": "Importar desde {{name}}",
+    "modeMoveHint": "Reubica las carpetas dentro de tu directorio de perfiles — es rápido y no usa disco adicional, pero {{name}} ya no las verá.",
+    "modeCopyHint": "Copia las carpetas y deja {{name}} intacto — es seguro, pero usa más espacio en disco.",
+    "defaultDataFolder": "carpeta de datos predeterminada del juego"
+  },
+  "banners": {
+    "cairn": {
+      "hint": "Paquetes de Cairn, de cairns-gg (github.com/cairns-gg/cairn-app). Cada paquete se importa como un perfil — se copian su carpeta de datos y sus mods.",
+      "note": "Los paquetes se copian, nunca se mueven: la carpeta del paquete también contiene el manifiesto y los archivos de bloqueo de Cairn, así que no hay nada que reubicar sin romper Cairn. Cairn sigue funcionando con sus paquetes sin cambios."
+    },
+    "gruntLauncher": {
+      "hint": "Instancias de GruntLauncher, de renarin-kholin. Cada carpeta de instancia se convierte en un perfil con sus mods, ajustes y mundos.",
+      "note": "El archivo de instancia propio de GruntLauncher y la caché de logos de mods se eliminan del perfil importado. Las versiones del juego de su carpeta de instalaciones se pueden enlazar en la página Versiones."
+    },
+    "lithic": {
+      "hint": "Instancias de Lithic, de NotAShelf (CLI y GUI). La carpeta de datos de cada instancia se importa como un perfil.",
+      "note": "Las instancias se copian, nunca se mueven: la carpeta de la instancia también contiene los ajustes y archivos de bloqueo propios de Lithic. El tiempo de juego, los argumentos de inicio y las variables de entorno se conservan; los mods desactivados en Lithic se copian a mods-disabled/ y siguen desactivados, y los envoltorios de inicio (gamemoderun, prime-run) no se trasladan. Las compilaciones del juego se pueden enlazar en la página Versiones."
+    },
+    "mvl": {
+      "hint": "Modpacks de MVL, de scgm0 (github.com/scgm0/MVL). Cada uno se importa como un perfil — no se convierte nada excepto el manifiesto.",
+      "note": "El ícono de modpack de MVL y el comando de inicio VSRun no se trasladan — Story Forge controla cómo se inician los perfiles. Los nombres, las versiones del juego, los mods y los mundos se conservan."
+    },
+    "rustory": {
+      "hint": "Instancias de Rustory, de XurxoMF (rustory.xyz), el sucesor de VS Launcher. La carpeta de datos de juego de cada instancia se importa como un perfil.",
+      "note": "Las instancias se copian, nunca se mueven: la carpeta de la instancia también contiene el manifiesto y las copias de seguridad propios de Rustory, así que no hay nada que reubicar sin romper Rustory. El tiempo de juego, los parámetros de inicio y las variables de entorno se conservan. Las versiones del juego instaladas por Rustory se pueden enlazar en la página Versiones."
+    },
+    "vsLauncher": {
+      "hint": "Instalaciones de VS Launcher, de XurxoMF, y RiftLauncher, del equipo Stratum (su continuación mantenida). Cada una se importa como un perfil — no se convierte nada excepto el manifiesto.",
+      "note": "Los íconos no se trasladan (ambos usan sus propios gráficos). El tiempo de juego, los parámetros de inicio y las variables de entorno se conservan."
+    },
+    "waxlight": {
+      "hint": "Instancias de Waxlight Launcher, de AmadoMuerte (github.com/AmadoMuerte/Waxlight-launcher). Cada una se importa como un perfil — no se convierte nada excepto el manifiesto.",
+      "note": "Las portadas de Waxlight no se trasladan. Los argumentos de inicio, las variables de entorno, el estado de fijado y el tiempo de juego se conservan."
+    },
+    "yelloowstone": {
+      "hint": "Instancias de Yelloowstone (jgwoolley/vintage-story-launcher). La carpeta de datos de cada instancia se convierte en un perfil.",
+      "note": "La carpeta de runtime de la instancia es una instalación completa del juego: se enlaza como una versión, nunca se mueve, así que Yelloowstone sigue funcionando. Mover una carpeta de datos sí la quita de la lista de Yelloowstone."
+    }
+  },
+  "store": {
+    "pathExists": "Ya existe un perfil con la ruta \"{{path}}\"",
+    "idExists": "Ya existe un perfil con el ID \"{{id}}\"",
+    "nameExists": "Ya existe un perfil con el nombre \"{{name}}\""
+  }
+}

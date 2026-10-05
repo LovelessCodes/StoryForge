@@ -1,1 +1,21 @@
-{}
+{
+  "title": "Téléchargements",
+  "description": "Versions du jeu et mods en cours de téléchargement en arrière-plan.",
+  "empty": "Aucun téléchargement pour le moment.",
+  "status": {
+    "done": "Terminé",
+    "downloading": "Téléchargement",
+    "error": "Échec",
+    "extracting": "Extraction",
+    "paused": "En pause",
+    "pending": "En file d'attente"
+  },
+  "versionRemoved": "Version supprimée",
+  "modRemoved": "Mod supprimé",
+  "toasts": {
+    "removeVersionFailed": "Impossible de supprimer la version du jeu {{version}}",
+    "downloadNoFile": "Ce téléchargement ne pointe plus vers un fichier",
+    "removeFailed": "Impossible de supprimer {{label}}"
+  },
+  "standalone": "Autonome"
+}

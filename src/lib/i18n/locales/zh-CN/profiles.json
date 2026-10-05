@@ -1,1 +1,242 @@
-{}
+{
+  "modCount_other": "{{count}} 个模组",
+  "hasWorlds": "有世界",
+  "noWorlds": "还没有世界",
+  "fields": {
+    "gameVersion": "游戏版本",
+    "installed": "（已安装）",
+    "installedVersion": "{{version}}（已安装）",
+    "profileName": "配置档名称"
+  },
+  "errors": {
+    "importFailed": "导入失败",
+    "purgeFailed": "清除失败",
+    "restoreFailed": "恢复失败"
+  },
+  "page": {
+    "import": "导入",
+    "newProfile": "新建配置档",
+    "emptyTitle": "还没有配置档",
+    "emptyDescription": "创建配置档以选择游戏版本并开始添加模组。",
+    "createFirst": "创建你的第一个配置档"
+  },
+  "row": {
+    "active": "活动",
+    "existingData": "现有数据",
+    "notInstalled": "未安装",
+    "switch": "切换",
+    "switchFirstTitle": "请先切换到其他配置档",
+    "neverPlayed": "从未游玩",
+    "played": "上次游玩：{{time}}",
+    "actionsFor": "{{name}} 的操作",
+    "manageMods": "管理模组",
+    "configureMods": "配置模组",
+    "viewLogs": "查看日志",
+    "backups": "备份",
+    "exportFile": "导出为文件…",
+    "copyShareCode": "复制分享码",
+    "deleteCurrent": "删除（当前配置档）",
+    "openFolderFailed": "无法打开文件夹"
+  },
+  "export": {
+    "filterName": "配置档导出",
+    "exported": "配置档已导出",
+    "failed": "导出失败",
+    "shareCodeCopied": "分享码已复制到剪贴板",
+    "shareCodeFailed": "生成分享码失败"
+  },
+  "clone": {
+    "menu": "克隆…",
+    "title": "克隆“{{name}}”",
+    "defaultName": "{{name}} 副本",
+    "description": "复制整个配置档文件夹，包括其中的模组、配置和世界。",
+    "newName": "新名称",
+    "busy": "正在克隆…",
+    "submit": "克隆配置档",
+    "failed": "克隆失败"
+  },
+  "delete": {
+    "switchFirst": "删除前请先切换到其他配置档",
+    "deleted": "已删除“{{name}}”",
+    "description": "文件夹已移入回收站，你可以撤销此操作。",
+    "undo": "撤销",
+    "restored": "已恢复“{{name}}”",
+    "failed": "删除失败",
+    "removeTitle": "从 Story Forge 移除“{{name}}”？",
+    "deleteTitle": "删除“{{name}}”？",
+    "externalDescription": "此配置档链接到你现有的 Vintage Story 数据文件夹。移除后 Story Forge 只是不再管理该文件夹，其中的内容不会被移动或删除。",
+    "folderDescription": "配置档文件夹会被移入配置档目录中的回收站。你可以从提示消息或“已删除的配置档”区域撤销此操作。",
+    "removing": "正在移除…",
+    "deleting": "正在删除…",
+    "removeAction": "从 Story Forge 移除",
+    "moveToTrash": "移入回收站"
+  },
+  "dialog": {
+    "editTitle": "编辑“{{name}}”",
+    "newTitle": "新建配置档",
+    "description": "配置档是一个独立的 Vintage Story 数据文件夹，拥有自己的模组、世界和设置。",
+    "namePlaceholder": "我的配置档",
+    "versionNotInstalled": "版本 {{version}} 尚未安装，准备好后侧边栏会提供下载按钮。",
+    "icon": "图标",
+    "favorite": "收藏",
+    "favoriteHint": "收藏的配置档在列表中排序靠前。",
+    "launchParameters": "启动参数",
+    "optional": "可选",
+    "startParamsPlaceholder": "--some-flag value",
+    "environmentVariables": "环境变量",
+    "nameTooShort": "名称至少需要 2 个字符",
+    "pickVersion": "选择游戏版本",
+    "noAppFolder": "无法解析应用数据文件夹",
+    "saving": "正在保存…",
+    "creating": "正在创建配置档…",
+    "saveFailed": "保存配置档失败",
+    "createFailed": "创建配置档失败",
+    "saveChanges": "保存更改",
+    "create": "创建配置档"
+  },
+  "selector": {
+    "switched": "已切换到“{{name}}”",
+    "noProfile": "无配置档",
+    "manage": "管理配置档"
+  },
+  "iconPicker": {
+    "noIcon": "无图标"
+  },
+  "logs": {
+    "title": "日志 — {{name}}",
+    "description": "写入配置档 Logs 文件夹的游戏日志。",
+    "refresh": "刷新日志",
+    "empty": "未找到日志。",
+    "select": "选择一条日志以查看其内容。"
+  },
+  "backups": {
+    "title": "备份 — {{name}}",
+    "description": "此配置档的模组、世界和配置的快照。不包含日志。",
+    "autoLabel": "每次启动前备份",
+    "autoHint": "在游戏启动前立即执行。",
+    "keepLabel": "保留最近份数",
+    "keepHint": "较旧的备份会自动删除。",
+    "backupNow": "立即备份",
+    "backingUpProgress": "正在备份… {{percent}}%",
+    "restoringProgress": "正在恢复… {{percent}}%",
+    "emptyTitle": "还没有备份",
+    "emptyDescription": "在进行有风险的操作前创建备份，或启用每次启动前备份。",
+    "count_other": "{{count}} 份备份 · 最新在前",
+    "deleteBackup": "删除备份",
+    "confirmRestore": "恢复此快照？其中包含的文件将被覆盖；之后新增的文件会保留。",
+    "restoreBackup": "恢复备份",
+    "confirmDelete": "删除此备份？此操作无法撤销。",
+    "backupFailed": "备份失败",
+    "restored": "备份已恢复",
+    "restoredDescription": "配置档文件夹现在与快照一致。",
+    "deleteFailed": "删除备份失败",
+    "settingsFailed": "保存备份设置失败"
+  },
+  "deleted": {
+    "heading": "已删除的配置档（{{total}}）",
+    "purgeAll": "全部清除",
+    "confirmPurgeAll": "确定要全部清除？",
+    "confirmYes": "是",
+    "confirmNo": "否",
+    "deletedAt": "删除于 {{time}}",
+    "deletePermanently": "永久删除 {{name}}"
+  },
+  "envVars": {
+    "empty": "没有环境变量。这些变量会在启动时传递给游戏进程。",
+    "keyLabel": "变量名",
+    "keyPlaceholder": "KEY",
+    "valueLabel": "变量值",
+    "valuePlaceholder": "value",
+    "remove": "移除变量",
+    "add": "添加变量"
+  },
+  "import": {
+    "title": "导入配置档",
+    "description": "粘贴分享码或导出的 JSON，或选择一个导出文件。模组会自动下载。",
+    "placeholder": "SF1.… 分享码，或配置档 JSON 导出",
+    "chooseFile": "选择文件…",
+    "shareCodeHint": "分享码以 SF1 开头。",
+    "decodingShareCode": "正在解码分享码…",
+    "invalid": "这看起来不是配置档导出文件",
+    "downloadingVersion": "正在下载游戏版本 {{version}}…",
+    "importing": "正在导入“{{name}}”…",
+    "downloadingMod": "正在下载模组 {{current}}/{{total}}：",
+    "readFailed": "读取导出文件失败",
+    "submit": "导入配置档",
+    "action": "导入…",
+    "importingBusy": "正在导入…",
+    "bannerDescription": "连同它们的模组、世界和设置一起导入。",
+    "modeQuestion": "希望如何导入这些文件夹？",
+    "imported": "已导入",
+    "skipped_other": "{{count}} 个无法导入",
+    "skippedFolders_other": "{{count}} 个文件夹未导入",
+    "submitCount_other": "导入 {{count}} 个配置档"
+  },
+  "gameData": {
+    "foundTitle": "发现现有的 Vintage Story 数据",
+    "foundDescription": "{{path}} — 无需复制即可将其用作配置档。",
+    "foundDescriptionMore": "{{path}}（+{{more}} 个）— 无需复制即可将其用作配置档。",
+    "use": "使用它",
+    "title": "使用你现有的游戏数据",
+    "description": "Story Forge 会链接到该文件夹而不是复制它，你的模组、世界和设置都会留在原处。",
+    "folderAria": "游戏数据文件夹",
+    "versionHint": "你的数据文件夹不会记录游戏版本，请选择你游玩的版本。如果尚未安装，将在首次启动时下载。",
+    "linking": "正在链接…",
+    "useAs": "用作“{{name}}”",
+    "defaultName": "配置档",
+    "adoptFailed": "无法使用该文件夹"
+  },
+  "legacy": {
+    "found_other": "发现来自先前 Story Forge 的 {{count}} 个配置档",
+    "title": "从先前的 Story Forge 导入",
+    "description": "这些文件夹包含与配置档相同的数据：模组、世界和配置。每个文件夹都会作为新配置档导入。",
+    "modeMoveHint": "会将文件夹移动到你的配置档目录：速度快且不额外占用磁盘，但先前的应用将无法再看到它们。",
+    "modeCopyHint": "会复制文件夹并保留先前的应用不动：安全，但会额外占用磁盘空间。"
+  },
+  "launcher": {
+    "found_other": "发现来自 {{name}} 的 {{count}} 个项目",
+    "title": "从 {{name}} 导入",
+    "modeMoveHint": "会将文件夹移动到你的配置档目录：速度快且不额外占用磁盘，但 {{name}} 将无法再看到它们。",
+    "modeCopyHint": "会复制文件夹并保留 {{name}} 不动：安全，但会额外占用磁盘空间。",
+    "defaultDataFolder": "游戏默认数据文件夹"
+  },
+  "banners": {
+    "cairn": {
+      "hint": "来自 cairns-gg 的 Cairn 整合包（github.com/cairns-gg/cairn-app）。每个包都会作为配置档导入，其数据文件夹和模组会被复制。",
+      "note": "包只会被复制，绝不会被移动：包文件夹中还有 Cairn 的清单和锁文件，移动会破坏 Cairn。Cairn 可继续正常使用这些包，不受影响。"
+    },
+    "gruntLauncher": {
+      "hint": "来自 renarin-kholin 的 GruntLauncher 实例。每个实例文件夹都会成为配置档，包含其模组、设置和世界。",
+      "note": "GruntLauncher 自己的实例文件和模组图标缓存会从导入的配置档中移除。其安装文件夹中的游戏版本可在版本页面链接。"
+    },
+    "lithic": {
+      "hint": "来自 NotAShelf 的 Lithic 实例（CLI 和 GUI）。每个实例的数据文件夹都会作为配置档导入。",
+      "note": "实例只会被复制，绝不会被移动：实例文件夹中还有 Lithic 自己的设置和锁文件。游玩时长、启动参数和环境变量会保留；在 Lithic 中被关闭的模组会复制到 mods-disabled/ 并保持关闭，启动包装器（gamemoderun、prime-run）不会被沿用。游戏构建可在版本页面链接。"
+    },
+    "mvl": {
+      "hint": "来自 scgm0 的 MVL 整合包（github.com/scgm0/MVL）。每个整合包都会作为配置档导入，除了清单外不做任何转换。",
+      "note": "MVL 的整合包图标和 VSRun 启动命令不会被沿用，配置档的启动方式由 Story Forge 管理。名称、游戏版本、模组和世界都会保留。"
+    },
+    "rustory": {
+      "hint": "来自 XurxoMF 的 Rustory 实例（rustory.xyz），VS Launcher 的后继者。每个实例的游戏数据文件夹都会作为配置档导入。",
+      "note": "实例只会被复制，绝不会被移动：实例文件夹中还有 Rustory 自己的清单和备份，移动会破坏 Rustory。游玩时长、启动参数和环境变量会保留。由 Rustory 安装的游戏版本可在版本页面链接。"
+    },
+    "vsLauncher": {
+      "hint": "来自 XurxoMF 的 VS Launcher，以及 Stratum 团队维护的续作 RiftLauncher 的安装。每个安装都会作为配置档导入，除了清单外不做任何转换。",
+      "note": "图标不会被沿用（两者都使用自己的图标）。游玩时长、启动参数和环境变量会保留。"
+    },
+    "waxlight": {
+      "hint": "来自 AmadoMuerte 的 Waxlight Launcher 实例（github.com/AmadoMuerte/Waxlight-launcher）。每个实例都会作为配置档导入，除了清单外不做任何转换。",
+      "note": "Waxlight 的封面不会被沿用。启动参数、环境变量、固定状态和游玩时长会保留。"
+    },
+    "yelloowstone": {
+      "hint": "来自 Yelloowstone 的实例（jgwoolley/vintage-story-launcher）。每个实例的数据文件夹都会成为配置档。",
+      "note": "实例的运行时文件夹是完整的游戏安装：它会作为版本被链接，绝不会被移动，因此 Yelloowstone 可继续正常工作。移动数据文件夹会将其从 Yelloowstone 的列表中移除。"
+    }
+  },
+  "store": {
+    "pathExists": "路径为“{{path}}”的配置档已存在",
+    "idExists": "ID 为“{{id}}”的配置档已存在",
+    "nameExists": "名称为“{{name}}”的配置档已存在"
+  }
+}

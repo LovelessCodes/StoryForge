@@ -1,1 +1,160 @@
-{}
+{
+  "standalone": "Без профиля",
+  "loadingReleases": "Загрузка релизов…",
+  "search": {
+    "placeholder": "Поиск модов…"
+  },
+  "filters": {
+    "count_one": "{{count}} мод",
+    "count_few": "{{count}} мода",
+    "count_many": "{{count}} модов",
+    "count_other": "{{count}} мода",
+    "gameVersions": {
+      "aria": "Фильтр по версии игры",
+      "empty": "Версии не найдены.",
+      "placeholder": "Версии игры…"
+    },
+    "tags": {
+      "aria": "Фильтр по тегу",
+      "empty": "Теги не найдены.",
+      "placeholder": "Теги модов…"
+    },
+    "sort": {
+      "aria": "Сортировка",
+      "toggleDirection": "Переключить направление сортировки"
+    },
+    "category": {
+      "aria": "Категория"
+    },
+    "side": {
+      "aria": "Фильтр по стороне",
+      "label": "Сторона"
+    }
+  },
+  "sort": {
+    "comments": "Комментарии",
+    "created": "Дата создания",
+    "downloads": "Скачивания",
+    "follows": "Подписки",
+    "name": "Имя",
+    "relevance": "Релевантность",
+    "trending": "В тренде",
+    "updated": "Последнее обновление"
+  },
+  "sortDirection": {
+    "ascending": "По возрастанию",
+    "descending": "По убыванию"
+  },
+  "category": {
+    "externaltool": "Внешний инструмент",
+    "mod": "Мод",
+    "other": "Другое"
+  },
+  "side": {
+    "both": "Обе",
+    "client": "Клиент",
+    "server": "Сервер"
+  },
+  "authorFilter": {
+    "aria": "Фильтр по автору",
+    "clear": "Сбросить фильтр по автору",
+    "count_one": "{{count}} мод",
+    "count_few": "{{count}} мода",
+    "count_many": "{{count}} модов",
+    "count_other": "{{count}} мода",
+    "empty": "Авторы не найдены.",
+    "placeholder": "Фильтр по автору…"
+  },
+  "list": {
+    "empty": "Моды не найдены. Попробуйте изменить запрос или фильтры."
+  },
+  "item": {
+    "add": "Добавить мод",
+    "addTo": "Добавить в {{destination}}",
+    "browseVersions": "Просмотреть версии",
+    "browseVersionsTooltip": "Посмотреть доступные версии",
+    "byAuthor": "от {{author}}",
+    "downloadLatest": "Скачать последнюю версию",
+    "filterBy": "Фильтр по {{author}}",
+    "filterByAuthor": "Фильтр по автору {{author}}",
+    "install": "Установить мод",
+    "installLatest": "Установить последнюю версию",
+    "installTo": "Установить в…",
+    "installToDestination": "Установить в профиль или на собственный сервер",
+    "installedVersion": "Установлена v{{version}}",
+    "pin": "Закрепить мод",
+    "pinTooltip": "Закрепить на v{{version}} (исключается из «Обновить все»)",
+    "pinnedTooltip": "Закреплено на v{{version}} — «Обновить все» пропускает его",
+    "removeFrom": "Убрать из {{destination}}",
+    "unpin": "Открепить мод",
+    "updateToLatest": "Обновить до последней версии"
+  },
+  "versionPicker": {
+    "aria": "Выбрать версию",
+    "forVersion": "для {{version}}",
+    "moreTags_one": "(+{{count}} ещё)",
+    "moreTags_few": "(+{{count}} ещё)",
+    "moreTags_many": "(+{{count}} ещё)",
+    "moreTags_other": "(+{{count}} ещё)",
+    "placeholder": "Выбрать версию…"
+  },
+  "release": {
+    "downloads_one": "{{count}} скачивание",
+    "downloads_few": "{{count}} скачивания",
+    "downloads_many": "{{count}} скачиваний",
+    "downloads_other": "{{count}} скачивания"
+  },
+  "addSheet": {
+    "description": "Выберите версию {{name}}, которую хотите добавить в {{destination}}.",
+    "submit": "Добавить мод",
+    "title": "Добавить <name>{{name}}</name> в <destination>{{destination}}</destination>"
+  },
+  "removeSheet": {
+    "body": "Это навсегда удалит <name>{{name}}</name> из {{destination}}.",
+    "description": "Это действие нельзя отменить.",
+    "title": "Убрать <name>{{name}}</name> из <destination>{{destination}}</destination>?"
+  },
+  "updateSheet": {
+    "buttonDowngrade": "Откатить мод",
+    "buttonUpdate": "Обновить мод",
+    "description": "Текущая установленная версия: <version>{{version}}</version>. Выберите версию, на которую хотите перейти.",
+    "titleDowngrade": "Откатить <name>{{name}}</name> в <destination>{{destination}}</destination>",
+    "titleUpdate": "Обновить <name>{{name}}</name> в <destination>{{destination}}</destination>"
+  },
+  "standaloneInstall": {
+    "description": "Нет активного профиля. Выберите, куда установить мод и какую версию использовать.",
+    "destination": "Назначение",
+    "destinationAria": "Назначение установки",
+    "destinationPlaceholder": "Выберите назначение…",
+    "hostedServers": "Собственные серверы",
+    "noDestinations": "Нет доступных профилей или собственных серверов.",
+    "noDownload": "Для {{name}} нет доступной загрузки",
+    "profiles": "Профили",
+    "title": "Установить <name>{{name}}</name>"
+  },
+  "updateAll": {
+    "button_one": "Обновить все ({{count}})",
+    "button_few": "Обновить все ({{count}})",
+    "button_many": "Обновить все ({{count}})",
+    "button_other": "Обновить все ({{count}})",
+    "confirm": "Да, точно"
+  },
+  "dependencies": {
+    "installMissing": "Установить отсутствующие",
+    "missing_one": "{{count}} отсутствующая зависимость в {{destination}}",
+    "missing_few": "{{count}} отсутствующие зависимости в {{destination}}",
+    "missing_many": "{{count}} отсутствующих зависимостей в {{destination}}",
+    "missing_other": "{{count}} отсутствующей зависимости в {{destination}}",
+    "more": "ещё +{{count}}",
+    "requiredBy": "требуется для {{names}}"
+  },
+  "errors": {
+    "add": "Ошибка добавления {{name}} в {{destination}}: {{message}}",
+    "downgrading": "Ошибка отката {{name}} в {{destination}}: {{message}}",
+    "install": "Ошибка установки {{name}} в {{destination}}: {{message}}",
+    "remove": "Ошибка удаления {{name}} из {{destination}}: {{message}}",
+    "update": "Ошибка обновления {{name}} в {{destination}}: {{message}}",
+    "updateIn": "Ошибка обновления мода в {{destination}}: {{message}}",
+    "upgrading": "Ошибка обновления {{name}} в {{destination}}: {{message}}"
+  }
+}

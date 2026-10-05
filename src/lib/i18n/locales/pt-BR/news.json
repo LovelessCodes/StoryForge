@@ -1,1 +1,6 @@
-{}
+{
+  "failedToLoad": "Falha ao carregar as notícias",
+  "unreachable": "Não foi possível acessar os fóruns do Vintage Story.",
+  "empty": "Nenhuma notícia encontrada.",
+  "openPost": "Abrir publicação"
+}

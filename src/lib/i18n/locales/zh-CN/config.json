@@ -1,1 +1,32 @@
-{}
+{
+  "noActiveProfile": "无活动配置档",
+  "noActiveProfileDescription": "创建或选择一个配置档以编辑其模组配置文件。",
+  "goToProfiles": "前往配置档",
+  "liveEditor": "实时编辑器",
+  "codeEditor": "代码编辑器",
+  "loading": "正在加载配置…",
+  "noConfigFiles": "无配置文件",
+  "readFailed": "无法读取模组配置：{{message}}",
+  "noConfigFilesHint": "附带可配置 JSON 文件的模组会在此处显示这些文件。",
+  "files": "文件",
+  "toasts": {
+    "saving": "正在保存…",
+    "saved": "已保存！",
+    "saveFailed": "保存失败：{{message}}"
+  },
+  "live": {
+    "expandArray": "展开数组",
+    "collapseArray": "折叠数组",
+    "expandObject": "展开对象",
+    "collapseObject": "折叠对象",
+    "emptyArray": "空数组",
+    "primitiveRoot": "根值为原始类型；此处不支持编辑。",
+    "autoSaved": "更改后自动保存",
+    "removeItem": "移除第 {{index}} 项"
+  },
+  "code": {
+    "loading": "正在加载代码编辑器…",
+    "unsaved": "有未保存的更改",
+    "saved": "所有更改已保存"
+  }
+}

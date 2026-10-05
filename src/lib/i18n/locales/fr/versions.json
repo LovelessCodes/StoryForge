@@ -1,1 +1,84 @@
-{}
+{
+  "add": {
+    "action": "Ajouter une version",
+    "allInstalledOrDownloading": "Toutes les versions disponibles sont déjà installées ou en cours de téléchargement.",
+    "description": "Téléchargez une version de Vintage Story. Les versions déjà installées sont marquées et ne peuvent pas être choisies à nouveau.",
+    "gameVersion": "Version du jeu",
+    "installedOption": "{{version}} (installée)",
+    "installedTag": "(installée)",
+    "macWarning": "Cette version peut nécessiter une configuration supplémentaire pour fonctionner sur macOS. Consultez l'article wiki <wiki>Installer Vintage Story sur macOS</wiki>.",
+    "macWarningTitle": "macOS : version inférieure à 1.19.0",
+    "pickPlaceholder": "Choisissez une version du jeu",
+    "title": "Ajouter une version"
+  },
+  "banner": {
+    "action": "Lier…",
+    "hint": "Liez-les sur place — aucun re-téléchargement, rien n'est copié.",
+    "alreadyInstalled": "déjà installée",
+    "description": "Ces installations existent déjà sur le disque. Les lier les enregistre auprès de Story Forge pour que les profils puissent se lancer sans les retélécharger.",
+    "found_one": "{{count}} version du jeu d'autres lanceurs détectée",
+    "found_other": "{{count}} versions du jeu d'autres lanceurs détectées",
+    "linkVersions_one": "Lier {{count}} version",
+    "linkVersions_other": "Lier {{count}} versions",
+    "note": "Story Forge ne stocke qu'une référence vers ces dossiers. Les dissocier plus tard laisse tous les fichiers en place ; le lanceur qui les a installés continue de fonctionner.",
+    "skipped_one": "{{count}} version n'a pas pu être liée",
+    "skipped_other": "{{count}} versions n'ont pas pu être liées",
+    "title": "Lier des versions du jeu existantes"
+  },
+  "download": {
+    "pause": "Pause",
+    "resume": "Reprendre",
+    "status": {
+      "done": "Terminé",
+      "downloading": "Téléchargement",
+      "error": "Échec",
+      "extracting": "Extraction",
+      "paused": "En pause",
+      "pending": "En file d'attente"
+    }
+  },
+  "linkExisting": {
+    "description": "Indiquez à Story Forge un dossier d'installation de Vintage Story. Le dossier est enregistré sur place — rien n'est copié ni déplacé.",
+    "folderHint": "Le dossier doit contenir les fichiers du jeu (Vintagestory, Vintagestory.exe ou Vintage Story.app).",
+    "folderLabel": "Dossier d'installation",
+    "linkFailed": "Impossible de lier ce dossier",
+    "nameHint": "Utilisé lors du choix d'une version pour un profil ; le nom du dossier est un bon choix par défaut.",
+    "nameLabel": "Nom de la version",
+    "selectFolderTitle": "Sélectionnez un dossier d'installation de Vintage Story",
+    "submit": "Lier la version",
+    "title": "Lier une version existante"
+  },
+  "linked": "Liée",
+  "linkedWithSource": "Liée · {{source}}",
+  "linking": "Liaison…",
+  "page": {
+    "activeDownloads": "Téléchargements actifs ({{count}})",
+    "emptyDescription": "Téléchargez une version pour créer des profils et lancer le jeu.",
+    "emptyTitle": "Aucune version du jeu installée pour l'instant.",
+    "installedVersions": "Versions installées",
+    "installedVersionsCount": "Versions installées ({{count}})",
+    "linkExisting": "Lier une existante",
+    "macNote": "Sur macOS, les versions inférieures à 1.19.0 nécessitent une configuration supplémentaire. Consultez l'article wiki <wiki>Installer Vintage Story sur macOS</wiki>."
+  },
+  "row": {
+    "deleteNote": "Les profils utilisant cette version continuent de fonctionner ; vous ne pouvez simplement plus en créer de nouveaux avec elle tant qu'elle n'est pas réinstallée.",
+    "deleteVersion": "Supprimer la version {{name}}",
+    "folderMissing": "Dossier introuvable — reliez-le ou dissociez-le",
+    "reallyDelete": "Vraiment supprimer ?",
+    "reallyUnlink": "Vraiment dissocier ?",
+    "releaseCandidate": "Version candidate",
+    "unlink": "Dissocier",
+    "unlinkNote": "Story Forge cesse d'utiliser ce dossier ; rien n'est modifié sur le disque et le lanceur qui l'a installé continue de fonctionner.",
+    "unlinkVersion": "Dissocier la version {{name}}"
+  },
+  "toast": {
+    "deleteFailed": "Échec de la suppression de la version {{name}} : {{message}}",
+    "deleting": "Suppression de la version {{name}}…",
+    "downloadFailed": "Erreur lors du téléchargement de la version {{version}}",
+    "linkFailed": "Échec de la liaison",
+    "linkSkipped_one": "{{count}} n'a pas pu être liée",
+    "linkSkipped_other": "{{count}} n'ont pas pu être liées",
+    "unlinkFailed": "Échec de la dissociation de la version {{name}} : {{message}}",
+    "unlinking": "Dissociation de la version {{name}}…"
+  }
+}
