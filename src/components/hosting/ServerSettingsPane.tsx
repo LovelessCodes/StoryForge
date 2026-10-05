@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { AlertTriangle, Trash2 } from "lucide-react";
+import { AlertTriangle, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -39,6 +39,7 @@ export default function ServerSettingsPane({ instanceId, canDelete }: ServerSett
   const [editedName, setEditedName] = useState<string | null>(null);
   const [editedPort, setEditedPort] = useState<string | null>(null);
   const [editedBindIp, setEditedBindIp] = useState<string | null>(null);
+  const [editedSchedule, setEditedSchedule] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteData, setDeleteData] = useState(false);
 
@@ -54,6 +55,37 @@ export default function ServerSettingsPane({ instanceId, canDelete }: ServerSett
   const port = editedPort ?? String(instance.port ?? "");
   const bindIp = editedBindIp ?? instance.bind_ip;
   const fallbackPort = instance.port;
+  const scheduleValue = (editedSchedule ?? instance.restart_schedule ?? "").slice(0, 5);
+
+  function saveSchedule() {
+    if (!instance) return;
+    const value = (editedSchedule ?? instance.restart_schedule ?? "").slice(0, 5);
+    if (value === (instance.restart_schedule ?? "")) return;
+    updateInstance.mutate(
+      { id: instanceId, partial: { restart_schedule: value } },
+      {
+        onError: (err) => toast.error(t("hosting.settings.saveFailed", { message: String(err) })),
+        onSuccess: () => {
+          setEditedSchedule(null);
+          toast.success(t("hosting.settings.saved"));
+        },
+      },
+    );
+  }
+
+  function clearSchedule() {
+    if (!instance) return;
+    updateInstance.mutate(
+      { id: instanceId, partial: { restart_schedule: "" } },
+      {
+        onError: (err) => toast.error(t("hosting.settings.saveFailed", { message: String(err) })),
+        onSuccess: () => {
+          setEditedSchedule(null);
+          toast.success(t("hosting.settings.saved"));
+        },
+      },
+    );
+  }
 
   function handleSave() {
     updateInstance.mutate(
@@ -135,6 +167,62 @@ export default function ServerSettingsPane({ instanceId, canDelete }: ServerSett
             {instance.data_dir}
           </p>
         </div>
+
+        <div className="grid gap-3 border p-3">
+          <span className="text-xs font-semibold">{t("hosting.restarts.title")}</span>
+          <div className="flex items-center justify-between gap-4">
+            <div className="grid gap-0.5">
+              <span className="text-xs font-medium">{t("hosting.restarts.autoLabel")}</span>
+              <span className="text-muted-foreground text-[11px]">
+                {t("hosting.restarts.autoHint")}
+              </span>
+            </div>
+            <Switch
+              checked={instance.auto_restart}
+              onCheckedChange={(auto_restart) =>
+                updateInstance.mutate(
+                  { id: instanceId, partial: { auto_restart } },
+                  {
+                    onError: (err) =>
+                      toast.error(t("hosting.settings.saveFailed", { message: String(err) })),
+                    onSuccess: () => toast.success(t("hosting.settings.saved")),
+                  },
+                )
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <div className="grid gap-0.5">
+              <span className="text-xs font-medium">{t("hosting.restarts.scheduleLabel")}</span>
+              <span className="text-muted-foreground text-[11px]">
+                {t("hosting.restarts.scheduleHint")}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                className="w-28"
+                id="hosted-settings-restart"
+                type="time"
+                value={scheduleValue}
+                onBlur={saveSchedule}
+                onChange={(event) => setEditedSchedule(event.target.value)}
+              />
+              {instance.restart_schedule && (
+                <Button
+                  aria-label={t("hosting.restarts.clear")}
+                  disabled={updateInstance.isPending}
+                  onClick={() => clearSchedule()}
+                  size="icon-sm"
+                  title={t("hosting.restarts.clear")}
+                  variant="ghost"
+                >
+                  <X />
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="flex justify-end">
           <Button
             disabled={updateInstance.isPending}

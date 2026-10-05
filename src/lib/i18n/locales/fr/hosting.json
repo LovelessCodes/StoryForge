@@ -12,6 +12,7 @@
     "console": "Console",
     "config": "Config",
     "whitelist": "Liste blanche",
+    "moderation": "Modération",
     "settings": "Réglages"
   },
   "detail": {
@@ -108,5 +109,27 @@
     "stopFailed": "Échec de l'arrêt du serveur : {{message}}",
     "restartFailed": "Échec du redémarrage du serveur",
     "favoriteFailed": "Échec de la mise à jour du favori"
+  },
+  "restarts": {
+    "title": "Redémarrages",
+    "autoLabel": "Redémarrage auto en cas de crash",
+    "autoHint": "Relance le serveur après une fin inattendue (jusqu'à 5 tentatives).",
+    "scheduleLabel": "Redémarrage quotidien",
+    "scheduleHint": "Redémarrer une fois par jour à cette heure locale.",
+    "clear": "Effacer la planification"
+  },
+  "moderation": {
+    "title": "Modération des joueurs",
+    "description": "Expulsez, bannissez ou débannissez un joueur par nom ou UID ; le serveur l'applique immédiatement.",
+    "targetLabel": "Nom ou UID du joueur",
+    "targetPlaceholder": "ex. Mike",
+    "kick": "Expulser",
+    "ban": "Bannir",
+    "unban": "Débannir",
+    "notRunning": "Démarrez le serveur pour modérer les joueurs.",
+    "kicked": "Expulsion envoyée",
+    "banned": "Bannissement envoyé",
+    "unbanned": "Débannissement envoyé",
+    "failed": "La commande a échoué"
   }
 }

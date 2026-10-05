@@ -12,6 +12,7 @@
     "console": "Konsole",
     "config": "Konfiguration",
     "whitelist": "Whitelist",
+    "moderation": "Moderation",
     "settings": "Einstellungen"
   },
   "detail": {
@@ -108,5 +109,27 @@
     "stopFailed": "Server konnte nicht gestoppt werden: {{message}}",
     "restartFailed": "Server konnte nicht neu gestartet werden",
     "favoriteFailed": "Favorit konnte nicht aktualisiert werden"
+  },
+  "restarts": {
+    "title": "Neustarts",
+    "autoLabel": "Automatischer Neustart bei Absturz",
+    "autoHint": "Startet den Server nach einem unerwarteten Ende neu (bis zu 5 Versuche).",
+    "scheduleLabel": "Täglicher Neustart",
+    "scheduleHint": "Einmal täglich zu dieser lokalen Uhrzeit neu starten.",
+    "clear": "Zeitplan löschen"
+  },
+  "moderation": {
+    "title": "Spieler-Moderation",
+    "description": "Spieler per Name oder UID kicken, bannen oder entbannen; der Server führt es sofort aus.",
+    "targetLabel": "Spielername oder UID",
+    "targetPlaceholder": "z. B. Mike",
+    "kick": "Kicken",
+    "ban": "Bannen",
+    "unban": "Entbannen",
+    "notRunning": "Starte den Server, um Spieler zu moderieren.",
+    "kicked": "Kick gesendet",
+    "banned": "Ban gesendet",
+    "unbanned": "Entbannung gesendet",
+    "failed": "Der Befehl ist fehlgeschlagen"
   }
 }

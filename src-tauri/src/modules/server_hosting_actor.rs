@@ -8,7 +8,7 @@
 //! removes the need for `unsafe { libc::kill(...) }`.
 
 use std::{
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::Stdio,
     sync::{Arc, LazyLock, Mutex},
     time::{Duration, Instant},
@@ -18,6 +18,8 @@ use tokio::{
     process::{Child, Command},
     sync::{mpsc, oneshot},
 };
+
+use chrono::Local;
 
 use super::server_hosting::{
     append_log, emit_log, emit_status, open_instance_log, server_exe_path, HostedServerInstance,
@@ -97,14 +99,32 @@ pub async fn spawn(
 ) -> Result<(), super::errors::UiError> {
     let instance_id = instance.id;
 
-    // Resolve server exe path
-    let exe_path = server_exe_path(&app, &instance.version)?;
+    let process = launch_process(&app, &instance, &dotnet_root)?;
 
-    // Build command. The server binary is a .NET apphost, so it needs the
-    // same DOTNET_ROOT resolution as the game client.
+    let (tx, rx) = mpsc::unbounded_channel();
+    let handle = ServerActorHandle { tx };
+    register(instance_id, handle.clone());
+
+    let app_clone = app.clone();
+    tokio::spawn(async move {
+        run_actor(app_clone, instance, process, rx, dotnet_root).await;
+    });
+
+    log_info!("start_hosted_server: spawned instance {instance_id}");
+    Ok(())
+}
+
+/// Builds the server command line. The server binary is a .NET apphost, so it
+/// needs the same DOTNET_ROOT resolution as the game client.
+fn build_command(
+    app: &tauri::AppHandle,
+    instance: &HostedServerInstance,
+    dotnet_root: &Path,
+) -> Result<Command, super::errors::UiError> {
+    let exe_path = server_exe_path(app, &instance.version)?;
     let data_dir_str = instance.data_dir.to_string_lossy().to_string();
     let mut cmd = Command::new(exe_path.to_string_lossy().as_ref());
-    cmd.env("DOTNET_ROOT", &dotnet_root)
+    cmd.env("DOTNET_ROOT", dotnet_root)
         .env("DOTNET_ROLL_FORWARD", "LatestMinor")
         .env("DOTNET_ROLL_FORWARD_TO_PRERELEASE", "0")
         .arg("--dataPath")
@@ -130,14 +150,16 @@ pub async fn spawn(
         });
     }
 
-    emit_status(
-        &app,
-        instance_id,
-        &ServerStatus::Starting,
-        None,
-        Some(Instant::now()),
-    );
+    Ok(cmd)
+}
 
+/// Spawns one server process with piped stdio.
+fn launch_process(
+    app: &tauri::AppHandle,
+    instance: &HostedServerInstance,
+    dotnet_root: &Path,
+) -> Result<ServerProcess, super::errors::UiError> {
+    let mut cmd = build_command(app, instance, dotnet_root)?;
     let mut child = cmd.spawn().map_err(|e| {
         log_error!("start_hosted_server: spawn failed: {e}");
         super::errors::UiError {
@@ -147,8 +169,6 @@ pub async fn spawn(
     })?;
 
     let pid = child.id();
-
-    // Take the pipes before moving child into the actor task.
     let stdout = child
         .stdout
         .take()
@@ -162,24 +182,13 @@ pub async fn spawn(
         .take()
         .ok_or_else(|| super::errors::UiError::from("stdin not piped"))?;
 
-    let (tx, rx) = mpsc::unbounded_channel();
-    let handle = ServerActorHandle { tx };
-    register(instance_id, handle.clone());
-
-    let process = ServerProcess {
+    Ok(ServerProcess {
         child,
         pid,
         stdout,
         stderr,
         stdin,
-    };
-    let app_clone = app.clone();
-    tokio::spawn(async move {
-        run_actor(app_clone, instance, process, rx).await;
-    });
-
-    log_info!("start_hosted_server: spawned instance {instance_id}");
-    Ok(())
+    })
 }
 
 /// Owned handles for a spawned server process.
@@ -191,13 +200,142 @@ struct ServerProcess {
     stdin: tokio::process::ChildStdin,
 }
 
-/// Main actor loop. Owns the `Child` handle and all I/O streams.
+/// One session's ending: who decided it.
+enum SessionExit {
+    /// Someone asked for a stop, or the process ended cleanly; never restart.
+    StoppedByUser,
+    /// The daily schedule asked for a restart.
+    ScheduledRestart,
+    /// The process exited on its own with a non-zero code.
+    Unexpected(Option<i32>),
+}
+
+struct SessionResult {
+    exit: SessionExit,
+    status: ServerStatus,
+    ran_secs: u64,
+}
+
+/// How many unexpected exits in a row trigger a restart before giving up.
+const MAX_AUTO_RESTARTS: u32 = 5;
+/// The daily schedule is checked on this cadence; minute precision is enough.
+const SCHEDULE_TICK: Duration = Duration::from_secs(30);
+/// A session this long resets the auto-restart budget.
+const AUTO_RESTART_RESET_SECS: u64 = 120;
+
+/// True when the local clock reached the schedule and today is not marked yet.
+fn schedule_due(schedule: &str, last_day: &mut Option<String>) -> bool {
+    let now = Local::now();
+    let today = now.format("%Y-%m-%d").to_string();
+    if last_day.as_deref() == Some(today.as_str()) {
+        return false;
+    }
+    if now.format("%H:%M").to_string() == schedule {
+        *last_day = Some(today);
+        return true;
+    }
+    false
+}
+
+/// Supervisor: runs one server process at a time, relaunching it for
+/// auto-restarts and the daily schedule until someone stops it for good.
 async fn run_actor(
     app: tauri::AppHandle,
     instance: HostedServerInstance,
-    process: ServerProcess,
+    first_process: ServerProcess,
     mut cmd_rx: mpsc::UnboundedReceiver<ServerCommand>,
+    dotnet_root: PathBuf,
 ) {
+    let instance_id = instance.id;
+    let mut process = Some(first_process);
+    let mut unexpected_exits: u32 = 0;
+    let mut last_scheduled_day: Option<String> = None;
+
+    let final_status = loop {
+        let current = match process.take() {
+            Some(process) => process,
+            None => match launch_process(&app, &instance, &dotnet_root) {
+                Ok(process) => process,
+                Err(error) => {
+                    log_error!(
+                        "server_hosting: instance {instance_id} failed to relaunch: {}",
+                        error.message
+                    );
+                    break ServerStatus::Crashed { exit_code: None };
+                }
+            },
+        };
+
+        let result = run_session(
+            &app,
+            &instance,
+            current,
+            &mut cmd_rx,
+            &mut last_scheduled_day,
+        )
+        .await;
+
+        match result.exit {
+            SessionExit::StoppedByUser => break result.status,
+            SessionExit::ScheduledRestart => {
+                log_info!("server_hosting: instance {instance_id} restarting on schedule");
+                unexpected_exits = 0;
+                tokio::time::sleep(Duration::from_secs(2)).await;
+                emit_status(
+                    &app,
+                    instance_id,
+                    &ServerStatus::Starting,
+                    None,
+                    Some(Instant::now()),
+                );
+            }
+            SessionExit::Unexpected(exit_code) => {
+                if !instance.auto_restart {
+                    break result.status;
+                }
+                if result.ran_secs >= AUTO_RESTART_RESET_SECS {
+                    unexpected_exits = 0;
+                }
+                unexpected_exits += 1;
+                if unexpected_exits > MAX_AUTO_RESTARTS {
+                    log_error!(
+                        "server_hosting: instance {instance_id} auto-restart limit reached after {} attempts",
+                        unexpected_exits - 1
+                    );
+                    break result.status;
+                }
+                let delay = (5u64 << (unexpected_exits - 1).min(3)).min(60);
+                log_info!(
+                    "server_hosting: instance {instance_id} exited unexpectedly ({exit_code:?}), restart {unexpected_exits}/{MAX_AUTO_RESTARTS} in {delay}s"
+                );
+                tokio::time::sleep(Duration::from_secs(delay)).await;
+                emit_status(
+                    &app,
+                    instance_id,
+                    &ServerStatus::Starting,
+                    None,
+                    Some(Instant::now()),
+                );
+            }
+        }
+    };
+
+    unregister(instance_id);
+    emit_status(&app, instance_id, &final_status, None, None);
+    log_info!(
+        "server_hosting: instance {instance_id} exited ({})",
+        final_status.as_str()
+    );
+}
+
+/// Runs one server process until it exits, is stopped, or the schedule fires.
+async fn run_session(
+    app: &tauri::AppHandle,
+    instance: &HostedServerInstance,
+    process: ServerProcess,
+    cmd_rx: &mut mpsc::UnboundedReceiver<ServerCommand>,
+    last_scheduled_day: &mut Option<String>,
+) -> SessionResult {
     let ServerProcess {
         mut child,
         pid,
@@ -207,7 +345,7 @@ async fn run_actor(
     } = process;
     let instance_id = instance.id;
     let started_at = Instant::now();
-    let log_writer = Arc::new(std::sync::Mutex::new(open_instance_log(&app, instance_id)));
+    let log_writer = Arc::new(std::sync::Mutex::new(open_instance_log(app, instance_id)));
     let stdin = Arc::new(tokio::sync::Mutex::new(stdin));
     let status = Arc::new(tokio::sync::Mutex::new(ServerStatus::Starting));
     let startup_reported = Arc::new(std::sync::atomic::AtomicBool::new(false));
@@ -270,8 +408,10 @@ async fn run_actor(
         }
     });
 
-    // Control loop
-    loop {
+    let mut schedule_tick = tokio::time::interval(SCHEDULE_TICK);
+    schedule_tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+
+    let (exit, final_status) = loop {
         tokio::select! {
             biased;
 
@@ -303,96 +443,151 @@ async fn run_actor(
                         let _ = guard.flush().await;
                     }
                     Some(ServerCommand::Stop) => {
-                        {
-                            *status.lock().await = ServerStatus::Stopping;
-                        }
-                        emit_status(&app, instance_id, &ServerStatus::Stopping, pid, Some(started_at));
-
-                        // Step 1: ask the server to stop gracefully.
-                        {
-                            let mut guard = stdin.lock().await;
-                            let _ = guard.write_all(b"/stop\n").await;
-                            let _ = guard.flush().await;
-                        }
-
-                        // Step 2: wait up to 10s for clean exit.
-                        let timeout = tokio::time::timeout(Duration::from_secs(10), child.wait()).await;
-                        let new_status = match timeout {
-                            Ok(Ok(exit)) => {
-                                if exit.success() {
-                                    ServerStatus::Stopped
-                                } else {
-                                    ServerStatus::Crashed { exit_code: exit.code() }
-                                }
-                            }
-                            _ => {
-                                // Step 3: escalate to SIGTERM / graceful kill.
-                                log_info!("server_hosting: instance {instance_id} did not stop cleanly, escalating");
-                                if let Some(p) = pid {
-                                    #[cfg(unix)]
-                                    // SAFETY: `p` is the live child PID recorded at spawn; the
-                                    // process group was created with `setpgid` above.
-                                    unsafe {
-                                        let _ = libc::killpg(p as i32, libc::SIGTERM);
-                                    }
-                                    #[cfg(windows)]
-                                    {
-                                        let _ = std::process::Command::new("taskkill")
-                                            .args(["/PID", &p.to_string(), "/T"])
-                                            .output();
-                                    }
-                                }
-
-                                // Step 4: wait up to 5s more.
-                                let timeout2 = tokio::time::timeout(Duration::from_secs(5), child.wait()).await;
-                                match timeout2 {
-                                    Ok(Ok(exit)) => {
-                                        if exit.success() {
-                                            ServerStatus::Stopped
-                                        } else {
-                                            ServerStatus::Crashed { exit_code: exit.code() }
-                                        }
-                                    }
-                                    _ => {
-                                        // Step 5: force kill.
-                                        let _ = child.kill().await;
-                                        ServerStatus::Crashed { exit_code: None }
-                                    }
-                                }
-                            }
-                        };
-                        *status.lock().await = new_status;
-                        break;
+                        let new_status = graceful_stop(
+                            &mut child,
+                            pid,
+                            &status,
+                            &stdin,
+                            app,
+                            instance_id,
+                            started_at,
+                        )
+                        .await;
+                        break (SessionExit::StoppedByUser, new_status);
                     }
                     None => {
-                        // All handles dropped; exit actor.
-                        break;
+                        // All handles dropped; exit actor without restarting.
+                        let current = status.lock().await.clone();
+                        break (SessionExit::StoppedByUser, current);
                     }
                 }
             }
 
+            _ = schedule_tick.tick() => {
+                let Some(schedule) = instance.restart_schedule.as_deref() else {
+                    continue;
+                };
+                let is_running = *status.lock().await == ServerStatus::Running;
+                if !is_running || !schedule_due(schedule, last_scheduled_day) {
+                    continue;
+                }
+                log_info!(
+                    "server_hosting: instance {instance_id} scheduled restart at {schedule}"
+                );
+                let new_status = graceful_stop(
+                    &mut child,
+                    pid,
+                    &status,
+                    &stdin,
+                    app,
+                    instance_id,
+                    started_at,
+                )
+                .await;
+                break (SessionExit::ScheduledRestart, new_status);
+            }
+
             wait_result = child.wait() => {
                 let exit_code = wait_result.ok().and_then(|s| s.code());
-                let new_status = match exit_code {
-                    Some(0) => ServerStatus::Stopped,
-                    _ => ServerStatus::Crashed { exit_code },
+                let (exit, new_status) = match exit_code {
+                    // A clean exit is someone stopping the server, not a crash.
+                    Some(0) => (SessionExit::StoppedByUser, ServerStatus::Stopped),
+                    _ => (
+                        SessionExit::Unexpected(exit_code),
+                        ServerStatus::Crashed { exit_code },
+                    ),
                 };
-                *status.lock().await = new_status;
-                break;
+                *status.lock().await = new_status.clone();
+                break (exit, new_status);
+            }
+        }
+    };
+
+    SessionResult {
+        exit,
+        ran_secs: started_at.elapsed().as_secs(),
+        status: final_status,
+    }
+}
+
+/// Graceful stop sequence: `/stop`, then SIGTERM/taskkill, then force kill.
+async fn graceful_stop(
+    child: &mut Child,
+    pid: Option<u32>,
+    status: &Arc<tokio::sync::Mutex<ServerStatus>>,
+    stdin: &Arc<tokio::sync::Mutex<tokio::process::ChildStdin>>,
+    app: &tauri::AppHandle,
+    instance_id: u64,
+    started_at: Instant,
+) -> ServerStatus {
+    {
+        *status.lock().await = ServerStatus::Stopping;
+    }
+    emit_status(
+        app,
+        instance_id,
+        &ServerStatus::Stopping,
+        pid,
+        Some(started_at),
+    );
+
+    // Step 1: ask the server to stop gracefully.
+    {
+        let mut guard = stdin.lock().await;
+        let _ = guard.write_all(b"/stop\n").await;
+        let _ = guard.flush().await;
+    }
+
+    // Step 2: wait up to 10s for clean exit.
+    let timeout = tokio::time::timeout(Duration::from_secs(10), child.wait()).await;
+    match timeout {
+        Ok(Ok(exit)) => {
+            if exit.success() {
+                ServerStatus::Stopped
+            } else {
+                ServerStatus::Crashed {
+                    exit_code: exit.code(),
+                }
+            }
+        }
+        _ => {
+            // Step 3: escalate to SIGTERM / graceful kill.
+            log_info!("server_hosting: instance {instance_id} did not stop cleanly, escalating");
+            if let Some(p) = pid {
+                #[cfg(unix)]
+                // SAFETY: `p` is the live child PID recorded at spawn; the
+                // process group was created with `setpgid` above.
+                unsafe {
+                    let _ = libc::killpg(p as i32, libc::SIGTERM);
+                }
+                #[cfg(windows)]
+                {
+                    let _ = std::process::Command::new("taskkill")
+                        .args(["/PID", &p.to_string(), "/T"])
+                        .output();
+                }
+            }
+
+            // Step 4: wait up to 5s more.
+            let timeout2 = tokio::time::timeout(Duration::from_secs(5), child.wait()).await;
+            match timeout2 {
+                Ok(Ok(exit)) => {
+                    if exit.success() {
+                        ServerStatus::Stopped
+                    } else {
+                        ServerStatus::Crashed {
+                            exit_code: exit.code(),
+                        }
+                    }
+                }
+                _ => {
+                    // Step 5: force kill.
+                    let _ = child.kill().await;
+                    ServerStatus::Crashed { exit_code: None }
+                }
             }
         }
     }
-
-    let final_status = {
-        let guard = status.lock().await;
-        guard.clone()
-    };
-    unregister(instance_id);
-    emit_status(&app, instance_id, &final_status, None, None);
-    log_info!(
-        "server_hosting: instance {instance_id} exited ({})",
-        final_status.as_str()
-    );
 }
 
 /// Request a graceful stop of a running server instance.

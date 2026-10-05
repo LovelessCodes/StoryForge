@@ -7,6 +7,7 @@ name = "StoryForge"
 version = "1.2.2"
 dependencies = [
  "base64 0.22.1",
+ "chrono",
  "dunce",
  "flate2",
  "fs_extra",

@@ -20,11 +20,12 @@ import { useServerDataDirSize } from "@/hooks/use-server-data-dir-size";
 
 import ServerConfigEditor from "./ServerConfigEditor";
 import ServerConsole from "./ServerConsole";
+import ServerModeration from "./ServerModeration";
 import ServerSettingsPane from "./ServerSettingsPane";
 import ServerWhitelist from "./ServerWhitelist";
 import { formatUptime, statusDot, statusLabels, statusText } from "./status-meta";
 
-type HostingSection = "console" | "config" | "whitelist" | "settings";
+type HostingSection = "console" | "config" | "whitelist" | "moderation" | "settings";
 
 export default function HostingDetailPage() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -186,12 +187,14 @@ function HostingDetailContent() {
         </ToggleGroupItem>
         <ToggleGroupItem value="config">{t("hosting.sections.config")}</ToggleGroupItem>
         <ToggleGroupItem value="whitelist">{t("hosting.sections.whitelist")}</ToggleGroupItem>
+        <ToggleGroupItem value="moderation">{t("hosting.sections.moderation")}</ToggleGroupItem>
         <ToggleGroupItem value="settings">{t("hosting.sections.settings")}</ToggleGroupItem>
       </ToggleGroup>
 
       {section === "console" && <ServerConsole instanceId={instanceId} key={instanceId} />}
       {section === "config" && <ServerConfigEditor instanceId={instanceId} key={instanceId} />}
       {section === "whitelist" && <ServerWhitelist instanceId={instanceId} />}
+      {section === "moderation" && <ServerModeration instanceId={instanceId} />}
       {section === "settings" && (
         <ServerSettingsPane canDelete={status.status === "stopped"} instanceId={instanceId} />
       )}
