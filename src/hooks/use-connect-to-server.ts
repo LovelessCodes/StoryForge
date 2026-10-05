@@ -107,6 +107,29 @@ export const useConnectToServer = (
       );
       unlistens.current.push(unlistenDotnet);
 
+      // Backups run before the launch: surface their progress in the same toast.
+      const unlistenBackup = await listen<{
+        phase: string;
+        current?: number;
+        total?: number;
+        message?: string;
+      }>(`backup-${variable.profileId}`, (event) => {
+        const { phase, current, total } = event.payload;
+        if (phase === "backing-up") {
+          const percent = total && total > 0 ? Math.round(((current ?? 0) / total) * 100) : 0;
+          toast.loading(`Backing up ${profile?.name}… ${percent}%`, {
+            id: `launch-game-${variable.profileId}`,
+          });
+        }
+        if (phase === "error") {
+          toast.error("Backup before launch failed", {
+            description: event.payload.message,
+            id: `backup-error-${variable.profileId}`,
+          });
+        }
+      });
+      unlistens.current.push(unlistenBackup);
+
       const unlistenLaunch = await listen<{
         status: string;
         reason?: string;

@@ -38,6 +38,10 @@ export type Profile = {
   environmentVariables?: Record<string, string>;
   /** Linked to a game data folder outside the profiles root. */
   external: boolean;
+  /** Create a backup before the game launches. */
+  backupOnPlay: boolean;
+  /** Keep at most this many backups (0 keeps them all). */
+  backupLimit: number;
 };
 
 type ProfileResult = {
@@ -56,6 +60,8 @@ type ProfileResult = {
   modpack_version: string | null;
   env_vars: Record<string, string>;
   external?: boolean;
+  backup_on_play?: boolean;
+  backup_limit?: number;
 };
 
 type ProfilesStore = {
@@ -125,6 +131,8 @@ export const useProfilesStore = create<ProfilesStore>((set) => ({
             modpackVersion: r.modpack_version ?? existing?.modpackVersion ?? null,
             environmentVariables: r.env_vars ?? existing?.environmentVariables ?? {},
             external: r.external ?? existing?.external ?? false,
+            backupOnPlay: r.backup_on_play ?? existing?.backupOnPlay ?? false,
+            backupLimit: r.backup_limit ?? existing?.backupLimit ?? 5,
           };
         });
         return { profiles };

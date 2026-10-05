@@ -9,7 +9,7 @@ use std::{
     process::Stdio,
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc,
+        Arc, LazyLock, Mutex,
     },
     time::{Duration, Instant},
 };
@@ -19,20 +19,41 @@ use walkdir::WalkDir;
 use zip::ZipArchive;
 
 use super::auth::SavedAccount;
+use super::backups;
 use super::dotnet;
 use super::errors::UiError;
 use super::mods;
 use super::paths::{self, clientsettings_path, mods_dir, profile_json_path};
 use super::utils::{
-    dir_name, dir_size, dir_size_cached, find_dir_by_id, format_size, generate_id, move_folder,
-    normalize_path, parse_start_params, profiles_folder, profiles_subdir, require_managed_path,
-    require_safe_destination, safe_file_name, safe_join,
+    dir_name, dir_size, dir_size_cached, find_dir_by_id, format_size, generate_id, lock,
+    move_folder, normalize_path, parse_start_params, profiles_folder, profiles_subdir,
+    require_managed_path, require_safe_destination, safe_file_name, safe_join,
 };
 use crate::{log_debug, log_error, log_info};
 
+/// Profiles with a game process launched by the app still alive. Backups and
+/// restores refuse to touch a profile while it is running.
+static RUNNING_PROFILES: LazyLock<Mutex<std::collections::HashSet<u64>>> =
+    LazyLock::new(Default::default);
+
+/// Marks a profile as running (game process alive) or not.
+pub fn mark_profile_running(profile_id: u64, running: bool) {
+    let mut profiles = lock(&RUNNING_PROFILES);
+    if running {
+        profiles.insert(profile_id);
+    } else {
+        profiles.remove(&profile_id);
+    }
+}
+
+/// True while a game launched by the app is still running for this profile.
+pub fn is_profile_running(profile_id: u64) -> bool {
+    lock(&RUNNING_PROFILES).contains(&profile_id)
+}
+
 // --- Profile JSON5 persistence ---
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProfileInfo {
     pub name: String,
     pub version: String,
@@ -52,6 +73,35 @@ pub struct ProfileInfo {
     pub modpack_version: Option<String>,
     #[serde(default)]
     pub env_vars: HashMap<String, String>,
+    /// Create a backup before the game launches.
+    #[serde(default)]
+    pub backup_on_play: bool,
+    /// Keep at most this many backups (0 keeps them all).
+    #[serde(default = "default_backup_limit")]
+    pub backup_limit: u32,
+}
+
+fn default_backup_limit() -> u32 {
+    5
+}
+
+impl Default for ProfileInfo {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            version: String::new(),
+            start_params: String::new(),
+            favorite: false,
+            icon: None,
+            last_played: None,
+            total_time_played: 0,
+            modpack_slug: None,
+            modpack_version: None,
+            env_vars: HashMap::new(),
+            backup_on_play: false,
+            backup_limit: default_backup_limit(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -75,6 +125,12 @@ pub struct ProfileResult {
     /// data directories registered in `external-profiles.json`).
     #[serde(default)]
     pub external: bool,
+    /// Create a backup before the game launches.
+    #[serde(default)]
+    pub backup_on_play: bool,
+    /// Keep at most this many backups (0 keeps them all).
+    #[serde(default)]
+    pub backup_limit: u32,
 }
 pub fn read_profile_json(dir: &Path) -> Result<ProfileInfo, UiError> {
     let file_path = profile_json_path(dir);
@@ -298,6 +354,8 @@ pub async fn get_all_profiles(app: AppHandle) -> Result<Vec<ProfileResult>, UiEr
             modpack_version: info.modpack_version,
             env_vars: info.env_vars,
             external: true,
+            backup_on_play: info.backup_on_play,
+            backup_limit: info.backup_limit,
         });
     }
 
@@ -386,6 +444,8 @@ fn scan_profiles(profiles_dir: &Path) -> Result<Vec<ProfileResult>, UiError> {
                 modpack_version: info.modpack_version,
                 env_vars: info.env_vars.clone(),
                 external: false,
+                backup_on_play: info.backup_on_play,
+                backup_limit: info.backup_limit,
             });
         }
     }
@@ -415,18 +475,35 @@ pub fn save_profile(
     );
     let dir = PathBuf::from(&path);
     // Preserve existing playtime/modpack fields if the profile.json already exists
-    let (last_played, total_time_played, modpack_slug, modpack_version, existing_env_vars) =
-        read_profile_json(&dir)
-            .map(|existing| {
-                (
-                    existing.last_played,
-                    existing.total_time_played,
-                    existing.modpack_slug,
-                    existing.modpack_version,
-                    existing.env_vars,
-                )
-            })
-            .unwrap_or((None, 0, None, None, HashMap::new()));
+    let (
+        last_played,
+        total_time_played,
+        modpack_slug,
+        modpack_version,
+        existing_env_vars,
+        backup_on_play,
+        backup_limit,
+    ) = read_profile_json(&dir)
+        .map(|existing| {
+            (
+                existing.last_played,
+                existing.total_time_played,
+                existing.modpack_slug,
+                existing.modpack_version,
+                existing.env_vars,
+                existing.backup_on_play,
+                existing.backup_limit,
+            )
+        })
+        .unwrap_or((
+            None,
+            0,
+            None,
+            None,
+            HashMap::new(),
+            false,
+            default_backup_limit(),
+        ));
     let info = ProfileInfo {
         name,
         version,
@@ -438,7 +515,24 @@ pub fn save_profile(
         modpack_slug,
         modpack_version,
         env_vars: env_vars.unwrap_or(existing_env_vars),
+        backup_on_play,
+        backup_limit,
     };
+    write_profile_json(&dir, &info)
+}
+
+/// Persists the per-profile backup settings without touching the rest of the
+/// profile (the dialog rewrites everything else through `save_profile`).
+#[command]
+pub fn set_profile_backup_settings(
+    app: AppHandle,
+    profile_id: u64,
+    backup_on_play: bool,
+    backup_limit: u32,
+) -> Result<(), UiError> {
+    let (dir, mut info) = find_profile_by_id(&app, profile_id)?;
+    info.backup_on_play = backup_on_play;
+    info.backup_limit = backup_limit.min(backups::MAX_BACKUP_LIMIT);
     write_profile_json(&dir, &info)
 }
 
@@ -505,6 +599,8 @@ pub async fn import_profile(
         modpack_slug: modpack_slug.clone(),
         modpack_version: modpack_version.clone(),
         env_vars: HashMap::new(),
+        backup_on_play: false,
+        backup_limit: default_backup_limit(),
     };
     write_profile_json(&inst_dir, &info)?;
 
@@ -689,6 +785,8 @@ pub async fn import_profile(
         modpack_version: modpack_version.clone(),
         env_vars: info.env_vars.clone(),
         external: false,
+        backup_on_play: false,
+        backup_limit: default_backup_limit(),
     };
 
     let _ = app.emit(
@@ -826,14 +924,42 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
         profile.start_params
     );
 
-    let ctx = resolve_launch_context(&app, &pb, &profile, &options).await?;
-    prepare_clientsettings(&app, &pb, &profile, &options).await?;
-    let _ = app.emit(
-        &format!("launch-{}", options.profile_id),
-        json!({ "status": "pending", "profileId": options.profile_id }),
-    );
-    let (child, expect_version_line) = spawn_game(&pb, &ctx, &profile, &options).await?;
-    watch_process(&app, options.profile_id, pb, child, expect_version_line).await;
+    mark_profile_running(options.profile_id, true);
+
+    // Safety net: archive the profile before the game can touch it. Failures
+    // are surfaced through the backup events and never block the launch.
+    if profile.backup_on_play {
+        let app_for_backup = app.clone();
+        let profile_id = options.profile_id;
+        match tauri::async_runtime::spawn_blocking(move || {
+            backups::run_backup(&app_for_backup, profile_id)
+        })
+        .await
+        {
+            Ok(Ok(_)) => {}
+            Ok(Err(error)) => {
+                log_error!("[play_game] pre-launch backup failed: {}", error.message)
+            }
+            Err(error) => log_error!("[play_game] pre-launch backup task failed: {error}"),
+        }
+    }
+
+    let launched = async {
+        let ctx = resolve_launch_context(&app, &pb, &profile, &options).await?;
+        prepare_clientsettings(&app, &pb, &profile, &options).await?;
+        let _ = app.emit(
+            &format!("launch-{}", options.profile_id),
+            json!({ "status": "pending", "profileId": options.profile_id }),
+        );
+        let (child, expect_version_line) = spawn_game(&pb, &ctx, &profile, &options).await?;
+        watch_process(&app, options.profile_id, pb, child, expect_version_line).await;
+        Ok::<(), UiError>(())
+    }
+    .await;
+    if let Err(error) = launched {
+        mark_profile_running(options.profile_id, false);
+        return Err(error);
+    }
 
     log_info!(
         "play_game: process spawned for profile {}",
@@ -1329,6 +1455,7 @@ async fn watch_process(
                 log_error!("[play_game] failed to wait for process: {e}");
             }
         }
+        mark_profile_running(profile_id, false);
     });
 }
 

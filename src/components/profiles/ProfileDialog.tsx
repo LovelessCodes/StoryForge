@@ -146,6 +146,8 @@ export default function ProfileDialog({
           modpackVersion: null,
           environmentVariables: envVars,
           external: false,
+          backupOnPlay: false,
+          backupLimit: 5,
         });
       }
 

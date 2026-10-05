@@ -22,6 +22,9 @@ the look & feel of Macheim (see `../macheim`). The core domain concept is the **
   undo, export to file or copy a share code, import from file/code with automatic mod
   downloads. Installations from the previous Story Forge release are detected and can be
   imported in one click (move or copy — same data, converted manifest).
+- **Profile backups** — zip snapshots of a profile's mods, worlds and configs, taken manually
+  or automatically before each launch (per-profile switch, retention keeps the newest N).
+  Restoring rolls the folder back to that moment.
 - **Adopt existing game data** — if Vintage Story data already exists in the game's default
   location (`VintagestoryData`), Story Forge offers to use it as a profile in one click.
   Nothing is copied or moved; removing the profile only unregisters the folder.
@@ -58,7 +61,7 @@ the look & feel of Macheim (see `../macheim`). The core domain concept is the **
   whitelist management and port checks.
 - **Mod configs** — live JSON editor and Monaco code editor for `ModConfig/*.json`.
 - **Accounts** — multiple Vintage Story accounts with TOTP support.
-- **Light & dark theme**, command palette (⌘K), keyboard shortcuts, auto-updater.
+- **Light & dark theme**, command palette (⌘K / Ctrl+K), keyboard shortcuts, auto-updater.
 
 ## Screenshots
 

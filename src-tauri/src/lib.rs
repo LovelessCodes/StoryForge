@@ -1,8 +1,8 @@
 pub mod modules;
 use modules::{
-    auth, cairn, download, game_data, gruntlauncher, legacy, lithic, maps, mods, mvl, news,
-    profile_ops, profiles, rustory, saves, server_hosting, servers, sniffer, versions, vs_launcher,
-    waxlight, yelloowstone,
+    auth, backups, cairn, download, game_data, gruntlauncher, legacy, lithic, maps, mods, mvl,
+    news, profile_ops, profiles, rustory, saves, server_hosting, servers, sniffer, versions,
+    vs_launcher, waxlight, yelloowstone,
 };
 use tauri::RunEvent;
 
@@ -394,6 +394,11 @@ pub fn run() {
             profiles::get_profile_logs,
             profiles::read_profile_log,
             profiles::zip_modconfig,
+            profiles::set_profile_backup_settings,
+            backups::list_profile_backups,
+            backups::create_profile_backup,
+            backups::restore_profile_backup,
+            backups::delete_profile_backup,
             // Profile lifecycle (Macheim-style)
             profile_ops::clone_profile,
             profile_ops::rename_profile,

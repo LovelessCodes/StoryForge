@@ -5,6 +5,7 @@ import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { save } from "@tauri-apps/plugin-dialog";
 import { formatDistanceToNow } from "date-fns";
 import {
+  Archive,
   Copy,
   Ellipsis,
   FileText,
@@ -44,6 +45,7 @@ import { toast } from "@/lib/notify";
 import { useProfilesStore, type Profile } from "@/stores/profiles";
 import { useSettingsStore } from "@/stores/settings";
 
+import ProfileBackupsSheet from "./ProfileBackupsSheet";
 import { PROFILE_ICON_BASE } from "./ProfileIconPicker";
 import ProfileLogsSheet from "./ProfileLogsSheet";
 
@@ -63,6 +65,7 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
   const { loadProfiles } = useProfilesStore();
 
   const [logsOpen, setLogsOpen] = useState(false);
+  const [backupsOpen, setBackupsOpen] = useState(false);
   const [cloneOpen, setCloneOpen] = useState(false);
   const [cloneName, setCloneName] = useState(`${profile.name} copy`);
   const [cloneBusy, setCloneBusy] = useState(false);
@@ -260,6 +263,9 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
           <DropdownMenuItem onClick={() => setLogsOpen(true)} className="text-nowrap">
             <ScrollText /> View Logs
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setBackupsOpen(true)} className="text-nowrap">
+            <Archive /> Backups
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => void exportFile()} className="text-nowrap">
             <Share2 /> Export as file…
@@ -295,6 +301,7 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
       </DropdownMenu>
 
       <ProfileLogsSheet open={logsOpen} onOpenChange={setLogsOpen} profile={profile} />
+      <ProfileBackupsSheet open={backupsOpen} onOpenChange={setBackupsOpen} profile={profile} />
 
       <Sheet open={cloneOpen} onOpenChange={(next) => !cloneBusy && setCloneOpen(next)}>
         <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-sm">

@@ -203,6 +203,8 @@ fn adopt_blocking(
         modpack_version: info.modpack_version,
         env_vars: info.env_vars,
         external: true,
+        backup_on_play: info.backup_on_play,
+        backup_limit: info.backup_limit,
     })
 }
 
