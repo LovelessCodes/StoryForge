@@ -3,7 +3,6 @@ import {
   ArrowUpDown,
   ArrowUpNarrowWide,
   CalendarDays,
-  FolderOpen,
   SlidersHorizontal,
   Star,
   Tags,
@@ -162,271 +161,259 @@ export function ModFiltersBar({
   const updateCount = Object.keys(modUpdates?.updates ?? {}).length;
 
   return (
-    <div className="flex shrink-0 flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <ModSearchInput className="w-full sm:w-72" onChange={setSearchText} value={searchText} />
+    <div className="flex shrink-0 flex-wrap items-center gap-2">
+      <ModSearchInput className="w-full sm:w-72" onChange={setSearchText} value={searchText} />
 
-        <Combobox
-          items={sortedGameVersions}
-          multiple
-          value={selectedGameVersions}
-          onValueChange={(value) =>
-            setSelectedGameVersions(Array.isArray(value) ? (value as string[]) : [])
-          }
-        >
-          <ComboboxChips className="w-52" ref={versionAnchor}>
-            <CalendarDays className="text-muted-foreground size-3.5 shrink-0" />
-            <ComboboxValue>
-              {(values: string[]) => (
-                <>
-                  {values.slice(0, 2).map((version) => (
-                    <ComboboxChip key={version}>{version}</ComboboxChip>
-                  ))}
-                  {values.length > 2 && (
-                    <span className="bg-muted text-muted-foreground inline-flex items-center px-1.5 py-0.5 text-xs">
-                      +{values.length - 2}
-                    </span>
-                  )}
-                  <ComboboxInput
-                    aria-label={t("mods.filters.gameVersions.aria")}
-                    placeholder={
-                      values.length > 0 ? "" : t("mods.filters.gameVersions.placeholder")
-                    }
-                  />
-                </>
-              )}
-            </ComboboxValue>
-          </ComboboxChips>
-          <ComboboxContent anchor={versionAnchor}>
-            <ComboboxEmpty>{t("mods.filters.gameVersions.empty")}</ComboboxEmpty>
-            <ComboboxList>
-              {(version: string) => (
-                <ComboboxItem key={version} value={version}>
-                  {version}
-                </ComboboxItem>
-              )}
-            </ComboboxList>
-          </ComboboxContent>
-        </Combobox>
-
-        <Button
-          aria-label={t("mods.filters.favorites.aria")}
-          onClick={() => setFavoritesOnly(!favoritesOnly)}
-          size="icon-sm"
-          title={t("mods.filters.favorites.label")}
-          variant={favoritesOnly ? "outline-amber" : "outline"}
-        >
-          <Star className={favoritesOnly ? "fill-current" : undefined} />
-        </Button>
-
-        <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
-          <PopoverTrigger
-            render={<Button aria-label={t("mods.filters.more")} size="sm" variant="outline" />}
-          >
-            <SlidersHorizontal />
-            {t("mods.filters.more")}
-            {activeFilterCount > 0 && (
-              <Badge className="h-4 min-w-4 px-1 text-[10px]">{activeFilterCount}</Badge>
-            )}
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-80">
-            <div className="grid gap-3">
-              <div className="flex items-center justify-between">
-                <PopoverTitle>{t("mods.filters.more")}</PopoverTitle>
-                {activeFilterCount > 0 && (
-                  <Button onClick={resetFilters} size="sm" variant="ghost">
-                    {t("mods.filters.reset")}
-                  </Button>
+      <Combobox
+        items={sortedGameVersions}
+        multiple
+        value={selectedGameVersions}
+        onValueChange={(value) =>
+          setSelectedGameVersions(Array.isArray(value) ? (value as string[]) : [])
+        }
+      >
+        <ComboboxChips className="w-52" ref={versionAnchor}>
+          <CalendarDays className="text-muted-foreground size-3.5 shrink-0" />
+          <ComboboxValue>
+            {(values: string[]) => (
+              <>
+                {values.slice(0, 2).map((version) => (
+                  <ComboboxChip key={version}>{version}</ComboboxChip>
+                ))}
+                {values.length > 2 && (
+                  <span className="bg-muted text-muted-foreground inline-flex items-center px-1.5 py-0.5 text-xs">
+                    +{values.length - 2}
+                  </span>
                 )}
-              </div>
-
-              <div className="grid gap-1.5">
-                <span className="text-muted-foreground text-[11px] font-medium">
-                  {t("mods.filters.tags.label")}
-                </span>
-                <Combobox
-                  items={tagNames}
-                  multiple
-                  value={selectedTagNames}
-                  onValueChange={handleTagNamesChange}
-                >
-                  <ComboboxChips className="w-full" ref={tagAnchor}>
-                    <Tags className="text-muted-foreground size-3.5 shrink-0" />
-                    <ComboboxValue>
-                      {(values: string[]) => (
-                        <>
-                          {values.slice(0, 2).map((name) => {
-                            const color = tagColorMap[name];
-                            return (
-                              <ComboboxChip
-                                key={name}
-                                className="border"
-                                style={
-                                  color
-                                    ? {
-                                        backgroundColor: `${color}20`,
-                                        borderColor: `${color}50`,
-                                        color,
-                                      }
-                                    : undefined
-                                }
-                              >
-                                {name}
-                              </ComboboxChip>
-                            );
-                          })}
-                          {values.length > 2 && (
-                            <span className="bg-muted text-muted-foreground inline-flex items-center px-1.5 py-0.5 text-xs">
-                              +{values.length - 2}
-                            </span>
-                          )}
-                          <ComboboxInput
-                            aria-label={t("mods.filters.tags.aria")}
-                            placeholder={
-                              values.length > 0 ? "" : t("mods.filters.tags.placeholder")
-                            }
-                          />
-                        </>
-                      )}
-                    </ComboboxValue>
-                  </ComboboxChips>
-                  <ComboboxContent anchor={tagAnchor}>
-                    <ComboboxEmpty>{t("mods.filters.tags.empty")}</ComboboxEmpty>
-                    <ComboboxList>
-                      {(name: string) => (
-                        <ComboboxItem key={name} value={name}>
-                          {name}
-                        </ComboboxItem>
-                      )}
-                    </ComboboxList>
-                  </ComboboxContent>
-                </Combobox>
-              </div>
-
-              <div className="grid gap-1.5">
-                <span className="text-muted-foreground text-[11px] font-medium">
-                  {t("mods.filters.author.label")}
-                </span>
-                <ModAuthorFilter
-                  onChange={setAuthor}
-                  searchText={searchText}
-                  selectedGameVersions={selectedGameVersions}
-                  value={author}
+                <ComboboxInput
+                  aria-label={t("mods.filters.gameVersions.aria")}
+                  placeholder={values.length > 0 ? "" : t("mods.filters.gameVersions.placeholder")}
                 />
-              </div>
+              </>
+            )}
+          </ComboboxValue>
+        </ComboboxChips>
+        <ComboboxContent anchor={versionAnchor}>
+          <ComboboxEmpty>{t("mods.filters.gameVersions.empty")}</ComboboxEmpty>
+          <ComboboxList>
+            {(version: string) => (
+              <ComboboxItem key={version} value={version}>
+                {version}
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
 
-              <div className="grid gap-1.5">
-                <span className="text-muted-foreground text-[11px] font-medium">
-                  {t("mods.filters.category.label")}
-                </span>
-                <Select
-                  items={categoryItems}
-                  value={category}
-                  onValueChange={(value) => {
-                    if (typeof value === "string") setCategory(value as Category);
-                  }}
-                >
-                  <SelectTrigger
-                    aria-label={t("mods.filters.category.aria")}
-                    className="w-full"
-                    size="sm"
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent alignItemWithTrigger={false}>
-                    {categoryItems.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+      <Button
+        aria-label={t("mods.filters.favorites.aria")}
+        onClick={() => setFavoritesOnly(!favoritesOnly)}
+        size="icon-sm"
+        title={t("mods.filters.favorites.label")}
+        variant={favoritesOnly ? "outline-amber" : "outline"}
+      >
+        <Star className={favoritesOnly ? "fill-current" : undefined} />
+      </Button>
+
+      <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <PopoverTrigger
+          render={<Button aria-label={t("mods.filters.more")} size="sm" variant="outline" />}
+        >
+          <SlidersHorizontal />
+          {t("mods.filters.more")}
+          {activeFilterCount > 0 && (
+            <Badge className="h-4 min-w-4 px-1 text-[10px]">{activeFilterCount}</Badge>
+          )}
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-80">
+          <div className="grid gap-3">
+            <div className="flex items-center justify-between">
+              <PopoverTitle>{t("mods.filters.more")}</PopoverTitle>
+              {activeFilterCount > 0 && (
+                <Button onClick={resetFilters} size="sm" variant="ghost">
+                  {t("mods.filters.reset")}
+                </Button>
+              )}
             </div>
-          </PopoverContent>
-        </Popover>
-      </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Select
-          items={sortItems}
-          value={sortBy}
-          onValueChange={(value) => {
-            if (typeof value === "string") setSortBy(value as SortBy);
-          }}
-        >
-          <SelectTrigger size="sm" aria-label={t("mods.filters.sort.aria")}>
-            <ArrowUpDown className="text-muted-foreground" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent alignItemWithTrigger={false}>
-            {sortItems.map((item) => (
-              <SelectItem key={item.value} value={item.value}>
-                {item.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            <div className="grid gap-1.5">
+              <span className="text-muted-foreground text-[11px] font-medium">
+                {t("mods.filters.tags.label")}
+              </span>
+              <Combobox
+                items={tagNames}
+                multiple
+                value={selectedTagNames}
+                onValueChange={handleTagNamesChange}
+              >
+                <ComboboxChips className="w-full" ref={tagAnchor}>
+                  <Tags className="text-muted-foreground size-3.5 shrink-0" />
+                  <ComboboxValue>
+                    {(values: string[]) => (
+                      <>
+                        {values.slice(0, 2).map((name) => {
+                          const color = tagColorMap[name];
+                          return (
+                            <ComboboxChip
+                              key={name}
+                              className="border"
+                              style={
+                                color
+                                  ? {
+                                      backgroundColor: `${color}20`,
+                                      borderColor: `${color}50`,
+                                      color,
+                                    }
+                                  : undefined
+                              }
+                            >
+                              {name}
+                            </ComboboxChip>
+                          );
+                        })}
+                        {values.length > 2 && (
+                          <span className="bg-muted text-muted-foreground inline-flex items-center px-1.5 py-0.5 text-xs">
+                            +{values.length - 2}
+                          </span>
+                        )}
+                        <ComboboxInput
+                          aria-label={t("mods.filters.tags.aria")}
+                          placeholder={values.length > 0 ? "" : t("mods.filters.tags.placeholder")}
+                        />
+                      </>
+                    )}
+                  </ComboboxValue>
+                </ComboboxChips>
+                <ComboboxContent anchor={tagAnchor}>
+                  <ComboboxEmpty>{t("mods.filters.tags.empty")}</ComboboxEmpty>
+                  <ComboboxList>
+                    {(name: string) => (
+                      <ComboboxItem key={name} value={name}>
+                        {name}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+            </div>
 
-        <Button
-          aria-label={t("mods.filters.sort.toggleDirection")}
-          onClick={() =>
-            setOrderDirection(orderDirection === "descending" ? "ascending" : "descending")
-          }
-          size="icon-sm"
-          title={
-            orderDirection === "descending"
-              ? t("mods.sortDirection.descending")
-              : t("mods.sortDirection.ascending")
-          }
-          variant="outline"
-        >
-          {orderDirection === "descending" ? <ArrowDownNarrowWide /> : <ArrowUpNarrowWide />}
-        </Button>
+            <div className="grid gap-1.5">
+              <span className="text-muted-foreground text-[11px] font-medium">
+                {t("mods.filters.author.label")}
+              </span>
+              <ModAuthorFilter
+                onChange={setAuthor}
+                searchText={searchText}
+                selectedGameVersions={selectedGameVersions}
+                value={author}
+              />
+            </div>
 
-        <Select
-          items={sideItems}
-          value={side}
-          onValueChange={(value) => {
-            if (typeof value === "string") setSide(value as Side);
-          }}
-        >
-          <SelectTrigger size="sm" aria-label={t("mods.filters.side.aria")}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent alignItemWithTrigger={false}>
-            {sideItems.map((item) => (
-              <SelectItem key={item.value} value={item.value}>
-                {item.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            <div className="grid gap-1.5">
+              <span className="text-muted-foreground text-[11px] font-medium">
+                {t("mods.filters.category.label")}
+              </span>
+              <Select
+                items={categoryItems}
+                value={category}
+                onValueChange={(value) => {
+                  if (typeof value === "string") setCategory(value as Category);
+                }}
+              >
+                <SelectTrigger
+                  aria-label={t("mods.filters.category.aria")}
+                  className="w-full"
+                  size="sm"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent alignItemWithTrigger={false}>
+                  {categoryItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
 
-        <div className="text-muted-foreground ms-auto flex flex-wrap items-center gap-3 text-xs">
-          <Badge variant="outline" className="text-muted-foreground gap-1.5">
-            <FolderOpen />
-            {destinationLabel}
-          </Badge>
-          <span className="tabular-nums">{t("mods.filters.count", { count: modCount })}</span>
-          {showInstalled && instMods && modUpdates && updateCount > 0 && (
-            <UpdateAllButton
-              destinationLabel={destinationLabel}
-              installedMods={instMods.mods}
-              modsDirectory={modsDirectory}
-              updates={modUpdates}
-            />
-          )}
-          {showInstalled && modsDirectory && <InstallModMenu modsDirectory={modsDirectory} />}
-          {showInstalled && modsDirectory && (
-            <ModsActionsMenu
-              destinationLabel={destinationLabel}
-              gameVersion={gameVersion}
-              installedMods={instMods?.mods}
-              modsDirectory={modsDirectory}
-            />
-          )}
-        </div>
+      <Select
+        items={sortItems}
+        value={sortBy}
+        onValueChange={(value) => {
+          if (typeof value === "string") setSortBy(value as SortBy);
+        }}
+      >
+        <SelectTrigger size="sm" aria-label={t("mods.filters.sort.aria")}>
+          <ArrowUpDown className="text-muted-foreground" />
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent alignItemWithTrigger={false}>
+          {sortItems.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Button
+        aria-label={t("mods.filters.sort.toggleDirection")}
+        onClick={() =>
+          setOrderDirection(orderDirection === "descending" ? "ascending" : "descending")
+        }
+        size="icon-sm"
+        title={
+          orderDirection === "descending"
+            ? t("mods.sortDirection.descending")
+            : t("mods.sortDirection.ascending")
+        }
+        variant="outline"
+      >
+        {orderDirection === "descending" ? <ArrowDownNarrowWide /> : <ArrowUpNarrowWide />}
+      </Button>
+
+      <Select
+        items={sideItems}
+        value={side}
+        onValueChange={(value) => {
+          if (typeof value === "string") setSide(value as Side);
+        }}
+      >
+        <SelectTrigger size="sm" aria-label={t("mods.filters.side.aria")}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent alignItemWithTrigger={false}>
+          {sideItems.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <div className="text-muted-foreground ms-auto flex flex-wrap items-center gap-3 text-xs">
+        <span className="tabular-nums">{t("mods.filters.count", { count: modCount })}</span>
+        {showInstalled && instMods && modUpdates && updateCount > 0 && (
+          <UpdateAllButton
+            destinationLabel={destinationLabel}
+            installedMods={instMods.mods}
+            modsDirectory={modsDirectory}
+            updates={modUpdates}
+          />
+        )}
+        {showInstalled && modsDirectory && <InstallModMenu modsDirectory={modsDirectory} />}
+        {showInstalled && modsDirectory && (
+          <ModsActionsMenu
+            destinationLabel={destinationLabel}
+            gameVersion={gameVersion}
+            installedMods={instMods?.mods}
+            modsDirectory={modsDirectory}
+          />
+        )}
       </div>
     </div>
   );
