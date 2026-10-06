@@ -201,5 +201,19 @@
     "bulkEnabled": "已启用全部模组",
     "bulkDisabled": "已禁用全部模组",
     "failed": "无法更改模组状态"
+  },
+  "installFrom": {
+    "button": "安装模组",
+    "file": "从文件…",
+    "url": "从链接…",
+    "zipFilter": "模组压缩包 (.zip)",
+    "urlTitle": "从链接安装",
+    "urlDescription": "粘贴模组 .zip 的直接链接 — ModDB 下载链接或任意 https 主机均可。",
+    "urlPlaceholder": "https://…",
+    "submit": "安装",
+    "installed": "已安装 {{name}} {{version}}",
+    "failed": "无法安装该模组",
+    "invalidZip": "该文件不是 Vintage Story 模组（缺少 modinfo.json 的 .zip）",
+    "badUrl": "请输入指向模组 .zip 的 https:// 链接"
   }
 }

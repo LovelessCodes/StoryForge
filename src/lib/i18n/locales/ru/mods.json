@@ -225,5 +225,19 @@
     "bulkEnabled": "Все моды включены",
     "bulkDisabled": "Все моды отключены",
     "failed": "Не удалось изменить состояние мода"
+  },
+  "installFrom": {
+    "button": "Установить мод",
+    "file": "Из файла…",
+    "url": "По ссылке…",
+    "zipFilter": "Архив мода (.zip)",
+    "urlTitle": "Установка по ссылке",
+    "urlDescription": "Вставьте прямую ссылку на .zip мода — подойдёт ссылка скачивания с ModDB и любой https-хост.",
+    "urlPlaceholder": "https://…",
+    "submit": "Установить",
+    "installed": "{{name}} {{version}} установлен",
+    "failed": "Не удалось установить мод",
+    "invalidZip": "Это не мод Vintage Story (.zip с modinfo.json)",
+    "badUrl": "Введите ссылку https:// на .zip мода"
   }
 }

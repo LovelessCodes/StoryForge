@@ -209,5 +209,19 @@
     "bulkEnabled": "Tous les mods activés",
     "bulkDisabled": "Tous les mods désactivés",
     "failed": "Impossible de changer l'état du mod"
+  },
+  "installFrom": {
+    "button": "Installer un mod",
+    "file": "Depuis un fichier…",
+    "url": "Depuis une URL…",
+    "zipFilter": "Archive de mod (.zip)",
+    "urlTitle": "Installer depuis une URL",
+    "urlDescription": "Collez un lien direct vers un .zip de mod — un lien de téléchargement ModDB fonctionne, tout comme n'importe quel hôte https.",
+    "urlPlaceholder": "https://…",
+    "submit": "Installer",
+    "installed": "{{name}} {{version}} installé",
+    "failed": "Impossible d'installer le mod",
+    "invalidZip": "Ce fichier n'est pas un mod Vintage Story (.zip avec modinfo.json)",
+    "badUrl": "Saisissez un lien https:// vers un .zip de mod"
   }
 }

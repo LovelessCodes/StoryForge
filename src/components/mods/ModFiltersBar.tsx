@@ -39,6 +39,7 @@ import { compareSemverDesc, stripped } from "@/lib/helpers";
 import { sortOptions, type SortBy } from "@/lib/mod-sort";
 import type { ModTag } from "@/lib/types";
 
+import { InstallModMenu } from "./InstallModMenu";
 import { ModAuthorFilter } from "./ModAuthorFilter";
 import { ModpackMenu } from "./ModpackMenu";
 import { ModSearchInput } from "./ModSearchInput";
@@ -383,6 +384,7 @@ export function ModFiltersBar({
               updates={modUpdates}
             />
           )}
+          {showInstalled && modsDirectory && <InstallModMenu modsDirectory={modsDirectory} />}
           {showInstalled && modsDirectory && (
             <ModpackMenu
               destinationLabel={destinationLabel}

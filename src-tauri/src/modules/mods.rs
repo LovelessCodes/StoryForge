@@ -938,6 +938,162 @@ fn write_settings_file(profile_dir: &Path, settings: &Value) -> Result<(), UiErr
         .map_err(|e| UiError::io(format!("Failed to write clientsettings.json: {e}")))
 }
 
+// ── Installing a mod from a file or URL ──
+
+/// Identity of a mod zip, read from its own `modinfo.json`.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModFileInfo {
+    pub modid: String,
+    pub version: String,
+    pub name: String,
+    pub filename: String,
+}
+
+/// Reads a zip's identity, refusing anything without a readable `modinfo.json`.
+pub(crate) fn inspect_mod_zip(zip_path: &Path) -> Result<ModFileInfo, UiError> {
+    let file = File::open(zip_path)
+        .map_err(|e| UiError::io(format!("Failed to open {}: {e}", zip_path.display())))?;
+    let mut archive = ZipArchive::new(file)
+        .map_err(|_| UiError::new("invalid_mod", "The file is not a readable zip archive"))?;
+    let mut errors = Vec::new();
+    let (output, _) = read_modinfo_from_zip(zip_path, &mut archive, &mut errors);
+    let Some(output) = output else {
+        return Err(UiError::new(
+            "invalid_mod",
+            "The archive has no readable modinfo.json",
+        ));
+    };
+    Ok(ModFileInfo {
+        modid: output.modid,
+        version: output.version,
+        name: output.name,
+        filename: zip_path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or_default()
+            .to_string(),
+    })
+}
+
+/// Copies a local mod zip into a profile's `Mods` directory.
+///
+/// The zip must carry a `modinfo.json`; a file picked from the Mods directory
+/// itself is accepted as-is rather than copied onto itself.
+pub(crate) fn install_mod_file_at(
+    profile_dir: &Path,
+    source: &Path,
+) -> Result<ModFileInfo, UiError> {
+    if !source.is_file() {
+        return Err(UiError::not_found(format!(
+            "File not found: {}",
+            source.display()
+        )));
+    }
+    let mut info = inspect_mod_zip(source)?;
+    let mods_dir = paths::mods_dir(profile_dir);
+    create_dir_all(&mods_dir)
+        .map_err(|e| UiError::io(format!("Failed to create Mods directory: {e}")))?;
+    let filename = safe_file_name(
+        source
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or_else(|| UiError::new("invalid_filename", "The file has no usable name"))?,
+    )?;
+    let destination = mods_dir.join(&filename);
+    let same_file = match (
+        dunce::canonicalize(source),
+        dunce::canonicalize(&destination),
+    ) {
+        (Ok(a), Ok(b)) => a == b,
+        _ => source == destination,
+    };
+    if !same_file {
+        std::fs::copy(source, &destination).map_err(|e| {
+            UiError::io(format!(
+                "Failed to copy {} to {}: {e}",
+                source.display(),
+                destination.display()
+            ))
+        })?;
+    }
+    invalidate_mods_cache(&mods_dir);
+    info.filename = filename;
+    Ok(info)
+}
+
+fn validate_mod_url(url: &str) -> Result<(), UiError> {
+    let allowed = url.starts_with("https://")
+        || url.starts_with("http://127.0.0.1:")
+        || url.starts_with("http://localhost:");
+    if allowed && !url.chars().any(char::is_whitespace) {
+        Ok(())
+    } else {
+        Err(UiError::new(
+            "invalid_url",
+            "Enter an https:// link to a mod .zip",
+        ))
+    }
+}
+
+/// Downloads a mod zip from an explicit URL into a profile's `Mods` directory
+/// and verifies it is a mod. A download that is not a mod is removed again.
+pub(crate) async fn install_mod_url_at(
+    client: &reqwest::Client,
+    profile_dir: &Path,
+    url: &str,
+) -> Result<ModFileInfo, UiError> {
+    let trimmed = url.split(['?', '#']).next().unwrap_or(url);
+    let filename = trimmed
+        .rsplit('/')
+        .next()
+        .filter(|name| !name.is_empty())
+        .unwrap_or("mod.zip");
+    let filename = safe_file_name(filename)?;
+    let mods_dir = paths::mods_dir(profile_dir);
+    let stored = download_manifest_mod_file(client, url, &filename, None, None, &mods_dir).await?;
+    let path = mods_dir.join(&stored);
+    match inspect_mod_zip(&path) {
+        Ok(mut info) => {
+            info.filename = stored;
+            Ok(info)
+        }
+        Err(error) => {
+            let _ = remove_file(&path);
+            invalidate_mods_cache(&mods_dir);
+            Err(error)
+        }
+    }
+}
+
+/// Installs a local mod zip into a profile.
+#[command]
+pub async fn install_mod_file(
+    app: AppHandle,
+    path: String,
+    file: String,
+) -> Result<ModFileInfo, UiError> {
+    log_info!("install_mod_file: {} -> {}", file, path);
+    require_managed_path(&app, Path::new(&path), "Profile path")?;
+    tokio::task::spawn_blocking(move || install_mod_file_at(Path::new(&path), Path::new(&file)))
+        .await
+        .map_err(|e| UiError::new("internal_error", format!("Install failed: {e}")))?
+}
+
+/// Installs a mod zip from a direct URL into a profile.
+#[command]
+pub async fn install_mod_url(
+    app: AppHandle,
+    client: State<'_, Arc<reqwest::Client>>,
+    path: String,
+    url: String,
+) -> Result<ModFileInfo, UiError> {
+    log_info!("install_mod_url: {} -> {}", url, path);
+    require_managed_path(&app, Path::new(&path), "Profile path")?;
+    validate_mod_url(&url)?;
+    install_mod_url_at(&client, Path::new(&path), &url).await
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModEnabledParams {
@@ -1289,6 +1445,91 @@ mod tests {
         assert!(
             dependencies_from_modinfo(&serde_json::json!({ "dependencies": "nope" })).is_empty()
         );
+    }
+
+    fn write_test_mod_zip(path: &Path, modid: &str, version: &str, name: &str) {
+        let file = File::create(path).unwrap();
+        let mut writer = zip::ZipWriter::new(file);
+        writer
+            .start_file("modinfo.json", zip::write::SimpleFileOptions::default())
+            .unwrap();
+        let info = serde_json::json!({
+            "modid": modid,
+            "name": name,
+            "version": version,
+            "type": "code",
+            "side": "universal",
+        });
+        writer.write_all(info.to_string().as_bytes()).unwrap();
+        writer.finish().unwrap();
+    }
+
+    #[test]
+    fn installs_a_local_mod_zip() {
+        let tmp = tempfile::tempdir().unwrap();
+        let profile = tmp.path().join("profile");
+        std::fs::create_dir_all(&profile).unwrap();
+        let source = tmp.path().join("carryon_1.13.0.zip");
+        write_test_mod_zip(&source, "carryon", "1.13.0", "Carry On");
+
+        let info = install_mod_file_at(&profile, &source).unwrap();
+        assert_eq!(info.modid, "carryon");
+        assert_eq!(info.version, "1.13.0");
+        assert_eq!(info.name, "Carry On");
+        assert_eq!(info.filename, "carryon_1.13.0.zip");
+        assert!(paths::mods_dir(&profile)
+            .join("carryon_1.13.0.zip")
+            .is_file());
+
+        // The installed copy scans cleanly.
+        let scanned = get_mods_in_dir(&paths::mods_dir(&profile)).unwrap();
+        assert_eq!(scanned.mods.len(), 1);
+        assert_eq!(scanned.mods[0].modid, "carryon");
+    }
+
+    #[test]
+    fn install_accepts_a_zip_already_in_the_mods_directory() {
+        let tmp = tempfile::tempdir().unwrap();
+        let profile = tmp.path().join("profile");
+        let mods_dir = paths::mods_dir(&profile);
+        std::fs::create_dir_all(&mods_dir).unwrap();
+        let existing = mods_dir.join("mod_a.zip");
+        write_test_mod_zip(&existing, "a", "1.0.0", "A");
+
+        let info = install_mod_file_at(&profile, &existing).unwrap();
+        assert_eq!(info.modid, "a");
+        assert!(existing.is_file());
+        let scanned = get_mods_in_dir(&mods_dir).unwrap();
+        assert_eq!(scanned.mods.len(), 1);
+    }
+
+    #[test]
+    fn install_rejects_files_without_modinfo() {
+        let tmp = tempfile::tempdir().unwrap();
+        let profile = tmp.path().join("profile");
+        std::fs::create_dir_all(&profile).unwrap();
+        let bad = tmp.path().join("bad.zip");
+        let file = File::create(&bad).unwrap();
+        let mut writer = zip::ZipWriter::new(file);
+        writer
+            .start_file("readme.txt", zip::write::SimpleFileOptions::default())
+            .unwrap();
+        writer.write_all(b"nope").unwrap();
+        writer.finish().unwrap();
+
+        let error = install_mod_file_at(&profile, &bad).unwrap_err();
+        assert_eq!(error.name, "invalid_mod");
+        assert!(!paths::mods_dir(&profile).join("bad.zip").exists());
+    }
+
+    #[test]
+    fn mod_url_validation_requires_https() {
+        assert!(validate_mod_url("https://mods.vintagestory.at/download/1/mod.zip").is_ok());
+        assert!(validate_mod_url("http://127.0.0.1:8080/mod.zip").is_ok());
+        assert!(validate_mod_url("http://localhost:8080/mod.zip").is_ok());
+        assert!(validate_mod_url("http://example.com/mod.zip").is_err());
+        assert!(validate_mod_url("ftp://example.com/mod.zip").is_err());
+        assert!(validate_mod_url("https://example.com/a b.zip").is_err());
     }
 
     #[test]
