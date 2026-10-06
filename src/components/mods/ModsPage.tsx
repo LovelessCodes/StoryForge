@@ -29,6 +29,11 @@ export type ModsPageProps = {
   targetLabel?: string;
   /** Pinned game version of the target, used when exporting a modpack. */
   targetVersion?: string;
+  /**
+   * What the target is. Server data dirs run every installed mod, so the
+   * enable/disable controls only make sense for profiles.
+   */
+  targetKind?: "profile" | "server";
 };
 
 type SheetRequest =
@@ -37,7 +42,12 @@ type SheetRequest =
   | { kind: "remove"; mod: Mod; installedMod: OutputMod }
   | { kind: "standalone"; mod: Mod };
 
-export default function ModsPage({ targetPath, targetLabel, targetVersion }: ModsPageProps) {
+export default function ModsPage({
+  targetPath,
+  targetLabel,
+  targetVersion,
+  targetKind,
+}: ModsPageProps) {
   const { t } = useTranslation();
   const { activeProfile } = useActiveProfile();
   const defaultModSortBy = useSettingsStore((s) => s.defaultModSortBy);
@@ -50,6 +60,7 @@ export default function ModsPage({ targetPath, targetLabel, targetVersion }: Mod
     targetLabel ??
     (targetPath ? pathBasename(targetPath) : (activeProfile?.name ?? t("mods.standalone")));
   const gameVersion = baseGameVersion(targetVersion ?? activeProfile?.version ?? "");
+  const canToggleMods = targetKind !== "server";
 
   const data = useModsData({
     author: filters.author,
@@ -115,6 +126,7 @@ export default function ModsPage({ targetPath, targetLabel, targetVersion }: Mod
     <TooltipProvider>
       <div className="flex h-full min-h-0 flex-col gap-3">
         <ModFiltersBar
+          canToggleMods={canToggleMods}
           destinationLabel={destinationLabel}
           filters={filters}
           gameVersion={gameVersion}
@@ -141,6 +153,7 @@ export default function ModsPage({ targetPath, targetLabel, targetVersion }: Mod
           />
         )}
         <ModList
+          canToggleMods={canToggleMods}
           destinationLabel={destinationLabel}
           installedMods={profilePath ? (data.instMods?.mods ?? []) : []}
           mods={data.modsList}

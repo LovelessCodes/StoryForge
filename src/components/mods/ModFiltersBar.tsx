@@ -54,6 +54,7 @@ import {
 
 /** Search, tag/version pickers, sort and side controls above the mod list. */
 export function ModFiltersBar({
+  canToggleMods,
   destinationLabel,
   filters,
   gameVersion,
@@ -64,6 +65,8 @@ export function ModFiltersBar({
   modUpdates,
   modsDirectory,
 }: {
+  /** Whether the target supports the enabled/disabled mod flag (profiles do). */
+  canToggleMods: boolean;
   filters: ModFiltersState;
   gameVersion: string;
   gameVersions: string[] | undefined;
@@ -352,7 +355,7 @@ export function ModFiltersBar({
             {destinationLabel}
           </Badge>
           <span className="tabular-nums">{t("mods.filters.count", { count: modCount })}</span>
-          {showInstalled && modsDirectory && (
+          {showInstalled && modsDirectory && canToggleMods && (
             <div className="flex items-center gap-1">
               <Button
                 aria-label={t("mods.toggle.enableAll")}

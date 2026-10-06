@@ -38,6 +38,7 @@ export default function HostingModsPage() {
 
       {instance ? (
         <ModsPage
+          targetKind="server"
           targetLabel={instance.name}
           targetPath={instance.data_dir}
           targetVersion={baseGameVersion(instance.version)}

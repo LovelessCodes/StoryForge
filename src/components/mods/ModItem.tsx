@@ -45,6 +45,7 @@ const DEFAULT_LOGO = "https://mods.vintagestory.at/web/img/mod-default.png";
 const MAX_VISIBLE_TAGS = 4;
 
 export function ModItem({
+  canToggleMods,
   destinationLabel,
   installedMods,
   mod,
@@ -60,6 +61,8 @@ export function ModItem({
   tagByName,
   tagColorMap,
 }: {
+  /** Whether the target supports the enabled/disabled mod flag (profiles do). */
+  canToggleMods: boolean;
   mod: Mod;
   installedMods: OutputMod[];
   modUpdates: ModUpdatesResponse | undefined;
@@ -354,33 +357,35 @@ export function ModItem({
 
         {modsDirectory && installedMod ? (
           <>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    aria-label={isDisabled ? t("mods.item.enable") : t("mods.item.disable")}
-                    disabled={statePending}
-                    onClick={() =>
-                      setModEnabled({
-                        modid: installedMod.modid,
-                        version: installedMod.version,
-                        enabled: isDisabled,
-                        name: mod.name,
-                      })
-                    }
-                    size="icon-sm"
-                    variant={isDisabled ? "outline" : "ghost"}
-                  />
-                }
-              >
-                {isDisabled ? <Power aria-hidden="true" /> : <PowerOff aria-hidden="true" />}
-              </TooltipTrigger>
-              <TooltipContent>
-                {isDisabled
-                  ? t("mods.item.enableTooltip", { name: mod.name })
-                  : t("mods.item.disableTooltip", { name: mod.name })}
-              </TooltipContent>
-            </Tooltip>
+            {canToggleMods && (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      aria-label={isDisabled ? t("mods.item.enable") : t("mods.item.disable")}
+                      disabled={statePending}
+                      onClick={() =>
+                        setModEnabled({
+                          modid: installedMod.modid,
+                          version: installedMod.version,
+                          enabled: isDisabled,
+                          name: mod.name,
+                        })
+                      }
+                      size="icon-sm"
+                      variant={isDisabled ? "outline" : "ghost"}
+                    />
+                  }
+                >
+                  {isDisabled ? <Power aria-hidden="true" /> : <PowerOff aria-hidden="true" />}
+                </TooltipTrigger>
+                <TooltipContent>
+                  {isDisabled
+                    ? t("mods.item.enableTooltip", { name: mod.name })
+                    : t("mods.item.disableTooltip", { name: mod.name })}
+                </TooltipContent>
+              </Tooltip>
+            )}
             <Tooltip>
               <TooltipTrigger
                 render={

@@ -8,6 +8,7 @@ import type { Mod, ModTag, OutputMod } from "@/lib/types";
 import { ModItem } from "./ModItem";
 
 export function ModList({
+  canToggleMods,
   destinationLabel,
   installedMods,
   mods,
@@ -23,6 +24,7 @@ export function ModList({
   tagByName,
   tagColorMap,
 }: {
+  canToggleMods: boolean;
   mods: Mod[];
   installedMods: OutputMod[];
   modUpdates: ModUpdatesResponse | undefined;
@@ -54,6 +56,7 @@ export function ModList({
       }
       renderItem={(mod) => (
         <ModItem
+          canToggleMods={canToggleMods}
           destinationLabel={destinationLabel}
           installedMods={installedMods}
           mod={mod}
