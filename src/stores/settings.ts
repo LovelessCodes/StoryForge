@@ -57,6 +57,13 @@ type SettingsStore = {
    */
   pinnedMods: Record<string, string[]>;
   toggleModPin: (path: string, modid: string) => void;
+  /**
+   * Update releases the user skipped, keyed by lowercased modidstr. Only the
+   * named version is skipped; a newer release shows up again.
+   */
+  skippedModUpdates: Record<string, string>;
+  skipModUpdate: (modidstr: string, version: string) => void;
+  clearModUpdateSkip: (modidstr: string) => void;
   /** Favourite mod listings (lowercased modidstrs), shared across profiles. */
   favoriteMods: string[];
   toggleFavoriteMod: (modidstr: string) => void;
@@ -128,6 +135,17 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
       if (next.length > 0) pinnedMods[path] = next;
       else delete pinnedMods[path];
       return { pinnedMods };
+    }),
+  skippedModUpdates: {},
+  skipModUpdate: (modidstr, version) =>
+    set((state) => ({
+      skippedModUpdates: { ...state.skippedModUpdates, [modidstr.toLowerCase()]: version },
+    })),
+  clearModUpdateSkip: (modidstr) =>
+    set((state) => {
+      const skippedModUpdates = { ...state.skippedModUpdates };
+      delete skippedModUpdates[modidstr.toLowerCase()];
+      return { skippedModUpdates };
     }),
   favoriteMods: [],
   toggleFavoriteMod: (modidstr) =>

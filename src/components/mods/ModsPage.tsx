@@ -57,6 +57,7 @@ export default function ModsPage({ targetPath, targetLabel, targetVersion }: Mod
     favoritesOnly: filters.favoritesOnly,
     modsDirectory: profilePath,
     orderDirection: filters.orderDirection,
+    profileGameVersion: gameVersion,
     searchText: filters.searchText,
     selectedGameVersions: filters.selectedGameVersions,
     selectedModTags: filters.selectedModTags,

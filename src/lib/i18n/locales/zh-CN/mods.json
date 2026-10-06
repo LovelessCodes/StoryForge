@@ -215,5 +215,11 @@
     "failed": "无法安装该模组",
     "invalidZip": "该文件不是 Vintage Story 模组（缺少 modinfo.json 的 .zip）",
     "badUrl": "请输入指向模组 .zip 的 https:// 链接"
+  },
+  "updates": {
+    "skipTooltip": "跳过 {{version}}",
+    "skippedTooltip": "已跳过更新 {{version}} — 恢复",
+    "skippedToast": "已跳过 {{name}} v{{version}}",
+    "restoredToast": "已恢复 {{name}} 的更新"
   }
 }

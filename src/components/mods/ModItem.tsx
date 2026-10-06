@@ -7,6 +7,7 @@ import {
   Download,
   DownloadCloudIcon,
   ExternalLink,
+  EyeOff,
   Heart,
   MessageSquare,
   PackageMinusIcon,
@@ -16,6 +17,7 @@ import {
   PinOff,
   Power,
   PowerOff,
+  SkipForward,
   Star,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -154,12 +156,17 @@ export function ModItem({
       : false,
   );
   const toggleModPin = useSettingsStore((s) => s.toggleModPin);
+  const skippedModUpdates = useSettingsStore((s) => s.skippedModUpdates);
+  const skipModUpdate = useSettingsStore((s) => s.skipModUpdate);
+  const clearModUpdateSkip = useSettingsStore((s) => s.clearModUpdateSkip);
   const favoriteMods = useSettingsStore((s) => s.favoriteMods);
   const toggleFavoriteMod = useSettingsStore((s) => s.toggleFavoriteMod);
   // Favourites are keyed by the primary modidstr so they survive profile
   // changes and match the same listing across search results and installs.
   const favoriteKey = (mod.modidstrs[0] ?? mod.urlalias ?? String(mod.modid)).toLowerCase();
   const isFavorite = favoriteMods.includes(favoriteKey);
+  // The same key identifies the skip entry: only recorded for installed mods.
+  const skippedVersion = installedMod ? skippedModUpdates[favoriteKey] : undefined;
 
   return (
     <div
@@ -231,36 +238,86 @@ export function ModItem({
           <TooltipContent>{t("mods.item.openOnModDB")}</TooltipContent>
         </Tooltip>
         {canUpdate && installedMod && updateMod ? (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  aria-label={t("mods.item.updateToLatest")}
-                  disabled={removeUpdatePending || updatePending}
-                  onClick={() =>
-                    removeThenUpdate({
-                      path: modsDirectory ?? "",
-                      modpath: installedMod.path,
-                      update: updateMod,
-                    })
-                  }
-                  size="icon-sm"
-                  variant="outline-accent-primary"
-                />
-              }
-            >
-              <DownloadCloudIcon aria-hidden="true" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <span className="grid gap-0.5">
-                <span className="font-mono">
-                  {installedMod.version} → {updateMod.modversion}
+          <>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    aria-label={t("mods.item.updateToLatest")}
+                    disabled={removeUpdatePending || updatePending}
+                    onClick={() =>
+                      removeThenUpdate({
+                        path: modsDirectory ?? "",
+                        modpath: installedMod.path,
+                        update: updateMod,
+                      })
+                    }
+                    size="icon-sm"
+                    variant="outline-accent-primary"
+                  />
+                }
+              >
+                <DownloadCloudIcon aria-hidden="true" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <span className="grid gap-0.5">
+                  <span className="font-mono">
+                    {installedMod.version} → {updateMod.modversion}
+                  </span>
+                  <span>{t("mods.item.updateToLatest")}</span>
                 </span>
-                <span>{t("mods.item.updateToLatest")}</span>
-              </span>
-            </TooltipContent>
-          </Tooltip>
-        ) : installedMod ? null : modsDirectory ? (
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    aria-label={t("mods.updates.skipTooltip", { version: updateMod.modversion })}
+                    onClick={() => {
+                      skipModUpdate(favoriteKey, updateMod.modversion);
+                      toast.info(
+                        t("mods.updates.skippedToast", {
+                          name: mod.name,
+                          version: updateMod.modversion,
+                        }),
+                      );
+                    }}
+                    size="icon-sm"
+                    variant="ghost"
+                  />
+                }
+              >
+                <SkipForward aria-hidden="true" />
+              </TooltipTrigger>
+              <TooltipContent>
+                {t("mods.updates.skipTooltip", { version: updateMod.modversion })}
+              </TooltipContent>
+            </Tooltip>
+          </>
+        ) : installedMod ? (
+          skippedVersion ? (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    aria-label={t("mods.updates.skippedTooltip", { version: skippedVersion })}
+                    onClick={() => {
+                      clearModUpdateSkip(favoriteKey);
+                      toast.info(t("mods.updates.restoredToast", { name: mod.name }));
+                    }}
+                    size="icon-sm"
+                    variant="ghost"
+                  />
+                }
+              >
+                <EyeOff aria-hidden="true" />
+              </TooltipTrigger>
+              <TooltipContent>
+                {t("mods.updates.skippedTooltip", { version: skippedVersion })}
+              </TooltipContent>
+            </Tooltip>
+          ) : null
+        ) : modsDirectory ? (
           <Tooltip>
             <TooltipTrigger
               render={

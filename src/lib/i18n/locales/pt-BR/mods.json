@@ -223,5 +223,11 @@
     "failed": "Não foi possível instalar o mod",
     "invalidZip": "Esse arquivo não é um mod de Vintage Story (.zip com modinfo.json)",
     "badUrl": "Informe um link https:// para um .zip de mod"
+  },
+  "updates": {
+    "skipTooltip": "Ignorar {{version}}",
+    "skippedTooltip": "Atualização {{version}} ignorada — restaurar",
+    "skippedToast": "{{name}} v{{version}} ignorada",
+    "restoredToast": "Atualizações de {{name}} restauradas"
   }
 }

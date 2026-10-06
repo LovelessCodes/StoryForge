@@ -8,6 +8,7 @@ import { stripped } from "@/lib/helpers";
 import { findMissingDependencies } from "@/lib/mod-dependencies";
 import { updateCheckParams } from "@/lib/mod-pins";
 import { relevanceRank, type SortBy } from "@/lib/mod-sort";
+import { filterModUpdates } from "@/lib/mod-updates";
 import { gameVersionsQuery, modTagsQuery } from "@/lib/queries";
 import type { Mod, ModTag, OutputMod } from "@/lib/types";
 import { useSettingsStore } from "@/stores/settings";
@@ -115,6 +116,7 @@ export function useModsData({
   favoritesOnly,
   modsDirectory,
   orderDirection,
+  profileGameVersion,
   searchText,
   selectedGameVersions,
   selectedModTags,
@@ -126,6 +128,8 @@ export function useModsData({
   favoritesOnly: boolean;
   modsDirectory: string | undefined;
   orderDirection: OrderDirection;
+  /** Game version of the target profile, for scoping update checks. */
+  profileGameVersion: string;
   searchText: string;
   selectedGameVersions: string[];
   selectedModTags: ModTag[];
@@ -155,7 +159,8 @@ export function useModsData({
     () => updateCheckParams(instMods?.mods, pinnedMods),
     [instMods, pinnedMods],
   );
-  const { data: modUpdates } = useModUpdates(
+  const skippedModUpdates = useSettingsStore((s) => s.skippedModUpdates);
+  const { data: rawModUpdates } = useModUpdates(
     {
       path: modsDirectory ?? "",
       params: updateParams,
@@ -164,6 +169,13 @@ export function useModsData({
       enabled: !!modsDirectory && updateParams.length > 0,
       staleTime: Infinity,
     },
+  );
+  // The feed returns each mod's newest release whatever game version it
+  // targets; narrow it to the profile's version and to releases the user
+  // skipped. Downstream (badges and "Update All") only sees the survivors.
+  const modUpdates = useMemo(
+    () => filterModUpdates(rawModUpdates, profileGameVersion, skippedModUpdates),
+    [rawModUpdates, profileGameVersion, skippedModUpdates],
   );
 
   // ── Computed data for ModList ──

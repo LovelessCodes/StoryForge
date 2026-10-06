@@ -239,5 +239,11 @@
     "failed": "Не удалось установить мод",
     "invalidZip": "Это не мод Vintage Story (.zip с modinfo.json)",
     "badUrl": "Введите ссылку https:// на .zip мода"
+  },
+  "updates": {
+    "skipTooltip": "Пропустить {{version}}",
+    "skippedTooltip": "Обновление {{version}} пропущено — вернуть",
+    "skippedToast": "{{name}} v{{version}} пропущено",
+    "restoredToast": "Обновления {{name}} возвращены"
   }
 }
