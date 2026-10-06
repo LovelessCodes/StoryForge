@@ -229,5 +229,14 @@
     "skippedTooltip": "Mise à jour {{version}} ignorée — restaurer",
     "skippedToast": "{{name}} v{{version}} ignorée",
     "restoredToast": "Mises à jour de {{name}} restaurées"
+  },
+  "bulk": {
+    "title": "Mises à jour ({{count}})",
+    "description": "Consultez les changelogs avant de mettre à jour.",
+    "noChangelog": "Aucun changelog fourni.",
+    "copy": "Copier les changelogs",
+    "copied": "Changelogs copiés",
+    "copyFailed": "Impossible de copier les changelogs",
+    "updateAll": "Tout mettre à jour ({{count}})"
   }
 }

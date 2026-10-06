@@ -229,5 +229,14 @@
     "skippedTooltip": "Actualización {{version}} omitida: restaurar",
     "skippedToast": "{{name}} v{{version}} omitida",
     "restoredToast": "Actualizaciones de {{name}} restauradas"
+  },
+  "bulk": {
+    "title": "Actualizaciones ({{count}})",
+    "description": "Revisa los changelogs antes de actualizar.",
+    "noChangelog": "Sin changelog.",
+    "copy": "Copiar changelogs",
+    "copied": "Changelogs copiados",
+    "copyFailed": "No se pudieron copiar los changelogs",
+    "updateAll": "Actualizar todo ({{count}})"
   }
 }

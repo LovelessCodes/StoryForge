@@ -229,5 +229,14 @@
     "skippedTooltip": "Update {{version}} übersprungen — wiederherstellen",
     "skippedToast": "{{name}} v{{version}} übersprungen",
     "restoredToast": "Updates für {{name}} wiederhergestellt"
+  },
+  "bulk": {
+    "title": "Updates ({{count}})",
+    "description": "Prüfe die Changelogs, bevor du aktualisierst.",
+    "noChangelog": "Kein Changelog angegeben.",
+    "copy": "Changelogs kopieren",
+    "copied": "Changelogs kopiert",
+    "copyFailed": "Changelogs konnten nicht kopiert werden",
+    "updateAll": "Alle aktualisieren ({{count}})"
   }
 }

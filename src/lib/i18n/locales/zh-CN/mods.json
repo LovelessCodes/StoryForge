@@ -221,5 +221,14 @@
     "skippedTooltip": "已跳过更新 {{version}} — 恢复",
     "skippedToast": "已跳过 {{name}} v{{version}}",
     "restoredToast": "已恢复 {{name}} 的更新"
+  },
+  "bulk": {
+    "title": "更新（{{count}}）",
+    "description": "更新前请查看更新日志。",
+    "noChangelog": "未提供更新日志。",
+    "copy": "复制更新日志",
+    "copied": "已复制更新日志",
+    "copyFailed": "无法复制更新日志",
+    "updateAll": "全部更新（{{count}}）"
   }
 }
