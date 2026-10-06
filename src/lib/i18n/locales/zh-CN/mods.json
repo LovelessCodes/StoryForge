@@ -261,5 +261,49 @@
     "patchDetail": "重叠于 {{path}}",
     "truncated": "仅显示前 {{count}} 个冲突。",
     "failed": "冲突扫描失败"
+  },
+  "view": {
+    "browse": "浏览",
+    "installed": "已安装（{{count}}）",
+    "aria": "模组视图"
+  },
+  "installed": {
+    "count": "已安装 {{count}} 个模组",
+    "noTarget": "打开一个档案以查看其已安装的模组。",
+    "empty": "这里还没有安装任何模组。",
+    "ungrouped": "未分组",
+    "enabledCount": "已启用 {{enabled}} / {{total}}",
+    "selected": "已选择 {{count}} 个",
+    "select": "选择 {{name}}",
+    "selectAll": "选择此组全部",
+    "enable": "启用",
+    "disable": "禁用",
+    "remove": "移除",
+    "removeConfirm": "移除 {{count}} 个模组？",
+    "removePartial": "有 {{failed}} 个模组无法移除",
+    "removeFailed": "无法移除模组",
+    "removed": "已移除 {{count}} 个模组",
+    "stateChanged": "已更新 {{count}} 个模组",
+    "clearSelection": "清除选择",
+    "moveToGroup": "移动到分组",
+    "moved": "已移动 {{count}} 个模组",
+    "removeMod": "移除 {{name}}",
+    "emptyGroup": "此分组中没有模组。"
+  },
+  "groups": {
+    "new": "新建分组",
+    "namePlaceholder": "分组名称",
+    "create": "创建",
+    "created": "已创建分组 {{name}}",
+    "rename": "重命名",
+    "delete": "删除分组",
+    "deleteConfirm": "删除此分组？模组仍保持安装。",
+    "deleted": "已删除分组 {{name}}",
+    "enableAll": "全部启用",
+    "disableAll": "全部禁用",
+    "menu": "分组操作",
+    "save": "保存",
+    "expand": "展开分组",
+    "collapse": "折叠分组"
   }
 }

@@ -4,6 +4,7 @@ import { createTauriStore } from "@tauri-store/zustand";
 import { create } from "zustand";
 
 import { logToFile } from "@/lib/logger";
+import { moveMods, type ModGroup } from "@/lib/mod-groups";
 import type { SortBy } from "@/lib/mod-sort";
 
 export type SetParentConfigProps = {
@@ -68,6 +69,12 @@ type SettingsStore = {
   modPresets: Record<string, ModPreset[]>;
   saveModPreset: (path: string, preset: { name: string; disabled: string[] }) => void;
   deleteModPreset: (path: string, presetId: string) => void;
+  /** Named groups of installed mods, keyed by profile/server path. */
+  modGroups: Record<string, ModGroup[]>;
+  createModGroup: (path: string, name: string) => void;
+  renameModGroup: (path: string, groupId: string, name: string) => void;
+  deleteModGroup: (path: string, groupId: string) => void;
+  moveModsToGroup: (path: string, modids: string[], groupId: string | null) => void;
   /** Favourite mod listings (lowercased modidstrs), shared across profiles. */
   favoriteMods: string[];
   toggleFavoriteMod: (modidstr: string) => void;
@@ -148,6 +155,45 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
       else delete pinnedMods[path];
       return { pinnedMods };
     }),
+  modGroups: {},
+  createModGroup: (path, name) =>
+    set((state) => ({
+      modGroups: {
+        ...state.modGroups,
+        [path]: [
+          ...(state.modGroups[path] ?? []),
+          {
+            id: `group-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+            name,
+            modids: [],
+          },
+        ],
+      },
+    })),
+  renameModGroup: (path, groupId, name) =>
+    set((state) => ({
+      modGroups: {
+        ...state.modGroups,
+        [path]: (state.modGroups[path] ?? []).map((group) =>
+          group.id === groupId ? { ...group, name } : group,
+        ),
+      },
+    })),
+  deleteModGroup: (path, groupId) =>
+    set((state) => {
+      const remaining = (state.modGroups[path] ?? []).filter((group) => group.id !== groupId);
+      const modGroups = { ...state.modGroups };
+      if (remaining.length > 0) modGroups[path] = remaining;
+      else delete modGroups[path];
+      return { modGroups };
+    }),
+  moveModsToGroup: (path, modids, groupId) =>
+    set((state) => ({
+      modGroups: {
+        ...state.modGroups,
+        [path]: moveMods(state.modGroups[path] ?? [], modids, groupId),
+      },
+    })),
   modPresets: {},
   saveModPreset: (path, preset) =>
     set((state) => {

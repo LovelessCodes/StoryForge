@@ -269,5 +269,49 @@
     "patchDetail": "überschneidet sich bei {{path}}",
     "truncated": "Es werden die ersten {{count}} Konflikte angezeigt.",
     "failed": "Konfliktprüfung fehlgeschlagen"
+  },
+  "view": {
+    "browse": "Durchsuchen",
+    "installed": "Installiert ({{count}})",
+    "aria": "Mod-Ansicht"
+  },
+  "installed": {
+    "count": "{{count}} installierte Mod(s)",
+    "noTarget": "Öffne ein Profil, um die installierten Mods zu sehen.",
+    "empty": "Hier sind noch keine Mods installiert.",
+    "ungrouped": "Ohne Gruppe",
+    "enabledCount": "{{enabled}} / {{total}} aktiviert",
+    "selected": "{{count}} ausgewählt",
+    "select": "{{name}} auswählen",
+    "selectAll": "Alle in dieser Gruppe auswählen",
+    "enable": "Aktivieren",
+    "disable": "Deaktivieren",
+    "remove": "Entfernen",
+    "removeConfirm": "{{count}} Mod(s) entfernen?",
+    "removePartial": "{{failed}} Mod(s) konnten nicht entfernt werden",
+    "removeFailed": "Mods konnten nicht entfernt werden",
+    "removed": "{{count}} Mod(s) entfernt",
+    "stateChanged": "{{count}} Mod(s) aktualisiert",
+    "clearSelection": "Auswahl aufheben",
+    "moveToGroup": "In Gruppe verschieben",
+    "moved": "{{count}} Mod(s) verschoben",
+    "removeMod": "{{name}} entfernen",
+    "emptyGroup": "Keine Mods in dieser Gruppe."
+  },
+  "groups": {
+    "new": "Neue Gruppe",
+    "namePlaceholder": "Gruppenname",
+    "create": "Erstellen",
+    "created": "Gruppe {{name}} erstellt",
+    "rename": "Umbenennen",
+    "delete": "Gruppe löschen",
+    "deleteConfirm": "Diese Gruppe löschen? Die Mods bleiben installiert.",
+    "deleted": "Gruppe {{name}} gelöscht",
+    "enableAll": "Alle aktivieren",
+    "disableAll": "Alle deaktivieren",
+    "menu": "Gruppenaktionen",
+    "save": "Speichern",
+    "expand": "Gruppe ausklappen",
+    "collapse": "Gruppe einklappen"
   }
 }

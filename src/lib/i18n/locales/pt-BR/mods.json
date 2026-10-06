@@ -269,5 +269,49 @@
     "patchDetail": "sobrepõe em {{path}}",
     "truncated": "Mostrando os primeiros {{count}} conflitos.",
     "failed": "A análise de conflitos falhou"
+  },
+  "view": {
+    "browse": "Explorar",
+    "installed": "Instalados ({{count}})",
+    "aria": "Visualização de mods"
+  },
+  "installed": {
+    "count": "{{count}} mod(s) instalados",
+    "noTarget": "Abra um perfil para ver os mods instalados.",
+    "empty": "Ainda não há mods instalados aqui.",
+    "ungrouped": "Sem grupo",
+    "enabledCount": "{{enabled}} / {{total}} ativados",
+    "selected": "{{count}} selecionados",
+    "select": "Selecionar {{name}}",
+    "selectAll": "Selecionar todos deste grupo",
+    "enable": "Ativar",
+    "disable": "Desativar",
+    "remove": "Remover",
+    "removeConfirm": "Remover {{count}} mod(s)?",
+    "removePartial": "{{failed}} mod(s) não puderam ser removidos",
+    "removeFailed": "Não foi possível remover os mods",
+    "removed": "{{count}} mod(s) removidos",
+    "stateChanged": "{{count}} mod(s) atualizados",
+    "clearSelection": "Limpar seleção",
+    "moveToGroup": "Mover para grupo",
+    "moved": "{{count}} mod(s) movidos",
+    "removeMod": "Remover {{name}}",
+    "emptyGroup": "Nenhum mod neste grupo."
+  },
+  "groups": {
+    "new": "Novo grupo",
+    "namePlaceholder": "Nome do grupo",
+    "create": "Criar",
+    "created": "Grupo {{name}} criado",
+    "rename": "Renomear",
+    "delete": "Excluir grupo",
+    "deleteConfirm": "Excluir este grupo? Os mods continuam instalados.",
+    "deleted": "Grupo {{name}} excluído",
+    "enableAll": "Ativar todos",
+    "disableAll": "Desativar todos",
+    "menu": "Ações do grupo",
+    "save": "Salvar",
+    "expand": "Expandir grupo",
+    "collapse": "Recolher grupo"
   }
 }

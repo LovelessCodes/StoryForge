@@ -269,5 +269,49 @@
     "patchDetail": "overlapping at {{path}}",
     "truncated": "Showing the first {{count}} conflicts.",
     "failed": "Conflict scan failed"
+  },
+  "view": {
+    "browse": "Browse",
+    "installed": "Installed ({{count}})",
+    "aria": "Mods view"
+  },
+  "installed": {
+    "count": "{{count}} installed mod(s)",
+    "noTarget": "Open a profile to see its installed mods.",
+    "empty": "No mods installed here yet.",
+    "ungrouped": "Ungrouped",
+    "enabledCount": "{{enabled}} / {{total}} enabled",
+    "selected": "{{count}} selected",
+    "select": "Select {{name}}",
+    "selectAll": "Select all in this group",
+    "enable": "Enable",
+    "disable": "Disable",
+    "remove": "Remove",
+    "removeConfirm": "Remove {{count}} mod(s)?",
+    "removePartial": "{{failed}} mod(s) could not be removed",
+    "removeFailed": "Could not remove the mod(s)",
+    "removed": "Removed {{count}} mod(s)",
+    "stateChanged": "Updated {{count}} mod(s)",
+    "clearSelection": "Clear selection",
+    "moveToGroup": "Move to group",
+    "moved": "Moved {{count}} mod(s)",
+    "removeMod": "Remove {{name}}",
+    "emptyGroup": "No mods in this group."
+  },
+  "groups": {
+    "new": "New group",
+    "namePlaceholder": "Group name",
+    "create": "Create",
+    "created": "Created group {{name}}",
+    "rename": "Rename",
+    "delete": "Delete group",
+    "deleteConfirm": "Delete this group? Its mods stay installed.",
+    "deleted": "Deleted group {{name}}",
+    "enableAll": "Enable all",
+    "disableAll": "Disable all",
+    "menu": "Group actions",
+    "save": "Save",
+    "expand": "Expand group",
+    "collapse": "Collapse group"
   }
 }

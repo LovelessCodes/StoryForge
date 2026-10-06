@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useActiveProfile } from "@/hooks/use-active-profile";
 import { baseGameVersion, pathBasename } from "@/lib/helpers";
@@ -11,6 +12,7 @@ import { useSettingsStore } from "@/stores/settings";
 
 import { AddModSheet } from "./AddModSheet";
 import BrokenModsBanner from "./BrokenModsBanner";
+import { InstalledModsView } from "./InstalledModsView";
 import MissingDependenciesBanner from "./MissingDependenciesBanner";
 import { ModFiltersBar } from "./ModFiltersBar";
 import { ModList } from "./ModList";
@@ -76,6 +78,7 @@ export default function ModsPage({
     sortBy: filters.sortBy,
   });
 
+  const [view, setView] = useState<"browse" | "installed">("browse");
   const [sheet, setSheet] = useState<SheetRequest | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -125,50 +128,77 @@ export default function ModsPage({
   return (
     <TooltipProvider>
       <div className="flex h-full min-h-0 flex-col gap-3">
-        <ModFiltersBar
-          canToggleMods={canToggleMods}
-          destinationLabel={destinationLabel}
-          filters={filters}
-          gameVersion={gameVersion}
-          gameVersions={data.gameVersions}
-          instMods={data.instMods}
-          modCount={data.modsList.length}
-          modsDirectory={profilePath}
-          modTags={data.modTags}
-          modUpdates={data.modUpdates}
-        />
-        {profilePath && (
-          <MissingDependenciesBanner
-            destinationLabel={destinationLabel}
-            missing={data.missingDependencies}
-            modsDirectory={profilePath}
-          />
+        <div className="flex items-center justify-between gap-2">
+          <ToggleGroup
+            aria-label={t("mods.view.aria")}
+            size="sm"
+            value={[view]}
+            variant="outline"
+            onValueChange={(value) => {
+              if (value[0]) setView(value[0] as "browse" | "installed");
+            }}
+          >
+            <ToggleGroupItem value="browse">{t("mods.view.browse")}</ToggleGroupItem>
+            <ToggleGroupItem value="installed">
+              {t("mods.view.installed", { count: data.instMods?.mods.length ?? 0 })}
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+
+        {view === "browse" ? (
+          <>
+            <ModFiltersBar
+              canToggleMods={canToggleMods}
+              destinationLabel={destinationLabel}
+              filters={filters}
+              gameVersion={gameVersion}
+              gameVersions={data.gameVersions}
+              instMods={data.instMods}
+              modCount={data.modsList.length}
+              modsDirectory={profilePath}
+              modTags={data.modTags}
+              modUpdates={data.modUpdates}
+            />
+            {profilePath && (
+              <MissingDependenciesBanner
+                destinationLabel={destinationLabel}
+                missing={data.missingDependencies}
+                modsDirectory={profilePath}
+              />
+            )}
+            {profilePath && (
+              <BrokenModsBanner
+                destinationLabel={destinationLabel}
+                duplicates={data.duplicateMods}
+                errors={data.modErrors}
+                modsDirectory={profilePath}
+              />
+            )}
+            <ModList
+              canToggleMods={canToggleMods}
+              destinationLabel={destinationLabel}
+              installedMods={profilePath ? (data.instMods?.mods ?? []) : []}
+              mods={data.modsList}
+              modsDirectory={profilePath}
+              modUpdates={profilePath ? data.modUpdates : undefined}
+              onAdd={(mod) => openSheet({ kind: "add", mod })}
+              onAuthorClick={filters.setAuthor}
+              onRemove={(mod, installedMod) => openSheet({ kind: "remove", mod, installedMod })}
+              onStandaloneInstall={(mod) => openSheet({ kind: "standalone", mod })}
+              onTagClick={filters.handleTagClick}
+              onUpdate={(mod, installedMod) => openSheet({ kind: "update", mod, installedMod })}
+              selectedTagNames={filters.selectedTagNames}
+              tagByName={data.tagByName}
+              tagColorMap={data.tagColorMap}
+            />
+          </>
+        ) : profilePath ? (
+          <InstalledModsView canToggleMods={canToggleMods} modsDirectory={profilePath} />
+        ) : (
+          <p className="text-muted-foreground border border-dashed p-6 text-center text-xs">
+            {t("mods.installed.noTarget")}
+          </p>
         )}
-        {profilePath && (
-          <BrokenModsBanner
-            destinationLabel={destinationLabel}
-            duplicates={data.duplicateMods}
-            errors={data.modErrors}
-            modsDirectory={profilePath}
-          />
-        )}
-        <ModList
-          canToggleMods={canToggleMods}
-          destinationLabel={destinationLabel}
-          installedMods={profilePath ? (data.instMods?.mods ?? []) : []}
-          mods={data.modsList}
-          modsDirectory={profilePath}
-          modUpdates={profilePath ? data.modUpdates : undefined}
-          onAdd={(mod) => openSheet({ kind: "add", mod })}
-          onAuthorClick={filters.setAuthor}
-          onRemove={(mod, installedMod) => openSheet({ kind: "remove", mod, installedMod })}
-          onStandaloneInstall={(mod) => openSheet({ kind: "standalone", mod })}
-          onTagClick={filters.handleTagClick}
-          onUpdate={(mod, installedMod) => openSheet({ kind: "update", mod, installedMod })}
-          selectedTagNames={filters.selectedTagNames}
-          tagByName={data.tagByName}
-          tagColorMap={data.tagColorMap}
-        />
       </div>
 
       {sheet?.kind === "add" && profilePath && (
