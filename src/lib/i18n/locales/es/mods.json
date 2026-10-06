@@ -238,5 +238,23 @@
     "copied": "Changelogs copiados",
     "copyFailed": "No se pudieron copiar los changelogs",
     "updateAll": "Actualizar todo ({{count}})"
+  },
+  "presets": {
+    "button": "Ajustes",
+    "title": "Ajustes de mods",
+    "description": "Guarda el estado activado/desactivado actual con un nombre y vuelve a aplicarlo más tarde.",
+    "save": "Guardar el estado actual",
+    "namePlaceholder": "Nombre del ajuste",
+    "saveAction": "Guardar",
+    "currentState": "{{count}} mod(s) desactivados ahora mismo",
+    "saved": "Ajuste {{name}} guardado",
+    "empty": "Aún no hay ajustes para este destino.",
+    "disabledCount": "Desactiva {{count}} mod(s)",
+    "apply": "Aplicar",
+    "applied": "{{name}} aplicado",
+    "delete": "Eliminar el ajuste {{name}}",
+    "deleteTitle": "Eliminar ajuste",
+    "deleteConfirm": "¿Eliminar de verdad?",
+    "deleted": "{{name}} eliminado"
   }
 }

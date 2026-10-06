@@ -1066,6 +1066,58 @@ pub(crate) async fn install_mod_url_at(
     }
 }
 
+/// Whether a preset's disabled-modid list names one mod (case-insensitive).
+pub(crate) fn is_in_disabled_set(disabled: &[String], modid: &str) -> bool {
+    disabled
+        .iter()
+        .any(|entry| entry.eq_ignore_ascii_case(modid))
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModStateParams {
+    pub path: String,
+    /// Every modid that should be disabled; installed mods not named are
+    /// enabled.
+    pub disabled: Vec<String>,
+}
+
+/// Applies a whole enabled/disabled configuration to a profile in one write:
+/// every installed mod named in `disabled` is turned off, every other
+/// installed mod is turned on. Used by mod presets.
+#[command]
+pub async fn apply_mod_state(
+    app: AppHandle,
+    params: ModStateParams,
+) -> Result<Vec<String>, UiError> {
+    log_info!(
+        "apply_mod_state: {} disabled mod(s) path={}",
+        params.disabled.len(),
+        params.path
+    );
+    require_managed_path(&app, Path::new(&params.path), "Profile path")?;
+    tokio::task::spawn_blocking(move || {
+        let profile_dir = PathBuf::from(&params.path);
+        let mods_dir = paths::mods_dir(&profile_dir);
+        let mods = if mods_dir.is_dir() {
+            get_mods_in_dir(&mods_dir)
+                .map(|result| result.mods)
+                .unwrap_or_default()
+        } else {
+            Vec::new()
+        };
+        let mut settings = read_settings_file(&profile_dir);
+        for installed in &mods {
+            let enabled = !is_in_disabled_set(&params.disabled, &installed.modid);
+            apply_mod_enabled(&mut settings, &installed.modid, &installed.version, enabled);
+        }
+        write_settings_file(&profile_dir, &settings)?;
+        Ok(disabled_mods(&settings))
+    })
+    .await
+    .map_err(|e| UiError::new("internal_error", format!("Apply mod state failed: {e}")))?
+}
+
 /// Installs a local mod zip into a profile.
 #[command]
 pub async fn install_mod_file(
@@ -1520,6 +1572,15 @@ mod tests {
         let error = install_mod_file_at(&profile, &bad).unwrap_err();
         assert_eq!(error.name, "invalid_mod");
         assert!(!paths::mods_dir(&profile).join("bad.zip").exists());
+    }
+
+    #[test]
+    fn disabled_set_matching_is_case_insensitive() {
+        let disabled = vec!["carryon".to_string(), "ExtraOverlays".to_string()];
+        assert!(is_in_disabled_set(&disabled, "CarryOn"));
+        assert!(is_in_disabled_set(&disabled, "extraoverlays"));
+        assert!(!is_in_disabled_set(&disabled, "stonequarry"));
+        assert!(!is_in_disabled_set(&[], "carryon"));
     }
 
     #[test]

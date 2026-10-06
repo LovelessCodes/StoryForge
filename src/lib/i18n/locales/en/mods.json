@@ -238,5 +238,23 @@
     "copied": "Changelogs copied",
     "copyFailed": "Could not copy the changelogs",
     "updateAll": "Update all ({{count}})"
+  },
+  "presets": {
+    "button": "Presets",
+    "title": "Mod presets",
+    "description": "Save the current enabled/disabled state under a name and apply it again later.",
+    "save": "Save current state",
+    "namePlaceholder": "Preset name",
+    "saveAction": "Save",
+    "currentState": "{{count}} mod(s) currently disabled",
+    "saved": "Saved preset {{name}}",
+    "empty": "No presets for this target yet.",
+    "disabledCount": "Disables {{count}} mod(s)",
+    "apply": "Apply",
+    "applied": "Applied {{name}}",
+    "delete": "Delete preset {{name}}",
+    "deleteTitle": "Delete preset",
+    "deleteConfirm": "Really delete?",
+    "deleted": "Deleted {{name}}"
   }
 }

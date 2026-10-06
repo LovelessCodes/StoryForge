@@ -56,3 +56,23 @@ export const useSetAllModsEnabled = (modsDirectory: string | undefined) => {
     },
   });
 };
+
+/**
+ * Applies a whole enabled/disabled configuration in one write: every installed
+ * mod named in `disabled` is turned off, everything else on. Used by presets.
+ */
+export const useApplyModState = (modsDirectory: string | undefined) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (disabled: string[]) =>
+      invoke<string[]>("apply_mod_state", { params: { path: modsDirectory, disabled } }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: installedModsQueryKey(modsDirectory ?? ""),
+      });
+    },
+    onError: (error) => {
+      toast.error(t("mods.toggle.failed"), { description: String(error) });
+    },
+  });
+};

@@ -238,5 +238,23 @@
     "copied": "Changelogs kopiert",
     "copyFailed": "Changelogs konnten nicht kopiert werden",
     "updateAll": "Alle aktualisieren ({{count}})"
+  },
+  "presets": {
+    "button": "Vorlagen",
+    "title": "Mod-Vorlagen",
+    "description": "Speichere den aktuellen Aktiviert/Deaktiviert-Zustand unter einem Namen und wende ihn später wieder an.",
+    "save": "Aktuellen Zustand speichern",
+    "namePlaceholder": "Name der Vorlage",
+    "saveAction": "Speichern",
+    "currentState": "Aktuell {{count}} Mod(s) deaktiviert",
+    "saved": "Vorlage {{name}} gespeichert",
+    "empty": "Noch keine Vorlagen für dieses Ziel.",
+    "disabledCount": "Deaktiviert {{count}} Mod(s)",
+    "apply": "Anwenden",
+    "applied": "{{name}} angewendet",
+    "delete": "Vorlage {{name}} löschen",
+    "deleteTitle": "Vorlage löschen",
+    "deleteConfirm": "Wirklich löschen?",
+    "deleted": "{{name}} gelöscht"
   }
 }

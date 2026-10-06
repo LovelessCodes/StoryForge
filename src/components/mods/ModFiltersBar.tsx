@@ -2,6 +2,7 @@ import {
   ArrowDownNarrowWide,
   ArrowUpDown,
   ArrowUpNarrowWide,
+  Bookmark,
   CalendarDays,
   FolderOpen,
   ListFilter,
@@ -10,7 +11,7 @@ import {
   Star,
   Tags,
 } from "lucide-react";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +43,7 @@ import type { ModTag } from "@/lib/types";
 import { InstallModMenu } from "./InstallModMenu";
 import { ModAuthorFilter } from "./ModAuthorFilter";
 import { ModpackMenu } from "./ModpackMenu";
+import { ModPresetsSheet } from "./ModPresetsSheet";
 import { ModSearchInput } from "./ModSearchInput";
 import { UpdateAllButton } from "./UpdateAllButton";
 import {
@@ -80,6 +82,7 @@ export function ModFiltersBar({
   const { t } = useTranslation();
   const { mutate: setAllModsEnabled, isPending: bulkStatePending } =
     useSetAllModsEnabled(modsDirectory);
+  const [presetsOpen, setPresetsOpen] = useState(false);
   const versionAnchor = useRef<HTMLDivElement | null>(null);
   const tagAnchor = useRef<HTMLDivElement | null>(null);
   const {
@@ -377,6 +380,16 @@ export function ModFiltersBar({
               >
                 <PowerOff aria-hidden="true" />
               </Button>
+              <Button
+                aria-label={t("mods.presets.button")}
+                onClick={() => setPresetsOpen(true)}
+                size="sm"
+                title={t("mods.presets.button")}
+                variant="outline"
+              >
+                <Bookmark aria-hidden="true" />
+                <span className="hidden sm:inline">{t("mods.presets.button")}</span>
+              </Button>
             </div>
           )}
           {showInstalled && instMods && modUpdates && updateCount > 0 && (
@@ -398,6 +411,12 @@ export function ModFiltersBar({
           )}
         </div>
       </div>
+
+      <ModPresetsSheet
+        modsDirectory={modsDirectory}
+        open={presetsOpen}
+        onOpenChange={setPresetsOpen}
+      />
     </div>
   );
 }

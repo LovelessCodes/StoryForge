@@ -230,5 +230,23 @@
     "copied": "已复制更新日志",
     "copyFailed": "无法复制更新日志",
     "updateAll": "全部更新（{{count}}）"
+  },
+  "presets": {
+    "button": "预设",
+    "title": "模组预设",
+    "description": "将当前的启用/禁用状态保存为命名预设，之后可再次应用。",
+    "save": "保存当前状态",
+    "namePlaceholder": "预设名称",
+    "saveAction": "保存",
+    "currentState": "当前已禁用 {{count}} 个模组",
+    "saved": "已保存预设 {{name}}",
+    "empty": "此目标还没有预设。",
+    "disabledCount": "会禁用 {{count}} 个模组",
+    "apply": "应用",
+    "applied": "已应用 {{name}}",
+    "delete": "删除预设 {{name}}",
+    "deleteTitle": "删除预设",
+    "deleteConfirm": "确定删除？",
+    "deleted": "已删除 {{name}}"
   }
 }

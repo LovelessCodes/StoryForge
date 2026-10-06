@@ -238,5 +238,23 @@
     "copied": "Changelogs copiés",
     "copyFailed": "Impossible de copier les changelogs",
     "updateAll": "Tout mettre à jour ({{count}})"
+  },
+  "presets": {
+    "button": "Préréglages",
+    "title": "Préréglages de mods",
+    "description": "Enregistrez l'état activé/désactivé actuel sous un nom et réappliquez-le plus tard.",
+    "save": "Enregistrer l'état actuel",
+    "namePlaceholder": "Nom du préréglage",
+    "saveAction": "Enregistrer",
+    "currentState": "{{count}} mod(s) actuellement désactivés",
+    "saved": "Préréglage {{name}} enregistré",
+    "empty": "Aucun préréglage pour cette cible pour l'instant.",
+    "disabledCount": "Désactive {{count}} mod(s)",
+    "apply": "Appliquer",
+    "applied": "{{name}} appliqué",
+    "delete": "Supprimer le préréglage {{name}}",
+    "deleteTitle": "Supprimer le préréglage",
+    "deleteConfirm": "Vraiment supprimer ?",
+    "deleted": "{{name}} supprimé"
   }
 }

@@ -64,6 +64,10 @@ type SettingsStore = {
   skippedModUpdates: Record<string, string>;
   skipModUpdate: (modidstr: string, version: string) => void;
   clearModUpdateSkip: (modidstr: string) => void;
+  /** Named enabled/disabled presets, keyed by profile/server path. */
+  modPresets: Record<string, ModPreset[]>;
+  saveModPreset: (path: string, preset: { name: string; disabled: string[] }) => void;
+  deleteModPreset: (path: string, presetId: string) => void;
   /** Favourite mod listings (lowercased modidstrs), shared across profiles. */
   favoriteMods: string[];
   toggleFavoriteMod: (modidstr: string) => void;
@@ -94,6 +98,14 @@ type SettingsStore = {
   toggleStreamMode: () => void;
   useSystemDotnet: boolean;
   toggleUseSystemDotnet: () => void;
+};
+
+export type ModPreset = {
+  id: string;
+  name: string;
+  /** Lowercased modids this preset disables; everything else stays enabled. */
+  disabled: string[];
+  createdAt: number;
 };
 
 export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
@@ -135,6 +147,30 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
       if (next.length > 0) pinnedMods[path] = next;
       else delete pinnedMods[path];
       return { pinnedMods };
+    }),
+  modPresets: {},
+  saveModPreset: (path, preset) =>
+    set((state) => {
+      const entry: ModPreset = {
+        id: `preset-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+        name: preset.name,
+        disabled: preset.disabled.map((modid) => modid.toLowerCase()),
+        createdAt: Date.now(),
+      };
+      return {
+        modPresets: {
+          ...state.modPresets,
+          [path]: [...(state.modPresets[path] ?? []), entry],
+        },
+      };
+    }),
+  deleteModPreset: (path, presetId) =>
+    set((state) => {
+      const remaining = (state.modPresets[path] ?? []).filter((preset) => preset.id !== presetId);
+      const modPresets = { ...state.modPresets };
+      if (remaining.length > 0) modPresets[path] = remaining;
+      else delete modPresets[path];
+      return { modPresets };
     }),
   skippedModUpdates: {},
   skipModUpdate: (modidstr, version) =>

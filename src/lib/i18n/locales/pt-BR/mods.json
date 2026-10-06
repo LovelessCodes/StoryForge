@@ -238,5 +238,23 @@
     "copied": "Changelogs copiados",
     "copyFailed": "Não foi possível copiar os changelogs",
     "updateAll": "Atualizar tudo ({{count}})"
+  },
+  "presets": {
+    "button": "Predefinições",
+    "title": "Predefinições de mods",
+    "description": "Salve o estado atual de ativado/desativado com um nome e aplique-o novamente depois.",
+    "save": "Salvar estado atual",
+    "namePlaceholder": "Nome da predefinição",
+    "saveAction": "Salvar",
+    "currentState": "{{count}} mod(s) desativados no momento",
+    "saved": "Predefinição {{name}} salva",
+    "empty": "Ainda não há predefinições para este destino.",
+    "disabledCount": "Desativa {{count}} mod(s)",
+    "apply": "Aplicar",
+    "applied": "{{name}} aplicada",
+    "delete": "Excluir a predefinição {{name}}",
+    "deleteTitle": "Excluir predefinição",
+    "deleteConfirm": "Excluir mesmo?",
+    "deleted": "{{name}} excluída"
   }
 }
