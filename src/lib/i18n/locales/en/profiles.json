@@ -7,7 +7,8 @@
     "gameVersion": "Game version",
     "installed": "(installed)",
     "installedVersion": "{{version}} (installed)",
-    "profileName": "Profile name"
+    "profileName": "Profile name",
+    "optimumVersion": "{{version}} · Optimum {{optimum}}"
   },
   "errors": {
     "importFailed": "Import failed",
@@ -37,7 +38,8 @@
     "exportFile": "Export as file…",
     "copyShareCode": "Copy share code",
     "deleteCurrent": "Delete (current profile)",
-    "openFolderFailed": "Could not open folder"
+    "openFolderFailed": "Could not open folder",
+    "packLock": "Pack lock"
   },
   "screenshots": {
     "menu": "Screenshots",
@@ -255,5 +257,45 @@
     "pathExists": "Profile with path \"{{path}}\" already exists",
     "idExists": "Profile with ID \"{{id}}\" already exists",
     "nameExists": "Profile with name \"{{name}}\" already exists"
+  },
+  "pack": {
+    "title": "Pack lock",
+    "description": "Pins the mods of {{name}} to exact versions and SHA-256 hashes, and repairs drift on demand.",
+    "empty": "This profile has no pack lock yet.",
+    "create": "Create lockfile",
+    "created": "Lockfile created",
+    "createFailed": "Could not create the lockfile",
+    "removed": "Lockfile removed",
+    "removeFailed": "Could not remove the lockfile",
+    "rePin": "Re-pin current state",
+    "rePinHint": "Rewrites the lock from the mods installed now. Drift is accepted.",
+    "remove": "Remove lockfile",
+    "removeHint": "Deletes the lockfile. Installed mods are left untouched.",
+    "removeConfirm": "Really remove?",
+    "inSync": "{{count}} in sync",
+    "missing": "{{count}} missing",
+    "mismatched": "{{count}} changed",
+    "extras": "{{count}} extra",
+    "extrasTitle": "Not in the lock",
+    "extrasHint": "These mods are installed but not named by the lock; they are left alone.",
+    "lockedMods": "Locked mods",
+    "sync": "Sync / repair",
+    "syncing": "Syncing {{current}} / {{total}} — {{modid}}",
+    "syncDone": "Repaired {{count}} mod(s)",
+    "syncDoneWithFailures": "{{applied}} repaired, {{failed}} failed",
+    "syncFailed": "Sync failed",
+    "failedTitle": "Failed",
+    "state": {
+      "ok": "ok",
+      "missing": "missing",
+      "versionMismatch": "other version",
+      "hashMismatch": "changed"
+    },
+    "failure": {
+      "hashMismatch": "The file on ModDB no longer matches the locked hash.",
+      "versionNotFound": "That version is no longer available on ModDB.",
+      "network": "ModDB could not be reached.",
+      "generic": "Sync failed for this mod."
+    }
   }
 }

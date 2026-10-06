@@ -7,7 +7,8 @@
     "gameVersion": "Versão do jogo",
     "installed": "(instalada)",
     "installedVersion": "{{version}} (instalada)",
-    "profileName": "Nome do perfil"
+    "profileName": "Nome do perfil",
+    "optimumVersion": "{{version}} · Optimum {{optimum}}"
   },
   "errors": {
     "importFailed": "Falha na importação",
@@ -37,7 +38,8 @@
     "exportFile": "Exportar como arquivo…",
     "copyShareCode": "Copiar código de compartilhamento",
     "deleteCurrent": "Excluir (perfil atual)",
-    "openFolderFailed": "Não foi possível abrir a pasta"
+    "openFolderFailed": "Não foi possível abrir a pasta",
+    "packLock": "Trava do pack"
   },
   "screenshots": {
     "menu": "Capturas de tela",
@@ -255,5 +257,45 @@
     "pathExists": "Já existe um perfil com o caminho \"{{path}}\"",
     "idExists": "Já existe um perfil com o ID \"{{id}}\"",
     "nameExists": "Já existe um perfil com o nome \"{{name}}\""
+  },
+  "pack": {
+    "title": "Trava do pack",
+    "description": "Fixa os mods de {{name}} em versões exatas e hashes SHA-256, e repara divergências sob demanda.",
+    "empty": "Este perfil ainda não tem trava de pack.",
+    "create": "Criar arquivo de trava",
+    "created": "Arquivo de trava criado",
+    "createFailed": "Não foi possível criar o arquivo de trava",
+    "removed": "Arquivo de trava removido",
+    "removeFailed": "Não foi possível remover o arquivo de trava",
+    "rePin": "Fixar o estado atual novamente",
+    "rePinHint": "Reescreve a trava com os mods instalados agora. Divergências são aceitas.",
+    "remove": "Remover arquivo de trava",
+    "removeHint": "Exclui o arquivo de trava. Os mods instalados não são alterados.",
+    "removeConfirm": "Remover mesmo?",
+    "inSync": "{{count}} em sincronia",
+    "missing": "{{count}} faltando",
+    "mismatched": "{{count}} alterados",
+    "extras": "{{count}} extras",
+    "extrasTitle": "Fora da trava",
+    "extrasHint": "Estes mods estão instalados mas não constam na trava; eles não são alterados.",
+    "lockedMods": "Mods fixados",
+    "sync": "Sincronizar / reparar",
+    "syncing": "Sincronizando {{current}} / {{total}} — {{modid}}",
+    "syncDone": "{{count}} mod(s) reparados",
+    "syncDoneWithFailures": "{{applied}} reparados, {{failed}} falharam",
+    "syncFailed": "A sincronização falhou",
+    "failedTitle": "Falhas",
+    "state": {
+      "ok": "ok",
+      "missing": "faltando",
+      "versionMismatch": "outra versão",
+      "hashMismatch": "alterado"
+    },
+    "failure": {
+      "hashMismatch": "O arquivo no ModDB não corresponde mais ao hash fixado.",
+      "versionNotFound": "Essa versão não está mais disponível no ModDB.",
+      "network": "Não foi possível acessar o ModDB.",
+      "generic": "A sincronização falhou para este mod."
+    }
   }
 }

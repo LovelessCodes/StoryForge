@@ -45,6 +45,12 @@ the look & feel of Macheim (see `../macheim`). The core domain concept is the **
   folder picked manually) are detected and linked in place, so profiles can launch without
   re-downloading. Unlinking never touches the files.
 - **Versions** — browse all Vintage Story releases, download with a resumable, pausable queue.
+- **Optimum client** — install the [Optimum](https://github.com/StratumServer/Optimum) performance fork
+  for an installed version in one click: Story Forge downloads the official overlay from Optimum's
+  releases, verifies the archive and every file against its SHA-256 manifest, copies the version to
+  `1.22.7+optimum` and patches the copy — the original stays vanilla, and profiles pick either build.
+  Updates are offered when a newer overlay still supports the game version. Linux and Windows (x64)
+  only; Optimum publishes no macOS or arm64 overlay.
 - **Mods** — search the mod database, filter by version/side/tags/author, install, update,
   downgrade, remove, and update everything at once. Installs read each mod's `modinfo.json`
   and queue its missing dependencies (recursively) in the downloads sheet; installed mods are
@@ -53,6 +59,14 @@ the look & feel of Macheim (see `../macheim`). The core domain concept is the **
   skips them (unpin to see updates again).
 - **Modpacks** — browse/install community modpacks (optional cloud login via Better Auth),
   create and publish your own.
+- **Deep links** — `storyforge://install?mod=<id>` opens a ModDB mod in the app and
+  `storyforge://install?pack=<slug>` opens a cloud modpack's detail sheet, so links shared outside
+  the app land on the right install flow. `sf:` is accepted as an alias.
+- **Pack locks** — pin a profile's mods to exact versions and SHA-256 hashes (`storyforge.lock.json`
+  beside `profile.json`), see drift at a glance, and run an explicit **Sync / repair** that downloads
+  missing or mismatched mods through ModDB and verifies every file against the lock. Exports, share
+  codes and structured cloud modpacks carry the lock, imports enforce it immediately, and mods the
+  lock does not name are reported as extras rather than removed.
 - **Worlds** — list saves across profiles, edit/delete, launch straight into a world, and view
   the in-game map with markers and prospecting data.
 - **Servers** — save servers, probe them (version/password/whitelist checks), connect, and
@@ -137,3 +151,7 @@ and versions folders can be relocated in Settings.
 - `PORTING.md` documents how the remake maps onto the original app (may be deleted later).
 - The updater endpoint still points at the original project's release feed; the version is ahead
   of it so no downgrade is offered.
+- `STORYFORGE_OPTIMUM_ORIGIN` (`http://127.0.0.1:<port>`) and `STORYFORGE_OPTIMUM_RID`
+  (`linux-x64`/`win-x64`) point the Optimum install flow at a local origin so it can be exercised
+  on a machine Optimum publishes no overlay for. The origin is honoured only for loopback
+  addresses, and nothing in a shipped build sets either variable.

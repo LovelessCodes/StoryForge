@@ -88,5 +88,49 @@
     "linkSkipped_other": "Не удалось привязать: {{count}}",
     "unlinkFailed": "Не удалось отвязать версию {{name}}: {{message}}",
     "unlinking": "Отвязка версии {{name}}…"
+  },
+  "optimum": {
+    "badge": "Optimum {{version}}",
+    "label": "Optimum",
+    "install": "Установить Optimum",
+    "update": "Обновить Optimum",
+    "sheet": {
+      "description": "Добавляет сборку Optimum для версии {{version}}. Исходная папка не изменяется — патч применяется к копии.",
+      "unsupportedSystem": "Optimum недоступен для этой системы.",
+      "platformNote": "Сейчас Optimum публикует сборки только для Linux и Windows (x64).",
+      "manifestUnavailable": "Не удалось загрузить информацию о версиях Optimum.",
+      "noBuildForVersion": "Для версии {{version}} ещё нет сборки Optimum.",
+      "summary": "Optimum {{version}} для Vintage Story {{base}}",
+      "copyNote": "Создаёт дополнительную копию папки версии; оригинал остаётся неизменным.",
+      "retry": "Повторить"
+    },
+    "phase": {
+      "manifest": "Проверка версий Optimum…",
+      "download": "Загрузка оверлея…",
+      "extract": "Распаковка оверлея…",
+      "verify": "Проверка файлов…",
+      "runtime": "Подготовка среды .NET…",
+      "copy": "Копирование версии игры…",
+      "patch": "Патчинг клиента…",
+      "done": "Готово",
+      "cancelled": "Отменено"
+    },
+    "toast": {
+      "installed": "Optimum {{version}} установлен ({{base}}).",
+      "failed": "Не удалось установить Optimum",
+      "cancelled": "Установка Optimum отменена."
+    },
+    "failure": {
+      "badInput": "Патч отклонил запрос.",
+      "unsupportedVersion": "Эта версия игры не поддерживается оверлеем.",
+      "patchConflict": "Патч конфликтует с файлами в папке игры.",
+      "engine": "Ошибка движка патчинга.",
+      "verification": "Пропатченные файлы не прошли проверку.",
+      "timedOut": "Истекло время ожидания патча.",
+      "runtimeMissing": "Среда .NET, необходимая Optimum, недоступна.",
+      "busy": "Другая установка Optimum уже выполняется.",
+      "incomplete": "Версия игры ещё загружается.",
+      "targetExists": "Папка с таким именем версии Optimum уже существует."
+    }
   }
 }

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -23,8 +23,14 @@ import {
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { useAppFolder } from "@/hooks/use-app-folder";
-import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
-import { buildProfilePath, compareSemverDesc, makeStringFolderSafe } from "@/lib/helpers";
+import { useInstalledVersions } from "@/hooks/use-installed-versions";
+import {
+  baseGameVersion,
+  buildProfilePath,
+  compareSemverDesc,
+  isOptimumVersion,
+  makeStringFolderSafe,
+} from "@/lib/helpers";
 import { toast } from "@/lib/notify";
 import { gameVersionsQuery } from "@/lib/queries";
 import { useProfilesStore, type Profile } from "@/stores/profiles";
@@ -51,8 +57,40 @@ export default function ProfileDialog({
   const { t } = useTranslation();
   const isEdit = profile != null;
   const { data: gameVersions } = useQuery(gameVersionsQuery);
-  const installedNames = useInstalledVersionNames();
-  const installedSet = new Set(installedNames);
+  const { data: installedVersionRecords } = useInstalledVersions();
+  const installedVersions = useMemo(() => installedVersionRecords ?? [], [installedVersionRecords]);
+  const installedSet = useMemo(
+    () => new Set(installedVersions.map((installed) => installed.name)),
+    [installedVersions],
+  );
+
+  // The picker lists every published version plus any installed build the
+  // catalog does not carry — most importantly Optimum builds, which are their
+  // own version folders (`1.22.7+optimum`) but the same game version.
+  const versionItems = useMemo(() => {
+    const remote = (gameVersions ?? []).toSorted(compareSemverDesc);
+    const extras = installedVersions.filter((installed) => !remote.includes(installed.name));
+    const items = [
+      ...remote.map((v) => ({
+        label: installedSet.has(v) ? t("profiles.fields.installedVersion", { version: v }) : v,
+        value: v,
+      })),
+      ...extras.map((installed) => ({
+        label: isOptimumVersion(installed.name)
+          ? t("profiles.fields.optimumVersion", {
+              version: baseGameVersion(installed.name),
+              optimum: installed.optimum_version ?? "",
+            })
+          : installed.name,
+        value: installed.name,
+      })),
+    ];
+    return items.toSorted((a, b) => {
+      const byBase = compareSemverDesc(baseGameVersion(a.value), baseGameVersion(b.value));
+      if (byBase !== 0) return byBase;
+      return a.value.localeCompare(b.value);
+    });
+  }, [gameVersions, installedVersions, installedSet, t]);
   const { appFolder } = useAppFolder();
   const { profilesParent, profilesSubdir } = useSettingsStore();
   const { loadProfiles, addProfile } = useProfilesStore();
@@ -210,12 +248,7 @@ export default function ProfileDialog({
             <div className="grid gap-1.5">
               <span className="text-xs font-medium">{t("profiles.fields.gameVersion")}</span>
               <Select
-                items={(gameVersions ?? []).toSorted(compareSemverDesc).map((v) => ({
-                  label: installedSet.has(v)
-                    ? t("profiles.fields.installedVersion", { version: v })
-                    : v,
-                  value: v,
-                }))}
+                items={versionItems}
                 value={version}
                 onValueChange={(value) => value && setVersion(value)}
               >
@@ -223,10 +256,10 @@ export default function ProfileDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(gameVersions ?? []).toSorted(compareSemverDesc).map((v) => (
-                    <SelectItem key={v} value={v}>
-                      {v}
-                      {installedSet.has(v) && (
+                  {versionItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                      {installedSet.has(item.value) && !isOptimumVersion(item.value) && (
                         <span className="text-muted-foreground ml-2 text-xs">
                           {t("profiles.fields.installed")}
                         </span>

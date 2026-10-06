@@ -7,7 +7,8 @@
     "gameVersion": "Versión del juego",
     "installed": "(instalada)",
     "installedVersion": "{{version}} (instalada)",
-    "profileName": "Nombre del perfil"
+    "profileName": "Nombre del perfil",
+    "optimumVersion": "{{version}} · Optimum {{optimum}}"
   },
   "errors": {
     "importFailed": "Error al importar",
@@ -37,7 +38,8 @@
     "exportFile": "Exportar como archivo…",
     "copyShareCode": "Copiar código para compartir",
     "deleteCurrent": "Eliminar (perfil actual)",
-    "openFolderFailed": "No se pudo abrir la carpeta"
+    "openFolderFailed": "No se pudo abrir la carpeta",
+    "packLock": "Bloqueo del pack"
   },
   "screenshots": {
     "menu": "Capturas de pantalla",
@@ -255,5 +257,45 @@
     "pathExists": "Ya existe un perfil con la ruta \"{{path}}\"",
     "idExists": "Ya existe un perfil con el ID \"{{id}}\"",
     "nameExists": "Ya existe un perfil con el nombre \"{{name}}\""
+  },
+  "pack": {
+    "title": "Bloqueo del pack",
+    "description": "Fija los mods de {{name}} a versiones exactas y hashes SHA-256, y repara desviaciones a petición.",
+    "empty": "Este perfil aún no tiene bloqueo de pack.",
+    "create": "Crear archivo de bloqueo",
+    "created": "Archivo de bloqueo creado",
+    "createFailed": "No se pudo crear el archivo de bloqueo",
+    "removed": "Archivo de bloqueo eliminado",
+    "removeFailed": "No se pudo eliminar el archivo de bloqueo",
+    "rePin": "Volver a fijar el estado actual",
+    "rePinHint": "Reescribe el bloqueo con los mods instalados ahora. Las desviaciones se aceptan.",
+    "remove": "Eliminar archivo de bloqueo",
+    "removeHint": "Elimina el archivo de bloqueo. Los mods instalados no se tocan.",
+    "removeConfirm": "¿Eliminar de verdad?",
+    "inSync": "{{count}} en sincronía",
+    "missing": "{{count}} faltan",
+    "mismatched": "{{count}} cambiados",
+    "extras": "{{count}} extra",
+    "extrasTitle": "Fuera del bloqueo",
+    "extrasHint": "Estos mods están instalados pero no aparecen en el bloqueo; no se tocan.",
+    "lockedMods": "Mods fijados",
+    "sync": "Sincronizar / reparar",
+    "syncing": "Sincronizando {{current}} / {{total}} — {{modid}}",
+    "syncDone": "{{count}} mod(s) reparados",
+    "syncDoneWithFailures": "{{applied}} reparados, {{failed}} fallidos",
+    "syncFailed": "La sincronización falló",
+    "failedTitle": "Fallos",
+    "state": {
+      "ok": "ok",
+      "missing": "falta",
+      "versionMismatch": "otra versión",
+      "hashMismatch": "cambiado"
+    },
+    "failure": {
+      "hashMismatch": "El archivo en ModDB ya no coincide con el hash fijado.",
+      "versionNotFound": "Esa versión ya no está disponible en ModDB.",
+      "network": "No se pudo contactar con ModDB.",
+      "generic": "La sincronización falló para este mod."
+    }
   }
 }

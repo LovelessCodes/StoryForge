@@ -34,6 +34,24 @@ export function compareSemverAsc(a: string, b: string) {
   return pa - pb;
 }
 
+/** Suffix marking a managed version as an Optimum build of its base version. */
+export const OPTIMUM_SUFFIX = "+optimum";
+
+/** The base game version a version name carries: `1.22.7+optimum` → `1.22.7`. */
+export function baseGameVersion(name: string) {
+  return name.endsWith(OPTIMUM_SUFFIX) ? name.slice(0, -OPTIMUM_SUFFIX.length) : name;
+}
+
+/** Whether a version name is an Optimum build. */
+export function isOptimumVersion(name: string) {
+  return name.endsWith(OPTIMUM_SUFFIX);
+}
+
+/** The name an Optimum build of `base` is registered under. */
+export function optimumVersionName(base: string) {
+  return `${base}${OPTIMUM_SUFFIX}`;
+}
+
 /** Finds the latest mod version — releases[] isn't guaranteed sorted by version. */
 export function latestRelease<T extends { modversion: string }>(
   releases: T[] | undefined,

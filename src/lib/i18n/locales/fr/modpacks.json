@@ -118,5 +118,8 @@
     "confirmPlaceholder": "Saisissez {{version}} pour confirmer",
     "pending": "Suppression…",
     "failed": "Échec de la suppression de la version"
+  },
+  "deepLink": {
+    "notFound": "Impossible d'ouvrir le modpack {{slug}} depuis le lien"
   }
 }

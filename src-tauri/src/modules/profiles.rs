@@ -24,6 +24,7 @@ use super::dotnet;
 use super::errors::UiError;
 use super::game_defaults;
 use super::mods;
+use super::packs::{self, PackLock};
 use super::paths::{self, clientsettings_path, mods_dir, profile_json_path};
 use super::utils::{
     dir_name, dir_size, dir_size_cached, find_dir_by_id, format_size, generate_id, lock,
@@ -619,6 +620,10 @@ pub struct ImportProfileParams {
     pub manifest_mods: Option<Vec<ManifestModParam>>,
     #[serde(default)]
     pub mod_configs_sha256: Option<String>,
+    /// A pack lock carried by the export. Written into the profile and enforced
+    /// once the mods are installed.
+    #[serde(default)]
+    pub lock: Option<PackLock>,
 }
 
 #[command]
@@ -638,6 +643,7 @@ pub async fn import_profile(
         mod_config_url,
         manifest_mods,
         mod_configs_sha256,
+        lock,
     } = params;
     log_info!(
         "import_profile: name={} version={} mods={} mod_config_url={:?}",
@@ -945,6 +951,26 @@ pub async fn import_profile(
         ignore_game_defaults: false,
     };
 
+    // A lock carried by the export lands in the profile and is enforced right
+    // away: the mods just installed are verified against it, and anything the
+    // pack pinned differently is repaired through ModDB. Failures are logged —
+    // the profile is still usable and the lock sheet shows what is left.
+    if let Some(lock) = lock {
+        if let Err(error) = packs::write_lock(&inst_dir, &lock) {
+            log_error!(
+                "import_profile: failed to write lockfile: {}",
+                error.message
+            );
+        } else {
+            let client = app.state::<Arc<reqwest::Client>>().inner().clone();
+            if let Err(error) =
+                packs::sync_locked_profile(&app, &client, &inst_dir, &lock, None).await
+            {
+                log_error!("import_profile: lock sync failed: {}", error.message);
+            }
+        }
+    }
+
     let _ = app.emit(
         &emitevent,
         json!({
@@ -1151,7 +1177,7 @@ async fn resolve_launch_context(
     let dotnet_root = dotnet::ensure_dotnet(
         app,
         &app_data,
-        &profile.version,
+        super::optimum::base_game_version(&profile.version),
         options.profile_id,
         options.use_system_dotnet,
     )

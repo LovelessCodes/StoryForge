@@ -6,7 +6,8 @@
     "gameVersion": "游戏版本",
     "installed": "（已安装）",
     "installedVersion": "{{version}}（已安装）",
-    "profileName": "配置档名称"
+    "profileName": "配置档名称",
+    "optimumVersion": "{{version}} · Optimum {{optimum}}"
   },
   "errors": {
     "importFailed": "导入失败",
@@ -36,7 +37,8 @@
     "exportFile": "导出为文件…",
     "copyShareCode": "复制分享码",
     "deleteCurrent": "删除（当前配置档）",
-    "openFolderFailed": "无法打开文件夹"
+    "openFolderFailed": "无法打开文件夹",
+    "packLock": "整合包锁定"
   },
   "screenshots": {
     "menu": "截图",
@@ -248,5 +250,45 @@
     "pathExists": "路径为“{{path}}”的配置档已存在",
     "idExists": "ID 为“{{id}}”的配置档已存在",
     "nameExists": "名称为“{{name}}”的配置档已存在"
+  },
+  "pack": {
+    "title": "整合包锁定",
+    "description": "将 {{name}} 的模组固定到确切版本和 SHA-256 哈希，并按需修复偏差。",
+    "empty": "该档案还没有锁定文件。",
+    "create": "创建锁定文件",
+    "created": "已创建锁定文件",
+    "createFailed": "无法创建锁定文件",
+    "removed": "已删除锁定文件",
+    "removeFailed": "无法删除锁定文件",
+    "rePin": "按当前状态重新锁定",
+    "rePinHint": "根据当前已安装的模组重写锁定文件，接受现有偏差。",
+    "remove": "删除锁定文件",
+    "removeHint": "删除锁定文件，已安装的模组不受影响。",
+    "removeConfirm": "确定删除？",
+    "inSync": "{{count}} 个一致",
+    "missing": "{{count}} 个缺失",
+    "mismatched": "{{count}} 个已变更",
+    "extras": "{{count}} 个额外",
+    "extrasTitle": "不在锁定中",
+    "extrasHint": "这些模组已安装但不在锁定文件中，不会被改动。",
+    "lockedMods": "已锁定模组",
+    "sync": "同步 / 修复",
+    "syncing": "正在同步 {{current}} / {{total}} — {{modid}}",
+    "syncDone": "已修复 {{count}} 个模组",
+    "syncDoneWithFailures": "{{applied}} 个已修复，{{failed}} 个失败",
+    "syncFailed": "同步失败",
+    "failedTitle": "失败",
+    "state": {
+      "ok": "正常",
+      "missing": "缺失",
+      "versionMismatch": "版本不同",
+      "hashMismatch": "已变更"
+    },
+    "failure": {
+      "hashMismatch": "ModDB 上的文件已与锁定哈希不一致。",
+      "versionNotFound": "该版本已不在 ModDB 上提供。",
+      "network": "无法访问 ModDB。",
+      "generic": "该模组同步失败。"
+    }
   }
 }

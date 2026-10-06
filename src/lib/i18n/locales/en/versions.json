@@ -80,5 +80,49 @@
     "linkSkipped_other": "{{count}} could not be linked",
     "unlinkFailed": "Failed to unlink version {{name}}: {{message}}",
     "unlinking": "Unlinking version {{name}}…"
+  },
+  "optimum": {
+    "badge": "Optimum {{version}}",
+    "label": "Optimum",
+    "install": "Install Optimum",
+    "update": "Update Optimum",
+    "sheet": {
+      "description": "Adds an Optimum build for version {{version}}. Your original version folder is left untouched; the patch runs on a copy.",
+      "unsupportedSystem": "Optimum isn't available for this system.",
+      "platformNote": "Optimum currently publishes builds for Linux and Windows (x64) only.",
+      "manifestUnavailable": "Optimum's release information couldn't be loaded.",
+      "noBuildForVersion": "Optimum has no build for version {{version}} yet.",
+      "summary": "Optimum {{version}} for Vintage Story {{base}}",
+      "copyNote": "Creates one extra copy of the version folder; the original stays vanilla.",
+      "retry": "Retry"
+    },
+    "phase": {
+      "manifest": "Checking Optimum releases…",
+      "download": "Downloading overlay…",
+      "extract": "Extracting overlay…",
+      "verify": "Verifying files…",
+      "runtime": "Preparing the .NET runtime…",
+      "copy": "Copying game version…",
+      "patch": "Patching the client…",
+      "done": "Done",
+      "cancelled": "Cancelled"
+    },
+    "toast": {
+      "installed": "Optimum {{version}} installed ({{base}}).",
+      "failed": "Optimum install failed",
+      "cancelled": "Optimum install cancelled."
+    },
+    "failure": {
+      "badInput": "The patch rejected the request.",
+      "unsupportedVersion": "This game version isn't supported by the overlay.",
+      "patchConflict": "The patch conflicted with files in the game folder.",
+      "engine": "The patch engine failed.",
+      "verification": "The patched files failed verification.",
+      "timedOut": "The patch timed out.",
+      "runtimeMissing": "The .NET runtime Optimum needs isn't available.",
+      "busy": "Another Optimum install is already running.",
+      "incomplete": "The game version is still downloading.",
+      "targetExists": "A folder with this Optimum version name already exists."
+    }
   }
 }

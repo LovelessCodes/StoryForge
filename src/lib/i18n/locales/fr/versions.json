@@ -80,5 +80,49 @@
     "linkSkipped_other": "{{count}} n'ont pas pu être liées",
     "unlinkFailed": "Échec de la dissociation de la version {{name}} : {{message}}",
     "unlinking": "Dissociation de la version {{name}}…"
+  },
+  "optimum": {
+    "badge": "Optimum {{version}}",
+    "label": "Optimum",
+    "install": "Installer Optimum",
+    "update": "Mettre à jour Optimum",
+    "sheet": {
+      "description": "Ajoute une version Optimum pour {{version}}. Le dossier d'origine n'est pas modifié ; le patch s'applique à une copie.",
+      "unsupportedSystem": "Optimum n'est pas disponible pour ce système.",
+      "platformNote": "Optimum ne publie actuellement que des builds pour Linux et Windows (x64).",
+      "manifestUnavailable": "Les informations de version d'Optimum n'ont pas pu être chargées.",
+      "noBuildForVersion": "Optimum n'a pas encore de build pour la version {{version}}.",
+      "summary": "Optimum {{version}} pour Vintage Story {{base}}",
+      "copyNote": "Crée une copie supplémentaire du dossier de version ; l'original reste intact.",
+      "retry": "Réessayer"
+    },
+    "phase": {
+      "manifest": "Vérification des versions d'Optimum…",
+      "download": "Téléchargement de l'overlay…",
+      "extract": "Extraction de l'overlay…",
+      "verify": "Vérification des fichiers…",
+      "runtime": "Préparation du runtime .NET…",
+      "copy": "Copie de la version du jeu…",
+      "patch": "Application du patch au client…",
+      "done": "Terminé",
+      "cancelled": "Annulé"
+    },
+    "toast": {
+      "installed": "Optimum {{version}} installé ({{base}}).",
+      "failed": "L'installation d'Optimum a échoué",
+      "cancelled": "Installation d'Optimum annulée."
+    },
+    "failure": {
+      "badInput": "Le patch a rejeté la requête.",
+      "unsupportedVersion": "Cette version du jeu n'est pas prise en charge par l'overlay.",
+      "patchConflict": "Le patch entre en conflit avec des fichiers du dossier de jeu.",
+      "engine": "Le moteur de patch a échoué.",
+      "verification": "Les fichiers patchés ont échoué à la vérification.",
+      "timedOut": "Le patch a dépassé le délai.",
+      "runtimeMissing": "Le runtime .NET requis par Optimum n'est pas disponible.",
+      "busy": "Une autre installation d'Optimum est déjà en cours.",
+      "incomplete": "La version du jeu est encore en cours de téléchargement.",
+      "targetExists": "Un dossier portant ce nom de version Optimum existe déjà."
+    }
   }
 }

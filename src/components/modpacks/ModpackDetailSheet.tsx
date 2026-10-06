@@ -20,7 +20,7 @@ import {
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { useDownloadVersion } from "@/hooks/use-download-version";
-import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
+import { resolveInstalledVersionName, useInstalledVersions } from "@/hooks/use-installed-versions";
 import type { ModpackItem } from "@/hooks/use-modpacks";
 import { authClient } from "@/lib/auth";
 import type { ModpackManifestMod } from "@/lib/auth/plugins/modpacks";
@@ -65,8 +65,8 @@ export default function ModpackDetailSheet({
   const { profilesParent, profilesSubdir } = useSettingsStore();
   const loadProfiles = useProfilesStore((state) => state.loadProfiles);
   const { profiles } = useProfiles();
-  const installedVersions = useInstalledVersionNames();
-  const installedVersionsSet = new Set(installedVersions);
+  const { data: installedVersionRecords } = useInstalledVersions();
+  const installedVersions = installedVersionRecords ?? [];
   const { mutateAsync: downloadVersion } = useDownloadVersion();
 
   const isOwner = user?.id === modpack.owner.id;
@@ -135,8 +135,32 @@ export default function ModpackDetailSheet({
       // Best-effort: older API deployments may not serve manifests yet.
     }
 
+    // The manifest already hashes every mod file, so a structured cloud pack
+    // arrives locked: the profile gets a lockfile and the backend verifies the
+    // installed mods against it right after the import.
+    const lockedMods = (manifestMods ?? [])
+      .filter((mod) => typeof mod.sha256 === "string" && mod.sha256.length === 64)
+      .map((mod) => ({
+        modid: mod.modIdStr,
+        version: mod.modVersion,
+        filename: mod.filename || null,
+        sha256: mod.sha256,
+      }));
+    const carriedLock =
+      lockedMods.length > 0
+        ? {
+            lockVersion: 1,
+            modpackSlug: modpack.slug,
+            modpackVersion: version.version,
+            mods: lockedMods,
+          }
+        : null;
+
     try {
-      if (!installedVersionsSet.has(version.gameVersion)) {
+      // A game version with only its Optimum build installed launches from
+      // that build; a missing one is downloaded as usual.
+      const resolvedVersion = resolveInstalledVersionName(installedVersions, version.gameVersion);
+      if (!resolvedVersion) {
         await downloadVersion(version.gameVersion);
       }
 
@@ -158,6 +182,7 @@ export default function ModpackDetailSheet({
       await invoke("import_profile", {
         params: {
           emitevent,
+          lock: carriedLock,
           manifestMods,
           modConfigUrl: manifestModConfigsUrl ?? (version.modConfigsUrl || null),
           modConfigsSha256,
@@ -167,7 +192,7 @@ export default function ModpackDetailSheet({
           name: installName,
           safeName,
           startParams: "",
-          version: version.gameVersion,
+          version: resolvedVersion ?? version.gameVersion,
         },
       });
 
@@ -276,7 +301,8 @@ export default function ModpackDetailSheet({
                     );
                   }
 
-                  const versionInstalled = installedVersionsSet.has(version.gameVersion);
+                  const versionInstalled =
+                    resolveInstalledVersionName(installedVersions, version.gameVersion) !== null;
                   const isNaming = installingVersionId === version.id;
 
                   return (

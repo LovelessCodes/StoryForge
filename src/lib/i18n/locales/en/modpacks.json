@@ -118,5 +118,8 @@
     "confirmPlaceholder": "Type {{version}} to confirm",
     "pending": "Deleting…",
     "failed": "Failed to delete version"
+  },
+  "deepLink": {
+    "notFound": "Could not open modpack {{slug}} from the link"
   }
 }

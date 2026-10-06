@@ -6,6 +6,7 @@ import { ListSkeleton } from "@/components/common/LoadingSkeleton";
 import ModsPage from "@/components/mods/ModsPage";
 import { Button } from "@/components/ui/button";
 import { useHostedServer, useHostedServers } from "@/hooks/queries/server-hosting";
+import { baseGameVersion } from "@/lib/helpers";
 
 export default function HostingModsPage() {
   const { t } = useTranslation();
@@ -39,7 +40,7 @@ export default function HostingModsPage() {
         <ModsPage
           targetLabel={instance.name}
           targetPath={instance.data_dir}
-          targetVersion={instance.version}
+          targetVersion={baseGameVersion(instance.version)}
         />
       ) : isPending ? (
         <ListSkeleton rows={5} />

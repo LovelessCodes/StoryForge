@@ -13,6 +13,7 @@ import {
   FolderOpen,
   IdCard,
   Link2,
+  Lock,
   Package,
   Pencil,
   ScrollText,
@@ -51,6 +52,7 @@ import { useSettingsStore } from "@/stores/settings";
 import ProfileBackupsSheet from "./ProfileBackupsSheet";
 import { PROFILE_ICON_BASE } from "./ProfileIconPicker";
 import ProfileLogsSheet from "./ProfileLogsSheet";
+import ProfilePackSheet from "./ProfilePackSheet";
 import ProfileScreenshotsSheet from "./ProfileScreenshotsSheet";
 
 interface ProfileRowProps {
@@ -72,6 +74,7 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
 
   const [logsOpen, setLogsOpen] = useState(false);
   const [backupsOpen, setBackupsOpen] = useState(false);
+  const [packOpen, setPackOpen] = useState(false);
   const [screenshotsOpen, setScreenshotsOpen] = useState(false);
   const [cloneOpen, setCloneOpen] = useState(false);
   const [cloneName, setCloneName] = useState(
@@ -271,6 +274,9 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
           <DropdownMenuItem onClick={() => openMods("config")} className="text-nowrap">
             <FileText /> {t("profiles.row.configureMods")}
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setPackOpen(true)} className="text-nowrap">
+            <Lock /> {t("profiles.row.packLock")}
+          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
               void invoke("reveal_in_file_explorer", { path: profile.path }).catch((error) =>
@@ -330,6 +336,8 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
         onOpenChange={setScreenshotsOpen}
         profile={profile}
       />
+
+      <ProfilePackSheet profile={profile} open={packOpen} onOpenChange={setPackOpen} />
 
       <Sheet open={cloneOpen} onOpenChange={(next) => !cloneBusy && setCloneOpen(next)}>
         <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-sm">

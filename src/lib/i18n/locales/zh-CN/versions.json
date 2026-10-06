@@ -76,5 +76,49 @@
     "linkSkipped_other": "{{count}} 个无法链接",
     "unlinkFailed": "取消链接版本 {{name}} 失败：{{message}}",
     "unlinking": "正在取消链接版本 {{name}}…"
+  },
+  "optimum": {
+    "badge": "Optimum {{version}}",
+    "label": "Optimum",
+    "install": "安装 Optimum",
+    "update": "更新 Optimum",
+    "sheet": {
+      "description": "为版本 {{version}} 添加 Optimum 构建。原始版本文件夹不会被修改，补丁只会应用到副本。",
+      "unsupportedSystem": "当前系统不支持 Optimum。",
+      "platformNote": "Optimum 目前仅发布 Linux 和 Windows (x64) 构建。",
+      "manifestUnavailable": "无法加载 Optimum 的版本信息。",
+      "noBuildForVersion": "Optimum 还没有适用于版本 {{version}} 的构建。",
+      "summary": "适用于 Vintage Story {{base}} 的 Optimum {{version}}",
+      "copyNote": "会额外复制一份版本文件夹，原始文件夹保持原样。",
+      "retry": "重试"
+    },
+    "phase": {
+      "manifest": "正在检查 Optimum 版本…",
+      "download": "正在下载叠加层…",
+      "extract": "正在解压叠加层…",
+      "verify": "正在校验文件…",
+      "runtime": "正在准备 .NET 运行时…",
+      "copy": "正在复制游戏版本…",
+      "patch": "正在为客户端应用补丁…",
+      "done": "完成",
+      "cancelled": "已取消"
+    },
+    "toast": {
+      "installed": "已安装 Optimum {{version}}（{{base}}）。",
+      "failed": "Optimum 安装失败",
+      "cancelled": "Optimum 安装已取消。"
+    },
+    "failure": {
+      "badInput": "补丁拒绝了该请求。",
+      "unsupportedVersion": "该游戏版本不受此叠加层支持。",
+      "patchConflict": "补丁与游戏文件夹中的文件发生冲突。",
+      "engine": "补丁引擎出错。",
+      "verification": "补丁后的文件未通过校验。",
+      "timedOut": "补丁超时。",
+      "runtimeMissing": "Optimum 所需的 .NET 运行时不可用。",
+      "busy": "另一个 Optimum 安装正在进行中。",
+      "incomplete": "游戏版本仍在下载中。",
+      "targetExists": "已存在使用该 Optimum 版本名称的文件夹。"
+    }
   }
 }

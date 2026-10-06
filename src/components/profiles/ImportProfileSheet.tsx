@@ -38,6 +38,9 @@ const importSchema = z.object({
     .optional(),
   modpackSlug: z.string().nullish(),
   modpackVersion: z.string().nullish(),
+  // A pack lock carried by the export; passed through to the backend, which
+  // writes it into the profile and enforces it after the mods are installed.
+  lock: z.unknown().nullish(),
 });
 
 type ProfileImportResult = {
@@ -97,7 +100,7 @@ export default function ImportProfileSheet({ open, onOpenChange }: ImportProfile
         return;
       }
 
-      const { name, version, startParams, mods, modpackSlug, modpackVersion } = parsed.data;
+      const { name, version, startParams, mods, modpackSlug, modpackVersion, lock } = parsed.data;
       const modsString =
         typeof mods === "string" ? mods : (mods ?? []).map((m) => `${m.id}@${m.version}`).join(",");
 
@@ -129,6 +132,7 @@ export default function ImportProfileSheet({ open, onOpenChange }: ImportProfile
       const result = await invoke<ProfileImportResult>("import_profile", {
         params: {
           emitevent,
+          lock: lock ?? null,
           modConfigUrl: null,
           modpackSlug: modpackSlug ?? null,
           modpackVersion: modpackVersion ?? null,

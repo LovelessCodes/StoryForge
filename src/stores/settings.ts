@@ -74,6 +74,9 @@ type SettingsStore = {
   /** Mod id from a `storyforge://install?mod=…` link, for the Mods page. */
   pendingDeepLinkMod: string | null;
   setPendingDeepLinkMod: (modid: string | null) => void;
+  /** Modpack slug from a `storyforge://install?pack=…` link, for the Modpacks page. */
+  pendingDeepLinkPack: string | null;
+  setPendingDeepLinkPack: (slug: string | null) => void;
   profilesParent: string | null;
   profilesSubdir: string;
   setProfilesParent: (path: string | null, config?: SetParentConfigProps) => Promise<void>;
@@ -147,6 +150,8 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
     set(() => ({ gameDefaultsIncludeAccount })),
   pendingDeepLinkMod: null,
   setPendingDeepLinkMod: (pendingDeepLinkMod) => set(() => ({ pendingDeepLinkMod })),
+  pendingDeepLinkPack: null,
+  setPendingDeepLinkPack: (pendingDeepLinkPack) => set(() => ({ pendingDeepLinkPack })),
   profilesParent: null,
   profilesSubdir: "profiles",
   setProfilesParent: async (path, config) => {

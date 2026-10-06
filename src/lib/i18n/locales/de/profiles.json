@@ -7,7 +7,8 @@
     "gameVersion": "Spielversion",
     "installed": "(installiert)",
     "installedVersion": "{{version}} (installiert)",
-    "profileName": "Profilname"
+    "profileName": "Profilname",
+    "optimumVersion": "{{version}} · Optimum {{optimum}}"
   },
   "errors": {
     "importFailed": "Import fehlgeschlagen",
@@ -37,7 +38,8 @@
     "exportFile": "Als Datei exportieren…",
     "copyShareCode": "Share-Code kopieren",
     "deleteCurrent": "Löschen (aktuelles Profil)",
-    "openFolderFailed": "Ordner konnte nicht geöffnet werden"
+    "openFolderFailed": "Ordner konnte nicht geöffnet werden",
+    "packLock": "Pack-Sperrliste"
   },
   "screenshots": {
     "menu": "Screenshots",
@@ -255,5 +257,45 @@
     "pathExists": "Profil mit Pfad \"{{path}}\" existiert bereits",
     "idExists": "Profil mit ID \"{{id}}\" existiert bereits",
     "nameExists": "Profil mit Name \"{{name}}\" existiert bereits"
+  },
+  "pack": {
+    "title": "Pack-Sperrliste",
+    "description": "Fixiert die Mods von {{name}} auf exakte Versionen und SHA-256-Hashes und repariert Abweichungen auf Anfrage.",
+    "empty": "Für dieses Profil gibt es noch keine Sperrliste.",
+    "create": "Sperrliste erstellen",
+    "created": "Sperrliste erstellt",
+    "createFailed": "Sperrliste konnte nicht erstellt werden",
+    "removed": "Sperrliste entfernt",
+    "removeFailed": "Sperrliste konnte nicht entfernt werden",
+    "rePin": "Aktuellen Stand übernehmen",
+    "rePinHint": "Schreibt die Sperrliste aus den jetzt installierten Mods neu. Abweichungen werden übernommen.",
+    "remove": "Sperrliste entfernen",
+    "removeHint": "Löscht die Sperrliste. Installierte Mods bleiben unverändert.",
+    "removeConfirm": "Wirklich entfernen?",
+    "inSync": "{{count}} synchron",
+    "missing": "{{count}} fehlen",
+    "mismatched": "{{count}} geändert",
+    "extras": "{{count}} zusätzlich",
+    "extrasTitle": "Nicht in der Sperrliste",
+    "extrasHint": "Diese Mods sind installiert, aber nicht Teil der Sperrliste; sie bleiben unangetastet.",
+    "lockedMods": "Fixierte Mods",
+    "sync": "Synchronisieren / reparieren",
+    "syncing": "Synchronisiere {{current}} / {{total}} — {{modid}}",
+    "syncDone": "{{count}} Mod(s) repariert",
+    "syncDoneWithFailures": "{{applied}} repariert, {{failed}} fehlgeschlagen",
+    "syncFailed": "Synchronisierung fehlgeschlagen",
+    "failedTitle": "Fehlgeschlagen",
+    "state": {
+      "ok": "ok",
+      "missing": "fehlt",
+      "versionMismatch": "andere Version",
+      "hashMismatch": "abweichend"
+    },
+    "failure": {
+      "hashMismatch": "Die Datei auf ModDB stimmt nicht mehr mit dem fixierten Hash überein.",
+      "versionNotFound": "Diese Version gibt es nicht mehr auf ModDB.",
+      "network": "ModDB war nicht erreichbar.",
+      "generic": "Synchronisierung für diesen Mod fehlgeschlagen."
+    }
   }
 }

@@ -23,6 +23,7 @@ use tauri::{command, AppHandle};
 
 use super::errors::UiError;
 use super::mods;
+use super::packs;
 use super::paths::mods_dir;
 use super::profiles::{
     find_profile_by_id, read_profile_json, write_profile_json, ProfileInfo, ProfileResult,
@@ -66,6 +67,10 @@ pub struct ProfileExport {
     pub modpack_version: Option<String>,
     #[serde(default)]
     pub env_vars: std::collections::HashMap<String, String>,
+    /// The profile's pack lock, when it has one. Carried by exports and share
+    /// codes so an imported pack arrives pinned.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lock: Option<packs::PackLock>,
 }
 
 fn profiles_dir(app: &AppHandle) -> Result<PathBuf, UiError> {
@@ -553,6 +558,8 @@ fn build_export(app: &AppHandle, id: u64) -> Result<ProfileExport, UiError> {
         String::new()
     };
 
+    let lock = packs::read_lock(&dir).ok().flatten();
+
     Ok(ProfileExport {
         format: "storyforge-profile".into(),
         name: info.name,
@@ -562,6 +569,7 @@ fn build_export(app: &AppHandle, id: u64) -> Result<ProfileExport, UiError> {
         modpack_slug: info.modpack_slug,
         modpack_version: info.modpack_version,
         env_vars: info.env_vars,
+        lock,
     })
 }
 

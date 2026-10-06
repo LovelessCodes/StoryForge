@@ -112,5 +112,8 @@
     "confirmPlaceholder": "输入 {{version}} 以确认",
     "pending": "正在删除…",
     "failed": "删除版本失败"
+  },
+  "deepLink": {
+    "notFound": "无法通过链接打开整合包 {{slug}}"
   }
 }

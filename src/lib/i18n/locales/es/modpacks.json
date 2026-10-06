@@ -118,5 +118,8 @@
     "confirmPlaceholder": "Escribe {{version}} para confirmar",
     "pending": "Eliminando…",
     "failed": "No se pudo eliminar la versión"
+  },
+  "deepLink": {
+    "notFound": "No se pudo abrir el modpack {{slug}} desde el enlace"
   }
 }

@@ -6,13 +6,14 @@ import { Trans, useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
-import { compareSemverDesc, isMac } from "@/lib/helpers";
+import { baseGameVersion, compareSemverDesc, isMac, isOptimumVersion } from "@/lib/helpers";
 import { useDownloadStore } from "@/stores/downloads";
 
 import AddVersionSheet, { MAC_WIKI_URL } from "./AddVersionSheet";
 import DownloadRow from "./DownloadRow";
 import LinkExistingVersionSheet from "./LinkExistingVersionSheet";
 import LinkVersionsBanner from "./LinkVersionsBanner";
+import { OptimumInstallSheet } from "./OptimumInstallSheet";
 import VersionRow from "./VersionRow";
 
 function InstalledVersionsSkeleton() {
@@ -38,8 +39,16 @@ export default function VersionsPage() {
   const entries = useDownloadStore((s) => s.entries);
   const [addOpen, setAddOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
+  const [optimumBase, setOptimumBase] = useState<string | null>(null);
 
-  const sorted = (versions ?? []).toSorted((a, b) => compareSemverDesc(a.name, b.name));
+  // Optimum builds sort next to their base version, vanilla first.
+  const sorted = (versions ?? []).toSorted((a, b) => {
+    const byBase = compareSemverDesc(baseGameVersion(a.name), baseGameVersion(b.name));
+    if (byBase !== 0) return byBase;
+    const byFlavor = Number(isOptimumVersion(a.name)) - Number(isOptimumVersion(b.name));
+    if (byFlavor !== 0) return byFlavor;
+    return a.name.localeCompare(b.name);
+  });
   const activeDownloads = Object.values(entries).filter((entry) => entry.status !== "done");
 
   return (
@@ -117,7 +126,7 @@ export default function VersionsPage() {
         ) : (
           <div className="grid gap-2">
             {sorted.map((version) => (
-              <VersionRow key={version.name} version={version} />
+              <VersionRow key={version.name} version={version} onOptimum={setOptimumBase} />
             ))}
           </div>
         )}
@@ -125,6 +134,13 @@ export default function VersionsPage() {
 
       <AddVersionSheet open={addOpen} onOpenChange={setAddOpen} />
       <LinkExistingVersionSheet open={linkOpen} onOpenChange={setLinkOpen} />
+      <OptimumInstallSheet
+        baseVersion={optimumBase}
+        open={!!optimumBase}
+        onOpenChange={(open) => {
+          if (!open) setOptimumBase(null);
+        }}
+      />
     </div>
   );
 }

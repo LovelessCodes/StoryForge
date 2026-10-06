@@ -3,35 +3,38 @@ import type { UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { useEffect } from "react";
 
+import { parseDeepLink } from "@/lib/deep-link";
 import { useSettingsStore } from "@/stores/settings";
 
 /**
- * Routes `storyforge://install?mod=<id>` (and `sf://mod/<id>`) links to the
- * Mods page, where the pending id opens the add sheet. Best effort: a link
- * that cannot be parsed is ignored.
+ * Routes deep links to the page that can act on them:
+ *
+ * - `storyforge://install?mod=<id>` (and the `sf:` forms) queues a mod id and
+ *   opens the Mods page, where the add sheet opens for it.
+ * - `storyforge://install?pack=<slug>` (and the `sf:` forms) queues a modpack
+ *   slug and opens the Modpacks page, where the detail sheet opens for it.
+ *
+ * Best effort: a link that cannot be parsed is ignored.
  */
 export default function DeepLinkHandler() {
   const navigate = useNavigate();
   const setPendingDeepLinkMod = useSettingsStore((s) => s.setPendingDeepLinkMod);
+  const setPendingDeepLinkPack = useSettingsStore((s) => s.setPendingDeepLinkPack);
 
   useEffect(() => {
     let unlisten: UnlistenFn | undefined;
     let cancelled = false;
 
     function handle(url: string) {
-      let parsed: URL;
-      try {
-        parsed = new URL(url);
-      } catch {
-        return;
+      const link = parseDeepLink(url);
+      if (!link) return;
+      if (link.kind === "pack") {
+        setPendingDeepLinkPack(link.slug);
+        void navigate({ to: "/modpacks" });
+      } else {
+        setPendingDeepLinkMod(link.modid);
+        void navigate({ to: "/mods" });
       }
-      if (parsed.protocol !== "storyforge:" && parsed.protocol !== "sf:") return;
-      const fromPath = parsed.pathname.replace(/^\/+/, "");
-      const modid = parsed.searchParams.get("mod") ?? (fromPath.length > 0 ? fromPath : null);
-      const trimmed = modid?.trim();
-      if (!trimmed) return;
-      setPendingDeepLinkMod(trimmed);
-      void navigate({ to: "/mods" });
     }
 
     void (async () => {
@@ -51,7 +54,7 @@ export default function DeepLinkHandler() {
       cancelled = true;
       unlisten?.();
     };
-  }, [navigate, setPendingDeepLinkMod]);
+  }, [navigate, setPendingDeepLinkMod, setPendingDeepLinkPack]);
 
   return null;
 }

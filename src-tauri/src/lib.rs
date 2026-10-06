@@ -1,8 +1,9 @@
 pub mod modules;
 use modules::{
-    auth, backups, cairn, download, game_data, game_defaults, gruntlauncher, legacy, lithic, maps,
-    modpack_io, mods, mvl, news, profile_ops, profiles, rustory, saves, screenshots,
-    server_hosting, servers, sniffer, versions, vs_launcher, waxlight, yelloowstone,
+    auth, backups, cairn, download, game_data, game_defaults, gruntlauncher, launcher_logins,
+    legacy, lithic, maps, modpack_io, mods, mvl, news, optimum, packs, profile_ops, profiles,
+    rustory, saves, screenshots, server_hosting, servers, sniffer, versions, vs_launcher, waxlight,
+    yelloowstone,
 };
 use tauri::RunEvent;
 
@@ -185,6 +186,10 @@ pub fn run() {
     }
 
     let mut builder = tauri::Builder::default()
+        // Must come before the deep-link plugin: on Windows/Linux it forwards
+        // `storyforge://` URLs to the running instance instead of starting a
+        // second one. macOS routes the URL through the OS.
+        .plugin(tauri_plugin_single_instance::init(|_app, _argv, _cwd| {}))
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
@@ -343,6 +348,9 @@ pub fn run() {
             auth::verify,
             auth::save_accounts,
             auth::load_accounts,
+            // Saved logins from other launchers
+            launcher_logins::detect_launcher_logins,
+            launcher_logins::import_launcher_logins,
             // News
             news::fetch_news,
             // Game defaults (live source profile settings applied on launch)
@@ -379,6 +387,14 @@ pub fn run() {
             versions::detect_linkable_versions,
             versions::link_external_versions,
             versions::unregister_external_version,
+            // Optimum (client fork) overlay install
+            optimum::get_optimum_status,
+            optimum::install_optimum,
+            // Profile pack locks (pin, verify, sync/repair)
+            packs::create_profile_lock,
+            packs::get_profile_lock_status,
+            packs::remove_profile_lock,
+            packs::apply_profile_lock,
             // Logger
             modules::logger::log_message,
             modules::logger::log_startup_time,

@@ -534,7 +534,7 @@ fn store_mods_cache(mods_dir: &Path, result: &ModsResult) {
 }
 
 /// Drops cached scan results for `prefix` and everything below it.
-fn invalidate_mods_cache(prefix: &Path) {
+pub(crate) fn invalidate_mods_cache(prefix: &Path) {
     lock(&MODS_CACHE).retain(|path, _| !path.starts_with(prefix));
 }
 

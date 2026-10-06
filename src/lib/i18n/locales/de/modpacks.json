@@ -118,5 +118,8 @@
     "confirmPlaceholder": "Gib {{version}} ein, um zu bestätigen",
     "pending": "Wird gelöscht…",
     "failed": "Version konnte nicht gelöscht werden"
+  },
+  "deepLink": {
+    "notFound": "Modpack {{slug}} konnte nicht über den Link geöffnet werden"
   }
 }

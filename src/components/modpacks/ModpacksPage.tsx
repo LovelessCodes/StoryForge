@@ -7,7 +7,7 @@ import {
   Plus,
   Search,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 
 import { GridSkeleton } from "@/components/common/LoadingSkeleton";
@@ -22,7 +22,9 @@ import {
 } from "@/components/ui/select";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { useModpacks, type ModpackItem } from "@/hooks/use-modpacks";
+import { toast } from "@/lib/notify";
 import { useModpacksFilters, type ModpacksFilters } from "@/stores/modpacksFilters";
+import { useSettingsStore } from "@/stores/settings";
 
 import DeleteModpackSheet from "./DeleteModpackSheet";
 import ModpackCard from "./ModpackCard";
@@ -62,6 +64,37 @@ export default function ModpacksPage() {
   const modpacks = data?.modpacks ?? [];
   const totalCount = data?.totalCount ?? 0;
   const hasFilters = searchText.length > 0 || owner.length > 0;
+
+  // A deep link (`storyforge://install?pack=…`) queued a modpack slug; open
+  // its detail sheet once the list is loaded, clearing filters that hide it.
+  const pendingDeepLinkPack = useSettingsStore((s) => s.pendingDeepLinkPack);
+  const setPendingDeepLinkPack = useSettingsStore((s) => s.setPendingDeepLinkPack);
+  useEffect(() => {
+    const slug = pendingDeepLinkPack;
+    if (!slug || isPending) return;
+    // The state updates run in a callback rather than synchronously in the
+    // effect; the list identity changes per render, so the slug and the filter
+    // values are the real triggers.
+    void (async () => {
+      const modpack = modpacks.find((entry) => entry.slug === slug);
+      if (!modpack) {
+        // Active filters may be hiding the pack; clear them and let the next
+        // pass find it before reporting it missing.
+        if (searchText.length > 0 || owner.length > 0) {
+          setSearchText("");
+          setOwner("");
+          return;
+        }
+        setPendingDeepLinkPack(null);
+        toast.error(t("modpacks.deepLink.notFound", { slug }));
+        return;
+      }
+      setPendingDeepLinkPack(null);
+      setDetailId(modpack.id);
+      setDetailOpen(true);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingDeepLinkPack, isPending, searchText, owner]);
   // Derive the open detail from the live query data so version edits show up immediately.
   const detailModpack = detailId
     ? (modpacks.find((modpack) => modpack.id === detailId) ?? null)

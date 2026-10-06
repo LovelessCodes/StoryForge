@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useActiveProfile } from "@/hooks/use-active-profile";
-import { pathBasename } from "@/lib/helpers";
+import { baseGameVersion, pathBasename } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
 import type { Mod, ModInfo, OutputMod } from "@/lib/types";
 import { useSettingsStore } from "@/stores/settings";
@@ -49,7 +49,7 @@ export default function ModsPage({ targetPath, targetLabel, targetVersion }: Mod
   const destinationLabel =
     targetLabel ??
     (targetPath ? pathBasename(targetPath) : (activeProfile?.name ?? t("mods.standalone")));
-  const gameVersion = targetVersion ?? activeProfile?.version ?? "";
+  const gameVersion = baseGameVersion(targetVersion ?? activeProfile?.version ?? "");
 
   const data = useModsData({
     author: filters.author,

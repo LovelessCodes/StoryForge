@@ -82,7 +82,7 @@ struct MvlMigrationLog {
 ///
 /// Godot's user dir is `%APPDATA%` on Windows, `$XDG_DATA_HOME` (usually
 /// `~/.local/share`) on Linux and `~/Library/Application Support` on macOS.
-fn config_candidates() -> Vec<PathBuf> {
+pub(crate) fn config_candidates() -> Vec<PathBuf> {
     let mut candidates: Vec<PathBuf> = Vec::new();
 
     #[cfg(target_os = "macos")]

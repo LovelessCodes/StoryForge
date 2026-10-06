@@ -7,7 +7,8 @@
     "gameVersion": "Version du jeu",
     "installed": "(installée)",
     "installedVersion": "{{version}} (installée)",
-    "profileName": "Nom du profil"
+    "profileName": "Nom du profil",
+    "optimumVersion": "{{version}} · Optimum {{optimum}}"
   },
   "errors": {
     "importFailed": "Échec de l'importation",
@@ -37,7 +38,8 @@
     "exportFile": "Exporter en fichier…",
     "copyShareCode": "Copier le code de partage",
     "deleteCurrent": "Supprimer (profil actuel)",
-    "openFolderFailed": "Impossible d'ouvrir le dossier"
+    "openFolderFailed": "Impossible d'ouvrir le dossier",
+    "packLock": "Verrou du pack"
   },
   "screenshots": {
     "menu": "Captures d'écran",
@@ -255,5 +257,45 @@
     "pathExists": "Un profil avec le chemin « {{path}} » existe déjà",
     "idExists": "Un profil avec l'ID « {{id}} » existe déjà",
     "nameExists": "Un profil avec le nom « {{name}} » existe déjà"
+  },
+  "pack": {
+    "title": "Verrou du pack",
+    "description": "Fixe les mods de {{name}} à des versions exactes et des hachages SHA-256, et répare les écarts à la demande.",
+    "empty": "Ce profil n'a pas encore de verrou.",
+    "create": "Créer le fichier de verrou",
+    "created": "Fichier de verrou créé",
+    "createFailed": "Impossible de créer le fichier de verrou",
+    "removed": "Fichier de verrou supprimé",
+    "removeFailed": "Impossible de supprimer le fichier de verrou",
+    "rePin": "Refixer l'état actuel",
+    "rePinHint": "Réécrit le verrou à partir des mods installés maintenant. Les écarts sont acceptés.",
+    "remove": "Supprimer le fichier de verrou",
+    "removeHint": "Supprime le fichier de verrou. Les mods installés restent intacts.",
+    "removeConfirm": "Vraiment supprimer ?",
+    "inSync": "{{count}} synchronisés",
+    "missing": "{{count}} manquants",
+    "mismatched": "{{count}} modifiés",
+    "extras": "{{count}} en plus",
+    "extrasTitle": "Hors du verrou",
+    "extrasHint": "Ces mods sont installés mais absents du verrou ; ils ne sont pas touchés.",
+    "lockedMods": "Mods verrouillés",
+    "sync": "Synchroniser / réparer",
+    "syncing": "Synchronisation {{current}} / {{total}} — {{modid}}",
+    "syncDone": "{{count}} mod(s) réparés",
+    "syncDoneWithFailures": "{{applied}} réparés, {{failed}} échoués",
+    "syncFailed": "Échec de la synchronisation",
+    "failedTitle": "Échecs",
+    "state": {
+      "ok": "ok",
+      "missing": "manquant",
+      "versionMismatch": "autre version",
+      "hashMismatch": "modifié"
+    },
+    "failure": {
+      "hashMismatch": "Le fichier sur ModDB ne correspond plus au hachage verrouillé.",
+      "versionNotFound": "Cette version n'est plus disponible sur ModDB.",
+      "network": "ModDB est injoignable.",
+      "generic": "La synchronisation a échoué pour ce mod."
+    }
   }
 }

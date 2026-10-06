@@ -23,7 +23,7 @@ const EXTERNAL_VERSIONS_FILE: &str = "external-versions.json";
 /// A version is incomplete (not fully installed) if its directory contains any sign
 /// of an in-progress or interrupted download: a `.resume.json` manifest or an
 /// archive file (`.tar.gz`, `.zip`) that hasn't been extracted yet.
-fn is_incomplete(dir: &Path) -> bool {
+pub(crate) fn is_incomplete(dir: &Path) -> bool {
     if !dir.is_dir() {
         return false;
     }
@@ -51,6 +51,8 @@ pub struct VersionInfo {
     pub external: bool,
     /// Where a linked version came from ("VS Launcher", "MVL", …).
     pub source: Option<String>,
+    /// Optimum version this folder is patched with, when it is an Optimum build.
+    pub optimum_version: Option<String>,
 }
 
 /// A game version found in another launcher's data.
@@ -218,6 +220,7 @@ pub async fn get_installed_versions(app: AppHandle) -> Result<Vec<VersionInfo>, 
             path: entry.path,
             external: true,
             source: entry.source,
+            optimum_version: super::optimum::read_optimum_version(&path),
         });
     }
 
@@ -255,6 +258,7 @@ fn scan_installed_versions(versions_dir: &Path) -> Result<Vec<VersionInfo>, UiEr
                     path: path.to_string_lossy().to_string(),
                     external: false,
                     source: None,
+                    optimum_version: super::optimum::read_optimum_version(&path),
                 });
             }
         }
