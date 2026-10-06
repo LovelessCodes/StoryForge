@@ -256,5 +256,18 @@
     "deleteTitle": "Supprimer le préréglage",
     "deleteConfirm": "Vraiment supprimer ?",
     "deleted": "{{name}} supprimé"
+  },
+  "conflicts": {
+    "button": "Conflits",
+    "title": "Conflits de mods",
+    "description": "Contenu qui se chevauche entre mods installés : le même fichier en double, ou des patchs qui touchent le même JSON. Informatif — rien n'est modifié.",
+    "scanning": "Analyse des mods installés…",
+    "rescan": "Réanalyser",
+    "empty": "Aucun contenu en chevauchement entre les mods installés.",
+    "assetKind": "Même fichier",
+    "patchKind": "Même cible de patch",
+    "patchDetail": "chevauchement au niveau de {{path}}",
+    "truncated": "Affichage des {{count}} premiers conflits.",
+    "failed": "L'analyse des conflits a échoué"
   }
 }

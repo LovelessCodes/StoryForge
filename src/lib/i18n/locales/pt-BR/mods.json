@@ -256,5 +256,18 @@
     "deleteTitle": "Excluir predefinição",
     "deleteConfirm": "Excluir mesmo?",
     "deleted": "{{name}} excluída"
+  },
+  "conflicts": {
+    "button": "Conflitos",
+    "title": "Conflitos de mods",
+    "description": "Conteúdo sobreposto entre mods instalados: o mesmo arquivo duas vezes, ou patches no mesmo JSON. É apenas informativo — nada é alterado.",
+    "scanning": "Analisando os mods instalados…",
+    "rescan": "Analisar novamente",
+    "empty": "Nenhum conteúdo sobreposto entre os mods instalados.",
+    "assetKind": "Mesmo arquivo",
+    "patchKind": "Mesmo alvo de patch",
+    "patchDetail": "sobrepõe em {{path}}",
+    "truncated": "Mostrando os primeiros {{count}} conflitos.",
+    "failed": "A análise de conflitos falhou"
   }
 }

@@ -256,5 +256,18 @@
     "deleteTitle": "Eliminar ajuste",
     "deleteConfirm": "¿Eliminar de verdad?",
     "deleted": "{{name}} eliminado"
+  },
+  "conflicts": {
+    "button": "Conflictos",
+    "title": "Conflictos de mods",
+    "description": "Contenido solapado entre mods instalados: el mismo archivo duplicado o parches que tocan el mismo JSON. Es solo informativo: no se cambia nada.",
+    "scanning": "Analizando los mods instalados…",
+    "rescan": "Volver a analizar",
+    "empty": "No se encontró contenido solapado entre los mods instalados.",
+    "assetKind": "Mismo archivo",
+    "patchKind": "Mismo destino de parche",
+    "patchDetail": "solapa en {{path}}",
+    "truncated": "Mostrando los primeros {{count}} conflictos.",
+    "failed": "El análisis de conflictos falló"
   }
 }

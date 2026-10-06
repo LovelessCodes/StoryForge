@@ -256,5 +256,18 @@
     "deleteTitle": "Delete preset",
     "deleteConfirm": "Really delete?",
     "deleted": "Deleted {{name}}"
+  },
+  "conflicts": {
+    "button": "Conflicts",
+    "title": "Mod conflicts",
+    "description": "Overlapping content between installed mods: the same file shipped twice, or patches touching the same JSON. Informational — nothing is changed.",
+    "scanning": "Scanning installed mods…",
+    "rescan": "Rescan",
+    "empty": "No overlapping content found between the installed mods.",
+    "assetKind": "Same file",
+    "patchKind": "Same patch target",
+    "patchDetail": "overlapping at {{path}}",
+    "truncated": "Showing the first {{count}} conflicts.",
+    "failed": "Conflict scan failed"
   }
 }

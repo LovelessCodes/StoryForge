@@ -256,5 +256,18 @@
     "deleteTitle": "Vorlage löschen",
     "deleteConfirm": "Wirklich löschen?",
     "deleted": "{{name}} gelöscht"
+  },
+  "conflicts": {
+    "button": "Konflikte",
+    "title": "Mod-Konflikte",
+    "description": "Überschneidungen zwischen installierten Mods: dieselbe Datei doppelt oder Patches am selben JSON. Nur informativ — es wird nichts geändert.",
+    "scanning": "Installierte Mods werden geprüft…",
+    "rescan": "Erneut prüfen",
+    "empty": "Keine Überschneidungen zwischen den installierten Mods gefunden.",
+    "assetKind": "Gleiche Datei",
+    "patchKind": "Gleiches Patch-Ziel",
+    "patchDetail": "überschneidet sich bei {{path}}",
+    "truncated": "Es werden die ersten {{count}} Konflikte angezeigt.",
+    "failed": "Konfliktprüfung fehlgeschlagen"
   }
 }

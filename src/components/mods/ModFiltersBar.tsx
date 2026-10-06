@@ -8,6 +8,7 @@ import {
   ListFilter,
   Power,
   PowerOff,
+  ShieldAlert,
   Star,
   Tags,
 } from "lucide-react";
@@ -42,6 +43,7 @@ import type { ModTag } from "@/lib/types";
 
 import { InstallModMenu } from "./InstallModMenu";
 import { ModAuthorFilter } from "./ModAuthorFilter";
+import { ModConflictsSheet } from "./ModConflictsSheet";
 import { ModpackMenu } from "./ModpackMenu";
 import { ModPresetsSheet } from "./ModPresetsSheet";
 import { ModSearchInput } from "./ModSearchInput";
@@ -82,6 +84,7 @@ export function ModFiltersBar({
   const { t } = useTranslation();
   const { mutate: setAllModsEnabled, isPending: bulkStatePending } =
     useSetAllModsEnabled(modsDirectory);
+  const [conflictsOpen, setConflictsOpen] = useState(false);
   const [presetsOpen, setPresetsOpen] = useState(false);
   const versionAnchor = useRef<HTMLDivElement | null>(null);
   const tagAnchor = useRef<HTMLDivElement | null>(null);
@@ -402,6 +405,18 @@ export function ModFiltersBar({
           )}
           {showInstalled && modsDirectory && <InstallModMenu modsDirectory={modsDirectory} />}
           {showInstalled && modsDirectory && (
+            <Button
+              aria-label={t("mods.conflicts.button")}
+              onClick={() => setConflictsOpen(true)}
+              size="sm"
+              title={t("mods.conflicts.button")}
+              variant="outline"
+            >
+              <ShieldAlert aria-hidden="true" />
+              <span className="hidden sm:inline">{t("mods.conflicts.button")}</span>
+            </Button>
+          )}
+          {showInstalled && modsDirectory && (
             <ModpackMenu
               destinationLabel={destinationLabel}
               gameVersion={gameVersion}
@@ -416,6 +431,11 @@ export function ModFiltersBar({
         modsDirectory={modsDirectory}
         open={presetsOpen}
         onOpenChange={setPresetsOpen}
+      />
+      <ModConflictsSheet
+        modsDirectory={modsDirectory}
+        open={conflictsOpen}
+        onOpenChange={setConflictsOpen}
       />
     </div>
   );

@@ -1,9 +1,9 @@
 pub mod modules;
 use modules::{
-    auth, backups, cairn, download, game_data, game_defaults, gruntlauncher, launcher_logins,
-    legacy, lithic, maps, modpack_io, mods, mvl, news, optimum, packs, profile_ops, profiles,
-    rustory, saves, screenshots, server_hosting, servers, sniffer, versions, vs_launcher, waxlight,
-    yelloowstone,
+    auth, backups, cairn, conflicts, download, game_data, game_defaults, gruntlauncher,
+    launcher_logins, legacy, lithic, maps, modpack_io, mods, mvl, news, optimum, packs,
+    profile_ops, profiles, rustory, saves, screenshots, server_hosting, servers, sniffer, versions,
+    vs_launcher, waxlight, yelloowstone,
 };
 use tauri::RunEvent;
 
@@ -374,6 +374,8 @@ pub fn run() {
             mods::install_mod_file,
             mods::install_mod_url,
             mods::apply_mod_state,
+            // Conflict detection (overlapping assets and patch targets)
+            conflicts::scan_mod_conflicts,
             // Modpack manifests (RiftLauncher-compatible import/export)
             modpack_io::read_modpack_manifest,
             modpack_io::write_modpack_manifest,

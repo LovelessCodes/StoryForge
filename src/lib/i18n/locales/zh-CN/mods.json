@@ -248,5 +248,18 @@
     "deleteTitle": "删除预设",
     "deleteConfirm": "确定删除？",
     "deleted": "已删除 {{name}}"
+  },
+  "conflicts": {
+    "button": "冲突",
+    "title": "模组冲突",
+    "description": "已安装模组之间的重叠内容：同一个文件被多个模组提供，或多个补丁修改同一 JSON。仅供提示，不会更改任何内容。",
+    "scanning": "正在扫描已安装模组…",
+    "rescan": "重新扫描",
+    "empty": "未发现已安装模组之间的重叠内容。",
+    "assetKind": "同一文件",
+    "patchKind": "同一补丁目标",
+    "patchDetail": "重叠于 {{path}}",
+    "truncated": "仅显示前 {{count}} 个冲突。",
+    "failed": "冲突扫描失败"
   }
 }
