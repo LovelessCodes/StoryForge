@@ -15,14 +15,16 @@
     "tags": {
       "aria": "Filtrar por etiqueta",
       "empty": "No se encontraron etiquetas.",
-      "placeholder": "Etiquetas de mods…"
+      "placeholder": "Etiquetas de mods…",
+      "label": "Etiquetas"
     },
     "sort": {
       "aria": "Ordenar por",
       "toggleDirection": "Cambiar dirección de orden"
     },
     "category": {
-      "aria": "Categoría"
+      "aria": "Categoría",
+      "label": "Categoría"
     },
     "favorites": {
       "aria": "Mostrar solo favoritos",
@@ -31,6 +33,11 @@
     "side": {
       "aria": "Filtrar por lado",
       "label": "Lado"
+    },
+    "more": "Filtros",
+    "reset": "Restablecer",
+    "author": {
+      "label": "Autor"
     }
   },
   "sort": {
@@ -313,5 +320,9 @@
     "save": "Guardar",
     "expand": "Expandir grupo",
     "collapse": "Contraer grupo"
+  },
+  "actions": {
+    "more": "Más acciones",
+    "conflicts": "Buscar conflictos"
   }
 }

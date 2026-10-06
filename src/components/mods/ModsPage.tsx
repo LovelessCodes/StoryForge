@@ -148,7 +148,6 @@ export default function ModsPage({
         {view === "browse" ? (
           <>
             <ModFiltersBar
-              canToggleMods={canToggleMods}
               destinationLabel={destinationLabel}
               filters={filters}
               gameVersion={gameVersion}

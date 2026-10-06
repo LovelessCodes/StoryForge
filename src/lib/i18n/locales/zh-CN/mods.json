@@ -14,14 +14,16 @@
     "tags": {
       "aria": "按标签筛选",
       "empty": "未找到标签。",
-      "placeholder": "模组标签…"
+      "placeholder": "模组标签…",
+      "label": "标签"
     },
     "sort": {
       "aria": "排序方式",
       "toggleDirection": "切换排序方向"
     },
     "category": {
-      "aria": "分类"
+      "aria": "分类",
+      "label": "分类"
     },
     "favorites": {
       "aria": "仅显示收藏",
@@ -30,6 +32,11 @@
     "side": {
       "aria": "按适用端筛选",
       "label": "适用端"
+    },
+    "more": "筛选",
+    "reset": "重置",
+    "author": {
+      "label": "作者"
     }
   },
   "sort": {
@@ -305,5 +312,9 @@
     "save": "保存",
     "expand": "展开分组",
     "collapse": "折叠分组"
+  },
+  "actions": {
+    "more": "更多操作",
+    "conflicts": "检查冲突"
   }
 }

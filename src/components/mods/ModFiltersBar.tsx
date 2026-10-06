@@ -2,13 +2,9 @@ import {
   ArrowDownNarrowWide,
   ArrowUpDown,
   ArrowUpNarrowWide,
-  Bookmark,
   CalendarDays,
   FolderOpen,
-  ListFilter,
-  Power,
-  PowerOff,
-  ShieldAlert,
+  SlidersHorizontal,
   Star,
   Tags,
 } from "lucide-react";
@@ -28,6 +24,7 @@ import {
   ComboboxList,
   ComboboxValue,
 } from "@/components/ui/combobox";
+import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -35,17 +32,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { useSetAllModsEnabled } from "@/hooks/use-set-mod-enabled";
 import { compareSemverDesc, stripped } from "@/lib/helpers";
 import { sortOptions, type SortBy } from "@/lib/mod-sort";
 import type { ModTag } from "@/lib/types";
 
 import { InstallModMenu } from "./InstallModMenu";
 import { ModAuthorFilter } from "./ModAuthorFilter";
-import { ModConflictsSheet } from "./ModConflictsSheet";
-import { ModpackMenu } from "./ModpackMenu";
-import { ModPresetsSheet } from "./ModPresetsSheet";
+import { ModsActionsMenu } from "./ModsActionsMenu";
 import { ModSearchInput } from "./ModSearchInput";
 import { UpdateAllButton } from "./UpdateAllButton";
 import {
@@ -56,9 +49,8 @@ import {
   type Side,
 } from "./use-mods-data";
 
-/** Search, tag/version pickers, sort and side controls above the mod list. */
+/** Search, a small filter set, sort controls and the toolbar actions. */
 export function ModFiltersBar({
-  canToggleMods,
   destinationLabel,
   filters,
   gameVersion,
@@ -69,8 +61,6 @@ export function ModFiltersBar({
   modUpdates,
   modsDirectory,
 }: {
-  /** Whether the target supports the enabled/disabled mod flag (profiles do). */
-  canToggleMods: boolean;
   filters: ModFiltersState;
   gameVersion: string;
   gameVersions: string[] | undefined;
@@ -82,12 +72,9 @@ export function ModFiltersBar({
   modCount: number;
 }) {
   const { t } = useTranslation();
-  const { mutate: setAllModsEnabled, isPending: bulkStatePending } =
-    useSetAllModsEnabled(modsDirectory);
-  const [conflictsOpen, setConflictsOpen] = useState(false);
-  const [presetsOpen, setPresetsOpen] = useState(false);
   const versionAnchor = useRef<HTMLDivElement | null>(null);
   const tagAnchor = useRef<HTMLDivElement | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const {
     author,
     category,
@@ -150,6 +137,27 @@ export function ModFiltersBar({
       })),
     [t],
   );
+  const sideItems = useMemo(() => {
+    const items = [
+      { label: t("common.states.any"), value: "any" },
+      { label: t("mods.side.client"), value: "client" },
+      { label: t("mods.side.server"), value: "server" },
+      { label: t("mods.side.both"), value: "both" },
+    ];
+    if (showInstalled) items.push({ label: t("common.states.installed"), value: "installed" });
+    return items;
+  }, [showInstalled, t]);
+
+  // Tags, author and a non-default category are the "extra" filters the
+  // popover holds; the count tells at a glance when it is narrowing the list.
+  const activeFilterCount =
+    (selectedModTags.length > 0 ? 1 : 0) + (author ? 1 : 0) + (category !== "mod" ? 1 : 0);
+
+  const resetFilters = () => {
+    setSelectedModTags([]);
+    setAuthor("");
+    setCategory("mod");
+  };
 
   const updateCount = Object.keys(modUpdates?.updates ?? {}).length;
 
@@ -201,68 +209,142 @@ export function ModFiltersBar({
           </ComboboxContent>
         </Combobox>
 
-        <Combobox
-          items={tagNames}
-          multiple
-          value={selectedTagNames}
-          onValueChange={handleTagNamesChange}
+        <Button
+          aria-label={t("mods.filters.favorites.aria")}
+          onClick={() => setFavoritesOnly(!favoritesOnly)}
+          size="icon-sm"
+          title={t("mods.filters.favorites.label")}
+          variant={favoritesOnly ? "outline-amber" : "outline"}
         >
-          <ComboboxChips className="w-52" ref={tagAnchor}>
-            <Tags className="text-muted-foreground size-3.5 shrink-0" />
-            <ComboboxValue>
-              {(values: string[]) => (
-                <>
-                  {values.slice(0, 2).map((name) => {
-                    const color = tagColorMap[name];
-                    return (
-                      <ComboboxChip
-                        key={name}
-                        className="border"
-                        style={
-                          color
-                            ? {
-                                backgroundColor: `${color}20`,
-                                borderColor: `${color}50`,
-                                color,
-                              }
-                            : undefined
-                        }
-                      >
-                        {name}
-                      </ComboboxChip>
-                    );
-                  })}
-                  {values.length > 2 && (
-                    <span className="bg-muted text-muted-foreground inline-flex items-center px-1.5 py-0.5 text-xs">
-                      +{values.length - 2}
-                    </span>
-                  )}
-                  <ComboboxInput
-                    aria-label={t("mods.filters.tags.aria")}
-                    placeholder={values.length > 0 ? "" : t("mods.filters.tags.placeholder")}
-                  />
-                </>
-              )}
-            </ComboboxValue>
-          </ComboboxChips>
-          <ComboboxContent anchor={tagAnchor}>
-            <ComboboxEmpty>{t("mods.filters.tags.empty")}</ComboboxEmpty>
-            <ComboboxList>
-              {(name: string) => (
-                <ComboboxItem key={name} value={name}>
-                  {name}
-                </ComboboxItem>
-              )}
-            </ComboboxList>
-          </ComboboxContent>
-        </Combobox>
+          <Star className={favoritesOnly ? "fill-current" : undefined} />
+        </Button>
 
-        <ModAuthorFilter
-          onChange={setAuthor}
-          searchText={searchText}
-          selectedGameVersions={selectedGameVersions}
-          value={author}
-        />
+        <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+          <PopoverTrigger
+            render={<Button aria-label={t("mods.filters.more")} size="sm" variant="outline" />}
+          >
+            <SlidersHorizontal />
+            {t("mods.filters.more")}
+            {activeFilterCount > 0 && (
+              <Badge className="h-4 min-w-4 px-1 text-[10px]">{activeFilterCount}</Badge>
+            )}
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-80">
+            <div className="grid gap-3">
+              <div className="flex items-center justify-between">
+                <PopoverTitle>{t("mods.filters.more")}</PopoverTitle>
+                {activeFilterCount > 0 && (
+                  <Button onClick={resetFilters} size="sm" variant="ghost">
+                    {t("mods.filters.reset")}
+                  </Button>
+                )}
+              </div>
+
+              <div className="grid gap-1.5">
+                <span className="text-muted-foreground text-[11px] font-medium">
+                  {t("mods.filters.tags.label")}
+                </span>
+                <Combobox
+                  items={tagNames}
+                  multiple
+                  value={selectedTagNames}
+                  onValueChange={handleTagNamesChange}
+                >
+                  <ComboboxChips className="w-full" ref={tagAnchor}>
+                    <Tags className="text-muted-foreground size-3.5 shrink-0" />
+                    <ComboboxValue>
+                      {(values: string[]) => (
+                        <>
+                          {values.slice(0, 2).map((name) => {
+                            const color = tagColorMap[name];
+                            return (
+                              <ComboboxChip
+                                key={name}
+                                className="border"
+                                style={
+                                  color
+                                    ? {
+                                        backgroundColor: `${color}20`,
+                                        borderColor: `${color}50`,
+                                        color,
+                                      }
+                                    : undefined
+                                }
+                              >
+                                {name}
+                              </ComboboxChip>
+                            );
+                          })}
+                          {values.length > 2 && (
+                            <span className="bg-muted text-muted-foreground inline-flex items-center px-1.5 py-0.5 text-xs">
+                              +{values.length - 2}
+                            </span>
+                          )}
+                          <ComboboxInput
+                            aria-label={t("mods.filters.tags.aria")}
+                            placeholder={
+                              values.length > 0 ? "" : t("mods.filters.tags.placeholder")
+                            }
+                          />
+                        </>
+                      )}
+                    </ComboboxValue>
+                  </ComboboxChips>
+                  <ComboboxContent anchor={tagAnchor}>
+                    <ComboboxEmpty>{t("mods.filters.tags.empty")}</ComboboxEmpty>
+                    <ComboboxList>
+                      {(name: string) => (
+                        <ComboboxItem key={name} value={name}>
+                          {name}
+                        </ComboboxItem>
+                      )}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
+              </div>
+
+              <div className="grid gap-1.5">
+                <span className="text-muted-foreground text-[11px] font-medium">
+                  {t("mods.filters.author.label")}
+                </span>
+                <ModAuthorFilter
+                  onChange={setAuthor}
+                  searchText={searchText}
+                  selectedGameVersions={selectedGameVersions}
+                  value={author}
+                />
+              </div>
+
+              <div className="grid gap-1.5">
+                <span className="text-muted-foreground text-[11px] font-medium">
+                  {t("mods.filters.category.label")}
+                </span>
+                <Select
+                  items={categoryItems}
+                  value={category}
+                  onValueChange={(value) => {
+                    if (typeof value === "string") setCategory(value as Category);
+                  }}
+                >
+                  <SelectTrigger
+                    aria-label={t("mods.filters.category.aria")}
+                    className="w-full"
+                    size="sm"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent alignItemWithTrigger={false}>
+                    {categoryItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -302,29 +384,18 @@ export function ModFiltersBar({
           {orderDirection === "descending" ? <ArrowDownNarrowWide /> : <ArrowUpNarrowWide />}
         </Button>
 
-        <Button
-          aria-label={t("mods.filters.favorites.aria")}
-          onClick={() => setFavoritesOnly(!favoritesOnly)}
-          size="icon-sm"
-          title={t("mods.filters.favorites.label")}
-          variant={favoritesOnly ? "outline-amber" : "outline"}
-        >
-          <Star className={favoritesOnly ? "fill-current" : undefined} />
-        </Button>
-
         <Select
-          items={categoryItems}
-          value={category}
+          items={sideItems}
+          value={side}
           onValueChange={(value) => {
-            if (typeof value === "string") setCategory(value as Category);
+            if (typeof value === "string") setSide(value as Side);
           }}
         >
-          <SelectTrigger size="sm" aria-label={t("mods.filters.category.aria")}>
-            <ListFilter className="text-muted-foreground" />
+          <SelectTrigger size="sm" aria-label={t("mods.filters.side.aria")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent alignItemWithTrigger={false}>
-            {categoryItems.map((item) => (
+            {sideItems.map((item) => (
               <SelectItem key={item.value} value={item.value}>
                 {item.label}
               </SelectItem>
@@ -332,69 +403,12 @@ export function ModFiltersBar({
           </SelectContent>
         </Select>
 
-        <div className="flex items-center gap-1.5">
-          <span className="text-muted-foreground text-[10px] font-medium tracking-widest uppercase">
-            {t("mods.filters.side.label")}
-          </span>
-          <ToggleGroup
-            aria-label={t("mods.filters.side.aria")}
-            size="sm"
-            value={[side]}
-            onValueChange={(value) => {
-              if (value[0]) setSide(value[0] as Side);
-            }}
-            variant="outline"
-          >
-            <ToggleGroupItem value="any">{t("common.states.any")}</ToggleGroupItem>
-            <ToggleGroupItem value="client">{t("mods.side.client")}</ToggleGroupItem>
-            <ToggleGroupItem value="server">{t("mods.side.server")}</ToggleGroupItem>
-            <ToggleGroupItem value="both">{t("mods.side.both")}</ToggleGroupItem>
-            {showInstalled && (
-              <ToggleGroupItem value="installed">{t("common.states.installed")}</ToggleGroupItem>
-            )}
-          </ToggleGroup>
-        </div>
-
         <div className="text-muted-foreground ms-auto flex flex-wrap items-center gap-3 text-xs">
           <Badge variant="outline" className="text-muted-foreground gap-1.5">
             <FolderOpen />
             {destinationLabel}
           </Badge>
           <span className="tabular-nums">{t("mods.filters.count", { count: modCount })}</span>
-          {showInstalled && modsDirectory && canToggleMods && (
-            <div className="flex items-center gap-1">
-              <Button
-                aria-label={t("mods.toggle.enableAll")}
-                disabled={bulkStatePending}
-                onClick={() => setAllModsEnabled(true)}
-                size="icon-sm"
-                title={t("mods.toggle.enableAll")}
-                variant="outline"
-              >
-                <Power aria-hidden="true" />
-              </Button>
-              <Button
-                aria-label={t("mods.toggle.disableAll")}
-                disabled={bulkStatePending}
-                onClick={() => setAllModsEnabled(false)}
-                size="icon-sm"
-                title={t("mods.toggle.disableAll")}
-                variant="outline"
-              >
-                <PowerOff aria-hidden="true" />
-              </Button>
-              <Button
-                aria-label={t("mods.presets.button")}
-                onClick={() => setPresetsOpen(true)}
-                size="sm"
-                title={t("mods.presets.button")}
-                variant="outline"
-              >
-                <Bookmark aria-hidden="true" />
-                <span className="hidden sm:inline">{t("mods.presets.button")}</span>
-              </Button>
-            </div>
-          )}
           {showInstalled && instMods && modUpdates && updateCount > 0 && (
             <UpdateAllButton
               destinationLabel={destinationLabel}
@@ -405,19 +419,7 @@ export function ModFiltersBar({
           )}
           {showInstalled && modsDirectory && <InstallModMenu modsDirectory={modsDirectory} />}
           {showInstalled && modsDirectory && (
-            <Button
-              aria-label={t("mods.conflicts.button")}
-              onClick={() => setConflictsOpen(true)}
-              size="sm"
-              title={t("mods.conflicts.button")}
-              variant="outline"
-            >
-              <ShieldAlert aria-hidden="true" />
-              <span className="hidden sm:inline">{t("mods.conflicts.button")}</span>
-            </Button>
-          )}
-          {showInstalled && modsDirectory && (
-            <ModpackMenu
+            <ModsActionsMenu
               destinationLabel={destinationLabel}
               gameVersion={gameVersion}
               installedMods={instMods?.mods}
@@ -426,17 +428,6 @@ export function ModFiltersBar({
           )}
         </div>
       </div>
-
-      <ModPresetsSheet
-        modsDirectory={modsDirectory}
-        open={presetsOpen}
-        onOpenChange={setPresetsOpen}
-      />
-      <ModConflictsSheet
-        modsDirectory={modsDirectory}
-        open={conflictsOpen}
-        onOpenChange={setConflictsOpen}
-      />
     </div>
   );
 }

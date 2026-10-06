@@ -15,14 +15,16 @@
     "tags": {
       "aria": "Filter by tag",
       "empty": "No tags found.",
-      "placeholder": "Mod tags…"
+      "placeholder": "Mod tags…",
+      "label": "Tags"
     },
     "sort": {
       "aria": "Sort by",
       "toggleDirection": "Toggle sort direction"
     },
     "category": {
-      "aria": "Category"
+      "aria": "Category",
+      "label": "Category"
     },
     "favorites": {
       "aria": "Show favorites only",
@@ -31,6 +33,11 @@
     "side": {
       "aria": "Filter by side",
       "label": "Side"
+    },
+    "more": "Filters",
+    "reset": "Reset",
+    "author": {
+      "label": "Author"
     }
   },
   "sort": {
@@ -313,5 +320,9 @@
     "save": "Save",
     "expand": "Expand group",
     "collapse": "Collapse group"
+  },
+  "actions": {
+    "more": "More actions",
+    "conflicts": "Check conflicts"
   }
 }

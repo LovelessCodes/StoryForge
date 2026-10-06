@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { cn } from "cn";
 import {
+  Bookmark,
   ChevronDown,
   ChevronRight,
   Ellipsis,
@@ -38,6 +39,7 @@ import type { OutputMod } from "@/lib/types";
 import { useSettingsStore } from "@/stores/settings";
 
 import { InstalledModRow } from "./InstalledModRow";
+import { ModPresetsSheet } from "./ModPresetsSheet";
 
 /** Stable empty list so the selector doesn't churn identities. */
 const NO_GROUPS: never[] = [];
@@ -75,6 +77,7 @@ export function InstalledModsView({
   const [renameName, setRenameName] = useState("");
   const [confirmDeleteGroupId, setConfirmDeleteGroupId] = useState<string | null>(null);
   const [confirmBatchRemove, setConfirmBatchRemove] = useState(false);
+  const [presetsOpen, setPresetsOpen] = useState(false);
 
   const mods = useMemo(() => data?.mods ?? [], [data]);
   const sections = useMemo(() => sectionMods(groups, mods), [groups, mods]);
@@ -200,32 +203,62 @@ export function InstalledModsView({
         <span className="text-muted-foreground text-xs">
           {t("mods.installed.count", { count: mods.length })}
         </span>
-        {creatingGroup ? (
-          <div className="flex items-center gap-2">
-            <Input
-              aria-label={t("mods.groups.namePlaceholder")}
-              className="h-8 max-w-48"
-              placeholder={t("mods.groups.namePlaceholder")}
-              value={newGroupName}
-              onChange={(event) => setNewGroupName(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") saveNewGroup();
-                if (event.key === "Escape") setCreatingGroup(false);
-              }}
-            />
-            <Button disabled={newGroupName.trim().length === 0} onClick={saveNewGroup} size="sm">
-              {t("mods.groups.create")}
+        <div className="flex flex-wrap items-center gap-2">
+          {canToggleMods && (
+            <>
+              <Button
+                aria-label={t("mods.groups.enableAll")}
+                disabled={applyState.isPending || mods.length === 0}
+                onClick={() => applyEnabled(mods, true)}
+                size="icon-sm"
+                title={t("mods.groups.enableAll")}
+                variant="outline"
+              >
+                <Power />
+              </Button>
+              <Button
+                aria-label={t("mods.groups.disableAll")}
+                disabled={applyState.isPending || mods.length === 0}
+                onClick={() => applyEnabled(mods, false)}
+                size="icon-sm"
+                title={t("mods.groups.disableAll")}
+                variant="outline"
+              >
+                <PowerOff />
+              </Button>
+              <Button onClick={() => setPresetsOpen(true)} size="sm" variant="outline">
+                <Bookmark />
+                {t("mods.presets.button")}
+              </Button>
+            </>
+          )}
+          {creatingGroup ? (
+            <div className="flex items-center gap-2">
+              <Input
+                aria-label={t("mods.groups.namePlaceholder")}
+                className="h-8 max-w-48"
+                placeholder={t("mods.groups.namePlaceholder")}
+                value={newGroupName}
+                onChange={(event) => setNewGroupName(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") saveNewGroup();
+                  if (event.key === "Escape") setCreatingGroup(false);
+                }}
+              />
+              <Button disabled={newGroupName.trim().length === 0} onClick={saveNewGroup} size="sm">
+                {t("mods.groups.create")}
+              </Button>
+              <Button onClick={() => setCreatingGroup(false)} size="sm" variant="ghost">
+                {t("common.actions.cancel")}
+              </Button>
+            </div>
+          ) : (
+            <Button onClick={() => setCreatingGroup(true)} size="sm" variant="outline">
+              <FolderPlus />
+              {t("mods.groups.new")}
             </Button>
-            <Button onClick={() => setCreatingGroup(false)} size="sm" variant="ghost">
-              {t("common.actions.cancel")}
-            </Button>
-          </div>
-        ) : (
-          <Button onClick={() => setCreatingGroup(true)} size="sm" variant="outline">
-            <FolderPlus />
-            {t("mods.groups.new")}
-          </Button>
-        )}
+          )}
+        </div>
       </div>
 
       <ScrollArea scrollFade className="min-h-0 flex-1">
@@ -520,6 +553,12 @@ export function InstalledModsView({
           </div>
         </div>
       )}
+
+      <ModPresetsSheet
+        modsDirectory={modsDirectory}
+        open={presetsOpen}
+        onOpenChange={setPresetsOpen}
+      />
     </div>
   );
 }
