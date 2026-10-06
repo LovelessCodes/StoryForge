@@ -90,7 +90,12 @@
     "removeFrom": "Quitar de {{destination}}",
     "unpin": "Desfijar mod",
     "unfavorite": "Quitar de favoritos",
-    "updateToLatest": "Actualizar a la última versión"
+    "updateToLatest": "Actualizar a la última versión",
+    "enable": "Activar mod",
+    "disable": "Desactivar mod",
+    "enableTooltip": "Activar {{name}}",
+    "disableTooltip": "Desactivar {{name}}",
+    "disabledBadge": "Desactivado"
   },
   "versionPicker": {
     "aria": "Seleccionar versión",
@@ -195,5 +200,14 @@
   },
   "deepLink": {
     "failed": "No se pudo abrir {{modid}} desde el enlace"
+  },
+  "toggle": {
+    "enabled": "{{name}} activado",
+    "disabled": "{{name}} desactivado",
+    "enableAll": "Activar todos los mods",
+    "disableAll": "Desactivar todos los mods",
+    "bulkEnabled": "Todos los mods activados",
+    "bulkDisabled": "Todos los mods desactivados",
+    "failed": "No se pudo cambiar el estado del mod"
   }
 }

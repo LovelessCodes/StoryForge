@@ -88,7 +88,12 @@
     "removeFrom": "从 {{destination}} 移除",
     "unpin": "取消固定",
     "unfavorite": "取消收藏",
-    "updateToLatest": "更新到最新版本"
+    "updateToLatest": "更新到最新版本",
+    "enable": "启用模组",
+    "disable": "禁用模组",
+    "enableTooltip": "启用 {{name}}",
+    "disableTooltip": "禁用 {{name}}",
+    "disabledBadge": "已禁用"
   },
   "versionPicker": {
     "aria": "选择版本",
@@ -187,5 +192,14 @@
   },
   "deepLink": {
     "failed": "无法通过链接打开 {{modid}}"
+  },
+  "toggle": {
+    "enabled": "已启用 {{name}}",
+    "disabled": "已禁用 {{name}}",
+    "enableAll": "启用全部模组",
+    "disableAll": "禁用全部模组",
+    "bulkEnabled": "已启用全部模组",
+    "bulkDisabled": "已禁用全部模组",
+    "failed": "无法更改模组状态"
   }
 }

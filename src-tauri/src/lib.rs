@@ -369,6 +369,8 @@ pub fn run() {
             mods::download_mod,
             mods::remove_mod_from_profile,
             mods::save_mod_config,
+            mods::set_mod_enabled,
+            mods::set_all_mods_enabled,
             // Modpack manifests (RiftLauncher-compatible import/export)
             modpack_io::read_modpack_manifest,
             modpack_io::write_modpack_manifest,

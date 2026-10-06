@@ -5,6 +5,8 @@ import {
   CalendarDays,
   FolderOpen,
   ListFilter,
+  Power,
+  PowerOff,
   Star,
   Tags,
 } from "lucide-react";
@@ -32,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useSetAllModsEnabled } from "@/hooks/use-set-mod-enabled";
 import { compareSemverDesc, stripped } from "@/lib/helpers";
 import { sortOptions, type SortBy } from "@/lib/mod-sort";
 import type { ModTag } from "@/lib/types";
@@ -71,6 +74,8 @@ export function ModFiltersBar({
   modCount: number;
 }) {
   const { t } = useTranslation();
+  const { mutate: setAllModsEnabled, isPending: bulkStatePending } =
+    useSetAllModsEnabled(modsDirectory);
   const versionAnchor = useRef<HTMLDivElement | null>(null);
   const tagAnchor = useRef<HTMLDivElement | null>(null);
   const {
@@ -346,6 +351,30 @@ export function ModFiltersBar({
             {destinationLabel}
           </Badge>
           <span className="tabular-nums">{t("mods.filters.count", { count: modCount })}</span>
+          {showInstalled && modsDirectory && (
+            <div className="flex items-center gap-1">
+              <Button
+                aria-label={t("mods.toggle.enableAll")}
+                disabled={bulkStatePending}
+                onClick={() => setAllModsEnabled(true)}
+                size="icon-sm"
+                title={t("mods.toggle.enableAll")}
+                variant="outline"
+              >
+                <Power aria-hidden="true" />
+              </Button>
+              <Button
+                aria-label={t("mods.toggle.disableAll")}
+                disabled={bulkStatePending}
+                onClick={() => setAllModsEnabled(false)}
+                size="icon-sm"
+                title={t("mods.toggle.disableAll")}
+                variant="outline"
+              >
+                <PowerOff aria-hidden="true" />
+              </Button>
+            </div>
+          )}
           {showInstalled && instMods && modUpdates && updateCount > 0 && (
             <UpdateAllButton
               destinationLabel={destinationLabel}

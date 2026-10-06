@@ -263,6 +263,8 @@ export type OutputMod = {
   path: string;
   /** `modinfo.json` dependencies (modid -> version requirement). */
   dependencies?: Record<string, string>;
+  /** True when the profile lists this mod as disabled in `disabledMods`. */
+  disabled?: boolean;
 };
 
 /** One `.zip` in a profile's Mods folder that could not be scanned. */

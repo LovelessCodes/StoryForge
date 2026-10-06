@@ -90,7 +90,12 @@
     "removeFrom": "Remove from {{destination}}",
     "unpin": "Unpin mod",
     "unfavorite": "Remove from favorites",
-    "updateToLatest": "Update to latest version"
+    "updateToLatest": "Update to latest version",
+    "enable": "Enable mod",
+    "disable": "Disable mod",
+    "enableTooltip": "Enable {{name}}",
+    "disableTooltip": "Disable {{name}}",
+    "disabledBadge": "Disabled"
   },
   "versionPicker": {
     "aria": "Select version",
@@ -195,5 +200,14 @@
   },
   "deepLink": {
     "failed": "Could not open {{modid}} from the link"
+  },
+  "toggle": {
+    "enabled": "Enabled {{name}}",
+    "disabled": "Disabled {{name}}",
+    "enableAll": "Enable all mods",
+    "disableAll": "Disable all mods",
+    "bulkEnabled": "Enabled all mods",
+    "bulkDisabled": "Disabled all mods",
+    "failed": "Could not change the mod state"
   }
 }

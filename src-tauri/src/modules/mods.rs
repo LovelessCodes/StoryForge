@@ -96,6 +96,10 @@ pub struct OutputMod {
     /// special `game` entry: the frontend checks them for missing mods.
     #[serde(default)]
     pub dependencies: HashMap<String, String>,
+    /// True when the profile's `clientsettings.json` lists this mod in
+    /// `stringListSettings.disabledMods` as `modid@version`.
+    #[serde(default)]
+    pub disabled: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -727,6 +731,7 @@ fn read_modinfo_from_zip(
                         version,
                         path: zip_path.to_string_lossy().into_owned(),
                         dependencies: dependencies_from_modinfo(&json),
+                        disabled: false,
                     }),
                     true,
                 );
@@ -843,16 +848,188 @@ pub fn get_mods_in_dir(mods_path: &Path) -> Result<ModsResult, UiError> {
     Ok(ModsResult { mods, errors })
 }
 
+// ── Enabled / disabled mods ──
+
+/// The `modid@version` entries of `stringListSettings.disabledMods`.
+pub(crate) fn disabled_mods(settings: &Value) -> Vec<String> {
+    settings
+        .get("stringListSettings")
+        .and_then(|list| list.get("disabledMods"))
+        .and_then(Value::as_array)
+        .map(|entries| {
+            entries
+                .iter()
+                .filter_map(Value::as_str)
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn disabled_entry_modid(entry: &str) -> &str {
+    entry.split('@').next().unwrap_or(entry)
+}
+
+/// Whether the settings list this mod, at this version, as disabled.
+///
+/// An entry without a version (written by other tools) counts for every
+/// version: the game matches `modid@version`, but for a toggle the modid match
+/// is what the user means.
+pub(crate) fn is_mod_disabled(settings: &Value, modid: &str, version: &str) -> bool {
+    disabled_mods(settings).iter().any(|entry| {
+        if !disabled_entry_modid(entry).eq_ignore_ascii_case(modid) {
+            return false;
+        }
+        match entry.split_once('@') {
+            Some((_, entry_version)) => entry_version == version,
+            None => true,
+        }
+    })
+}
+
+/// Adds or removes `modid@version` in `disabledMods`, creating the section
+/// when the file has none.
+///
+/// Removing drops every entry for the modid whatever version it names, so a
+/// downgrade cannot resurrect a stale entry. Returns the updated list.
+pub(crate) fn apply_mod_enabled(
+    settings: &mut Value,
+    modid: &str,
+    version: &str,
+    enabled: bool,
+) -> Vec<String> {
+    let Some(root) = settings.as_object_mut() else {
+        return Vec::new();
+    };
+    let string_list = root
+        .entry("stringListSettings")
+        .or_insert_with(|| json!({}));
+    let Some(list) = string_list.as_object_mut() else {
+        return Vec::new();
+    };
+    let disabled = list.entry("disabledMods").or_insert_with(|| json!([]));
+    let Some(array) = disabled.as_array_mut() else {
+        return Vec::new();
+    };
+    array.retain(|entry| {
+        entry
+            .as_str()
+            .map(|text| !disabled_entry_modid(text).eq_ignore_ascii_case(modid))
+            .unwrap_or(true)
+    });
+    if !enabled {
+        array.push(json!(format!("{modid}@{version}")));
+    }
+    disabled_mods(settings)
+}
+
+fn read_settings_file(profile_dir: &Path) -> Value {
+    std::fs::read_to_string(paths::clientsettings_path(profile_dir))
+        .ok()
+        .and_then(|text| json5_from_str::<Value>(&text).ok())
+        .filter(Value::is_object)
+        .unwrap_or_else(|| json!({}))
+}
+
+fn write_settings_file(profile_dir: &Path, settings: &Value) -> Result<(), UiError> {
+    let text = serde_json::to_string_pretty(settings)
+        .map_err(|e| UiError::new("serialize_failed", format!("Failed to serialize: {e}")))?;
+    std::fs::write(paths::clientsettings_path(profile_dir), text)
+        .map_err(|e| UiError::io(format!("Failed to write clientsettings.json: {e}")))
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModEnabledParams {
+    pub path: String,
+    pub modid: String,
+    pub version: String,
+    pub enabled: bool,
+}
+
+/// Enables or disables one installed mod for a profile by editing the profile's
+/// `clientsettings.json` (`stringListSettings.disabledMods`). Returns the
+/// updated list of disabled `modid@version` entries.
+#[command]
+pub async fn set_mod_enabled(
+    app: AppHandle,
+    params: ModEnabledParams,
+) -> Result<Vec<String>, UiError> {
+    log_info!(
+        "set_mod_enabled: {}@{} enabled={} path={}",
+        params.modid,
+        params.version,
+        params.enabled,
+        params.path
+    );
+    require_managed_path(&app, Path::new(&params.path), "Profile path")?;
+    tokio::task::spawn_blocking(move || {
+        let profile_dir = PathBuf::from(&params.path);
+        let mut settings = read_settings_file(&profile_dir);
+        let updated = apply_mod_enabled(
+            &mut settings,
+            &params.modid,
+            &params.version,
+            params.enabled,
+        );
+        write_settings_file(&profile_dir, &settings)?;
+        Ok(updated)
+    })
+    .await
+    .map_err(|e| UiError::new("internal_error", format!("Set mod state failed: {e}")))?
+}
+
+/// Enables or disables every installed mod of a profile in one write.
+#[command]
+pub async fn set_all_mods_enabled(
+    app: AppHandle,
+    path: String,
+    enabled: bool,
+) -> Result<Vec<String>, UiError> {
+    log_info!("set_all_mods_enabled: enabled={enabled} path={path}");
+    require_managed_path(&app, Path::new(&path), "Profile path")?;
+    tokio::task::spawn_blocking(move || {
+        let profile_dir = PathBuf::from(&path);
+        let mods_dir = paths::mods_dir(&profile_dir);
+        let mods = if mods_dir.is_dir() {
+            get_mods_in_dir(&mods_dir)
+                .map(|result| result.mods)
+                .unwrap_or_default()
+        } else {
+            Vec::new()
+        };
+        let mut settings = read_settings_file(&profile_dir);
+        let mut updated = disabled_mods(&settings);
+        for installed in mods {
+            updated =
+                apply_mod_enabled(&mut settings, &installed.modid, &installed.version, enabled);
+        }
+        write_settings_file(&profile_dir, &settings)?;
+        Ok(updated)
+    })
+    .await
+    .map_err(|e| UiError::new("internal_error", format!("Set mods state failed: {e}")))?
+}
+
 #[command]
 pub async fn get_mods(app: AppHandle, path: String) -> Result<ModsResult, UiError> {
     log_info!("get_mods: {}", path);
     require_managed_path(&app, Path::new(&path), "Profile path")?;
-    let mods_dir = PathBuf::from(path).join(paths::MODS_DIR);
+    let profile_dir = PathBuf::from(&path);
+    let mods_dir = profile_dir.join(paths::MODS_DIR);
 
-    // Opens every zip in the directory: keep it off the UI thread.
+    // Opens every zip in the directory: keep it off the UI thread. The
+    // disabled flag is read after the (cached) scan so it stays correct
+    // without re-opening any zip when only clientsettings.json changed.
     tokio::task::spawn_blocking(move || {
         let start = std::time::Instant::now();
-        let result = get_mods_cached(&mods_dir);
+        let mut result = get_mods_cached(&mods_dir);
+        if let Ok(scanned) = result.as_mut() {
+            let settings = read_settings_file(&profile_dir);
+            for item in &mut scanned.mods {
+                item.disabled = is_mod_disabled(&settings, &item.modid, &item.version);
+            }
+        }
         log_info!("get_mods completed in {}ms", start.elapsed().as_millis());
         result
     })
@@ -1112,5 +1289,56 @@ mod tests {
         assert!(
             dependencies_from_modinfo(&serde_json::json!({ "dependencies": "nope" })).is_empty()
         );
+    }
+
+    #[test]
+    fn apply_mod_enabled_adds_and_removes_entries() {
+        let mut settings = serde_json::json!({
+            "stringListSettings": {"disabledMods": ["carryon@1.13.0"], "modPaths": ["x"]},
+            "intSettings": {"fov": 70}
+        });
+
+        let updated = apply_mod_enabled(&mut settings, "extraoverlays", "1.6.0", false);
+        assert_eq!(updated, vec!["carryon@1.13.0", "extraoverlays@1.6.0"]);
+
+        // Enabling drops every entry for the modid, whatever version it names.
+        let updated = apply_mod_enabled(&mut settings, "carryon", "2.0.0", true);
+        assert_eq!(updated, vec!["extraoverlays@1.6.0"]);
+
+        // Unrelated settings and other string lists survive.
+        assert_eq!(settings["intSettings"]["fov"], 70);
+        assert_eq!(settings["stringListSettings"]["modPaths"][0], "x");
+    }
+
+    #[test]
+    fn apply_mod_enabled_creates_missing_sections() {
+        let mut settings = serde_json::json!({});
+        let updated = apply_mod_enabled(&mut settings, "a", "1.0.0", false);
+        assert_eq!(updated, vec!["a@1.0.0"]);
+        assert!(is_mod_disabled(&settings, "a", "1.0.0"));
+        assert!(!is_mod_disabled(&settings, "a", "1.0.1"));
+        // Case-insensitive, like the game's own matching.
+        assert!(is_mod_disabled(&settings, "A", "1.0.0"));
+    }
+
+    #[test]
+    fn apply_mod_enabled_is_idempotent() {
+        let mut settings = serde_json::json!({});
+        apply_mod_enabled(&mut settings, "a", "1.0.0", false);
+        let updated = apply_mod_enabled(&mut settings, "a", "1.0.0", false);
+        assert_eq!(updated, vec!["a@1.0.0"]);
+    }
+
+    #[test]
+    fn disabled_mods_tolerate_foreign_entries() {
+        // A non-string entry is preserved in the raw list and ignored by the
+        // reader; an entry without a version disables every version.
+        let mut settings = serde_json::json!({
+            "stringListSettings": {"disabledMods": [7, "legacy"]}
+        });
+        assert!(is_mod_disabled(&settings, "legacy", "9.9.9"));
+        let updated = apply_mod_enabled(&mut settings, "other", "1.0.0", false);
+        assert_eq!(updated, vec!["legacy", "other@1.0.0"]);
+        assert_eq!(settings["stringListSettings"]["disabledMods"][0], 7);
     }
 }

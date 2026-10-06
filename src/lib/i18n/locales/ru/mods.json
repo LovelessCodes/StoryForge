@@ -94,7 +94,12 @@
     "removeFrom": "Убрать из {{destination}}",
     "unpin": "Открепить мод",
     "unfavorite": "Убрать из избранного",
-    "updateToLatest": "Обновить до последней версии"
+    "updateToLatest": "Обновить до последней версии",
+    "enable": "Включить мод",
+    "disable": "Отключить мод",
+    "enableTooltip": "Включить {{name}}",
+    "disableTooltip": "Отключить {{name}}",
+    "disabledBadge": "Отключён"
   },
   "versionPicker": {
     "aria": "Выбрать версию",
@@ -211,5 +216,14 @@
   },
   "deepLink": {
     "failed": "Не удалось открыть {{modid}} по ссылке"
+  },
+  "toggle": {
+    "enabled": "{{name}} включён",
+    "disabled": "{{name}} отключён",
+    "enableAll": "Включить все моды",
+    "disableAll": "Отключить все моды",
+    "bulkEnabled": "Все моды включены",
+    "bulkDisabled": "Все моды отключены",
+    "failed": "Не удалось изменить состояние мода"
   }
 }

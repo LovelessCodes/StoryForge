@@ -14,6 +14,8 @@ import {
   PackageSearchIcon,
   Pin,
   PinOff,
+  Power,
+  PowerOff,
   Star,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -29,6 +31,7 @@ import {
   type ModUpdatesResponse,
   modUpdatesQueryKey,
 } from "@/hooks/use-mod-updates";
+import { useSetModEnabled } from "@/hooks/use-set-mod-enabled";
 import { compareSemverAsc, hashPath, pathDelimiter } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
 import type { Mod, ModTag, OutputMod } from "@/lib/types";
@@ -143,6 +146,8 @@ export function ModItem({
     compareSemverAsc(updateMod.modversion, installedMod.version) > 0,
   );
   const showInstalled = Boolean(installedMod && modsDirectory);
+  const isDisabled = installedMod?.disabled ?? false;
+  const { mutate: setModEnabled, isPending: statePending } = useSetModEnabled(modsDirectory);
   const pinned = useSettingsStore((s) =>
     modsDirectory && installedMod
       ? (s.pinnedMods[modsDirectory]?.includes(installedMod.modid.toLowerCase()) ?? false)
@@ -171,6 +176,7 @@ export function ModItem({
           "border-accent-amber/40 bg-linear-to-r from-accent-amber/15 to-transparent",
         canUpdate &&
           "border-accent-primary/40 bg-linear-to-r from-accent-primary/15 to-transparent",
+        isDisabled && "opacity-60",
       )}
     >
       <ModSummary
@@ -291,6 +297,33 @@ export function ModItem({
 
         {modsDirectory && installedMod ? (
           <>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    aria-label={isDisabled ? t("mods.item.enable") : t("mods.item.disable")}
+                    disabled={statePending}
+                    onClick={() =>
+                      setModEnabled({
+                        modid: installedMod.modid,
+                        version: installedMod.version,
+                        enabled: isDisabled,
+                        name: mod.name,
+                      })
+                    }
+                    size="icon-sm"
+                    variant={isDisabled ? "outline" : "ghost"}
+                  />
+                }
+              >
+                {isDisabled ? <Power aria-hidden="true" /> : <PowerOff aria-hidden="true" />}
+              </TooltipTrigger>
+              <TooltipContent>
+                {isDisabled
+                  ? t("mods.item.enableTooltip", { name: mod.name })
+                  : t("mods.item.disableTooltip", { name: mod.name })}
+              </TooltipContent>
+            </Tooltip>
             <Tooltip>
               <TooltipTrigger
                 render={
@@ -433,6 +466,11 @@ function ModSummary({
               {mod.name}
             </h3>
           </a>
+          {installedMod?.disabled && (
+            <Badge variant="outline" className="text-muted-foreground shrink-0 text-[10px]">
+              {t("mods.item.disabledBadge")}
+            </Badge>
+          )}
           <Tooltip>
             <TooltipTrigger
               render={
