@@ -1,7 +1,9 @@
+import { cn } from "cn";
 import { FolderInput, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -45,7 +47,14 @@ export function InstalledModRow({
   const filename = installed.path.split(/[/\\]/).filter(Boolean).pop() ?? installed.path;
 
   return (
-    <div className="hover:bg-muted/40 flex items-center gap-3 border p-2.5 transition-colors">
+    <div
+      className={cn(
+        "hover:bg-muted/40 flex items-center gap-3 border p-2.5 transition-colors",
+        // Disabled mods read as such from across the list: dimmed row plus a
+        // badge next to the name.
+        disabled && "bg-muted/30 opacity-60",
+      )}
+    >
       <Checkbox
         aria-label={t("mods.installed.select", { name: installed.name })}
         checked={selected}
@@ -58,6 +67,11 @@ export function InstalledModRow({
           <span className="text-muted-foreground shrink-0 font-mono text-[11px]">
             v{installed.version}
           </span>
+          {disabled && (
+            <Badge variant="outline" className="text-muted-foreground shrink-0 text-[10px]">
+              {t("mods.item.disabledBadge")}
+            </Badge>
+          )}
         </div>
         <p className="text-muted-foreground truncate font-mono text-[10px]" title={filename}>
           {filename}

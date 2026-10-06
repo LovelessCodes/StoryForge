@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
+import { cn } from "cn";
 import {
   ChevronDown,
   ChevronRight,
@@ -194,7 +195,7 @@ export function InstalledModsView({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
+    <div className="relative flex min-h-0 flex-1 flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-muted-foreground text-xs">
           {t("mods.installed.count", { count: mods.length })}
@@ -227,88 +228,8 @@ export function InstalledModsView({
         )}
       </div>
 
-      {selected.size > 0 && (
-        <div className="bg-muted/40 flex flex-wrap items-center gap-2 border p-2">
-          <span className="text-xs font-medium">
-            {t("mods.installed.selected", { count: selected.size })}
-          </span>
-          {canToggleMods && (
-            <>
-              <Button
-                disabled={applyState.isPending}
-                onClick={() => applyEnabled(selectedMods, true)}
-                size="sm"
-                variant="outline"
-              >
-                <Power />
-                {t("mods.installed.enable")}
-              </Button>
-              <Button
-                disabled={applyState.isPending}
-                onClick={() => applyEnabled(selectedMods, false)}
-                size="sm"
-                variant="outline"
-              >
-                <PowerOff />
-                {t("mods.installed.disable")}
-              </Button>
-            </>
-          )}
-          <DropdownMenu>
-            <DropdownMenuTrigger render={<Button size="sm" variant="outline" />}>
-              <FolderInput />
-              {t("mods.installed.moveToGroup")}
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuLabel>{t("mods.installed.moveToGroup")}</DropdownMenuLabel>
-              <DropdownMenuItem className="text-nowrap" onClick={() => moveSelection(null)}>
-                {t("mods.installed.ungrouped")}
-              </DropdownMenuItem>
-              {groups.length > 0 && <DropdownMenuSeparator />}
-              {groups.map((group) => (
-                <DropdownMenuItem
-                  className="text-nowrap"
-                  key={group.id}
-                  onClick={() => moveSelection(group.id)}
-                >
-                  {group.name}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          {confirmBatchRemove ? (
-            <>
-              <span className="text-destructive text-[11px]">
-                {t("mods.installed.removeConfirm", { count: selectedMods.length })}
-              </span>
-              <Button onClick={() => setConfirmBatchRemove(false)} size="sm" variant="ghost">
-                {t("common.actions.cancel")}
-              </Button>
-              <Button onClick={removeSelected} size="sm" variant="destructive">
-                <Trash2 />
-                {t("mods.installed.remove")}
-              </Button>
-            </>
-          ) : (
-            <Button onClick={() => setConfirmBatchRemove(true)} size="sm" variant="destructive">
-              <Trash2 />
-              {t("mods.installed.remove")}
-            </Button>
-          )}
-          <Button
-            aria-label={t("mods.installed.clearSelection")}
-            onClick={() => setSelected(new Set())}
-            size="icon-sm"
-            title={t("mods.installed.clearSelection")}
-            variant="ghost"
-          >
-            <X />
-          </Button>
-        </div>
-      )}
-
       <ScrollArea scrollFade className="min-h-0 flex-1">
-        <div className="grid gap-3 pr-1 pb-1">
+        <div className={cn("grid gap-3 pr-1", selected.size > 0 ? "pb-16" : "pb-1")}>
           {mods.length === 0 ? (
             <p className="text-muted-foreground border border-dashed p-6 text-center text-xs">
               {t("mods.installed.empty")}
@@ -498,6 +419,107 @@ export function InstalledModsView({
           )}
         </div>
       </ScrollArea>
+
+      {selected.size > 0 && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-3 z-10 flex justify-center">
+          <div className="bg-popover text-popover-foreground pointer-events-auto flex items-center gap-1 rounded-full border px-2 py-1.5 shadow-lg">
+            <span className="px-1.5 text-xs font-medium">
+              {t("mods.installed.selected", { count: selected.size })}
+            </span>
+            {canToggleMods && (
+              <>
+                <Button
+                  aria-label={t("mods.installed.enable")}
+                  disabled={applyState.isPending}
+                  onClick={() => applyEnabled(selectedMods, true)}
+                  size="icon-sm"
+                  title={t("mods.installed.enable")}
+                  variant="ghost"
+                >
+                  <Power />
+                </Button>
+                <Button
+                  aria-label={t("mods.installed.disable")}
+                  disabled={applyState.isPending}
+                  onClick={() => applyEnabled(selectedMods, false)}
+                  size="icon-sm"
+                  title={t("mods.installed.disable")}
+                  variant="ghost"
+                >
+                  <PowerOff />
+                </Button>
+              </>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    aria-label={t("mods.installed.moveToGroup")}
+                    size="icon-sm"
+                    title={t("mods.installed.moveToGroup")}
+                    variant="ghost"
+                  />
+                }
+              >
+                <FolderInput />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" side="top">
+                <DropdownMenuLabel>{t("mods.installed.moveToGroup")}</DropdownMenuLabel>
+                <DropdownMenuItem className="text-nowrap" onClick={() => moveSelection(null)}>
+                  {t("mods.installed.ungrouped")}
+                </DropdownMenuItem>
+                {groups.length > 0 && <DropdownMenuSeparator />}
+                {groups.map((group) => (
+                  <DropdownMenuItem
+                    className="text-nowrap"
+                    key={group.id}
+                    onClick={() => moveSelection(group.id)}
+                  >
+                    {group.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {confirmBatchRemove ? (
+              <>
+                <span className="text-destructive px-1 text-[11px]">
+                  {t("mods.installed.removeConfirm", { count: selectedMods.length })}
+                </span>
+                <Button onClick={() => setConfirmBatchRemove(false)} size="sm" variant="ghost">
+                  {t("common.actions.cancel")}
+                </Button>
+                <Button onClick={removeSelected} size="sm" variant="destructive">
+                  <Trash2 />
+                  {t("mods.installed.remove")}
+                </Button>
+              </>
+            ) : (
+              <Button
+                aria-label={t("mods.installed.remove")}
+                className="text-muted-foreground hover:text-destructive"
+                onClick={() => setConfirmBatchRemove(true)}
+                size="icon-sm"
+                title={t("mods.installed.remove")}
+                variant="ghost"
+              >
+                <Trash2 />
+              </Button>
+            )}
+            <Button
+              aria-label={t("mods.installed.clearSelection")}
+              onClick={() => {
+                setConfirmBatchRemove(false);
+                setSelected(new Set());
+              }}
+              size="icon-sm"
+              title={t("mods.installed.clearSelection")}
+              variant="ghost"
+            >
+              <X />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
