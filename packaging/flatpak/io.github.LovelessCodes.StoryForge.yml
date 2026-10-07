@@ -8,13 +8,13 @@
 app-id: io.github.LovelessCodes.StoryForge
 
 runtime: org.gnome.Platform
-runtime-version: "50"
+runtime-version: "51"
 sdk: org.gnome.Sdk
 
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.rust-stable
 
-command: /app/StoryForge/StoryForge
+command: StoryForge
 
 finish-args:
   - --share=ipc
@@ -72,9 +72,12 @@ modules:
       # The metainfo ships with placeholders; bump the version and date here
       # together with the archive URLs and hashes below on every release.
       - sed -i "s/FLATPAK_VERSION/2.0.0/g; s/FLATPAK_DATE/2026-10-07/g" io.github.LovelessCodes.StoryForge.metainfo.xml
+      # The tracked desktop file points at the self-hosted layout; the Flathub
+      # build installs the binary into /app/bin instead.
+      - sed -i "s|Exec=/app/StoryForge/StoryForge|Exec=StoryForge|" io.github.LovelessCodes.StoryForge.desktop
       # Frontend dependencies come pre-installed from the node_modules bundle.
       - bun tauri build --no-bundle
-      - install -Dm755 -t ${FLATPAK_DEST}/StoryForge src-tauri/target/release/StoryForge
+      - install -Dm755 -t ${FLATPAK_DEST}/bin src-tauri/target/release/StoryForge
       - install -Dm644 src-tauri/icons/icon.png ${FLATPAK_DEST}/share/icons/hicolor/512x512/apps/io.github.LovelessCodes.StoryForge.png
       - install -Dm644 io.github.LovelessCodes.StoryForge.desktop -t ${FLATPAK_DEST}/share/applications
       - install -Dm644 io.github.LovelessCodes.StoryForge.metainfo.xml -t ${FLATPAK_DEST}/share/metainfo
@@ -90,7 +93,7 @@ modules:
           url-query: '"https://github.com/LovelessCodes/StoryForge/archive/refs/tags/storyforge-v" + $version + ".tar.gz"'
       - type: archive
         url: https://github.com/LovelessCodes/StoryForge/releases/download/storyforge-v2.0.0/node_modules-x64.tar.gz
-        sha256: 0000000000000000000000000000000000000000000000000000000000000000
+        sha256: d5a91e21e57b7648fdbe9b355fa35f107d2e639743307a1b37fd33ce1dedf891
         only-arches:
           - x86_64
         x-checker-data:
@@ -100,7 +103,7 @@ modules:
           url-query: .assets[] | select(.name == "node_modules-x64.tar.gz") | .browser_download_url
       - type: archive
         url: https://github.com/LovelessCodes/StoryForge/releases/download/storyforge-v2.0.0/node_modules-arm64.tar.gz
-        sha256: 0000000000000000000000000000000000000000000000000000000000000000
+        sha256: 4ed449f84ad9f6540e687b1e9978974cf7818a8535e18758233384a49bed8573
         only-arches:
           - aarch64
         x-checker-data:
