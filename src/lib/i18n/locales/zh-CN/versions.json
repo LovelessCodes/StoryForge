@@ -1,0 +1,124 @@
+{
+  "add": {
+    "action": "添加版本",
+    "allInstalledOrDownloading": "所有可用版本都已安装或正在下载。",
+    "description": "下载 Vintage Story 构建。已安装的版本会被标记，无法再次选择。",
+    "gameVersion": "游戏版本",
+    "installedOption": "{{version}}（已安装）",
+    "installedTag": "（已安装）",
+    "macWarning": "此版本在 macOS 上运行可能需要额外设置。请参阅 <wiki>在 macOS 上安装 Vintage Story</wiki> wiki 文章。",
+    "macWarningTitle": "macOS：低于 1.19.0 的版本",
+    "pickPlaceholder": "选择游戏版本",
+    "title": "添加版本"
+  },
+  "banner": {
+    "action": "链接…",
+    "hint": "就地链接：无需重新下载，也不会复制任何内容。",
+    "alreadyInstalled": "已安装",
+    "description": "这些安装已存在于磁盘上。链接会将它们注册到 Story Forge，配置档无需重新下载即可启动。",
+    "found_other": "发现 {{count}} 个来自其他启动器的游戏版本",
+    "linkVersions_other": "链接 {{count}} 个版本",
+    "note": "Story Forge 只保存对这些文件夹的引用。以后取消链接时所有文件都会留在原处；安装它们的启动器可继续正常工作。",
+    "skipped_other": "{{count}} 个版本无法链接",
+    "title": "链接现有的游戏版本"
+  },
+  "download": {
+    "pause": "暂停",
+    "resume": "继续",
+    "status": {
+      "done": "完成",
+      "downloading": "下载中",
+      "error": "失败",
+      "extracting": "解压中",
+      "paused": "已暂停",
+      "pending": "已排队"
+    }
+  },
+  "linkExisting": {
+    "description": "将 Story Forge 指向一个 Vintage Story 安装文件夹。该文件夹会被就地注册，不会复制或移动任何内容。",
+    "folderHint": "该文件夹应包含游戏文件（Vintagestory、Vintagestory.exe 或 Vintage Story.app）。",
+    "folderLabel": "安装文件夹",
+    "linkFailed": "无法链接该文件夹",
+    "nameHint": "在为配置档选择版本时使用；文件夹名称是不错的默认值。",
+    "nameLabel": "版本名称",
+    "selectFolderTitle": "选择 Vintage Story 安装文件夹",
+    "submit": "链接版本",
+    "title": "链接现有版本"
+  },
+  "linked": "已链接",
+  "linkedWithSource": "已链接 · {{source}}",
+  "linking": "正在链接…",
+  "page": {
+    "activeDownloads": "活动下载（{{count}}）",
+    "emptyDescription": "下载一个构建以创建配置档并启动游戏。",
+    "emptyTitle": "尚未安装任何游戏版本。",
+    "installedVersions": "已安装的版本",
+    "installedVersionsCount": "已安装的版本（{{count}}）",
+    "linkExisting": "链接现有版本",
+    "macNote": "在 macOS 上，低于 1.19.0 的版本需要额外设置才能运行。请参阅 <wiki>在 macOS 上安装 Vintage Story</wiki> wiki 文章。"
+  },
+  "row": {
+    "deleteNote": "使用此版本的配置档仍可继续工作；只是在重新安装之前无法用它创建新配置档。",
+    "deleteVersion": "删除版本 {{name}}",
+    "folderMissing": "未找到文件夹，请重新链接或取消链接",
+    "reallyDelete": "确定删除？",
+    "reallyUnlink": "确定取消链接？",
+    "releaseCandidate": "候选版本",
+    "unlink": "取消链接",
+    "unlinkNote": "Story Forge 将不再使用此文件夹；磁盘上的内容不会有任何变化，安装它的启动器可继续正常工作。",
+    "unlinkVersion": "取消链接版本 {{name}}"
+  },
+  "toast": {
+    "deleteFailed": "删除版本 {{name}} 失败：{{message}}",
+    "deleting": "正在删除版本 {{name}}…",
+    "downloadFailed": "下载游戏版本 {{version}} 时出错",
+    "linkFailed": "链接失败",
+    "linkSkipped_other": "{{count}} 个无法链接",
+    "unlinkFailed": "取消链接版本 {{name}} 失败：{{message}}",
+    "unlinking": "正在取消链接版本 {{name}}…"
+  },
+  "optimum": {
+    "badge": "Optimum {{version}}",
+    "label": "Optimum",
+    "install": "安装 Optimum",
+    "update": "更新 Optimum",
+    "sheet": {
+      "description": "为版本 {{version}} 添加 Optimum 构建。原始版本文件夹不会被修改，补丁只会应用到副本。",
+      "unsupportedSystem": "当前系统不支持 Optimum。",
+      "platformNote": "Optimum 目前仅发布 Linux 和 Windows (x64) 构建。",
+      "manifestUnavailable": "无法加载 Optimum 的版本信息。",
+      "noBuildForVersion": "Optimum 还没有适用于版本 {{version}} 的构建。",
+      "summary": "适用于 Vintage Story {{base}} 的 Optimum {{version}}",
+      "copyNote": "会额外复制一份版本文件夹，原始文件夹保持原样。",
+      "retry": "重试"
+    },
+    "phase": {
+      "manifest": "正在检查 Optimum 版本…",
+      "download": "正在下载叠加层…",
+      "extract": "正在解压叠加层…",
+      "verify": "正在校验文件…",
+      "runtime": "正在准备 .NET 运行时…",
+      "copy": "正在复制游戏版本…",
+      "patch": "正在为客户端应用补丁…",
+      "done": "完成",
+      "cancelled": "已取消"
+    },
+    "toast": {
+      "installed": "已安装 Optimum {{version}}（{{base}}）。",
+      "failed": "Optimum 安装失败",
+      "cancelled": "Optimum 安装已取消。"
+    },
+    "failure": {
+      "badInput": "补丁拒绝了该请求。",
+      "unsupportedVersion": "该游戏版本不受此叠加层支持。",
+      "patchConflict": "补丁与游戏文件夹中的文件发生冲突。",
+      "engine": "补丁引擎出错。",
+      "verification": "补丁后的文件未通过校验。",
+      "timedOut": "补丁超时。",
+      "runtimeMissing": "Optimum 所需的 .NET 运行时不可用。",
+      "busy": "另一个 Optimum 安装正在进行中。",
+      "incomplete": "游戏版本仍在下载中。",
+      "targetExists": "已存在使用该 Optimum 版本名称的文件夹。"
+    }
+  }
+}

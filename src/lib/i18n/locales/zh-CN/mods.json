@@ -1,0 +1,320 @@
+{
+  "standalone": "独立",
+  "loadingReleases": "正在加载发行版本…",
+  "search": {
+    "placeholder": "搜索模组…"
+  },
+  "filters": {
+    "count_other": "{{count}} 个模组",
+    "gameVersions": {
+      "aria": "按游戏版本筛选",
+      "empty": "未找到版本。",
+      "placeholder": "游戏版本…"
+    },
+    "tags": {
+      "aria": "按标签筛选",
+      "empty": "未找到标签。",
+      "placeholder": "模组标签…",
+      "label": "标签"
+    },
+    "sort": {
+      "aria": "排序方式",
+      "toggleDirection": "切换排序方向"
+    },
+    "category": {
+      "aria": "分类",
+      "label": "分类"
+    },
+    "favorites": {
+      "aria": "仅显示收藏",
+      "label": "收藏"
+    },
+    "side": {
+      "aria": "按适用端筛选",
+      "label": "适用端"
+    },
+    "more": "筛选",
+    "reset": "重置",
+    "author": {
+      "label": "作者"
+    }
+  },
+  "sort": {
+    "comments": "评论",
+    "created": "创建时间",
+    "downloads": "下载量",
+    "follows": "关注数",
+    "name": "名称",
+    "relevance": "相关度",
+    "trending": "热门",
+    "updated": "最近更新"
+  },
+  "sortDirection": {
+    "ascending": "升序",
+    "descending": "降序"
+  },
+  "category": {
+    "externaltool": "外部工具",
+    "mod": "模组",
+    "other": "其他"
+  },
+  "side": {
+    "both": "两者",
+    "client": "客户端",
+    "server": "服务器"
+  },
+  "authorFilter": {
+    "aria": "按作者筛选",
+    "clear": "清除作者筛选",
+    "count_other": "{{count}} 个模组",
+    "empty": "未找到作者。",
+    "placeholder": "筛选作者…"
+  },
+  "list": {
+    "empty": "未找到模组。请尝试调整搜索或筛选条件。"
+  },
+  "item": {
+    "add": "添加模组",
+    "addTo": "添加到 {{destination}}",
+    "browseVersions": "浏览版本",
+    "browseVersionsTooltip": "查看可用版本",
+    "byAuthor": "作者：{{author}}",
+    "downloadLatest": "下载最新版本",
+    "favorite": "添加到收藏",
+    "filterBy": "按 {{author}} 筛选",
+    "filterByAuthor": "按作者 {{author}} 筛选",
+    "install": "安装模组",
+    "installLatest": "安装最新版本",
+    "installTo": "安装到…",
+    "installToDestination": "安装到配置档或托管的服务器",
+    "installedVersion": "已安装 v{{version}}",
+    "openOnModDB": "在模组数据库中打开",
+    "pin": "固定模组",
+    "pinTooltip": "固定到 v{{version}}（从全部更新中排除）",
+    "pinnedTooltip": "已固定到 v{{version}}，全部更新会跳过它",
+    "removeFrom": "从 {{destination}} 移除",
+    "unpin": "取消固定",
+    "unfavorite": "取消收藏",
+    "updateToLatest": "更新到最新版本",
+    "enable": "启用模组",
+    "disable": "禁用模组",
+    "enableTooltip": "启用 {{name}}",
+    "disableTooltip": "禁用 {{name}}",
+    "disabledBadge": "已禁用"
+  },
+  "versionPicker": {
+    "aria": "选择版本",
+    "forVersion": "适用于 {{version}}",
+    "moreTags_other": "（+{{count}} 个）",
+    "placeholder": "选择版本…",
+    "changelog": "更新日志"
+  },
+  "release": {
+    "downloads_other": "{{count}} 次下载"
+  },
+  "addSheet": {
+    "description": "选择要添加到 {{destination}} 的 {{name}} 版本。",
+    "submit": "添加模组",
+    "title": "将 <name>{{name}}</name> 添加到 <destination>{{destination}}</destination>"
+  },
+  "removeSheet": {
+    "body": "这将从 {{destination}} 中永久移除 <name>{{name}}</name>。",
+    "description": "此操作无法撤销。",
+    "title": "从 <destination>{{destination}}</destination> 移除 <name>{{name}}</name>？"
+  },
+  "updateSheet": {
+    "buttonDowngrade": "降级模组",
+    "buttonUpdate": "更新模组",
+    "description": "当前安装的版本：<version>{{version}}</version>。选择要切换到的版本。",
+    "titleDowngrade": "在 <destination>{{destination}}</destination> 中将 <name>{{name}}</name> 降级",
+    "titleUpdate": "在 <destination>{{destination}}</destination> 中更新 <name>{{name}}</name>"
+  },
+  "standaloneInstall": {
+    "description": "没有活动配置档。选择该模组的安装位置和使用的版本。",
+    "destination": "目标位置",
+    "destinationAria": "安装目标位置",
+    "destinationPlaceholder": "选择目标位置…",
+    "hostedServers": "托管的服务器",
+    "noDestinations": "没有可用的配置档或托管服务器。",
+    "noDownload": "{{name}} 没有可用的下载",
+    "profiles": "配置档",
+    "title": "安装 <name>{{name}}</name>"
+  },
+  "updateAll": {
+    "button_other": "全部更新（{{count}}）",
+    "confirm": "是的，确定"
+  },
+  "modpackIO": {
+    "menuTrigger": "整合包",
+    "import": "导入整合包…",
+    "export": "导出整合包…",
+    "jsonFilter": "整合包文件",
+    "exported": "整合包已导出",
+    "exportFailed": "无法导出整合包",
+    "readFailed": "该文件不是整合包清单",
+    "importSheet": {
+      "title": "导入整合包",
+      "description": "{{name}} · 适用于 Vintage Story {{version}}",
+      "gameVersionMismatch": "此整合包面向 Vintage Story {{packVersion}}，但当前档案运行 {{profileVersion}}。",
+      "empty": "此整合包未包含任何模组。",
+      "alreadyInstalled": "已安装",
+      "replace": "替换 {{from}} → {{to}}",
+      "willInstall": "将安装",
+      "importing": "正在导入…",
+      "done": "已安装",
+      "failed": "失败",
+      "missingVersion": "模组数据库中不存在版本 {{version}}",
+      "confirm": "导入模组",
+      "nothing": "没有可导入的内容",
+      "progress": "{{done}} / {{total}}",
+      "summary_other": "已导入 {{count}} 个模组",
+      "summaryFailed_other": "有 {{count}} 个模组无法导入",
+      "upToDate": "所有内容均已安装",
+      "close": "完成"
+    }
+  },
+  "dependencies": {
+    "installMissing": "安装缺失项",
+    "missing_other": "{{destination}} 中缺少 {{count}} 个依赖项",
+    "more": "+{{count}} 个",
+    "requiredBy": "被 {{names}} 依赖"
+  },
+  "errors": {
+    "add": "将 {{name}} 添加到 {{destination}} 时出错：{{message}}",
+    "downgrading": "将 {{name}} 降级到 {{destination}} 时出错：{{message}}",
+    "install": "将 {{name}} 安装到 {{destination}} 时出错：{{message}}",
+    "remove": "从 {{destination}} 移除 {{name}} 时出错：{{message}}",
+    "update": "在 {{destination}} 中更新 {{name}} 时出错：{{message}}",
+    "updateIn": "更新 {{destination}} 中的模组时出错：{{message}}",
+    "upgrading": "将 {{name}} 升级到 {{destination}} 时出错：{{message}}"
+  },
+  "issues": {
+    "title": "{{destination}} 中的模组文件问题",
+    "description": "无法读取的文件不会被加载；重复的模组 ID 可能只会加载一个。",
+    "duplicateDetail": "重复：{{modid}}",
+    "remove": "删除文件",
+    "confirmRemove": "真的要删除吗？",
+    "removeFailed": "无法删除 {{file}}：{{message}}",
+    "hint": "删除文件后无法恢复。"
+  },
+  "deepLink": {
+    "failed": "无法通过链接打开 {{modid}}"
+  },
+  "toggle": {
+    "enabled": "已启用 {{name}}",
+    "disabled": "已禁用 {{name}}",
+    "enableAll": "启用全部模组",
+    "disableAll": "禁用全部模组",
+    "bulkEnabled": "已启用全部模组",
+    "bulkDisabled": "已禁用全部模组",
+    "failed": "无法更改模组状态"
+  },
+  "installFrom": {
+    "button": "安装模组",
+    "file": "从文件…",
+    "url": "从链接…",
+    "zipFilter": "模组压缩包 (.zip)",
+    "urlTitle": "从链接安装",
+    "urlDescription": "粘贴模组 .zip 的直接链接 — ModDB 下载链接或任意 https 主机均可。",
+    "urlPlaceholder": "https://…",
+    "submit": "安装",
+    "installed": "已安装 {{name}} {{version}}",
+    "failed": "无法安装该模组",
+    "invalidZip": "该文件不是 Vintage Story 模组（缺少 modinfo.json 的 .zip）",
+    "badUrl": "请输入指向模组 .zip 的 https:// 链接"
+  },
+  "updates": {
+    "skipTooltip": "跳过 {{version}}",
+    "skippedTooltip": "已跳过更新 {{version}} — 恢复",
+    "skippedToast": "已跳过 {{name}} v{{version}}",
+    "restoredToast": "已恢复 {{name}} 的更新"
+  },
+  "bulk": {
+    "title": "更新（{{count}}）",
+    "description": "更新前请查看更新日志。",
+    "noChangelog": "未提供更新日志。",
+    "copy": "复制更新日志",
+    "copied": "已复制更新日志",
+    "copyFailed": "无法复制更新日志",
+    "updateAll": "全部更新（{{count}}）"
+  },
+  "presets": {
+    "button": "预设",
+    "title": "模组预设",
+    "description": "将当前的启用/禁用状态保存为命名预设，之后可再次应用。",
+    "save": "保存当前状态",
+    "namePlaceholder": "预设名称",
+    "saveAction": "保存",
+    "currentState": "当前已禁用 {{count}} 个模组",
+    "saved": "已保存预设 {{name}}",
+    "empty": "此目标还没有预设。",
+    "disabledCount": "会禁用 {{count}} 个模组",
+    "apply": "应用",
+    "applied": "已应用 {{name}}",
+    "delete": "删除预设 {{name}}",
+    "deleteTitle": "删除预设",
+    "deleteConfirm": "确定删除？",
+    "deleted": "已删除 {{name}}"
+  },
+  "conflicts": {
+    "button": "冲突",
+    "title": "模组冲突",
+    "description": "已安装模组之间的重叠内容：同一个文件被多个模组提供，或多个补丁修改同一 JSON。仅供提示，不会更改任何内容。",
+    "scanning": "正在扫描已安装模组…",
+    "rescan": "重新扫描",
+    "empty": "未发现已安装模组之间的重叠内容。",
+    "assetKind": "同一文件",
+    "patchKind": "同一补丁目标",
+    "patchDetail": "重叠于 {{path}}",
+    "truncated": "仅显示前 {{count}} 个冲突。",
+    "failed": "冲突扫描失败"
+  },
+  "view": {
+    "browse": "浏览",
+    "installed": "已安装（{{count}}）",
+    "aria": "模组视图"
+  },
+  "installed": {
+    "count": "已安装 {{count}} 个模组",
+    "noTarget": "打开一个档案以查看其已安装的模组。",
+    "empty": "这里还没有安装任何模组。",
+    "ungrouped": "未分组",
+    "enabledCount": "已启用 {{enabled}} / {{total}}",
+    "selected": "已选择 {{count}} 个",
+    "select": "选择 {{name}}",
+    "selectAll": "选择此组全部",
+    "enable": "启用",
+    "disable": "禁用",
+    "remove": "移除",
+    "removeConfirm": "移除 {{count}} 个模组？",
+    "removePartial": "有 {{failed}} 个模组无法移除",
+    "removeFailed": "无法移除模组",
+    "removed": "已移除 {{count}} 个模组",
+    "stateChanged": "已更新 {{count}} 个模组",
+    "clearSelection": "清除选择",
+    "moveToGroup": "移动到分组",
+    "moved": "已移动 {{count}} 个模组",
+    "removeMod": "移除 {{name}}",
+    "emptyGroup": "此分组中没有模组。"
+  },
+  "groups": {
+    "new": "新建分组",
+    "namePlaceholder": "分组名称",
+    "create": "创建",
+    "created": "已创建分组 {{name}}",
+    "rename": "重命名",
+    "delete": "删除分组",
+    "deleteConfirm": "删除此分组？模组仍保持安装。",
+    "deleted": "已删除分组 {{name}}",
+    "enableAll": "全部启用",
+    "disableAll": "全部禁用",
+    "menu": "分组操作",
+    "save": "保存",
+    "expand": "展开分组",
+    "collapse": "折叠分组"
+  },
+  "actions": {
+    "more": "更多操作",
+    "conflicts": "检查冲突"
+  }
+}

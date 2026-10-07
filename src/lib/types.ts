@@ -206,7 +206,7 @@ export type GameData = {
 export type World = {
   data: GameData;
   path: string;
-  installation_name: string;
+  profile_name: string;
   has_map: boolean;
   map_markers: MapMarkers | null;
   prospecting_logs: [string, ProspectingLog][];
@@ -250,4 +250,165 @@ export type ProspectReading = {
 export type ProspectingMarker = {
   position: Position | null;
   results: ProspectResult[];
+};
+
+// ── Mods & profiles ──
+
+/** A mod installed in a profile folder (zip on disk). */
+export type OutputMod = {
+  modid: string;
+  name: string;
+  authors: string[];
+  version: string;
+  path: string;
+  /** `modinfo.json` dependencies (modid -> version requirement). */
+  dependencies?: Record<string, string>;
+  /** True when the profile lists this mod as disabled in `disabledMods`. */
+  disabled?: boolean;
+};
+
+/** One `.zip` in a profile's Mods folder that could not be scanned. */
+export type ModScanError = {
+  file: string;
+  stage: string;
+  message: string;
+};
+
+/** A mod as returned by the mod database search endpoint. */
+export type Mod = {
+  modid: number;
+  assetid: number;
+  downloads: number;
+  follows: number;
+  trendingpoints: number;
+  comments: number;
+  name: string;
+  summary: string;
+  modidstrs: string[];
+  author: string;
+  urlalias: string | null;
+  side: string;
+  type: string;
+  logo: string | null;
+  tags: string[];
+  lastreleased: string;
+};
+
+export type ModFilterState = {
+  searchText: string;
+  selectedModTags: { tagid: number; name: string; color: string }[];
+  selectedGameVersions: string[];
+  sortBy: "created" | "name" | "trending" | "downloads" | "follows" | "comments" | "updated";
+  orderDirection: "ascending" | "descending";
+  author: string;
+  side: "any" | "client" | "server" | "both" | "installed";
+  category: "mod" | "externaltool" | "other";
+};
+
+/** Local profile export payload (file or share code). */
+export type ProfileExportPayload = {
+  format: string;
+  name: string;
+  version: string;
+  startParams: string;
+  mods: string;
+  modpackSlug?: string | null;
+  modpackVersion?: string | null;
+  envVars?: Record<string, string>;
+};
+
+export type DeletedProfile = {
+  archive_name: string;
+  name: string;
+  version: string;
+  mod_count: number;
+  deleted_at: number;
+};
+
+export type ModsResult = {
+  mods: OutputMod[];
+  errors: { file: string; stage: string; message: string }[];
+};
+
+export interface LogChunk {
+  text: string;
+  path: string | null;
+  offset: number;
+  reset: boolean;
+  truncated: boolean;
+}
+
+// ── Legacy installations migration (previous Story Forge release) ──
+
+export type LegacyInstallation = {
+  name: string;
+  version: string;
+  folder: string;
+  path: string;
+  size_bytes: number;
+  size_display: string;
+  mod_count: number;
+  already_migrated: boolean;
+};
+
+export type LegacyMigrationSkip = {
+  name: string;
+  reason: string;
+};
+
+export type LegacyMigrationReport = {
+  migrated: number;
+  skipped: LegacyMigrationSkip[];
+};
+
+// ── Existing Vintage Story data (adoption) ──
+
+export type DetectedGameData = {
+  path: string;
+  mod_count: number;
+  size_bytes: number;
+  size_display: string;
+  has_saves: boolean;
+  registered: boolean;
+};
+
+// ── Linked (external) game versions ──
+
+export type LinkableVersion = {
+  name: string;
+  path: string;
+  source: string;
+  /** A version with this name already exists in the versions folder. */
+  installed: boolean;
+  /** Already linked to this exact path. */
+  linked: boolean;
+};
+
+export type LinkSkip = {
+  name: string;
+  reason: string;
+};
+
+export type LinkVersionsReport = {
+  linked: number;
+  skipped: LinkSkip[];
+};
+
+// ── Third-party launcher imports (VS Launcher, MVL) ──
+
+export type ForeignInstallation = {
+  id: string;
+  name: string;
+  version: string;
+  path: string;
+  /** Which tool listed it ("VS Launcher", "RiftLauncher", "MVL", …). */
+  source: string;
+  mod_count: number;
+  size_bytes: number;
+  size_display: string;
+  has_saves: boolean;
+  last_time_played: number | null;
+  /** Points at the game's own default data folder. */
+  is_default_game_data: boolean;
+  already_imported: boolean;
 };

@@ -18,7 +18,8 @@ export const useServerStatus = (server: Server) => {
         host: server.ip,
         password: server.password || undefined,
         port: server.port ?? undefined,
-        timeout_secs: 3,
+        // Tauri camelCases direct command arguments (`timeout_secs` in Rust).
+        timeoutSecs: 3,
       }),
     queryKey: serverStatusQueryKey(server),
     retry: false,

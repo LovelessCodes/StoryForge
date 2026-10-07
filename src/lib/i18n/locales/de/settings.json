@@ -1,0 +1,105 @@
+{
+  "appearance": {
+    "title": "Darstellung",
+    "darkMode": "Dunkelmodus",
+    "darkModeDescription": "Verwende das dunkle Design in der gesamten App.",
+    "language": "Sprache",
+    "languageDescription": "Sprache für Menüs und Oberfläche.",
+    "systemLanguage": "System"
+  },
+  "folders": {
+    "title": "Datenordner",
+    "description": "Wo Story Forge Profile und Spielversionen speichert. Standard ist das App-Datenverzeichnis.",
+    "useAppDirectory": "App-Datenverzeichnis verwenden",
+    "useAppDirectoryDescription": "Profile und Versionen im eigenen Ordner von Story Forge speichern.",
+    "profilesLabel": "Übergeordnetes Profilverzeichnis",
+    "versionsLabel": "Übergeordnetes Versionsverzeichnis",
+    "hintAppDirectory": "Das App-Datenverzeichnis wird verwendet. Darin wird ein Ordner \"{{subdir}}\" erstellt.",
+    "hintDefault": "Standard ist das App-Datenverzeichnis.",
+    "hintInside": "In diesem Verzeichnis wird ein Ordner \"{{subdir}}\" erstellt.",
+    "browseProfilesTitle": "Übergeordnetes Profilverzeichnis auswählen",
+    "browseVersionsTitle": "Übergeordnetes Versionsverzeichnis auswählen",
+    "dialog": {
+      "title": "Wie sollen vorhandene Daten behandelt werden?",
+      "description": "Die Daten liegen derzeit in dem Ordner, den du verlässt. Nach dem Löschen kann das nicht rückgängig gemacht werden.",
+      "keep": "Aktuelle Daten behalten (nicht verschieben oder löschen)",
+      "copy": "Aktuelle Daten an den neuen Ort kopieren",
+      "delete": "Aktuelle Daten vom alten Ort löschen"
+    },
+    "toast": {
+      "profilesMoving": "Profilordner wird verschoben...",
+      "profilesDeleting": "Profildaten werden gelöscht...",
+      "profilesSetting": "Profilordner wird festgelegt...",
+      "profilesMoveFailed": "Profilordner konnte nicht verschoben werden: {{message}}",
+      "profilesDeleteFailed": "Profildaten konnten nicht gelöscht werden: {{message}}",
+      "profilesSetFailed": "Profilordner konnte nicht festgelegt werden: {{message}}",
+      "versionsMoving": "Versionsordner wird verschoben...",
+      "versionsDeleting": "Versionsdaten werden gelöscht...",
+      "versionsSetting": "Versionsordner wird festgelegt...",
+      "versionsMoveFailed": "Versionsordner konnte nicht verschoben werden: {{message}}",
+      "versionsDeleteFailed": "Versionsdaten konnten nicht gelöscht werden: {{message}}",
+      "versionsSetFailed": "Versionsordner konnte nicht festgelegt werden: {{message}}"
+    }
+  },
+  "behaviour": {
+    "title": "Verhalten",
+    "streamMode": "Stream-Modus",
+    "streamModeDescription": "Serveradressen in Serverlisten ausblenden, zum Beispiel beim Streamen.",
+    "systemDotnet": "System-.NET verwenden",
+    "systemDotnetDescription": "Versuche zuerst die .NET-Runtime deines Systems, bevor eine heruntergeladen wird.",
+    "defaultModSort": "Standard-Mod-Sortierung",
+    "defaultModSortDescription": "Sortierreihenfolge beim Öffnen des Mod-Browsers.",
+    "sort": {
+      "comments": "Kommentare",
+      "created": "Erstellt",
+      "downloads": "Downloads",
+      "follows": "Follower",
+      "name": "Name",
+      "relevance": "Relevanz",
+      "trending": "Im Trend",
+      "updated": "Zuletzt aktualisiert"
+    }
+  },
+  "gameDefaults": {
+    "title": "Spiel-Standardwerte",
+    "description": "Ein Satz Tastenbelegungen sowie Spiel- und Videoeinstellungen für alle Profile.",
+    "applyLabel": "Beim Start anwenden",
+    "applyDescription": "Wendet die Einstellungen des Quellprofils direkt vor dem Spielstart auf jedes andere Profil an. Profile können dies in ihren eigenen Einstellungen deaktivieren.",
+    "none": "Noch kein Quellprofil ausgewählt.",
+    "capturedFrom": "Einstellungen von {{name}}",
+    "sourceMissing": "Dieses Profil existiert nicht mehr. Wähle ein anderes.",
+    "includesSession": "enthält Konto-Sitzung",
+    "counts": "{{keys}} Tastenbelegungen · {{settings}} Einstellungen",
+    "capture": "Profil wählen…",
+    "recapture": "Ändern…",
+    "clear": "Löschen",
+    "sheetTitle": "Einstellungen eines Profils verwenden",
+    "sheetDescription": "Wendet die aktuellen Tastenbelegungen sowie Spiel- und Videoeinstellungen des gewählten Profils bei jedem Start eines anderen Profils an — Änderungen im Quellprofil werden automatisch übernommen. Mod-Pfade, deaktivierte Mods, Serverlisten und Entitlements werden nie kopiert.",
+    "profileLabel": "Profil",
+    "includeSession": "Konto-Sitzung einschließen",
+    "includeSessionHint": "Kopiert zusätzlich Name, Benutzer-ID, E-Mail und Sitzungstoken des angemeldeten Spielers, damit das Profil angemeldet bleibt. Ein für den Start ausgewähltes Launcher-Konto hat weiterhin Vorrang.",
+    "captured": "Quellprofil festgelegt",
+    "cleared": "Spiel-Standardwerte gelöscht"
+  },
+  "updates": {
+    "title": "Updates",
+    "label": "Updates",
+    "appVersion": "App-Version",
+    "appVersionDescription": "Derzeit installierte Version.",
+    "description": "Prüft unauffällig; Updates werden in der Titelleiste angekündigt.",
+    "check": "Nach Updates suchen",
+    "checking": "Wird geprüft...",
+    "checkingToast": "Suche nach Updates...",
+    "checkComplete": "Update-Prüfung abgeschlossen",
+    "checkFailed": "Update-Prüfung fehlgeschlagen: {{message}}"
+  },
+  "logs": {
+    "title": "Anwendungslog",
+    "description": "Live-Ausgabe der App, alle 5 Sekunden aktualisiert.",
+    "copy": "Logs kopieren",
+    "refresh": "Logs aktualisieren",
+    "copied": "Logs in die Zwischenablage kopiert",
+    "copyFailed": "Logs konnten nicht kopiert werden",
+    "empty": "Noch keine Logs..."
+  }
+}

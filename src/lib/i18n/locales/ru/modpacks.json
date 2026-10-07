@@ -1,0 +1,137 @@
+{
+  "yours": "Ваш",
+  "noDescription": "Без описания",
+  "downloads_one": "{{count}} скачивание",
+  "downloads_few": "{{count}} скачивания",
+  "downloads_many": "{{count}} скачиваний",
+  "downloads_other": "{{count}} скачивания",
+  "page": {
+    "guest": "Просмотр как гость — установить может любой. <signIn>Войдите</signIn>, чтобы публиковать свои модпаки.",
+    "newModpack": "Новый модпак",
+    "searchAria": "Поиск модпаков",
+    "searchPlaceholder": "Поиск модпаков…",
+    "sortByAria": "Сортировка",
+    "toggleSortAria": "Переключить направление сортировки",
+    "sortAsc": "Направление сортировки: по возрастанию",
+    "sortDesc": "Направление сортировки: по убыванию",
+    "filterOwnerAria": "Фильтр по владельцу",
+    "filterOwnerPlaceholder": "Фильтр по владельцу…",
+    "empty": "Модпаков пока нет.",
+    "emptyFiltered": "Нет модпаков, подходящих под фильтры.",
+    "found_one": "Найден {{count}} модпак",
+    "found_few": "Найдено {{count}} модпака",
+    "found_many": "Найдено {{count}} модпаков",
+    "found_other": "Найдено {{count}} модпака"
+  },
+  "sort": {
+    "created": "Дата создания",
+    "downloads": "Скачивания",
+    "name": "Имя",
+    "lastUpdated": "Последнее обновление"
+  },
+  "card": {
+    "manage": "Управление {{name}}",
+    "draft": "Черновик",
+    "byline": "от {{name}}"
+  },
+  "detail": {
+    "byline_one": "от {{name}} · {{count}} скачивание",
+    "byline_few": "от {{name}} · {{count}} скачивания",
+    "byline_many": "от {{name}} · {{count}} скачиваний",
+    "byline_other": "от {{name}} · {{count}} скачивания",
+    "bylineOwner_one": "от {{name}} · {{count}} скачивание · Ваш",
+    "bylineOwner_few": "от {{name}} · {{count}} скачивания · Ваш",
+    "bylineOwner_many": "от {{name}} · {{count}} скачиваний · Ваш",
+    "bylineOwner_other": "от {{name}} · {{count}} скачивания · Ваш",
+    "versionsCount_one": "Версии ({{count}})",
+    "versionsCount_few": "Версии ({{count}})",
+    "versionsCount_many": "Версии ({{count}})",
+    "versionsCount_other": "Версии ({{count}})",
+    "addVersion": "Добавить версию",
+    "empty": "Опубликованных версий пока нет.",
+    "emptyOwner": "Опубликованных версий пока нет. Добавьте версию, чтобы модпак можно было установить.",
+    "forVs": "для VS {{version}}",
+    "editVersion": "Изменить версию {{version}}",
+    "deleteVersion": "Удалить версию {{version}}",
+    "needVs": "Нужна VS {{version}}"
+  },
+  "modsList": {
+    "count_one": "{{count}} мод",
+    "count_few": "{{count}} мода",
+    "count_many": "{{count}} модов",
+    "count_other": "{{count}} мода"
+  },
+  "install": {
+    "failed": "Не удалось импортировать модпак",
+    "profileName": "Название профиля",
+    "profilePlaceholder": "Мой профиль",
+    "confirmAria": "Установить эту версию",
+    "cancelAria": "Отменить установку",
+    "progress": "Скачивание мода {{current}} из {{total}}:"
+  },
+  "form": {
+    "createTitle": "Создать модпак",
+    "editTitle": "Изменить модпак",
+    "createDescription": "Опубликуйте новую коллекцию модов для других игроков.",
+    "editDescription": "Обновите данные модпака ниже.",
+    "namePlaceholder": "Мой классный модпак",
+    "slug": "Слаг",
+    "suggestion": "Предложение:",
+    "alternatives": "Альтернативы:",
+    "descriptionPlaceholder": "Коллекция модов для…",
+    "imageUrl": "URL изображения",
+    "imageHint": "Загрузите изображение на <site>mods.vintagestory.at</site> и вставьте ссылку сюда. Внешние URL не принимаются.",
+    "saving": "Сохранение…",
+    "saveChanges": "Сохранить изменения",
+    "createSubmit": "Создать модпак",
+    "imageHostError": "URL изображений должны быть с moddbcdn.vintagestory.at",
+    "imageHostHint": "Сначала загрузите изображение на https://mods.vintagestory.at/edit/mod.",
+    "slugUnavailable": "Этот слаг недоступен",
+    "slugUnavailableHint": "Выберите предложение или один из вариантов под полем «Слаг».",
+    "updateFailed": "Не удалось обновить модпак",
+    "createFailed": "Не удалось создать модпак",
+    "errors": {
+      "nameRequired": "Укажите имя",
+      "slugRequired": "Укажите слаг",
+      "slugFormat": "Слаг может содержать только строчные латинские буквы, цифры и дефисы"
+    }
+  },
+  "versionForm": {
+    "newTitle": "Новая версия",
+    "editTitle": "Изменить v{{version}}",
+    "pickFromProfile": "Выбрать из профиля",
+    "selectProfile": "Выберите профиль…",
+    "gameVersion": "Версия игры",
+    "modsString": "Строка модов",
+    "changelog": "Изменения",
+    "changelogPlaceholder": "Что изменилось в этой версии…",
+    "modConfigsUrl": "URL конфигов модов",
+    "uploadModConfig": "Загрузить папку ModConfig из профиля",
+    "saving": "Сохранение…",
+    "readModsFailed": "Не удалось прочитать установленные моды",
+    "uploadConfigFailed": "Не удалось загрузить ModConfig",
+    "saveFailed": "Не удалось сохранить версию",
+    "errors": {
+      "versionRequired": "Укажите версию",
+      "invalidSemver": "Недопустимая семантическая версия"
+    }
+  },
+  "delete": {
+    "title": "Удалить модпак",
+    "description": "Это навсегда удалит <strong>{{name}}</strong> и все его версии. Это действие нельзя отменить.",
+    "confirmLabel": "Введите <wrap><code>{{slug}}</code><copy/></wrap> для подтверждения",
+    "copyAria": "Скопировать слаг",
+    "pending": "Удаление…",
+    "submit": "Удалить модпак",
+    "failed": "Не удалось удалить модпак"
+  },
+  "deleteVersion": {
+    "confirm": "Навсегда удалить <strong>v{{version}}</strong>? Это нельзя отменить.",
+    "confirmPlaceholder": "Введите {{version}} для подтверждения",
+    "pending": "Удаление…",
+    "failed": "Не удалось удалить версию"
+  },
+  "deepLink": {
+    "notFound": "Не удалось открыть модпак {{slug}} по ссылке"
+  }
+}

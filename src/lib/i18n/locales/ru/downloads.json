@@ -1,0 +1,21 @@
+{
+  "title": "Загрузки",
+  "description": "Версии игры и моды, скачиваемые в фоне.",
+  "empty": "Сейчас нет загрузок.",
+  "status": {
+    "done": "Готово",
+    "downloading": "Скачивание",
+    "error": "Ошибка",
+    "extracting": "Распаковка",
+    "paused": "Приостановлено",
+    "pending": "В очереди"
+  },
+  "versionRemoved": "Версия удалена",
+  "modRemoved": "Мод удалён",
+  "toasts": {
+    "removeVersionFailed": "Не удалось удалить версию игры {{version}}",
+    "downloadNoFile": "Эта загрузка больше не указывает на файл",
+    "removeFailed": "Не удалось удалить {{label}}"
+  },
+  "standalone": "Без профиля"
+}

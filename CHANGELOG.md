@@ -12,6 +12,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Linux & NVidia Rendering Fixes**: Added logic to disable the DMA Buffer by default, which has been known to cause issues with the front-end on Linux systems with NVIDIA cards running under the Wayland compositor. This sets the `WEBKIT_DISABLE_DMABUF_RENDERER` environment variable to `1`, by default. It can be overridden by running the application with the environment variable defined as follows: `WEBKIT_DISABLE_DMABUF_RENDERER=0`.
 
+### Added
+
+- **Optimum client installs**: install the [Optimum](https://github.com/StratumServer/Optimum) performance fork for an installed version in one click. The official overlay is downloaded from Optimum's releases, every file is verified against its SHA-256 manifest, and the patch runs on a copy of the version (`1.22.7+optimum`), leaving the original vanilla. Updates are offered when a newer overlay still supports the game version.
+- **Deep links**: `storyforge://install?mod=<id>` opens a mod in the app and `storyforge://install?pack=<slug>` opens a cloud modpack's detail sheet, so links shared outside the app land on the right install flow.
+- **Pack locks**: a profile can pin its mods to exact versions and SHA-256 hashes (`storyforge.lock.json`), show drift at a glance, and run an explicit Sync / repair. Exports, share codes and structured cloud modpacks carry the lock; imports enforce it immediately.
+- **Mod lifecycle**: enable/disable mods without removing them, named presets, groups/folders in the new Installed view, multi-select batch actions, install from a local `.zip` or a direct URL, update checks scoped to the profile's game version with per-release skipping, a bulk update changelog sheet, and conflict detection for overlapping assets and patch targets.
+- **Launcher migration**: one-click imports from VS Launcher, RiftLauncher, Rustory, GruntLauncher, Lithic, Yelloowstone, Waxlight, MVL and Cairn, plus saved-account imports from MVL and legacy VS Launcher/RiftLauncher configs.
+- **Localization**: English, German, French, Spanish, Brazilian Portuguese, Russian and Simplified Chinese.
+
+### Changed
+
+- **Interface rebuilt** in the Macheim design system; the domain concept "installation" is renamed to "profile" throughout.
+- **Mods page** split into a Browse view (ModDB) and an Installed view (local mods, groups, batch actions).
+
+### Fixed
+
+- **Store-file migrations**: installations and accounts written by older releases in the persisted stores are migrated to their file-based forms at startup, so the legacy import and account loading pick them up.
+
 ## [0.9.3] - 2026-06-02
 
 ### Added

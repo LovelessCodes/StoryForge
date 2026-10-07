@@ -1,0 +1,105 @@
+{
+  "appearance": {
+    "title": "Aparência",
+    "darkMode": "Modo escuro",
+    "darkModeDescription": "Usar o tema escuro em todo o aplicativo.",
+    "language": "Idioma",
+    "languageDescription": "Idioma dos menus e da interface.",
+    "systemLanguage": "Sistema"
+  },
+  "folders": {
+    "title": "Pastas de dados",
+    "description": "Onde o Story Forge guarda perfis e versões do jogo. Usa o diretório de dados do aplicativo por padrão.",
+    "useAppDirectory": "Usar o diretório de dados do aplicativo",
+    "useAppDirectoryDescription": "Armazenar perfis e versões dentro da pasta do próprio Story Forge.",
+    "profilesLabel": "Diretório pai dos perfis",
+    "versionsLabel": "Diretório pai das versões",
+    "hintAppDirectory": "Usando o diretório de dados do aplicativo. Uma pasta \"{{subdir}}\" é criada dentro dele.",
+    "hintDefault": "Usa o diretório de dados do aplicativo por padrão.",
+    "hintInside": "Uma pasta \"{{subdir}}\" é criada dentro deste diretório.",
+    "browseProfilesTitle": "Selecionar o diretório pai dos perfis",
+    "browseVersionsTitle": "Selecionar o diretório pai das versões",
+    "dialog": {
+      "title": "Como você deseja lidar com os dados existentes?",
+      "description": "Os dados estão atualmente na pasta que você está deixando. Isso não pode ser desfeito depois de excluídos.",
+      "keep": "Manter os dados atuais (não mover nem excluir)",
+      "copy": "Copiar os dados atuais para o novo local",
+      "delete": "Excluir os dados atuais do local antigo"
+    },
+    "toast": {
+      "profilesMoving": "Movendo a pasta de perfis...",
+      "profilesDeleting": "Excluindo os dados de perfis...",
+      "profilesSetting": "Definindo a pasta de perfis...",
+      "profilesMoveFailed": "Falha ao mover a pasta de perfis: {{message}}",
+      "profilesDeleteFailed": "Falha ao excluir os dados de perfis: {{message}}",
+      "profilesSetFailed": "Falha ao definir a pasta de perfis: {{message}}",
+      "versionsMoving": "Movendo a pasta de versões...",
+      "versionsDeleting": "Excluindo os dados de versões...",
+      "versionsSetting": "Definindo a pasta de versões...",
+      "versionsMoveFailed": "Falha ao mover a pasta de versões: {{message}}",
+      "versionsDeleteFailed": "Falha ao excluir os dados de versões: {{message}}",
+      "versionsSetFailed": "Falha ao definir a pasta de versões: {{message}}"
+    }
+  },
+  "behaviour": {
+    "title": "Comportamento",
+    "streamMode": "Modo transmissão",
+    "streamModeDescription": "Ocultar endereços de servidores nas listas, por exemplo durante transmissões.",
+    "systemDotnet": "Usar o .NET do sistema",
+    "systemDotnetDescription": "Tentar o runtime .NET do seu sistema antes de baixar um.",
+    "defaultModSort": "Ordenação padrão de mods",
+    "defaultModSortDescription": "Ordem de classificação usada ao abrir o navegador de mods.",
+    "sort": {
+      "comments": "Comentários",
+      "created": "Criado",
+      "downloads": "Downloads",
+      "follows": "Seguidores",
+      "name": "Nome",
+      "relevance": "Relevância",
+      "trending": "Em alta",
+      "updated": "Última atualização"
+    }
+  },
+  "gameDefaults": {
+    "title": "Padrões do jogo",
+    "description": "Um único conjunto de teclas e configurações de jogo e vídeo compartilhado por todos os perfis.",
+    "applyLabel": "Aplicar ao iniciar",
+    "applyDescription": "Aplica as configurações do perfil de origem a todos os outros perfis pouco antes de iniciar o jogo. Os perfis podem recusar nas próprias configurações.",
+    "none": "Nenhum perfil de origem selecionado ainda.",
+    "capturedFrom": "Configurações de {{name}}",
+    "sourceMissing": "Esse perfil não existe mais. Escolha outro.",
+    "includesSession": "inclui a sessão da conta",
+    "counts": "{{keys}} teclas · {{settings}} configurações",
+    "capture": "Escolher perfil…",
+    "recapture": "Alterar…",
+    "clear": "Limpar",
+    "sheetTitle": "Usar as configurações de um perfil",
+    "sheetDescription": "Aplica as teclas e as configurações de jogo e vídeo atuais do perfil escolhido sempre que outro perfil iniciar — mudanças no perfil de origem entram automaticamente. Caminhos de mods, mods desativados, listas de servidores e entitlements nunca são copiados.",
+    "profileLabel": "Perfil",
+    "includeSession": "Incluir a sessão da conta",
+    "includeSessionHint": "Também copia nome, id de usuário, e-mail e tokens de sessão do jogador conectado para o perfil continuar logado. Uma conta selecionada no launcher ainda tem prioridade.",
+    "captured": "Perfil de origem definido",
+    "cleared": "Padrões do jogo limpos"
+  },
+  "updates": {
+    "title": "Atualizações",
+    "label": "Atualizações",
+    "appVersion": "Versão do aplicativo",
+    "appVersionDescription": "Versão instalada atualmente.",
+    "description": "Verifica silenciosamente; atualizações são anunciadas na barra de título.",
+    "check": "Verificar atualizações",
+    "checking": "Verificando...",
+    "checkingToast": "Verificando atualizações...",
+    "checkComplete": "Verificação de atualizações concluída",
+    "checkFailed": "Falha na verificação de atualizações: {{message}}"
+  },
+  "logs": {
+    "title": "Log do aplicativo",
+    "description": "Saída do aplicativo ao vivo, atualizada a cada 5 segundos.",
+    "copy": "Copiar logs",
+    "refresh": "Atualizar logs",
+    "copied": "Logs copiados para a área de transferência",
+    "copyFailed": "Falha ao copiar os logs",
+    "empty": "Nenhum log ainda..."
+  }
+}

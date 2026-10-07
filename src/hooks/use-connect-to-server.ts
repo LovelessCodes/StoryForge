@@ -2,13 +2,14 @@ import { type UseMutationOptions, useMutation } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useEffect, useRef } from "react";
-import { toast } from "sonner";
 
-import { findInstallationForServer, useInstallations } from "@/stores/installations";
+import { t } from "@/lib/i18n";
+import { toast } from "@/lib/notify";
+import { findProfileForServer, useProfiles } from "@/stores/profiles";
 import { useSettingsStore } from "@/stores/settings";
 
-import { useAddServerToInstallation } from "./use-add-server-to-installation";
-import { useCheckServerInInstallation } from "./use-check-server-in-installation";
+import { useAddServerToProfile } from "./use-add-server-to-profile";
+import { useCheckServerInProfile } from "./use-check-server-in-profile";
 
 export const useConnectToServer = (
   props?: UseMutationOptions<
@@ -18,22 +19,22 @@ export const useConnectToServer = (
       name: string;
       ip: string;
       password: string;
-      installationId: number;
+      profileId: number;
       pub?: boolean;
     }
   >,
 ) => {
-  const { installations, updateLastPlayed } = useInstallations();
-  const { mutateAsync: addServer } = useAddServerToInstallation({
+  const { profiles, updateLastPlayed } = useProfiles();
+  const { mutateAsync: addServer } = useAddServerToProfile({
     onError: (error) => {
       throw error;
     },
   });
-  const { mutateAsync } = useCheckServerInInstallation({
+  const { mutateAsync } = useCheckServerInProfile({
     onSuccess: async (data, variables) => {
       if (data === false) {
         await addServer({
-          installationId: variables.installationId,
+          profileId: variables.profileId,
           server: variables.server,
         });
       }
@@ -54,19 +55,19 @@ export const useConnectToServer = (
   // react-doctor-disable-next-line query-mutation-missing-invalidation
   return useMutation({
     ...props,
-    mutationFn: async ({ name, ip, password, installationId, pub }) => {
-      const resolvedInstallation = findInstallationForServer(installations, installationId);
-      const resolvedId = resolvedInstallation?.id ?? installationId;
+    mutationFn: async ({ name, ip, password, profileId, pub }) => {
+      const resolvedProfile = findProfileForServer(profiles, profileId);
+      const resolvedId = resolvedProfile?.id ?? profileId;
       if (!pub) {
         await mutateAsync({
-          installationId: resolvedId,
+          profileId: resolvedId,
           server: `${name},${ip},${password ? password : ""}`,
         });
       }
       const { useSystemDotnet } = useSettingsStore.getState();
       await invoke("play_game", {
         options: {
-          installation_id: resolvedId,
+          profile_id: resolvedId,
           password,
           server: ip,
           use_system_dotnet: useSystemDotnet,
@@ -77,7 +78,7 @@ export const useConnectToServer = (
       // play_game failed: no launch event will arrive, so drop the listeners.
       for (const unlisten of unlistens.current) unlisten();
       unlistens.current = [];
-      toast.error(`Error connecting to server: ${error.message}`);
+      toast.error(t("layout.launch.errorConnecting", { message: error.message }));
     },
     onMutate: async (variable) => {
       for (const unlisten of unlistens.current) {
@@ -85,50 +86,79 @@ export const useConnectToServer = (
       }
       unlistens.current = [];
 
-      const installation = findInstallationForServer(installations, variable.installationId);
+      const profile = findProfileForServer(profiles, variable.profileId);
 
       // Listen for dotnet download progress
       const unlistenDotnet = await listen<{ phase: string; percent: number }>(
-        `dotnet-download-${variable.installationId}`,
+        `dotnet-download-${variable.profileId}`,
         (event) => {
           const { phase, percent } = event.payload;
           if (phase === "downloading") {
-            toast.loading(`Downloading .NET runtime... ${percent.toFixed(0)}%`, {
-              id: `dotnet-download-${variable.installationId}`,
+            toast.loading(t("layout.launch.downloadingDotnet", { percent: percent.toFixed(0) }), {
+              id: `dotnet-download-${variable.profileId}`,
             });
           } else if (phase === "extracting") {
-            toast.loading("Extracting .NET runtime...", {
-              id: `dotnet-download-${variable.installationId}`,
+            toast.loading(t("layout.launch.extractingDotnet"), {
+              id: `dotnet-download-${variable.profileId}`,
             });
           } else if (phase === "done") {
-            toast.dismiss(`dotnet-download-${variable.installationId}`);
+            toast.dismiss(`dotnet-download-${variable.profileId}`);
           }
         },
       );
       unlistens.current.push(unlistenDotnet);
+
+      // Backups run before the launch: surface their progress in the same toast.
+      const unlistenBackup = await listen<{
+        phase: string;
+        current?: number;
+        total?: number;
+        message?: string;
+      }>(`backup-${variable.profileId}`, (event) => {
+        const { phase, current, total } = event.payload;
+        if (phase === "backing-up") {
+          const percent = total && total > 0 ? Math.round(((current ?? 0) / total) * 100) : 0;
+          toast.loading(t("layout.launch.backingUp", { name: profile?.name ?? "", percent }), {
+            id: `launch-game-${variable.profileId}`,
+          });
+        }
+        if (phase === "error") {
+          toast.error(t("layout.launch.backupFailed"), {
+            description: event.payload.message,
+            id: `backup-error-${variable.profileId}`,
+          });
+        }
+      });
+      unlistens.current.push(unlistenBackup);
 
       const unlistenLaunch = await listen<{
         status: string;
         reason?: string;
         version?: string;
         line?: string;
-      }>(`launch-${variable.installationId}`, (event) => {
+      }>(`launch-${variable.profileId}`, (event) => {
         const { status } = event.payload;
         if (status === "pending") {
-          toast.loading(`Launching ${installation?.name}...`, {
-            id: `launch-game-${variable.installationId}`,
+          toast.loading(t("layout.launch.launching", { name: profile?.name ?? "" }), {
+            id: `launch-game-${variable.profileId}`,
           });
         }
         if (status === "success") {
-          toast.success(`Launched ${installation?.name} and connecting to ${variable.name}!`, {
-            description: event.payload.version ? `Version: ${event.payload.version}` : undefined,
-            id: `launch-game-${variable.installationId}`,
-          });
-          updateLastPlayed(variable.installationId);
+          toast.success(
+            t("layout.launch.launchedAndConnecting", {
+              name: profile?.name ?? "",
+              server: variable.name,
+            }),
+            {
+              description: event.payload.version ? `Version: ${event.payload.version}` : undefined,
+              id: `launch-game-${variable.profileId}`,
+            },
+          );
+          updateLastPlayed(variable.profileId);
         }
         if (status === "error") {
-          toast.error(`Error launching game: ${event.payload.reason}`, {
-            id: `launch-game-${variable.installationId}`,
+          toast.error(t("layout.launch.errorLaunching", { reason: event.payload.reason }), {
+            id: `launch-game-${variable.profileId}`,
           });
         }
         if (status === "success" || status === "error") {

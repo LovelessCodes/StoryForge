@@ -1,4 +1,4 @@
-import { stripped } from "@/lib/utils";
+import { stripped } from "@/lib/helpers";
 
 /** Fields of a mod that relevance ranking reads. */
 export type RankableMod = {

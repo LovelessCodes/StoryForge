@@ -1,7 +1,7 @@
 //! Vintage Story file and directory path constants and helpers.
 //!
 //! This module centralizes names and path-building helpers for Vintage Story
-//! installations, saves, mods, maps, and server files. Keeping them in one place
+//! profiles, saves, mods, maps, and server files. Keeping them in one place
 //! removes magic strings from the rest of the codebase and makes cross-platform
 //! differences explicit.
 
@@ -25,8 +25,8 @@ pub fn vintagestory_exe() -> &'static str {
     }
 }
 
-/// File name for per-installation metadata persisted by StoryForge.
-pub const INSTALLATION_JSON: &str = "installation.json";
+/// File name for per-profile metadata persisted by StoryForge.
+pub const PROFILE_JSON: &str = "profile.json";
 
 /// Vintage Story client settings file.
 pub const CLIENTSETTINGS_JSON: &str = "clientsettings.json";
@@ -34,19 +34,19 @@ pub const CLIENTSETTINGS_JSON: &str = "clientsettings.json";
 /// Vintage Story server configuration file.
 pub const SERVERCONFIG_JSON: &str = "serverconfig.json";
 
-/// Directory inside an installation that holds mods.
+/// Directory inside an profile that holds mods.
 pub const MODS_DIR: &str = "Mods";
 
-/// Directory inside an installation that holds saves/worlds.
+/// Directory inside an profile that holds saves/worlds.
 pub const SAVES_DIR: &str = "Saves";
 
-/// Directory inside an installation that holds map databases.
+/// Directory inside an profile that holds map databases.
 pub const MAPS_DIR: &str = "Maps";
 
-/// Directory inside an installation that holds mod configs.
+/// Directory inside an profile that holds mod configs.
 pub const MODCONFIG_DIR: &str = "ModConfig";
 
-/// Directory inside an installation that holds game logs.
+/// Directory inside an profile that holds game logs.
 pub const LOGS_DIR: &str = "Logs";
 
 /// Whitelist file inside a hosted server data directory.
@@ -55,20 +55,20 @@ pub const PLAYERWHITELIST_JSON: &str = "playerwhitelist.json";
 /// Subdirectory inside the app data dir where versions are stored by default.
 pub const DEFAULT_VERSIONS_SUBDIR: &str = "versions";
 
-/// Subdirectory inside the app data dir where installations are stored by default.
-pub const DEFAULT_INSTALLATIONS_SUBDIR: &str = "installations";
+/// Subdirectory inside the app data dir where profiles are stored by default.
+pub const DEFAULT_PROFILES_SUBDIR: &str = "profiles";
 
 /// Default name of the zustand store file/directory.
 pub const STORE_DIR: &str = "store";
 
-/// Returns the path to an installation's `Mods` directory.
-pub fn mods_dir<P: AsRef<Path>>(installation: P) -> PathBuf {
-    installation.as_ref().join(MODS_DIR)
+/// Returns the path to an profile's `Mods` directory.
+pub fn mods_dir<P: AsRef<Path>>(profile: P) -> PathBuf {
+    profile.as_ref().join(MODS_DIR)
 }
 
-/// Returns the path to an installation's `Saves` directory.
-pub fn saves_dir<P: AsRef<Path>>(installation: P) -> PathBuf {
-    installation.as_ref().join(SAVES_DIR)
+/// Returns the path to an profile's `Saves` directory.
+pub fn saves_dir<P: AsRef<Path>>(profile: P) -> PathBuf {
+    profile.as_ref().join(SAVES_DIR)
 }
 
 /// Returns the path to a hosted server's `playerwhitelist.json`.
@@ -76,19 +76,19 @@ pub fn playerwhitelist_path<P: AsRef<Path>>(data_dir: P) -> PathBuf {
     data_dir.as_ref().join(PLAYERWHITELIST_JSON)
 }
 
-/// Returns the path to an installation's `Maps` directory.
-pub fn maps_dir<P: AsRef<Path>>(installation: P) -> PathBuf {
-    installation.as_ref().join(MAPS_DIR)
+/// Returns the path to an profile's `Maps` directory.
+pub fn maps_dir<P: AsRef<Path>>(profile: P) -> PathBuf {
+    profile.as_ref().join(MAPS_DIR)
 }
 
-/// Returns the path to an installation's `clientsettings.json`.
-pub fn clientsettings_path<P: AsRef<Path>>(installation: P) -> PathBuf {
-    installation.as_ref().join(CLIENTSETTINGS_JSON)
+/// Returns the path to an profile's `clientsettings.json`.
+pub fn clientsettings_path<P: AsRef<Path>>(profile: P) -> PathBuf {
+    profile.as_ref().join(CLIENTSETTINGS_JSON)
 }
 
-/// Returns the path to an installation's `installation.json`.
-pub fn installation_json_path<P: AsRef<Path>>(installation: P) -> PathBuf {
-    installation.as_ref().join(INSTALLATION_JSON)
+/// Returns the path to an profile's `profile.json`.
+pub fn profile_json_path<P: AsRef<Path>>(profile: P) -> PathBuf {
+    profile.as_ref().join(PROFILE_JSON)
 }
 
 /// Returns the path to a server's `serverconfig.json`.

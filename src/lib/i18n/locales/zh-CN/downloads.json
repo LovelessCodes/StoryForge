@@ -1,0 +1,21 @@
+{
+  "title": "下载",
+  "description": "正在后台下载的游戏版本和模组。",
+  "empty": "当前没有下载任务。",
+  "status": {
+    "done": "完成",
+    "downloading": "下载中",
+    "error": "失败",
+    "extracting": "解压中",
+    "paused": "已暂停",
+    "pending": "已排队"
+  },
+  "versionRemoved": "版本已移除",
+  "modRemoved": "模组已移除",
+  "toasts": {
+    "removeVersionFailed": "无法移除游戏版本 {{version}}",
+    "downloadNoFile": "此下载不再指向任何文件",
+    "removeFailed": "无法移除 {{label}}"
+  },
+  "standalone": "独立"
+}

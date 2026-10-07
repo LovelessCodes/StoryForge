@@ -4,6 +4,7 @@ import { createTauriStore } from "@tauri-store/zustand";
 import { create } from "zustand";
 
 import { logToFile } from "@/lib/logger";
+import { moveMods, type ModGroup } from "@/lib/mod-groups";
 import type { SortBy } from "@/lib/mod-sort";
 
 export type SetParentConfigProps = {
@@ -12,13 +13,91 @@ export type SetParentConfigProps = {
 };
 
 type SettingsStore = {
-  darkMode: boolean;
-  toggleDarkMode: () => void;
+  /** Id of the profile the UI (and the sidebar Play button) targets. */
+  activeProfileId: number | null;
+  setActiveProfileId: (id: number | null) => void;
+  /** UI language: "system" or a bundled locale code. */
+  language: string;
+  setLanguage: (language: string) => void;
+  /** User hid the "import installations from the previous app" banner. */
+  legacyMigrationDismissed: boolean;
+  dismissLegacyMigration: () => void;
+  /** User hid the "use your existing Vintage Story data" banner. */
+  gameDataDismissed: boolean;
+  dismissGameData: () => void;
+  /** User hid the "import installations from VS Launcher" banner. */
+  vsLauncherDismissed: boolean;
+  dismissVsLauncher: () => void;
+  /** User hid the "import modpacks from MVL" banner. */
+  mvlDismissed: boolean;
+  dismissMvl: () => void;
+  /** User hid the "import instances from Waxlight Launcher" banner. */
+  waxlightDismissed: boolean;
+  dismissWaxlight: () => void;
+  /** User hid the "link game versions from other launchers" banner. */
+  linkVersionsDismissed: boolean;
+  dismissLinkVersions: () => void;
+  /** User hid the "import packs from Cairn" banner. */
+  cairnDismissed: boolean;
+  dismissCairn: () => void;
+  /** User hid the "import instances from Rustory" banner. */
+  rustoryDismissed: boolean;
+  dismissRustory: () => void;
+  /** User hid the "import instances from GruntLauncher" banner. */
+  gruntLauncherDismissed: boolean;
+  dismissGruntLauncher: () => void;
+  /** User hid the "import instances from Lithic" banner. */
+  lithicDismissed: boolean;
+  dismissLithic: () => void;
+  /** User hid the "import instances from Yelloowstone" banner. */
+  yelloowstoneDismissed: boolean;
+  dismissYelloowstone: () => void;
+  /**
+   * Mods pinned to their installed version, keyed by profile/server path.
+   * Pinned mods are excluded from update checks and "Update All".
+   */
+  pinnedMods: Record<string, string[]>;
+  toggleModPin: (path: string, modid: string) => void;
+  /**
+   * Update releases the user skipped, keyed by lowercased modidstr. Only the
+   * named version is skipped; a newer release shows up again.
+   */
+  skippedModUpdates: Record<string, string>;
+  skipModUpdate: (modidstr: string, version: string) => void;
+  clearModUpdateSkip: (modidstr: string) => void;
+  /** Named enabled/disabled presets, keyed by profile/server path. */
+  modPresets: Record<string, ModPreset[]>;
+  saveModPreset: (path: string, preset: { name: string; disabled: string[] }) => void;
+  deleteModPreset: (path: string, presetId: string) => void;
+  /** Named groups of installed mods, keyed by profile/server path. */
+  modGroups: Record<string, ModGroup[]>;
+  createModGroup: (path: string, name: string) => void;
+  renameModGroup: (path: string, groupId: string, name: string) => void;
+  deleteModGroup: (path: string, groupId: string) => void;
+  moveModsToGroup: (path: string, modids: string[], groupId: string | null) => void;
+  /** Favourite mod listings (lowercased modidstrs), shared across profiles. */
+  favoriteMods: string[];
+  toggleFavoriteMod: (modidstr: string) => void;
   defaultModSortBy: SortBy;
   setDefaultModSortBy: (sortBy: SortBy) => void;
-  installationsParent: string | null;
-  installationsSubdir: string;
-  setInstallationsParent: (path: string | null, config?: SetParentConfigProps) => Promise<void>;
+  /** Apply the source profile's settings to every other profile on launch. */
+  applyGameDefaults: boolean;
+  setApplyGameDefaults: (applyGameDefaults: boolean) => void;
+  /** Profile whose live settings are the source of truth, or null. */
+  gameDefaultsProfileId: number | null;
+  setGameDefaultsProfileId: (id: number | null) => void;
+  /** Read the source profile's account session too. */
+  gameDefaultsIncludeAccount: boolean;
+  setGameDefaultsIncludeAccount: (include: boolean) => void;
+  /** Mod id from a `storyforge://install?mod=…` link, for the Mods page. */
+  pendingDeepLinkMod: string | null;
+  setPendingDeepLinkMod: (modid: string | null) => void;
+  /** Modpack slug from a `storyforge://install?pack=…` link, for the Modpacks page. */
+  pendingDeepLinkPack: string | null;
+  setPendingDeepLinkPack: (slug: string | null) => void;
+  profilesParent: string | null;
+  profilesSubdir: string;
+  setProfilesParent: (path: string | null, config?: SetParentConfigProps) => Promise<void>;
   versionsParent: string | null;
   versionsSubdir: string;
   setVersionsParent: (path: string | null, config?: SetParentConfigProps) => Promise<void>;
@@ -28,40 +107,178 @@ type SettingsStore = {
   toggleUseSystemDotnet: () => void;
 };
 
+export type ModPreset = {
+  id: string;
+  name: string;
+  /** Lowercased modids this preset disables; everything else stays enabled. */
+  disabled: string[];
+  createdAt: number;
+};
+
 export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
-  darkMode: window.matchMedia?.("(prefers-color-scheme: dark)").matches,
+  activeProfileId: null,
+  setActiveProfileId: (id) => set(() => ({ activeProfileId: id })),
+  language: "system",
+  setLanguage: (language) => set(() => ({ language })),
+  legacyMigrationDismissed: false,
+  dismissLegacyMigration: () => set(() => ({ legacyMigrationDismissed: true })),
+  gameDataDismissed: false,
+  dismissGameData: () => set(() => ({ gameDataDismissed: true })),
+  vsLauncherDismissed: false,
+  dismissVsLauncher: () => set(() => ({ vsLauncherDismissed: true })),
+  mvlDismissed: false,
+  dismissMvl: () => set(() => ({ mvlDismissed: true })),
+  waxlightDismissed: false,
+  dismissWaxlight: () => set(() => ({ waxlightDismissed: true })),
+  linkVersionsDismissed: false,
+  dismissLinkVersions: () => set(() => ({ linkVersionsDismissed: true })),
+  cairnDismissed: false,
+  dismissCairn: () => set(() => ({ cairnDismissed: true })),
+  rustoryDismissed: false,
+  dismissRustory: () => set(() => ({ rustoryDismissed: true })),
+  gruntLauncherDismissed: false,
+  dismissGruntLauncher: () => set(() => ({ gruntLauncherDismissed: true })),
+  lithicDismissed: false,
+  dismissLithic: () => set(() => ({ lithicDismissed: true })),
+  yelloowstoneDismissed: false,
+  dismissYelloowstone: () => set(() => ({ yelloowstoneDismissed: true })),
+  pinnedMods: {},
+  toggleModPin: (path, modid) =>
+    set((state) => {
+      const id = modid.toLowerCase();
+      const current = state.pinnedMods[path] ?? [];
+      const next = current.includes(id)
+        ? current.filter((pinned) => pinned !== id)
+        : [...current, id];
+      const pinnedMods = { ...state.pinnedMods };
+      if (next.length > 0) pinnedMods[path] = next;
+      else delete pinnedMods[path];
+      return { pinnedMods };
+    }),
+  modGroups: {},
+  createModGroup: (path, name) =>
+    set((state) => ({
+      modGroups: {
+        ...state.modGroups,
+        [path]: [
+          ...(state.modGroups[path] ?? []),
+          {
+            id: `group-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+            name,
+            modids: [],
+          },
+        ],
+      },
+    })),
+  renameModGroup: (path, groupId, name) =>
+    set((state) => ({
+      modGroups: {
+        ...state.modGroups,
+        [path]: (state.modGroups[path] ?? []).map((group) =>
+          group.id === groupId ? { ...group, name } : group,
+        ),
+      },
+    })),
+  deleteModGroup: (path, groupId) =>
+    set((state) => {
+      const remaining = (state.modGroups[path] ?? []).filter((group) => group.id !== groupId);
+      const modGroups = { ...state.modGroups };
+      if (remaining.length > 0) modGroups[path] = remaining;
+      else delete modGroups[path];
+      return { modGroups };
+    }),
+  moveModsToGroup: (path, modids, groupId) =>
+    set((state) => ({
+      modGroups: {
+        ...state.modGroups,
+        [path]: moveMods(state.modGroups[path] ?? [], modids, groupId),
+      },
+    })),
+  modPresets: {},
+  saveModPreset: (path, preset) =>
+    set((state) => {
+      const entry: ModPreset = {
+        id: `preset-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+        name: preset.name,
+        disabled: preset.disabled.map((modid) => modid.toLowerCase()),
+        createdAt: Date.now(),
+      };
+      return {
+        modPresets: {
+          ...state.modPresets,
+          [path]: [...(state.modPresets[path] ?? []), entry],
+        },
+      };
+    }),
+  deleteModPreset: (path, presetId) =>
+    set((state) => {
+      const remaining = (state.modPresets[path] ?? []).filter((preset) => preset.id !== presetId);
+      const modPresets = { ...state.modPresets };
+      if (remaining.length > 0) modPresets[path] = remaining;
+      else delete modPresets[path];
+      return { modPresets };
+    }),
+  skippedModUpdates: {},
+  skipModUpdate: (modidstr, version) =>
+    set((state) => ({
+      skippedModUpdates: { ...state.skippedModUpdates, [modidstr.toLowerCase()]: version },
+    })),
+  clearModUpdateSkip: (modidstr) =>
+    set((state) => {
+      const skippedModUpdates = { ...state.skippedModUpdates };
+      delete skippedModUpdates[modidstr.toLowerCase()];
+      return { skippedModUpdates };
+    }),
+  favoriteMods: [],
+  toggleFavoriteMod: (modidstr) =>
+    set((state) => {
+      const id = modidstr.toLowerCase();
+      return {
+        favoriteMods: state.favoriteMods.includes(id)
+          ? state.favoriteMods.filter((favorite) => favorite !== id)
+          : [...state.favoriteMods, id],
+      };
+    }),
   defaultModSortBy: "trending",
   setDefaultModSortBy: (sortBy) => set(() => ({ defaultModSortBy: sortBy })),
-  installationsParent: null,
-  installationsSubdir: "installations",
-  setInstallationsParent: async (path, config) => {
+  applyGameDefaults: false,
+  setApplyGameDefaults: (applyGameDefaults) => set(() => ({ applyGameDefaults })),
+  gameDefaultsProfileId: null,
+  setGameDefaultsProfileId: (gameDefaultsProfileId) => set(() => ({ gameDefaultsProfileId })),
+  gameDefaultsIncludeAccount: false,
+  setGameDefaultsIncludeAccount: (gameDefaultsIncludeAccount) =>
+    set(() => ({ gameDefaultsIncludeAccount })),
+  pendingDeepLinkMod: null,
+  setPendingDeepLinkMod: (pendingDeepLinkMod) => set(() => ({ pendingDeepLinkMod })),
+  pendingDeepLinkPack: null,
+  setPendingDeepLinkPack: (pendingDeepLinkPack) => set(() => ({ pendingDeepLinkPack })),
+  profilesParent: null,
+  profilesSubdir: "profiles",
+  setProfilesParent: async (path, config) => {
     const appFolder = await appDataDir();
-    const { installationsParent, installationsSubdir } = store.getState();
+    const { profilesParent, profilesSubdir } = store.getState();
     const dest = path ?? appFolder;
-    const src = installationsParent ?? appFolder;
+    const src = profilesParent ?? appFolder;
     if (config?.moveCurrentData) {
       await logToFile(
         "INFO ",
-        `[settings] move_installations: ${src}/${installationsSubdir} -> ${dest}/${installationsSubdir}`,
+        `[settings] move_profiles: ${src}/${profilesSubdir} -> ${dest}/${profilesSubdir}`,
       );
-      await invoke("move_installations_folder", {
+      await invoke("move_profiles_folder", {
         destination: dest,
         source: src,
-        subdir: installationsSubdir,
+        subdir: profilesSubdir,
       });
     } else if (config?.deleteCurrentData) {
-      await logToFile(
-        "INFO ",
-        `[settings] remove_all_installations: ${src}/${installationsSubdir}`,
-      );
-      await invoke("remove_all_installations", {
+      await logToFile("INFO ", `[settings] remove_all_profiles: ${src}/${profilesSubdir}`);
+      await invoke("remove_all_profiles", {
         source: src,
-        subdir: installationsSubdir,
+        subdir: profilesSubdir,
       });
     } else {
-      await logToFile("INFO ", `[settings] set_installations_parent: ${dest}`);
+      await logToFile("INFO ", `[settings] set_profiles_parent: ${dest}`);
     }
-    set(() => ({ installationsParent: path }));
+    set(() => ({ profilesParent: path }));
   },
   setVersionsParent: async (path, config) => {
     const appFolder = await appDataDir();
@@ -93,15 +310,6 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
   toggleUseSystemDotnet: () => set((state) => ({ useSystemDotnet: !state.useSystemDotnet })),
   toggleStreamMode: () => set((state) => ({ streamMode: !state.streamMode })),
   useSystemDotnet: true,
-  toggleDarkMode: () =>
-    set((state) => {
-      if (state.darkMode) {
-        document.body.classList.remove("dark");
-      } else {
-        document.body.classList.add("dark");
-      }
-      return { darkMode: !state.darkMode };
-    }),
   versionsParent: null,
   versionsSubdir: "versions",
 }));

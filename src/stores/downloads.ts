@@ -2,10 +2,22 @@ import { create } from "zustand";
 
 export type DownloadStatus = "pending" | "downloading" | "paused" | "extracting" | "done" | "error";
 
+export type DownloadKind = "version" | "mod";
+
 export interface DownloadEntry {
   token: string;
   label: string;
   status: DownloadStatus;
+  kind: DownloadKind;
+  /** Secondary line for the sheet (destination profile / server). */
+  detail: string | null;
+  /** Request data, kept so a retry can run without the original caller. */
+  url: string | null;
+  destpath: string | null;
+  /** Profile root whose mod lists are refreshed after the download. */
+  modsDirectory: string | null;
+  /** Where a finished plain download saved its file (used to undo it). */
+  savedPath: string | null;
   bytesDownloaded: number;
   totalBytes: number | null;
   percent: number | null;
@@ -18,7 +30,9 @@ interface DownloadState {
 }
 
 interface DownloadActions {
-  addEntry: (entry: Pick<DownloadEntry, "token" | "label" | "status">) => void;
+  addEntry: (
+    entry: Pick<DownloadEntry, "token" | "label" | "status"> & Partial<DownloadEntry>,
+  ) => void;
   updateEntry: (token: string, updates: Partial<DownloadEntry>) => void;
   removeEntry: (token: string) => void;
 }
@@ -31,9 +45,13 @@ export const useDownloadStore = create<DownloadState & DownloadActions>((set) =>
       entries: {
         ...state.entries,
         [entry.token]: {
-          token: entry.token,
-          label: entry.label,
-          status: entry.status,
+          kind: "version",
+          detail: null,
+          url: null,
+          destpath: null,
+          modsDirectory: null,
+          savedPath: null,
+          ...entry,
           bytesDownloaded: 0,
           totalBytes: null,
           percent: null,

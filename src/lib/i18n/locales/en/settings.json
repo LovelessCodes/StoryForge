@@ -1,0 +1,105 @@
+{
+  "appearance": {
+    "title": "Appearance",
+    "darkMode": "Dark mode",
+    "darkModeDescription": "Use the dark theme across the app.",
+    "language": "Language",
+    "languageDescription": "Menu and interface language.",
+    "systemLanguage": "System"
+  },
+  "folders": {
+    "title": "Data folders",
+    "description": "Where Story Forge keeps profiles and game versions. Defaults to the app data directory.",
+    "useAppDirectory": "Use app data directory",
+    "useAppDirectoryDescription": "Store profiles and versions inside Story Forge's own folder.",
+    "profilesLabel": "Profiles parent directory",
+    "versionsLabel": "Versions parent directory",
+    "hintAppDirectory": "Using the app data directory. A \"{{subdir}}\" folder is created inside it.",
+    "hintDefault": "Defaults to the app data directory.",
+    "hintInside": "A \"{{subdir}}\" folder is created inside this directory.",
+    "browseProfilesTitle": "Select Profiles Parent Directory",
+    "browseVersionsTitle": "Select Versions Parent Directory",
+    "dialog": {
+      "title": "How do you want to handle existing data?",
+      "description": "Data currently lives in the folder you are leaving. This cannot be undone once deleted.",
+      "keep": "Keep current data (do not move or delete)",
+      "copy": "Copy current data to new location",
+      "delete": "Delete current data from old location"
+    },
+    "toast": {
+      "profilesMoving": "Moving profiles folder...",
+      "profilesDeleting": "Deleting profiles data...",
+      "profilesSetting": "Setting profiles folder...",
+      "profilesMoveFailed": "Failed to move profiles folder: {{message}}",
+      "profilesDeleteFailed": "Failed to delete profiles data: {{message}}",
+      "profilesSetFailed": "Failed to set profiles folder: {{message}}",
+      "versionsMoving": "Moving versions folder...",
+      "versionsDeleting": "Deleting versions data...",
+      "versionsSetting": "Setting versions folder...",
+      "versionsMoveFailed": "Failed to move versions folder: {{message}}",
+      "versionsDeleteFailed": "Failed to delete versions data: {{message}}",
+      "versionsSetFailed": "Failed to set versions folder: {{message}}"
+    }
+  },
+  "behaviour": {
+    "title": "Behaviour",
+    "streamMode": "Stream mode",
+    "streamModeDescription": "Hide server addresses in server lists, for example while streaming.",
+    "systemDotnet": "Use system .NET",
+    "systemDotnetDescription": "Try your system's .NET runtime before downloading one.",
+    "defaultModSort": "Default mod sort",
+    "defaultModSortDescription": "Sort order used when the mod browser opens.",
+    "sort": {
+      "comments": "Comments",
+      "created": "Created",
+      "downloads": "Downloads",
+      "follows": "Follows",
+      "name": "Name",
+      "relevance": "Relevance",
+      "trending": "Trending",
+      "updated": "Last Updated"
+    }
+  },
+  "gameDefaults": {
+    "title": "Game defaults",
+    "description": "One set of key bindings, game and video settings shared by every profile.",
+    "applyLabel": "Apply on launch",
+    "applyDescription": "Applies the source profile's settings to every other profile right before the game starts. Profiles can opt out in their own settings.",
+    "none": "No source profile selected yet.",
+    "capturedFrom": "Using settings from {{name}}",
+    "sourceMissing": "That profile no longer exists. Choose another one.",
+    "includesSession": "includes account session",
+    "counts": "{{keys}} key bindings · {{settings}} settings",
+    "capture": "Use profile…",
+    "recapture": "Change…",
+    "clear": "Clear",
+    "sheetTitle": "Use settings from a profile",
+    "sheetDescription": "Applies the chosen profile's current key bindings, game and video settings whenever another profile launches — changes made in the source profile carry over automatically. Mod paths, disabled mods, server lists and entitlements are never copied.",
+    "profileLabel": "Profile",
+    "includeSession": "Include account session",
+    "includeSessionHint": "Also copies the signed-in player's name, user id, email and session tokens so the profile stays logged in. A launcher account selected for the launch still takes precedence.",
+    "captured": "Source profile set",
+    "cleared": "Game defaults cleared"
+  },
+  "updates": {
+    "title": "Updates",
+    "label": "Updates",
+    "appVersion": "App version",
+    "appVersionDescription": "Currently installed version.",
+    "description": "Checks quietly; updates are announced in the title bar.",
+    "check": "Check for updates",
+    "checking": "Checking...",
+    "checkingToast": "Checking for updates...",
+    "checkComplete": "Update check complete",
+    "checkFailed": "Update check failed: {{message}}"
+  },
+  "logs": {
+    "title": "Application log",
+    "description": "Live app output, refreshed every 5 seconds.",
+    "copy": "Copy logs",
+    "refresh": "Refresh logs",
+    "copied": "Logs copied to clipboard",
+    "copyFailed": "Failed to copy logs",
+    "empty": "No logs yet..."
+  }
+}

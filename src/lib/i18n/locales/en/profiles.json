@@ -1,0 +1,301 @@
+{
+  "modCount_one": "{{count}} mod",
+  "modCount_other": "{{count}} mods",
+  "hasWorlds": "has worlds",
+  "noWorlds": "no worlds yet",
+  "fields": {
+    "gameVersion": "Game version",
+    "installed": "(installed)",
+    "installedVersion": "{{version}} (installed)",
+    "profileName": "Profile name",
+    "optimumVersion": "{{version}} · Optimum {{optimum}}"
+  },
+  "errors": {
+    "importFailed": "Import failed",
+    "purgeFailed": "Purge failed",
+    "restoreFailed": "Restore failed"
+  },
+  "page": {
+    "import": "Import",
+    "newProfile": "New Profile",
+    "emptyTitle": "No profiles yet",
+    "emptyDescription": "Create a profile to pick a game version and start adding mods.",
+    "createFirst": "Create your first profile"
+  },
+  "row": {
+    "active": "Active",
+    "existingData": "Existing data",
+    "notInstalled": "Not installed",
+    "switch": "Switch",
+    "switchFirstTitle": "Switch to another profile first",
+    "neverPlayed": "Never played",
+    "played": "Played {{time}}",
+    "actionsFor": "Actions for {{name}}",
+    "manageMods": "Manage Mods",
+    "configureMods": "Configure Mods",
+    "viewLogs": "View Logs",
+    "backups": "Backups",
+    "exportFile": "Export as file…",
+    "copyShareCode": "Copy share code",
+    "deleteCurrent": "Delete (current profile)",
+    "openFolderFailed": "Could not open folder",
+    "packLock": "Pack lock"
+  },
+  "screenshots": {
+    "menu": "Screenshots",
+    "title": "Screenshots — {{name}}",
+    "description": "Screenshots taken in this profile.",
+    "empty": "No screenshots yet — press F12 in game to take one.",
+    "reveal": "Show in folder",
+    "close": "Close"
+  },
+  "export": {
+    "filterName": "Profile export",
+    "exported": "Profile exported",
+    "failed": "Export failed",
+    "shareCodeCopied": "Share code copied to clipboard",
+    "shareCodeFailed": "Failed to build share code"
+  },
+  "clone": {
+    "menu": "Clone…",
+    "title": "Clone “{{name}}”",
+    "defaultName": "{{name}} copy",
+    "description": "Copies the whole profile folder — mods, configs and worlds included.",
+    "newName": "New name",
+    "busy": "Cloning…",
+    "submit": "Clone profile",
+    "failed": "Clone failed"
+  },
+  "delete": {
+    "switchFirst": "Switch to another profile before deleting this one",
+    "deleted": "Deleted \"{{name}}\"",
+    "description": "The folder was moved to the trash — you can undo this.",
+    "undo": "Undo",
+    "restored": "Restored \"{{name}}\"",
+    "failed": "Delete failed",
+    "removeTitle": "Remove “{{name}}” from Story Forge?",
+    "deleteTitle": "Delete “{{name}}”?",
+    "externalDescription": "This profile links to your existing Vintage Story data folder. Removing it only stops Story Forge from managing the folder — nothing inside it is moved or deleted.",
+    "folderDescription": "The profile folder is moved to the trash inside your profiles directory. You can undo this from the toast or the “Deleted profiles” section.",
+    "removing": "Removing…",
+    "deleting": "Deleting…",
+    "removeAction": "Remove from Story Forge",
+    "moveToTrash": "Move to trash"
+  },
+  "dialog": {
+    "editTitle": "Edit \"{{name}}\"",
+    "newTitle": "New profile",
+    "description": "A profile is an isolated Vintage Story data folder with its own mods, worlds and settings.",
+    "namePlaceholder": "My profile",
+    "versionNotInstalled": "Version {{version}} is not installed yet — the sidebar offers a download button for it when you are ready.",
+    "icon": "Icon",
+    "favorite": "Favorite",
+    "favoriteHint": "Favorites sort first in lists.",
+    "ignoreGameDefaults": "Don't apply game defaults",
+    "ignoreGameDefaultsHint": "Keep this profile's own key bindings and settings.",
+    "launchParameters": "Launch parameters",
+    "optional": "optional",
+    "startParamsPlaceholder": "--some-flag value",
+    "environmentVariables": "Environment variables",
+    "nameTooShort": "Name must be at least 2 characters",
+    "pickVersion": "Pick a game version",
+    "noAppFolder": "Could not resolve the app data folder",
+    "saving": "Saving…",
+    "creating": "Creating profile…",
+    "saveFailed": "Failed to save profile",
+    "createFailed": "Failed to create profile",
+    "saveChanges": "Save changes",
+    "create": "Create profile"
+  },
+  "selector": {
+    "switched": "Switched to \"{{name}}\"",
+    "noProfile": "No profile",
+    "manage": "Manage profiles"
+  },
+  "iconPicker": {
+    "noIcon": "No icon"
+  },
+  "logs": {
+    "title": "Logs — {{name}}",
+    "description": "Game logs written to the profile’s Logs folder.",
+    "refresh": "Refresh logs",
+    "empty": "No logs found.",
+    "select": "Select a log to view its contents."
+  },
+  "backups": {
+    "title": "Backups — {{name}}",
+    "description": "Snapshots of this profile's mods, worlds and configs. Logs are left out.",
+    "autoLabel": "Back up before each launch",
+    "autoHint": "Runs right before the game starts.",
+    "keepLabel": "Keep last",
+    "keepHint": "Older backups are deleted automatically.",
+    "backupNow": "Back up now",
+    "backingUpProgress": "Backing up… {{percent}}%",
+    "restoringProgress": "Restoring… {{percent}}%",
+    "emptyTitle": "No backups yet",
+    "emptyDescription": "Create one before risky changes, or back up before each launch.",
+    "count_one": "{{count}} backup · newest first",
+    "count_other": "{{count}} backups · newest first",
+    "deleteBackup": "Delete backup",
+    "confirmRestore": "Restore this snapshot? Files it contains are overwritten; files added since are kept.",
+    "restoreBackup": "Restore backup",
+    "confirmDelete": "Delete this backup? This cannot be undone.",
+    "backupFailed": "Backup failed",
+    "restored": "Backup restored",
+    "restoredDescription": "The profile folder now matches the snapshot.",
+    "deleteFailed": "Failed to delete backup",
+    "settingsFailed": "Failed to save backup settings"
+  },
+  "deleted": {
+    "heading": "Deleted profiles ({{total}})",
+    "purgeAll": "Purge all",
+    "confirmPurgeAll": "Really purge all?",
+    "confirmYes": "Yes",
+    "confirmNo": "No",
+    "deletedAt": "Deleted {{time}}",
+    "deletePermanently": "Delete {{name}} permanently"
+  },
+  "envVars": {
+    "empty": "No environment variables. These are passed to the game process on launch.",
+    "keyLabel": "Variable name",
+    "keyPlaceholder": "KEY",
+    "valueLabel": "Variable value",
+    "valuePlaceholder": "value",
+    "remove": "Remove variable",
+    "add": "Add variable"
+  },
+  "import": {
+    "title": "Import a profile",
+    "description": "Paste a share code or exported JSON, or pick an exported file. Mods are downloaded automatically.",
+    "placeholder": "SF1.… share code, or profile JSON export",
+    "chooseFile": "Choose file…",
+    "shareCodeHint": "Share codes start with SF1.",
+    "decodingShareCode": "Decoding share code…",
+    "invalid": "That does not look like a profile export",
+    "downloadingVersion": "Downloading game version {{version}}…",
+    "importing": "Importing \"{{name}}\"…",
+    "downloadingMod": "Downloading mod {{current}} of {{total}}:",
+    "readFailed": "Failed to read export file",
+    "submit": "Import profile",
+    "action": "Import…",
+    "importingBusy": "Importing…",
+    "bannerDescription": "Import them with their mods, worlds and settings.",
+    "modeQuestion": "How should the folders be imported?",
+    "imported": "Imported",
+    "skipped_one": "{{count}} could not be imported",
+    "skipped_other": "{{count}} could not be imported",
+    "skippedFolders_one": "{{count}} folder was not imported",
+    "skippedFolders_other": "{{count}} folders were not imported",
+    "submitCount_one": "Import {{count}} profile",
+    "submitCount_other": "Import {{count}} profiles"
+  },
+  "gameData": {
+    "foundTitle": "Existing Vintage Story data found",
+    "foundDescription": "{{path}} — use it as a profile without copying anything.",
+    "foundDescriptionMore": "{{path}} (+{{more}} more) — use it as a profile without copying anything.",
+    "use": "Use it",
+    "title": "Use your existing game data",
+    "description": "Story Forge links to the folder instead of copying it — your mods, worlds and settings stay exactly where they are.",
+    "folderAria": "Game data folder",
+    "versionHint": "Your data folder does not record its game version — pick the one you play. It will be downloaded on first launch if it is not installed yet.",
+    "linking": "Linking…",
+    "useAs": "Use as \"{{name}}\"",
+    "defaultName": "profile",
+    "adoptFailed": "Could not use that folder"
+  },
+  "legacy": {
+    "found_one": "{{count}} profile from the previous Story Forge found",
+    "found_other": "{{count}} profiles from the previous Story Forge found",
+    "title": "Import from the previous Story Forge",
+    "description": "These folders contain the same data as profiles — mods, worlds and configuration. Each one is imported as a new profile.",
+    "modeMoveHint": "Relocates the folders into your profiles directory — fast and uses no extra disk, but the previous app will no longer see them.",
+    "modeCopyHint": "Copies the folders and leaves the previous app untouched — safe, but uses extra disk space."
+  },
+  "launcher": {
+    "found_one": "{{count}} item from {{name}} found",
+    "found_other": "{{count}} items from {{name}} found",
+    "title": "Import from {{name}}",
+    "modeMoveHint": "Relocates the folders into your profiles directory — fast and uses no extra disk, but {{name}} will no longer see them.",
+    "modeCopyHint": "Copies the folders and leaves {{name}} untouched — safe, but uses extra disk space.",
+    "defaultDataFolder": "game's default data folder"
+  },
+  "banners": {
+    "cairn": {
+      "hint": "Packs from Cairn by cairns-gg (github.com/cairns-gg/cairn-app). Each pack is imported as a profile — its data folder and mods are copied.",
+      "note": "Packs are copied, never moved: the pack folder also holds Cairn's manifest and lock files, so there is nothing to relocate without breaking Cairn. Cairn keeps working with its packs unchanged."
+    },
+    "gruntLauncher": {
+      "hint": "Instances from GruntLauncher by renarin-kholin. Each instance folder becomes a profile with its mods, settings and worlds.",
+      "note": "GruntLauncher's own instance file and mod logo cache are removed from the imported profile. Game versions from its installations folder can be linked on the Versions page."
+    },
+    "lithic": {
+      "hint": "Instances from Lithic by NotAShelf (CLI and GUI). Each instance's data folder is imported as a profile.",
+      "note": "Instances are copied, never moved: the instance folder also holds Lithic's own settings and lock files. Playtime, launch arguments and environment variables are preserved; mods switched off in Lithic are copied to mods-disabled/ and stay off, and launch wrappers (gamemoderun, prime-run) are not carried over. Game builds can be linked on the Versions page."
+    },
+    "mvl": {
+      "hint": "Modpacks from MVL by scgm0 (github.com/scgm0/MVL). Each one is imported as a profile — nothing is converted except the manifest.",
+      "note": "MVL's modpack icon and VSRun launch command are not carried over — Story Forge owns how profiles launch. Names, game versions, mods and worlds are preserved."
+    },
+    "rustory": {
+      "hint": "Instances from Rustory by XurxoMF (rustory.xyz), the successor of VS Launcher. Each instance's game data folder is imported as a profile.",
+      "note": "Instances are copied, never moved: the instance folder also holds Rustory's own manifest and backups, so there is nothing to relocate without breaking Rustory. Playtime, launch parameters and environment variables are preserved. Game versions installed by Rustory can be linked on the Versions page."
+    },
+    "vsLauncher": {
+      "hint": "Installations from VS Launcher by XurxoMF and RiftLauncher by the Stratum team (its maintained continuation). Each one is imported as a profile — nothing is converted except the manifest.",
+      "note": "Icons are not carried over (both use their own artwork). Playtime, launch parameters and environment variables are preserved."
+    },
+    "waxlight": {
+      "hint": "Instances from Waxlight Launcher by AmadoMuerte (github.com/AmadoMuerte/Waxlight-launcher). Each one is imported as a profile — nothing is converted except the manifest.",
+      "note": "Waxlight covers are not carried over. Launch arguments, environment variables, pin state and playtime are preserved."
+    },
+    "yelloowstone": {
+      "hint": "Instances from Yelloowstone (jgwoolley/vintage-story-launcher). Each instance's data folder becomes a profile.",
+      "note": "The instance's runtime folder is a full game install: it is linked as a version, never moved, so Yelloowstone keeps working. Moving a data folder does remove it from Yelloowstone's list."
+    }
+  },
+  "store": {
+    "pathExists": "Profile with path \"{{path}}\" already exists",
+    "idExists": "Profile with ID \"{{id}}\" already exists",
+    "nameExists": "Profile with name \"{{name}}\" already exists"
+  },
+  "pack": {
+    "title": "Pack lock",
+    "description": "Pins the mods of {{name}} to exact versions and SHA-256 hashes, and repairs drift on demand.",
+    "empty": "This profile has no pack lock yet.",
+    "create": "Create lockfile",
+    "created": "Lockfile created",
+    "createFailed": "Could not create the lockfile",
+    "removed": "Lockfile removed",
+    "removeFailed": "Could not remove the lockfile",
+    "rePin": "Re-pin current state",
+    "rePinHint": "Rewrites the lock from the mods installed now. Drift is accepted.",
+    "remove": "Remove lockfile",
+    "removeHint": "Deletes the lockfile. Installed mods are left untouched.",
+    "removeConfirm": "Really remove?",
+    "inSync": "{{count}} in sync",
+    "missing": "{{count}} missing",
+    "mismatched": "{{count}} changed",
+    "extras": "{{count}} extra",
+    "extrasTitle": "Not in the lock",
+    "extrasHint": "These mods are installed but not named by the lock; they are left alone.",
+    "lockedMods": "Locked mods",
+    "sync": "Sync / repair",
+    "syncing": "Syncing {{current}} / {{total}} — {{modid}}",
+    "syncDone": "Repaired {{count}} mod(s)",
+    "syncDoneWithFailures": "{{applied}} repaired, {{failed}} failed",
+    "syncFailed": "Sync failed",
+    "failedTitle": "Failed",
+    "state": {
+      "ok": "ok",
+      "missing": "missing",
+      "versionMismatch": "other version",
+      "hashMismatch": "changed"
+    },
+    "failure": {
+      "hashMismatch": "The file on ModDB no longer matches the locked hash.",
+      "versionNotFound": "That version is no longer available on ModDB.",
+      "network": "ModDB could not be reached.",
+      "generic": "Sync failed for this mod."
+    }
+  }
+}

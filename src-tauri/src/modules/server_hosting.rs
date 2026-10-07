@@ -12,7 +12,7 @@ use tokio::process::Command;
 use super::dotnet;
 use super::errors::UiError;
 use super::paths;
-use super::utils::{dir_size, format_size, lock, normalize_path, versions_folder, versions_subdir};
+use super::utils::{dir_size, format_size, lock, normalize_path};
 use crate::modules::server_hosting_actor;
 use crate::{log_error, log_info};
 
@@ -31,6 +31,12 @@ pub struct HostedServerInstance {
     pub favorite: bool,
     pub last_played: Option<u64>,
     pub total_time_played: u64,
+    /// Restart the server automatically after an unexpected exit.
+    #[serde(default)]
+    pub auto_restart: bool,
+    /// Daily restart time as local `HH:MM`; `None` disables scheduled restarts.
+    #[serde(default)]
+    pub restart_schedule: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -123,9 +129,27 @@ pub struct HostedServerPartial {
     pub favorite: Option<bool>,
     pub last_played: Option<u64>,
     pub total_time_played: Option<u64>,
+    pub auto_restart: Option<bool>,
+    /// `HH:MM` to set the daily restart, an empty string to clear it.
+    pub restart_schedule: Option<String>,
 }
 
 // ── Helpers ──
+
+/// Accepts a 24-hour `HH:MM` time for the daily restart schedule.
+fn validate_restart_schedule(value: &str) -> Result<String, UiError> {
+    let invalid = || UiError {
+        name: "invalid_schedule".into(),
+        message: "Restart time must look like 04:30.".into(),
+    };
+    let (hours, minutes) = value.split_once(':').ok_or_else(invalid)?;
+    let hours: u32 = hours.trim().parse().map_err(|_| invalid())?;
+    let minutes: u32 = minutes.trim().parse().map_err(|_| invalid())?;
+    if hours > 23 || minutes > 59 {
+        return Err(invalid());
+    }
+    Ok(format!("{hours:02}:{minutes:02}"))
+}
 
 fn generate_id(name: &str) -> u64 {
     crate::modules::utils::generate_id(name)
@@ -504,16 +528,11 @@ fn full_port_check(
 /// Resolve the server executable path for a given version.
 /// Finds VintagestoryServer.exe (Windows) or VintagestoryServer (Unix) in the game version folder.
 pub(crate) fn server_exe_path(app: &AppHandle, version: &str) -> Result<PathBuf, UiError> {
-    let base_dir = versions_folder(app.clone())?;
-    let subdir = versions_subdir(app.clone());
-    let version_dir = base_dir.join(&subdir).join(version);
-
-    if !version_dir.exists() {
-        return Err(UiError {
-            name: "version_not_found".into(),
-            message: format!("Version {version} is not installed"),
-        });
-    }
+    // Managed versions folder first, then linked external installs.
+    let version_dir = super::versions::resolve_version_dir(app, version).map_err(|_| UiError {
+        name: "version_not_found".into(),
+        message: format!("Version {version} is not installed"),
+    })?;
 
     // Windows: VintagestoryServer.exe
     #[cfg(target_os = "windows")]
@@ -672,6 +691,8 @@ pub async fn create_hosted_server(
         favorite: false,
         last_played: None,
         total_time_played: 0,
+        auto_restart: false,
+        restart_schedule: None,
     };
 
     // Write the instance config into the instance directory (not the data dir)
@@ -715,8 +736,14 @@ pub async fn create_hosted_server(
     let setconfig_arg = format!("--setconfig={}", setconfig_value);
 
     // The server is a .NET apphost: it needs DOTNET_ROOT like the game client.
-    let dotnet_root =
-        dotnet::ensure_dotnet(&app, &app_data_dir, &instance.version, id, true).await?;
+    let dotnet_root = dotnet::ensure_dotnet(
+        &app,
+        &app_data_dir,
+        super::optimum::base_game_version(&instance.version),
+        id,
+        true,
+    )
+    .await?;
     log_info!("create_hosted_server: DOTNET_ROOT={dotnet_root:?}");
 
     log_info!("create_hosted_server: running --setconfig: exe={:?} dataPath={data_dir_str} arg={setconfig_arg}", exe_path);
@@ -859,6 +886,17 @@ pub async fn update_hosted_server(
     if let Some(total_time_played) = partial.total_time_played {
         instance.total_time_played = total_time_played;
     }
+    if let Some(auto_restart) = partial.auto_restart {
+        instance.auto_restart = auto_restart;
+    }
+    if let Some(ref schedule) = partial.restart_schedule {
+        let trimmed = schedule.trim();
+        instance.restart_schedule = if trimmed.is_empty() {
+            None
+        } else {
+            Some(validate_restart_schedule(trimmed)?)
+        };
+    }
 
     write_instance_json(&dir, &instance)?;
     Ok(())
@@ -973,8 +1011,14 @@ pub async fn start_hosted_server(app: AppHandle, instance_id: u64) -> Result<(),
         name: "path_error".into(),
         message: format!("Failed to resolve app data dir: {e}"),
     })?;
-    let dotnet_root =
-        dotnet::ensure_dotnet(&app, &app_data, &instance.version, instance_id, true).await?;
+    let dotnet_root = dotnet::ensure_dotnet(
+        &app,
+        &app_data,
+        super::optimum::base_game_version(&instance.version),
+        instance_id,
+        true,
+    )
+    .await?;
 
     server_hosting_actor::spawn(app, instance, dotnet_root).await
 }
@@ -1388,8 +1432,14 @@ pub async fn set_whitelist_mode(
         name: "path_error".into(),
         message: format!("Failed to resolve app data dir: {e}"),
     })?;
-    let dotnet_root =
-        dotnet::ensure_dotnet(&app, &app_data, &instance.version, instance_id, true).await?;
+    let dotnet_root = dotnet::ensure_dotnet(
+        &app,
+        &app_data,
+        super::optimum::base_game_version(&instance.version),
+        instance_id,
+        true,
+    )
+    .await?;
 
     log_info!(
         "set_whitelist_mode: exe={:?} dataPath={data_dir_str} arg={setconfig_arg}",

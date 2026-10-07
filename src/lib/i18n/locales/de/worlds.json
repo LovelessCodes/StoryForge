@@ -1,0 +1,119 @@
+{
+  "page": {
+    "searchAria": "Welten und Karten durchsuchen",
+    "searchPlaceholder": "Welten und Karten durchsuchen…",
+    "allProfiles": "Alle Profile",
+    "filterAria": "Nach Profil filtern",
+    "loading": "Welten werden geladen…",
+    "worlds": "Welten",
+    "worldsCount_one": "Welten ({{count}})",
+    "worldsCount_other": "Welten ({{count}})",
+    "mapsWithoutSaves_one": "Karten ohne Speicherstände ({{count}})",
+    "mapsWithoutSaves_other": "Karten ohne Speicherstände ({{count}})",
+    "empty": "Noch keine Welten gefunden. Erstelle im Spiel eine Welt, um loszulegen.",
+    "noMatches": "Keine Welten entsprechen deinen Filtern."
+  },
+  "row": {
+    "seedTitle": "Seed {{seed}} — klicken zum Kopieren",
+    "copied": "Kopiert!",
+    "byline": "von <author>{{author}}</author> in {{version}}",
+    "lastPlayed": "Zuletzt gespielt: {{time}}",
+    "differentVersion": "Andere Version {{worldVersion}} → {{profileVersion}}",
+    "versionMismatchTitle": "Die Profilversion ({{profileVersion}}) unterscheidet sich von der zuletzt gespeicherten Version der Welt ({{worldVersion}}).",
+    "playTitle": "{{world}} mit {{profile}} spielen",
+    "installTitle": "Spielversion {{version}} ist nicht installiert",
+    "noProfileTitle": "Kein passendes Profil gefunden",
+    "noProfile": "Kein Profil",
+    "viewMapAria": "Karte anzeigen",
+    "noMapTitle": "Keine Karte für {{name}} verfügbar",
+    "editAria": "Welt bearbeiten",
+    "deleteAria": "Welt löschen",
+    "actionsAria": "Weitere Welt-Aktionen",
+    "duplicate": "Duplizieren…",
+    "backup": "Als Zip sichern…"
+  },
+  "edit": {
+    "title": "„{{name}}“ bearbeiten",
+    "description": "Benenne die Welt um oder verschiebe sie in ein anderes Profil. Beim Umbenennen wird auch die Speicherdatei umbenannt.",
+    "namePlaceholder": "Meine Welt",
+    "profile": "Profil",
+    "selectProfile": "Profil auswählen",
+    "moveHint": "Beim Verschieben der Welt wird ihre Kartendatenbank zusammen mit der Speicherdatei übertragen.",
+    "submit": "Welt aktualisieren",
+    "saving": "Wird gespeichert…",
+    "failed": "Welt konnte nicht aktualisiert werden",
+    "errors": {
+      "nameLength": "Name muss zwischen 2 und 100 Zeichen lang sein",
+      "profile": "Wähle ein Profil"
+    }
+  },
+  "delete": {
+    "title": "<name>{{name}}</name> löschen?",
+    "description": "Das kann nicht rückgängig gemacht werden. Der Speicherstand der Welt und ihre Kartendatenbank werden dauerhaft aus Story Forge entfernt.",
+    "warning": "Warnung:",
+    "warningText": "Dadurch wird die Welt von deinem Computer gelöscht. Wenn du ein Backup behalten möchtest, exportiere sie vorher.",
+    "confirmAria": "Löschen der Welt bestätigen",
+    "confirmLabel": "Mir ist klar, dass diese Aktion nicht rückgängig gemacht werden kann.",
+    "pending": "Wird gelöscht…",
+    "deleting": "Welt {{name}} wird gelöscht…",
+    "failed": "Welt {{name}} konnte nicht gelöscht werden",
+    "facts": {
+      "worldName": "Weltname",
+      "mapIdentifier": "Kartenkennung",
+      "worldType": "Welttyp",
+      "playStyle": "Spielstil",
+      "createdBy": "Erstellt von",
+      "lastPlayed": "Zuletzt gespielt",
+      "lastSession": "Letzte Sitzung",
+      "seed": "Seed",
+      "createdVersion": "Erstellt in Version",
+      "lastSavedVersion": "Zuletzt gespeichert in Version"
+    }
+  },
+  "map": {
+    "defaultName": "Karte",
+    "view": "Karte anzeigen",
+    "viewTitle": "Karte {{name}} anzeigen",
+    "rowMeta": "{{profile}} · Eigenständige Karte · Kein Speicherstand angehängt",
+    "title": "{{name}} — Weltkarte",
+    "description": "Interaktiver Kartenbetrachter · Ziehen zum Verschieben · Scrollen zum Zoomen",
+    "playerAria": "Spieler, dessen Marker angezeigt werden",
+    "noPlayers": "Keine Spieler gefunden",
+    "showProspecting": "Prospektion anzeigen",
+    "loading": "Karte wird geladen…",
+    "noMapData": "Noch keine Kartendaten verfügbar. Erkunde die Welt im Spiel, um die Karte zu erstellen!",
+    "loadError": "Fehler beim Laden der Karte: {{message}}",
+    "noTiles": "Keine Kartenkacheln gefunden. Erkunde die Welt im Spiel, um die Karte zu erstellen!",
+    "prospectingResults": "Prospektionsergebnisse:",
+    "panZoom": "Ziehen zum Verschieben · Scrollen zum Zoomen"
+  },
+  "duplicate": {
+    "title": "<name>{{name}}</name> duplizieren",
+    "description": "Erstellt eine Kopie mit eigener Speicher-ID, damit der Kartenfortschritt getrennt bleibt.",
+    "nameLabel": "Neuer Name",
+    "submit": "Welt duplizieren",
+    "done": "Als {{name}} dupliziert",
+    "failed": "Welt konnte nicht dupliziert werden",
+    "noProfile": "Das Profil dieser Welt wurde nicht gefunden."
+  },
+  "backup": {
+    "filterName": "Welt-Archiv",
+    "backedUp": "Welt gesichert",
+    "failed": "Welt konnte nicht gesichert werden",
+    "noProfile": "Das Profil dieser Welt wurde nicht gefunden."
+  },
+  "import": {
+    "button": "Welt importieren…",
+    "title": "Welt importieren",
+    "description": "Fügt einem Profil einen .vcdbs-Spielstand oder ein Story-Forge-Welt-Zip hinzu.",
+    "fileLabel": "Weltdatei",
+    "chooseFile": "Datei wählen…",
+    "noFile": "Keine Datei gewählt",
+    "filterName": "Spielstand oder Archiv",
+    "profileLabel": "Profil",
+    "profilePlaceholder": "Profil wählen…",
+    "submit": "Welt importieren",
+    "imported": "Welt importiert",
+    "failed": "Welt konnte nicht importiert werden"
+  }
+}

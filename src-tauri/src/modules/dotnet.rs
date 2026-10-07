@@ -142,7 +142,7 @@ fn has_runtime(root: &Path, channel: &str) -> bool {
     false
 }
 
-/// Try to find an existing system dotnet installation with the required runtime.
+/// Try to find an existing system dotnet profile with the required runtime.
 /// On macOS aarch64, delegates to the arm64-specific check which handles
 /// dotnet 10 (ARM64-native) vs dotnet 8/7 (x64-only via Rosetta).
 pub fn find_system_dotnet_root(channel: &str) -> Option<PathBuf> {
@@ -257,7 +257,7 @@ fn find_system_dotnet_root_default(channel: &str) -> Option<PathBuf> {
         );
     }
 
-    // 2. Check common installation paths
+    // 2. Check common profile paths
     #[cfg(target_os = "macos")]
     let common_paths = [
         "/usr/local/share/dotnet",
@@ -577,12 +577,12 @@ pub async fn ensure_dotnet(
     app: &AppHandle,
     app_data_dir: &Path,
     game_version: &str,
-    installation_id: u64,
+    profile_id: u64,
     use_system_dotnet: bool,
 ) -> Result<PathBuf, UiError> {
     let channel = dotnet_channel(game_version);
 
-    // 1. Try system installation (if enabled)
+    // 1. Try system profile (if enabled)
     if use_system_dotnet {
         if let Some(root) = find_system_dotnet_root(channel) {
             log_info!("[dotnet] found system dotnet at {:?}", root);
@@ -637,7 +637,7 @@ pub async fn ensure_dotnet(
     log_info!("[dotnet] resolved to version {}", version);
     let arch = runtime_arch(game_version);
     let root =
-        download_dotnet_runtime(&client, app, &version, &local_dir, installation_id, arch).await?;
+        download_dotnet_runtime(&client, app, &version, &local_dir, profile_id, arch).await?;
     log_info!("[dotnet] installed to {:?}", root);
     Ok(root)
 }

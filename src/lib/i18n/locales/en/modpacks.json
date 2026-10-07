@@ -1,0 +1,125 @@
+{
+  "yours": "Yours",
+  "noDescription": "No description",
+  "downloads_one": "{{count}} download",
+  "downloads_other": "{{count}} downloads",
+  "page": {
+    "guest": "Browsing as a guest — anyone can install. <signIn>Sign in</signIn> to publish your own modpacks.",
+    "newModpack": "New modpack",
+    "searchAria": "Search modpacks",
+    "searchPlaceholder": "Search modpacks…",
+    "sortByAria": "Sort by",
+    "toggleSortAria": "Toggle sort direction",
+    "sortAsc": "Sort direction: ascending",
+    "sortDesc": "Sort direction: descending",
+    "filterOwnerAria": "Filter by owner",
+    "filterOwnerPlaceholder": "Filter by owner…",
+    "empty": "No modpacks yet.",
+    "emptyFiltered": "No modpacks match your filters.",
+    "found_one": "{{count}} modpack found",
+    "found_other": "{{count}} modpacks found"
+  },
+  "sort": {
+    "created": "Created",
+    "downloads": "Downloads",
+    "name": "Name",
+    "lastUpdated": "Last Updated"
+  },
+  "card": {
+    "manage": "Manage {{name}}",
+    "draft": "Draft",
+    "byline": "by {{name}}"
+  },
+  "detail": {
+    "byline_one": "by {{name}} · {{count}} download",
+    "byline_other": "by {{name}} · {{count}} downloads",
+    "bylineOwner_one": "by {{name}} · {{count}} download · Yours",
+    "bylineOwner_other": "by {{name}} · {{count}} downloads · Yours",
+    "versionsCount_one": "Versions ({{count}})",
+    "versionsCount_other": "Versions ({{count}})",
+    "addVersion": "Add version",
+    "empty": "No versions published yet.",
+    "emptyOwner": "No versions published yet. Add one to make this modpack installable.",
+    "forVs": "for VS {{version}}",
+    "editVersion": "Edit version {{version}}",
+    "deleteVersion": "Delete version {{version}}",
+    "needVs": "Need VS {{version}}"
+  },
+  "modsList": {
+    "count_one": "{{count}} mod",
+    "count_other": "{{count}} mods"
+  },
+  "install": {
+    "failed": "Failed to import modpack",
+    "profileName": "Profile name",
+    "profilePlaceholder": "My profile",
+    "confirmAria": "Install this version",
+    "cancelAria": "Cancel install",
+    "progress": "Downloading mod {{current}} of {{total}}:"
+  },
+  "form": {
+    "createTitle": "Create modpack",
+    "editTitle": "Edit modpack",
+    "createDescription": "Publish a new collection of mods for other players.",
+    "editDescription": "Update the modpack details below.",
+    "namePlaceholder": "My Awesome Modpack",
+    "slug": "Slug",
+    "suggestion": "Suggestion:",
+    "alternatives": "Alternatives:",
+    "descriptionPlaceholder": "A collection of mods for…",
+    "imageUrl": "Image URL",
+    "imageHint": "Upload your image to <site>mods.vintagestory.at</site> and paste the link here. External URLs are not accepted.",
+    "saving": "Saving…",
+    "saveChanges": "Save changes",
+    "createSubmit": "Create modpack",
+    "imageHostError": "Image URLs must be from moddbcdn.vintagestory.at",
+    "imageHostHint": "Upload your image at https://mods.vintagestory.at/edit/mod first.",
+    "slugUnavailable": "That slug is not available",
+    "slugUnavailableHint": "Pick the suggestion or one of the alternatives below the Slug field.",
+    "updateFailed": "Failed to update modpack",
+    "createFailed": "Failed to create modpack",
+    "errors": {
+      "nameRequired": "Name is required",
+      "slugRequired": "Slug is required",
+      "slugFormat": "Slug must be lowercase alphanumeric with hyphens"
+    }
+  },
+  "versionForm": {
+    "newTitle": "New version",
+    "editTitle": "Edit v{{version}}",
+    "pickFromProfile": "Pick from profile",
+    "selectProfile": "Select a profile…",
+    "gameVersion": "Game version",
+    "modsString": "Mods string",
+    "changelog": "Changelog",
+    "changelogPlaceholder": "What changed in this version…",
+    "modConfigsUrl": "Mod configs URL",
+    "uploadModConfig": "Upload ModConfig folder from profile",
+    "saving": "Saving…",
+    "readModsFailed": "Failed to read installed mods",
+    "uploadConfigFailed": "Failed to upload ModConfig",
+    "saveFailed": "Failed to save version",
+    "errors": {
+      "versionRequired": "Version is required",
+      "invalidSemver": "Invalid semantic version"
+    }
+  },
+  "delete": {
+    "title": "Delete modpack",
+    "description": "This permanently deletes <strong>{{name}}</strong> and all its versions. This action cannot be undone.",
+    "confirmLabel": "Type <wrap><code>{{slug}}</code><copy/></wrap> to confirm",
+    "copyAria": "Copy slug",
+    "pending": "Deleting…",
+    "submit": "Delete modpack",
+    "failed": "Failed to delete modpack"
+  },
+  "deleteVersion": {
+    "confirm": "Permanently delete <strong>v{{version}}</strong>? This cannot be undone.",
+    "confirmPlaceholder": "Type {{version}} to confirm",
+    "pending": "Deleting…",
+    "failed": "Failed to delete version"
+  },
+  "deepLink": {
+    "notFound": "Could not open modpack {{slug}} from the link"
+  }
+}

@@ -1,5 +1,5 @@
 import { authClient } from "@/lib/auth";
-import { stripped } from "@/lib/utils";
+import { stripped } from "@/lib/helpers";
 import { useModpacksFilters } from "@/stores/modpacksFilters";
 
 export type ModpackItem = {
@@ -27,6 +27,11 @@ type Version = {
   modsString: string;
   downloads: number;
   modpack: string;
+  changelog?: string | null;
+  manifestVersion?: number;
+  manifestHash?: string | null;
+  modConfigsSha256?: string | null;
+  modConfigsSize?: number | null;
   createdAt: number;
   updatedAt: number;
 };

@@ -1,0 +1,72 @@
+name: Screenshots
+
+on:
+  # Fired when a release draft created by the release workflow is published by
+  # hand, plus manual runs from the Actions tab.
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: screenshots
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: Capture and propose
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          no-cache: true
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Chromium
+        run: bunx playwright install --with-deps chromium
+
+      - name: Build frontend
+        run: bun run build
+
+      - name: Capture light/dark pairs
+        run: bun run screenshots:capture
+
+      - name: Composite the committed WebPs
+        run: bun run screenshots
+
+      - name: Propose updated screenshots
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: release
+          add-paths: screenshots
+          branch: chore/refresh-screenshots
+          delete-branch: true
+          commit-message: >-
+            chore(screenshots): refresh for
+            ${{ github.event.release.tag_name || 'manual run' }}
+          title: >-
+            chore(screenshots): refresh for
+            ${{ github.event.release.tag_name || 'manual run' }}
+          body: |
+            Automated README screenshot refresh for
+            `${{ github.event.release.tag_name || github.sha }}`.
+
+            Captured headlessly with Playwright against the built frontend, with
+            Tauri IPC stubbed by `scripts/screenshots/fixtures.ts`. The light and
+            dark pairs were composited into the committed WebP files by
+            `scripts/screenshots.ts`.
+
+            Review the images and merge when the pages look right.

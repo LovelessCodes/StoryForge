@@ -1,9 +1,11 @@
 pub mod modules;
 use modules::{
-    auth, download, installations, maps, mods, news, saves, server_hosting, servers, sniffer,
-    versions,
+    auth, backups, cairn, conflicts, download, game_data, game_defaults, gruntlauncher,
+    launcher_logins, legacy, lithic, maps, modpack_io, mods, mvl, news, optimum, packs,
+    profile_ops, profiles, rustory, saves, screenshots, server_hosting, servers, sniffer, versions,
+    vs_launcher, waxlight, yelloowstone,
 };
-use tauri::{RunEvent, WebviewUrl, WebviewWindowBuilder};
+use tauri::RunEvent;
 
 // ── Logging macros (crate root so accessible everywhere) ──
 
@@ -31,9 +33,134 @@ macro_rules! log_error {
     }};
 }
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use tauri::Manager;
+
+/// Configured `minWidth`/`minHeight` of the main window (`900x600` fallback).
+fn configured_min_window_size(app: &tauri::App) -> (f64, f64) {
+    app.config()
+        .app
+        .windows
+        .iter()
+        .find(|window| window.label == "main")
+        .and_then(|window| Some((window.min_width?, window.min_height?)))
+        .unwrap_or((900.0, 600.0))
+}
+
+/// A size grown to `min` when it is below either dimension, otherwise `None`.
+fn clamped_logical_size(
+    size: tauri::LogicalSize<f64>,
+    min: (f64, f64),
+) -> Option<tauri::LogicalSize<f64>> {
+    if size.width >= min.0 && size.height >= min.1 {
+        return None;
+    }
+    Some(tauri::LogicalSize::new(
+        size.width.max(min.0),
+        size.height.max(min.1),
+    ))
+}
+
+/// Grows a window back to the minimum when its size (usually a restored state)
+/// is below it. Returns `true` when a resize was applied.
+fn clamp_window_to_min(window: &tauri::WebviewWindow, min: (f64, f64)) -> bool {
+    let Ok(scale) = window.scale_factor() else {
+        return false;
+    };
+    let Ok(size) = window.inner_size() else {
+        return false;
+    };
+    let Some(target) = clamped_logical_size(size.to_logical::<f64>(scale), min) else {
+        return false;
+    };
+    let _ = window.set_size(target);
+    true
+}
+
+/// Minimum overlap a restored window must keep on a monitor before it is
+/// considered visible (logical pixels; scaled by the window's factor below).
+const MIN_VISIBLE_ON_SCREEN: f64 = 100.0;
+/// How long after startup position corrections are applied. The window-state
+/// plugin restores within the first frames; afterwards the user must be able
+/// to place the window freely.
+const STARTUP_POSITION_WINDOW: Duration = Duration::from_millis(2000);
+
+/// True when `window` overlaps `monitor` by at least the given margins
+/// (`x, y, width, height` in the same coordinate space).
+fn rects_overlap(
+    window: (f64, f64, f64, f64),
+    monitor: (f64, f64, f64, f64),
+    margin_w: f64,
+    margin_h: f64,
+) -> bool {
+    let (wx, wy, ww, wh) = window;
+    let (mx, my, mw, mh) = monitor;
+    let overlap_w = (wx + ww).min(mx + mw) - wx.max(mx);
+    let overlap_h = (wy + wh).min(my + mh) - wy.max(my);
+    overlap_w >= margin_w && overlap_h >= margin_h
+}
+
+/// Moves a restored window back onto a monitor when its saved position leaves
+/// almost none of it visible (the window-state plugin only requires a 1px
+/// intersection, which a changed monitor layout can still satisfy). Returns
+/// `true` when the window was moved.
+fn ensure_window_on_screen(window: &tauri::WebviewWindow) -> bool {
+    let (Ok(position), Ok(size), Ok(monitors)) = (
+        window.outer_position(),
+        window.outer_size(),
+        window.available_monitors(),
+    ) else {
+        return false;
+    };
+    let win = (
+        position.x as f64,
+        position.y as f64,
+        size.width as f64,
+        size.height as f64,
+    );
+    let scale = window.scale_factor().unwrap_or(1.0);
+    let margin = MIN_VISIBLE_ON_SCREEN * scale;
+
+    let visible = monitors.iter().any(|monitor| {
+        let m_pos = monitor.position();
+        let m_size = monitor.size();
+        rects_overlap(
+            win,
+            (
+                m_pos.x as f64,
+                m_pos.y as f64,
+                m_size.width as f64,
+                m_size.height as f64,
+            ),
+            margin,
+            margin,
+        )
+    });
+    if visible {
+        return false;
+    }
+
+    // Fall back to the primary monitor (or the first one available), centered.
+    let target = window
+        .primary_monitor()
+        .ok()
+        .flatten()
+        .or_else(|| monitors.first().cloned());
+    let Some(monitor) = target else {
+        return false;
+    };
+    let m_pos = monitor.position();
+    let m_size = monitor.size();
+    let x = m_pos.x as f64 + ((m_size.width as f64 - win.2) / 2.0).max(0.0);
+    let y = m_pos.y as f64 + ((m_size.height as f64 - win.3) / 2.0).max(0.0);
+    let _ = window.set_position(tauri::PhysicalPosition::new(
+        x.round() as i32,
+        y.round() as i32,
+    ));
+    true
+}
 
 /// Returns `true` if the application is running inside a Flatpak sandbox.
 /// Flatpak manages updates via Flathub; our bundled updater must be disabled.
@@ -59,6 +186,10 @@ pub fn run() {
     }
 
     let mut builder = tauri::Builder::default()
+        // Must come before the deep-link plugin: on Windows/Linux it forwards
+        // `storyforge://` URLs to the running instance instead of starting a
+        // second one. macOS routes the URL through the OS.
+        .plugin(tauri_plugin_single_instance::init(|_app, _argv, _cwd| {}))
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
@@ -75,6 +206,45 @@ pub fn run() {
         .plugin(tauri_plugin_os::init())
         .setup(|app| {
             let app_handle = app.handle();
+
+            // ── Window placement ──
+            // The window-state plugin restores the previous size and position
+            // verbatim: the size can predate the configured minimum, and the
+            // position can land almost entirely offscreen after a monitor
+            // layout change. Clamp the size, pull a hidden window back onto a
+            // monitor, and keep checking briefly while the restore lands.
+            if let Some(window) = app.get_webview_window("main") {
+                let min = configured_min_window_size(app);
+                if clamp_window_to_min(&window, min) {
+                    log_info!("startup: clamped the window to the configured minimum");
+                }
+                if ensure_window_on_screen(&window) {
+                    log_info!("startup: moved the window back onto a monitor");
+                }
+
+                // Stop correcting positions shortly after startup: the
+                // restore lands within the first frames, and afterwards the
+                // user must be able to place the window freely.
+                let positioning = Arc::new(AtomicBool::new(true));
+                {
+                    let positioning = positioning.clone();
+                    std::thread::spawn(move || {
+                        std::thread::sleep(STARTUP_POSITION_WINDOW);
+                        positioning.store(false, Ordering::SeqCst);
+                    });
+                }
+
+                let window_for_events = window.clone();
+                window.on_window_event(move |event| match event {
+                    tauri::WindowEvent::Resized(_) => {
+                        clamp_window_to_min(&window_for_events, min);
+                    }
+                    tauri::WindowEvent::Moved(_) if positioning.load(Ordering::SeqCst) => {
+                        ensure_window_on_screen(&window_for_events);
+                    }
+                    _ => {}
+                });
+            }
 
             // ── Step 0: Init logger ──
             // Use app_data_dir()/logs/ so the LogViewer can find the file.
@@ -144,16 +314,21 @@ pub fn run() {
             log_info!("Setup step 2 done: zustand plugin initialized");
             modules::logger::log_elapsed("Setup step 2 elapsed", t2);
 
-            // ── Step 2.5: Run data migrations ──
-            log_info!("Setup step 2.5: running data migrations...");
-            let t2_5 = std::time::Instant::now();
+            // ── Step 2.25: Store-file data migrations ──
+            // Older releases kept installations and accounts in zustand
+            // store files; write their file-based forms before anything
+            // reads user data, so legacy import and account loading find
+            // them. Idempotent; a few file existence checks when nothing
+            // needs doing.
+            log_info!("Setup step 2.25: running store-file data migrations...");
+            let t2_25 = std::time::Instant::now();
             modules::migrations::run_all(app_handle);
-            log_info!("Setup step 2.5 done: migrations complete");
-            modules::logger::log_elapsed("Setup step 2.5 elapsed", t2_5);
+            log_info!("Setup step 2.25 done: store-file migrations complete");
+            modules::logger::log_elapsed("Setup step 2.25 elapsed", t2_25);
 
-            // ── Step 2.75: Shared HTTP client ──
-            log_info!("Setup step 2.75: initializing shared HTTP client...");
-            let t2_75 = std::time::Instant::now();
+            // ── Step 2.5: Shared HTTP client ──
+            log_info!("Setup step 2.5: initializing shared HTTP client...");
+            let t2_5 = std::time::Instant::now();
             let http_client = Arc::new(
                 reqwest::Client::builder()
                     .connect_timeout(Duration::from_secs(10))
@@ -165,48 +340,13 @@ pub fn run() {
                     })?,
             );
             app_handle.manage(http_client);
-            log_info!("Setup step 2.75 done: shared HTTP client ready");
-            modules::logger::log_elapsed("Setup step 2.75 elapsed", t2_75);
+            log_info!("Setup step 2.5 done: shared HTTP client ready");
+            modules::logger::log_elapsed("Setup step 2.5 elapsed", t2_5);
 
-            // ── Step 3: Build main window ──
-            log_info!("Setup step 3: building main window...");
-            let t3 = std::time::Instant::now();
+            // The main window is declared in tauri.conf.json (overlay titlebar
+            // style on macOS, matching the app's custom title bar).
 
-            let win_builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
-                .title("Story Forge")
-                .inner_size(800.0, 600.0)
-                .transparent(cfg!(target_os = "macos"))
-                .decorations(!cfg!(target_os = "linux"));
-
-            #[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
-            let window = match win_builder.build() {
-                Ok(w) => {
-                    log_info!("Setup step 3 done: window created");
-                    w
-                }
-                Err(e) => {
-                    log_error!("Failed to build main window: {}", e);
-                    panic!("Failed to build main window: {}", e);
-                }
-            };
-
-            modules::logger::log_elapsed("Setup step 3 elapsed", t3);
-
-            // ── Step 4: Platform-specific window config ──
-            log_info!(
-                "Setup step 4: platform-specific window config (OS: {})",
-                std::env::consts::OS
-            );
-            let t4 = std::time::Instant::now();
-
-            #[cfg(target_os = "macos")]
-            {
-                modules::platform::macos::apply_window_styling(&window);
-            }
-            log_info!("Setup step 4 done: platform-specific config applied");
-            modules::logger::log_elapsed("Setup step 4 elapsed", t4);
-
-            // ── Step 5: Setup complete ──
+            // ── Step 3: Setup complete ──
             log_info!("Setup complete – app is running");
             modules::logger::log_elapsed("Total Rust setup elapsed", startup_start);
             modules::logger::mark_webview_start();
@@ -220,66 +360,151 @@ pub fn run() {
             auth::verify,
             auth::save_accounts,
             auth::load_accounts,
+            // Saved logins from other launchers
+            launcher_logins::detect_launcher_logins,
+            launcher_logins::import_launcher_logins,
             // News
             news::fetch_news,
+            // Game defaults (live source profile settings applied on launch)
+            game_defaults::preview_game_defaults,
             // Mods
             mods::fetch_mod_tags,
             mods::fetch_mods,
             mods::fetch_mod_info,
             mods::fetch_authors,
             mods::get_mods,
+            mods::get_mod_dependencies,
             mods::get_mod_configs,
             mods::get_mod_updates,
-            mods::get_installation_mods,
-            mods::add_mod_to_installation,
+            mods::get_profile_mods,
+            mods::add_mod_to_profile,
             mods::download_mod,
-            mods::remove_mod_from_installation,
+            mods::remove_mod_from_profile,
             mods::save_mod_config,
+            mods::set_mod_enabled,
+            mods::set_all_mods_enabled,
+            mods::install_mod_file,
+            mods::install_mod_url,
+            mods::apply_mod_state,
+            // Conflict detection (overlapping assets and patch targets)
+            conflicts::scan_mod_conflicts,
+            // Modpack manifests (RiftLauncher-compatible import/export)
+            modpack_io::read_modpack_manifest,
+            modpack_io::write_modpack_manifest,
             // Download
             download::get_download_links,
             download::get_download_link,
             download::download_and_maybe_extract,
             download::scan_resume_manifests,
+            download::discard_download,
             // Versions
             versions::fetch_versions,
             versions::get_installed_versions,
             versions::remove_installed_version,
             versions::move_versions_folder,
             versions::remove_all_versions,
+            versions::detect_linkable_versions,
+            versions::link_external_versions,
+            versions::unregister_external_version,
+            // Optimum (client fork) overlay install
+            optimum::get_optimum_status,
+            optimum::install_optimum,
+            // Profile pack locks (pin, verify, sync/repair)
+            packs::create_profile_lock,
+            packs::get_profile_lock_status,
+            packs::remove_profile_lock,
+            packs::apply_profile_lock,
             // Logger
             modules::logger::log_message,
             modules::logger::log_startup_time,
             modules::logger::log_webview_gap,
             modules::logger::get_logs,
-            // Installations
-            installations::get_all_installations,
-            installations::save_installation,
-            installations::import_installation,
-            installations::play_game,
-            installations::confirm_vintage_story_exe,
-            installations::initialize_game,
-            installations::reveal_in_file_explorer,
-            installations::remove_installation,
-            installations::move_installations_folder,
-            installations::remove_all_installations,
-            installations::rename_installations_folder,
-            installations::get_installation_logs,
-            installations::read_installation_log,
-            installations::zip_modconfig,
+            // Profiles
+            profiles::get_all_profiles,
+            profiles::save_profile,
+            profiles::set_profile_game_defaults,
+            profiles::import_profile,
+            profiles::play_game,
+            profiles::confirm_vintage_story_exe,
+            profiles::initialize_game,
+            profiles::reveal_in_file_explorer,
+            profiles::remove_profile,
+            profiles::move_profiles_folder,
+            profiles::remove_all_profiles,
+            profiles::rename_profiles_folder,
+            profiles::get_profile_logs,
+            profiles::read_profile_log,
+            profiles::zip_modconfig,
+            profiles::set_profile_backup_settings,
+            backups::list_profile_backups,
+            backups::create_profile_backup,
+            backups::restore_profile_backup,
+            backups::delete_profile_backup,
+            // Profile lifecycle (Macheim-style)
+            profile_ops::clone_profile,
+            profile_ops::rename_profile,
+            profile_ops::soft_delete_profile,
+            profile_ops::list_deleted_profiles,
+            profile_ops::restore_deleted_profile,
+            profile_ops::purge_deleted_profile,
+            profile_ops::purge_deleted_profiles,
+            profile_ops::export_profile,
+            profile_ops::export_profile_file,
+            profile_ops::export_profile_code,
+            profile_ops::import_profile_code,
+            profile_ops::read_profile_file,
+            // Legacy installations migration (previous Story Forge release)
+            legacy::detect_legacy_installations,
+            legacy::migrate_legacy_installations,
+            // Existing game data adoption
+            game_data::detect_default_game_data,
+            game_data::adopt_game_data,
+            game_data::unregister_external_profile,
+            // VS Launcher (XurxoMF) installation import
+            vs_launcher::detect_vs_launcher_installations,
+            vs_launcher::import_vs_launcher_installations,
+            // MVL (scgm0) modpack import
+            mvl::detect_mvl_modpacks,
+            mvl::import_mvl_modpacks,
+            // Waxlight Launcher (AmadoMuerte) instance import
+            waxlight::detect_waxlight_instances,
+            waxlight::import_waxlight_instances,
+            // Cairn (cairns-gg) pack import
+            cairn::detect_cairn_packs,
+            cairn::import_cairn_packs,
+            // Rustory (XurxoMF) instance import
+            rustory::detect_rustory_instances,
+            rustory::import_rustory_instances,
+            // GruntLauncher (renarin-kholin) instance import
+            gruntlauncher::detect_gruntlauncher_instances,
+            gruntlauncher::import_gruntlauncher_instances,
+            // Lithic (NotAShelf) instance import
+            lithic::detect_lithic_instances,
+            lithic::import_lithic_instances,
+            // Yelloowstone (jgwoolley/vintage-story-launcher) instance import
+            yelloowstone::detect_yelloowstone_instances,
+            yelloowstone::import_yelloowstone_instances,
             // Servers
             servers::fetch_public_servers,
             servers::fetch_all_servers,
             // Sniffer
             sniffer::sniff_server,
-            servers::add_server_to_installation,
-            servers::remove_server_from_installation,
-            servers::check_server_in_installation,
+            servers::add_server_to_profile,
+            servers::remove_server_from_profile,
+            servers::check_server_in_profile,
             servers::set_server_favorite,
             // Saves
-            saves::get_installation_saves,
+            saves::get_profile_saves,
             saves::get_all_saves,
             saves::update_world,
             saves::remove_world,
+            saves::duplicate_world,
+            saves::backup_world,
+            saves::import_world,
+            // Screenshots
+            screenshots::get_profile_screenshots,
+            screenshots::get_screenshot_thumbnail,
+            screenshots::read_screenshot,
             // Server Hosting
             server_hosting::create_hosted_server,
             server_hosting::get_all_hosted_servers,
@@ -323,4 +548,68 @@ pub fn run() {
             download::pause_all_active_downloads();
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn clamps_only_sizes_below_the_minimum() {
+        let min = (900.0, 600.0);
+
+        // Smaller than the minimum in both/one dimension: grown.
+        assert_eq!(
+            clamped_logical_size(tauri::LogicalSize::new(800.0, 500.0), min),
+            Some(tauri::LogicalSize::new(900.0, 600.0))
+        );
+        assert_eq!(
+            clamped_logical_size(tauri::LogicalSize::new(800.0, 900.0), min),
+            Some(tauri::LogicalSize::new(900.0, 900.0))
+        );
+
+        // At or above the minimum: untouched.
+        assert_eq!(
+            clamped_logical_size(tauri::LogicalSize::new(900.0, 600.0), min),
+            None
+        );
+        assert_eq!(
+            clamped_logical_size(tauri::LogicalSize::new(1600.0, 1000.0), min),
+            None
+        );
+    }
+
+    #[test]
+    fn requires_a_visible_area_on_a_monitor() {
+        let monitor = (0.0, 0.0, 1920.0, 1080.0);
+
+        // Fully inside, or partially inside with enough overlap.
+        assert!(rects_overlap(
+            (100.0, 100.0, 900.0, 600.0),
+            monitor,
+            100.0,
+            100.0
+        ));
+        assert!(rects_overlap(
+            (1870.0, 1030.0, 900.0, 600.0),
+            monitor,
+            40.0,
+            40.0
+        ));
+
+        // A 1px intersection is technically "on screen" but unusable.
+        assert!(!rects_overlap(
+            (1919.0, 500.0, 900.0, 600.0),
+            monitor,
+            100.0,
+            100.0
+        ));
+        // Saved coordinates of a monitor that is no longer connected.
+        assert!(!rects_overlap(
+            (2560.0, 200.0, 900.0, 600.0),
+            monitor,
+            100.0,
+            100.0
+        ));
+    }
 }

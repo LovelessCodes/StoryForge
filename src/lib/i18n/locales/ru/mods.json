@@ -1,0 +1,344 @@
+{
+  "standalone": "Без профиля",
+  "loadingReleases": "Загрузка релизов…",
+  "search": {
+    "placeholder": "Поиск модов…"
+  },
+  "filters": {
+    "count_one": "{{count}} мод",
+    "count_few": "{{count}} мода",
+    "count_many": "{{count}} модов",
+    "count_other": "{{count}} мода",
+    "gameVersions": {
+      "aria": "Фильтр по версии игры",
+      "empty": "Версии не найдены.",
+      "placeholder": "Версии игры…"
+    },
+    "tags": {
+      "aria": "Фильтр по тегу",
+      "empty": "Теги не найдены.",
+      "placeholder": "Теги модов…",
+      "label": "Теги"
+    },
+    "sort": {
+      "aria": "Сортировка",
+      "toggleDirection": "Переключить направление сортировки"
+    },
+    "category": {
+      "aria": "Категория",
+      "label": "Категория"
+    },
+    "favorites": {
+      "aria": "Показывать только избранное",
+      "label": "Избранное"
+    },
+    "side": {
+      "aria": "Фильтр по стороне",
+      "label": "Сторона"
+    },
+    "more": "Фильтры",
+    "reset": "Сбросить",
+    "author": {
+      "label": "Автор"
+    }
+  },
+  "sort": {
+    "comments": "Комментарии",
+    "created": "Дата создания",
+    "downloads": "Скачивания",
+    "follows": "Подписки",
+    "name": "Имя",
+    "relevance": "Релевантность",
+    "trending": "В тренде",
+    "updated": "Последнее обновление"
+  },
+  "sortDirection": {
+    "ascending": "По возрастанию",
+    "descending": "По убыванию"
+  },
+  "category": {
+    "externaltool": "Внешний инструмент",
+    "mod": "Мод",
+    "other": "Другое"
+  },
+  "side": {
+    "both": "Обе",
+    "client": "Клиент",
+    "server": "Сервер"
+  },
+  "authorFilter": {
+    "aria": "Фильтр по автору",
+    "clear": "Сбросить фильтр по автору",
+    "count_one": "{{count}} мод",
+    "count_few": "{{count}} мода",
+    "count_many": "{{count}} модов",
+    "count_other": "{{count}} мода",
+    "empty": "Авторы не найдены.",
+    "placeholder": "Фильтр по автору…"
+  },
+  "list": {
+    "empty": "Моды не найдены. Попробуйте изменить запрос или фильтры."
+  },
+  "item": {
+    "add": "Добавить мод",
+    "addTo": "Добавить в {{destination}}",
+    "browseVersions": "Просмотреть версии",
+    "browseVersionsTooltip": "Посмотреть доступные версии",
+    "byAuthor": "от {{author}}",
+    "downloadLatest": "Скачать последнюю версию",
+    "favorite": "Добавить в избранное",
+    "filterBy": "Фильтр по {{author}}",
+    "filterByAuthor": "Фильтр по автору {{author}}",
+    "install": "Установить мод",
+    "installLatest": "Установить последнюю версию",
+    "installTo": "Установить в…",
+    "installToDestination": "Установить в профиль или на собственный сервер",
+    "installedVersion": "Установлена v{{version}}",
+    "openOnModDB": "Открыть в базе модов",
+    "pin": "Закрепить мод",
+    "pinTooltip": "Закрепить на v{{version}} (исключается из «Обновить все»)",
+    "pinnedTooltip": "Закреплено на v{{version}} — «Обновить все» пропускает его",
+    "removeFrom": "Убрать из {{destination}}",
+    "unpin": "Открепить мод",
+    "unfavorite": "Убрать из избранного",
+    "updateToLatest": "Обновить до последней версии",
+    "enable": "Включить мод",
+    "disable": "Отключить мод",
+    "enableTooltip": "Включить {{name}}",
+    "disableTooltip": "Отключить {{name}}",
+    "disabledBadge": "Отключён"
+  },
+  "versionPicker": {
+    "aria": "Выбрать версию",
+    "forVersion": "для {{version}}",
+    "moreTags_one": "(+{{count}} ещё)",
+    "moreTags_few": "(+{{count}} ещё)",
+    "moreTags_many": "(+{{count}} ещё)",
+    "moreTags_other": "(+{{count}} ещё)",
+    "placeholder": "Выбрать версию…",
+    "changelog": "Изменения"
+  },
+  "release": {
+    "downloads_one": "{{count}} скачивание",
+    "downloads_few": "{{count}} скачивания",
+    "downloads_many": "{{count}} скачиваний",
+    "downloads_other": "{{count}} скачивания"
+  },
+  "addSheet": {
+    "description": "Выберите версию {{name}}, которую хотите добавить в {{destination}}.",
+    "submit": "Добавить мод",
+    "title": "Добавить <name>{{name}}</name> в <destination>{{destination}}</destination>"
+  },
+  "removeSheet": {
+    "body": "Это навсегда удалит <name>{{name}}</name> из {{destination}}.",
+    "description": "Это действие нельзя отменить.",
+    "title": "Убрать <name>{{name}}</name> из <destination>{{destination}}</destination>?"
+  },
+  "updateSheet": {
+    "buttonDowngrade": "Откатить мод",
+    "buttonUpdate": "Обновить мод",
+    "description": "Текущая установленная версия: <version>{{version}}</version>. Выберите версию, на которую хотите перейти.",
+    "titleDowngrade": "Откатить <name>{{name}}</name> в <destination>{{destination}}</destination>",
+    "titleUpdate": "Обновить <name>{{name}}</name> в <destination>{{destination}}</destination>"
+  },
+  "standaloneInstall": {
+    "description": "Нет активного профиля. Выберите, куда установить мод и какую версию использовать.",
+    "destination": "Назначение",
+    "destinationAria": "Назначение установки",
+    "destinationPlaceholder": "Выберите назначение…",
+    "hostedServers": "Собственные серверы",
+    "noDestinations": "Нет доступных профилей или собственных серверов.",
+    "noDownload": "Для {{name}} нет доступной загрузки",
+    "profiles": "Профили",
+    "title": "Установить <name>{{name}}</name>"
+  },
+  "updateAll": {
+    "button_one": "Обновить все ({{count}})",
+    "button_few": "Обновить все ({{count}})",
+    "button_many": "Обновить все ({{count}})",
+    "button_other": "Обновить все ({{count}})",
+    "confirm": "Да, точно"
+  },
+  "modpackIO": {
+    "menuTrigger": "Модпак",
+    "import": "Импортировать модпак…",
+    "export": "Экспортировать модпак…",
+    "jsonFilter": "Файл модпака",
+    "exported": "Модпак экспортирован",
+    "exportFailed": "Не удалось экспортировать модпак",
+    "readFailed": "Этот файл не является манифестом модпака",
+    "importSheet": {
+      "title": "Импорт модпака",
+      "description": "{{name}} · для Vintage Story {{version}}",
+      "gameVersionMismatch": "Этот пакет предназначен для Vintage Story {{packVersion}}, но профиль использует {{profileVersion}}.",
+      "empty": "В этом пакете нет модов.",
+      "alreadyInstalled": "Уже установлен",
+      "replace": "Заменить {{from}} → {{to}}",
+      "willInstall": "Будет установлен",
+      "importing": "Импорт…",
+      "done": "Установлен",
+      "failed": "Ошибка",
+      "missingVersion": "Версия {{version}} недоступна в базе модов",
+      "confirm": "Импортировать моды",
+      "nothing": "Нечего импортировать",
+      "progress": "{{done}} / {{total}}",
+      "summary_one": "Импортирован {{count}} мод",
+      "summary_few": "Импортировано {{count}} мода",
+      "summary_many": "Импортировано {{count}} модов",
+      "summary_other": "Импортировано {{count}} модов",
+      "summaryFailed_one": "Не удалось импортировать {{count}} мод",
+      "summaryFailed_few": "Не удалось импортировать {{count}} мода",
+      "summaryFailed_many": "Не удалось импортировать {{count}} модов",
+      "summaryFailed_other": "Не удалось импортировать {{count}} модов",
+      "upToDate": "Всё уже установлено",
+      "close": "Готово"
+    }
+  },
+  "dependencies": {
+    "installMissing": "Установить отсутствующие",
+    "missing_one": "{{count}} отсутствующая зависимость в {{destination}}",
+    "missing_few": "{{count}} отсутствующие зависимости в {{destination}}",
+    "missing_many": "{{count}} отсутствующих зависимостей в {{destination}}",
+    "missing_other": "{{count}} отсутствующей зависимости в {{destination}}",
+    "more": "ещё +{{count}}",
+    "requiredBy": "требуется для {{names}}"
+  },
+  "errors": {
+    "add": "Ошибка добавления {{name}} в {{destination}}: {{message}}",
+    "downgrading": "Ошибка отката {{name}} в {{destination}}: {{message}}",
+    "install": "Ошибка установки {{name}} в {{destination}}: {{message}}",
+    "remove": "Ошибка удаления {{name}} из {{destination}}: {{message}}",
+    "update": "Ошибка обновления {{name}} в {{destination}}: {{message}}",
+    "updateIn": "Ошибка обновления мода в {{destination}}: {{message}}",
+    "upgrading": "Ошибка обновления {{name}} в {{destination}}: {{message}}"
+  },
+  "issues": {
+    "title": "Проблемы с файлами модов в {{destination}}",
+    "description": "Нечитаемые файлы не загружаются; при повторяющихся ID модов загрузится только одна копия.",
+    "duplicateDetail": "Дубликат: {{modid}}",
+    "remove": "Удалить файл",
+    "confirmRemove": "Точно удалить?",
+    "removeFailed": "Не удалось удалить {{file}}: {{message}}",
+    "hint": "Удаление файла необратимо."
+  },
+  "deepLink": {
+    "failed": "Не удалось открыть {{modid}} по ссылке"
+  },
+  "toggle": {
+    "enabled": "{{name}} включён",
+    "disabled": "{{name}} отключён",
+    "enableAll": "Включить все моды",
+    "disableAll": "Отключить все моды",
+    "bulkEnabled": "Все моды включены",
+    "bulkDisabled": "Все моды отключены",
+    "failed": "Не удалось изменить состояние мода"
+  },
+  "installFrom": {
+    "button": "Установить мод",
+    "file": "Из файла…",
+    "url": "По ссылке…",
+    "zipFilter": "Архив мода (.zip)",
+    "urlTitle": "Установка по ссылке",
+    "urlDescription": "Вставьте прямую ссылку на .zip мода — подойдёт ссылка скачивания с ModDB и любой https-хост.",
+    "urlPlaceholder": "https://…",
+    "submit": "Установить",
+    "installed": "{{name}} {{version}} установлен",
+    "failed": "Не удалось установить мод",
+    "invalidZip": "Это не мод Vintage Story (.zip с modinfo.json)",
+    "badUrl": "Введите ссылку https:// на .zip мода"
+  },
+  "updates": {
+    "skipTooltip": "Пропустить {{version}}",
+    "skippedTooltip": "Обновление {{version}} пропущено — вернуть",
+    "skippedToast": "{{name}} v{{version}} пропущено",
+    "restoredToast": "Обновления {{name}} возвращены"
+  },
+  "bulk": {
+    "title": "Обновления ({{count}})",
+    "description": "Проверьте списки изменений перед обновлением.",
+    "noChangelog": "Список изменений не указан.",
+    "copy": "Скопировать списки изменений",
+    "copied": "Списки изменений скопированы",
+    "copyFailed": "Не удалось скопировать списки изменений",
+    "updateAll": "Обновить всё ({{count}})"
+  },
+  "presets": {
+    "button": "Профили модов",
+    "title": "Профили модов",
+    "description": "Сохраните текущее состояние включённых и отключённых модов под именем и применяйте его позже.",
+    "save": "Сохранить текущее состояние",
+    "namePlaceholder": "Имя профиля",
+    "saveAction": "Сохранить",
+    "currentState": "Сейчас отключено модов: {{count}}",
+    "saved": "Профиль {{name}} сохранён",
+    "empty": "Для этой цели профилей пока нет.",
+    "disabledCount": "Отключает модов: {{count}}",
+    "apply": "Применить",
+    "applied": "{{name}} применён",
+    "delete": "Удалить профиль {{name}}",
+    "deleteTitle": "Удалить профиль",
+    "deleteConfirm": "Точно удалить?",
+    "deleted": "{{name}} удалён"
+  },
+  "conflicts": {
+    "button": "Конфликты",
+    "title": "Конфликты модов",
+    "description": "Пересекающееся содержимое установленных модов: один и тот же файл или патчи к одному JSON. Это только информация — ничего не меняется.",
+    "scanning": "Проверка установленных модов…",
+    "rescan": "Проверить снова",
+    "empty": "Пересечений между установленными модами не найдено.",
+    "assetKind": "Одинаковый файл",
+    "patchKind": "Одна цель патча",
+    "patchDetail": "пересечение в {{path}}",
+    "truncated": "Показаны первые {{count}} конфликтов.",
+    "failed": "Не удалось проверить конфликты"
+  },
+  "view": {
+    "browse": "Обзор",
+    "installed": "Установленные ({{count}})",
+    "aria": "Режим просмотра модов"
+  },
+  "installed": {
+    "count": "Установлено модов: {{count}}",
+    "noTarget": "Откройте профиль, чтобы увидеть установленные моды.",
+    "empty": "Здесь пока нет установленных модов.",
+    "ungrouped": "Без группы",
+    "enabledCount": "{{enabled}} / {{total}} включено",
+    "selected": "Выбрано: {{count}}",
+    "select": "Выбрать {{name}}",
+    "selectAll": "Выбрать все в группе",
+    "enable": "Включить",
+    "disable": "Отключить",
+    "remove": "Удалить",
+    "removeConfirm": "Удалить {{count}} мод(ов)?",
+    "removePartial": "Не удалось удалить модов: {{failed}}",
+    "removeFailed": "Не удалось удалить моды",
+    "removed": "Удалено модов: {{count}}",
+    "stateChanged": "Обновлено модов: {{count}}",
+    "clearSelection": "Снять выделение",
+    "moveToGroup": "Переместить в группу",
+    "moved": "Перемещено модов: {{count}}",
+    "removeMod": "Удалить {{name}}",
+    "emptyGroup": "В этой группе нет модов."
+  },
+  "groups": {
+    "new": "Новая группа",
+    "namePlaceholder": "Название группы",
+    "create": "Создать",
+    "created": "Группа {{name}} создана",
+    "rename": "Переименовать",
+    "delete": "Удалить группу",
+    "deleteConfirm": "Удалить эту группу? Моды останутся установленными.",
+    "deleted": "Группа {{name}} удалена",
+    "enableAll": "Включить все",
+    "disableAll": "Отключить все",
+    "menu": "Действия группы",
+    "save": "Сохранить",
+    "expand": "Развернуть группу",
+    "collapse": "Свернуть группу"
+  },
+  "actions": {
+    "more": "Другие действия",
+    "conflicts": "Проверить конфликты"
+  }
+}

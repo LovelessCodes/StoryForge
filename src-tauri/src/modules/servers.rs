@@ -2,27 +2,30 @@ use serde::Serialize;
 use serde_json::{from_str, json, to_string_pretty, Value};
 use std::{
     collections::HashSet,
-    fs::{read_dir, read_to_string, write},
+    fs::{read_to_string, write},
     path::{Path, PathBuf},
     sync::Arc,
 };
 use tauri::{command, AppHandle, Manager, State};
 
 use super::errors::UiError;
-use super::installations::find_installation_by_id;
 use super::paths;
-use super::utils::{installations_folder, installations_subdir};
+use super::profiles::find_profile_by_id;
 use crate::{log_error, log_info};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct SavedServer {
+    /// Address-scoped id (name|ip|port hash) — favorites are stored against it.
     pub id: u64,
+    /// Row identity: the same server can exist in several profiles, so the
+    /// profile is part of the key the frontend uses for list/store operations.
+    pub row_key: String,
     pub name: String,
     pub ip: String,
     pub port: Option<u16>,
     pub password: String,
-    pub installation_id: u64,
-    pub installation_name: String,
+    pub profile_id: u64,
+    pub profile_name: String,
     pub favorite: bool,
 }
 
@@ -93,7 +96,7 @@ fn parse_server_string(raw: &str) -> Option<(String, String, Option<u16>, String
 }
 
 fn server_id(name: &str, ip: &str, port: Option<u16>) -> u64 {
-    // Same FNV-1a 32-bit as installations::generate_id, but for multiple fields
+    // Same FNV-1a 32-bit as profiles::generate_id, but for multiple fields
     let combined = format!("{}|{}|{}", name, ip, port.unwrap_or(0));
     let mut hash: u32 = 0x811c9dc5;
     for byte in combined.bytes() {
@@ -105,8 +108,8 @@ fn server_id(name: &str, ip: &str, port: Option<u16>) -> u64 {
 
 fn extract_servers_from_directory(
     dir: &Path,
-    installation_id: u64,
-    installation_name: &str,
+    profile_id: u64,
+    profile_name: &str,
     favorites: &HashSet<u64>,
 ) -> Vec<SavedServer> {
     let mut servers = Vec::new();
@@ -123,13 +126,14 @@ fn extract_servers_from_directory(
                         if let Some((name, ip, port, password)) = parse_server_string(raw) {
                             let id = server_id(&name, &ip, port);
                             servers.push(SavedServer {
+                                row_key: format!("{}:{}", profile_id, id),
                                 id,
                                 name,
                                 ip,
                                 port,
                                 password,
-                                installation_id,
-                                installation_name: installation_name.to_string(),
+                                profile_id,
+                                profile_name: profile_name.to_string(),
                                 favorite: favorites.contains(&id),
                             });
                         }
@@ -144,30 +148,14 @@ fn extract_servers_from_directory(
 #[command]
 pub fn fetch_all_servers(app: AppHandle) -> Result<Vec<SavedServer>, UiError> {
     log_info!("fetch_all_servers");
-    let subdir = installations_subdir(app.clone());
-    let installations_dir = installations_folder(app.clone())?.join(&subdir);
     let mut all_servers: Vec<SavedServer> = Vec::new();
-
-    if !installations_dir.is_dir() {
-        return Ok(all_servers);
-    }
 
     let favorites = read_server_favorites(&app);
 
-    for entry in read_dir(&installations_dir).map_err(|e| UiError {
-        name: "io_error".into(),
-        message: format!("Failed to read installations dir: {e}"),
-    })? {
-        let entry = entry.map_err(|e| UiError {
-            name: "io_error".into(),
-            message: format!("Dir entry error: {e}"),
-        })?;
-        let dir = entry.path();
-        if !dir.is_dir() {
-            continue;
-        }
-        let dir_name = entry.file_name().to_string_lossy().to_string();
-        // Get installation id from installation.json (same hash-based id)
+    // Includes adopted game data folders registered outside the root.
+    for dir in super::profiles::all_profile_dirs(&app)? {
+        let dir_name = crate::modules::utils::dir_name(&dir);
+        // Get profile id from profile.json (same hash-based id)
         let inst_id = crate::modules::utils::generate_id(&dir_name);
         let servers = extract_servers_from_directory(&dir, inst_id, &dir_name, &favorites);
         all_servers.extend(servers);
@@ -189,9 +177,9 @@ pub fn fetch_all_servers(app: AppHandle) -> Result<Vec<SavedServer>, UiError> {
     Ok(all_servers)
 }
 
-/// Reads an installation's `clientsettings.json`, or an empty object.
-fn read_clientsettings(installation_dir: &Path) -> Result<Value, UiError> {
-    let path = paths::clientsettings_path(installation_dir);
+/// Reads an profile's `clientsettings.json`, or an empty object.
+fn read_clientsettings(profile_dir: &Path) -> Result<Value, UiError> {
+    let path = paths::clientsettings_path(profile_dir);
     if !path.exists() {
         return Ok(json!({}));
     }
@@ -209,9 +197,9 @@ fn read_clientsettings(installation_dir: &Path) -> Result<Value, UiError> {
     })
 }
 
-/// Returns the installation's configured multiplayer servers.
-fn multiplayer_servers(installation_dir: &Path) -> Result<Vec<Value>, UiError> {
-    let clientsettings = read_clientsettings(installation_dir)?;
+/// Returns the profile's configured multiplayer servers.
+fn multiplayer_servers(profile_dir: &Path) -> Result<Vec<Value>, UiError> {
+    let clientsettings = read_clientsettings(profile_dir)?;
     Ok(clientsettings
         .get("stringListSettings")
         .and_then(|sl| sl.get("multiplayerservers"))
@@ -222,12 +210,12 @@ fn multiplayer_servers(installation_dir: &Path) -> Result<Vec<Value>, UiError> {
 
 /// Applies `mutate` to `stringListSettings.multiplayerservers` and writes the
 /// file back, creating both the file and the nested keys when missing.
-fn update_multiplayer_servers<F>(installation_dir: &Path, mutate: F) -> Result<(), UiError>
+fn update_multiplayer_servers<F>(profile_dir: &Path, mutate: F) -> Result<(), UiError>
 where
     F: FnOnce(&mut Vec<Value>),
 {
-    let clientsettings_path = paths::clientsettings_path(installation_dir);
-    let mut clientsettings = read_clientsettings(installation_dir)?;
+    let clientsettings_path = paths::clientsettings_path(profile_dir);
+    let mut clientsettings = read_clientsettings(profile_dir)?;
 
     let mut string_list_settings = clientsettings
         .get_mut("stringListSettings")
@@ -262,37 +250,37 @@ where
 }
 
 #[command]
-pub fn remove_server_from_installation(
+pub fn remove_server_from_profile(
     app: AppHandle,
-    installation_id: u64,
+    profile_id: u64,
     server: String,
 ) -> Result<(), UiError> {
-    log_info!("remove_server_from_installation: id={}", installation_id);
-    let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
+    log_info!("remove_server_from_profile: id={}", profile_id);
+    let (pb, _profile) = find_profile_by_id(&app, profile_id)?;
     update_multiplayer_servers(&pb, move |servers| {
         servers.retain(|s| s != &Value::String(server.clone()))
     })
 }
 
 #[command]
-pub fn check_server_in_installation(
+pub fn check_server_in_profile(
     app: AppHandle,
-    installation_id: u64,
+    profile_id: u64,
     server: String,
 ) -> Result<bool, UiError> {
-    let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
+    let (pb, _profile) = find_profile_by_id(&app, profile_id)?;
     let server = Value::String(server);
     Ok(multiplayer_servers(&pb)?.iter().any(|s| s == &server))
 }
 
 #[command]
-pub fn add_server_to_installation(
+pub fn add_server_to_profile(
     app: AppHandle,
-    installation_id: u64,
+    profile_id: u64,
     server: String,
 ) -> Result<(), UiError> {
-    log_info!("add_server_to_installation: id={}", installation_id);
-    let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
+    log_info!("add_server_to_profile: id={}", profile_id);
+    let (pb, _profile) = find_profile_by_id(&app, profile_id)?;
     update_multiplayer_servers(&pb, move |servers| servers.push(Value::String(server)))
 }
 

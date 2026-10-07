@@ -9,6 +9,8 @@ export type HostedServerInstance = {
   favorite: boolean;
   last_played: number | null;
   total_time_played: number;
+  auto_restart: boolean;
+  restart_schedule: string | null;
 };
 
 export type ServerRuntimeStatus = {
@@ -60,4 +62,7 @@ export type UpdateInstancePartial = {
   favorite?: boolean;
   last_played?: number;
   total_time_played?: number;
+  auto_restart?: boolean;
+  /** `HH:MM` to set the daily restart, an empty string to clear it. */
+  restart_schedule?: string;
 };

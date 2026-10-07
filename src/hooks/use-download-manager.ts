@@ -5,13 +5,18 @@ import { appDataDir } from "@tauri-apps/api/path";
 import { useCallback } from "react";
 
 import { useMountEffect } from "@/hooks/use-mount-effect";
-import type { PausedDownload, ProgressPayload } from "@/lib/types";
-import { buildVersionPath, zipfolderprefix } from "@/lib/utils";
+import { buildVersionPath, hashPath, pathDelimiter, zipfolderprefix } from "@/lib/helpers";
+import { t } from "@/lib/i18n";
+import { pickDependencyRelease } from "@/lib/mod-dependencies";
+import { toast } from "@/lib/notify";
+import type { ModInfo, OutputMod, PausedDownload, ProgressPayload } from "@/lib/types";
 import { claimVersionDownload, releaseVersionDownload } from "@/lib/version-download-lock";
-import { useDownloadStore } from "@/stores/downloads";
+import { useDownloadStore, type DownloadEntry } from "@/stores/downloads";
 import { useSettingsStore } from "@/stores/settings";
 
+import { installedModsQueryKey } from "./use-installed-mods";
 import { installedVersionsQueryKey } from "./use-installed-versions";
+import { modUpdatesQueryKey } from "./use-mod-updates";
 
 const MAX_CONCURRENT = 3;
 
@@ -30,6 +35,42 @@ const lastStoreUpdate = new Map<string, number>();
 
 /** Rolling speed samples per token for ~3s window. */
 const speedSamples = new Map<string, { bytes: number; time: number }[]>();
+
+/**
+ * Callers that need to continue after a download finishes (importing a
+ * profile or modpack waits for its game version) subscribe here instead of
+ * polling the store.
+ */
+type DownloadWaiter = { resolve: () => void; reject: (error: Error) => void };
+const completionWaiters = new Map<string, DownloadWaiter[]>();
+
+function settleWaiters(token: string, error?: Error) {
+  const waiters = completionWaiters.get(token);
+  if (!waiters) return;
+  completionWaiters.delete(token);
+  for (const waiter of waiters) {
+    if (error) waiter.reject(error);
+    else waiter.resolve();
+  }
+}
+
+/**
+ * Resolves when the version's download finishes, rejects on failure or
+ * cancellation. A missing entry rejects; an already-finished entry resolves.
+ */
+export function waitForDownload(version: string): Promise<void> {
+  const entry = useDownloadStore.getState().entries[version];
+  if (!entry) return Promise.reject(new Error("Download is not queued"));
+  if (entry.status === "done") return Promise.resolve();
+  if (entry.status === "error") {
+    return Promise.reject(new Error(entry.error ?? "Download failed"));
+  }
+  return new Promise((resolve, reject) => {
+    const waiters = completionWaiters.get(version) ?? [];
+    waiters.push({ resolve, reject });
+    completionWaiters.set(version, waiters);
+  });
+}
 
 function recordSpeedSample(token: string, bytesDownloaded: number) {
   const now = performance.now();
@@ -58,8 +99,167 @@ function computeSpeed(token: string): number | null {
   return bytesDelta / elapsed;
 }
 
-function eventName(version: string): string {
-  return `download://version:${version.replace(/\./g, "_")}`;
+function eventName(token: string): string {
+  // Tauri event names only allow alphanumerics, `-`, `/`, `:` and `_`.
+  return `download://${token.replace(/[^\w:/-]/g, "_")}`;
+}
+
+/** Refreshes the lists a finished download belongs to. */
+function invalidateQueriesFor(
+  entry: DownloadEntry,
+  queryClient: ReturnType<typeof useQueryClient>,
+): void {
+  if (entry.kind === "version") {
+    void queryClient.invalidateQueries({ queryKey: installedVersionsQueryKey() });
+    return;
+  }
+  if (entry.modsDirectory) {
+    void queryClient.invalidateQueries({
+      queryKey: installedModsQueryKey(entry.modsDirectory),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: modUpdatesQueryKey(entry.modsDirectory),
+    });
+  }
+}
+
+async function fetchInstalledModIds(
+  queryClient: ReturnType<typeof useQueryClient>,
+  modsDirectory: string,
+): Promise<Set<string>> {
+  const result = await queryClient.fetchQuery({
+    queryKey: installedModsQueryKey(modsDirectory),
+    queryFn: () => invoke("get_mods", { path: modsDirectory }) as Promise<{ mods: OutputMod[] }>,
+    staleTime: 0,
+  });
+  return new Set((result.mods ?? []).map((mod) => mod.modid.toLowerCase()));
+}
+
+export interface DependencyRequest {
+  modid: string;
+  /** Version requirement from `modinfo.json` (empty when unconstrained). */
+  constraint?: string;
+}
+
+interface DependencyTarget {
+  /** Directory that receives the downloads (`<root>/Mods`). */
+  destpath: string;
+  /** Profile root whose lists refresh; null for standalone targets. */
+  modsDirectory: string | null;
+  /** Sheet detail line (destination name). */
+  detail: string | null;
+}
+
+/**
+ * Resolves each dependency through the ModDB API and queues it in the shared
+ * downloads sheet. Lookups that fail or have no release are skipped; failed
+ * downloads stay visible per entry in the sheet.
+ */
+async function queueDependencies(
+  queryClient: ReturnType<typeof useQueryClient>,
+  requests: DependencyRequest[],
+  target: DependencyTarget,
+): Promise<void> {
+  for (const request of requests) {
+    const id = request.modid.trim().toLowerCase();
+    if (!id) continue;
+
+    try {
+      const info = (await invoke("fetch_mod_info", { modid: id })) as ModInfo;
+      const release = pickDependencyRelease(info.mod.releases, request.constraint ?? "");
+      if (!release?.mainfile) continue;
+
+      const token = `mod:${info.mod.modid}:${release.modversion}:${hashPath(target.destpath)}`;
+      queueModDownload(queryClient, {
+        token,
+        label: `${info.mod.name} v${release.modversion}`,
+        detail: target.detail,
+        url: release.mainfile,
+        destpath: target.destpath,
+        modsDirectory: target.modsDirectory,
+      });
+    } catch {
+      // Keep going with the remaining dependencies.
+    }
+  }
+}
+
+/**
+ * Reads a finished mod's `modinfo.json` dependencies and queues the missing
+ * ones. The queued mods' own dependencies are resolved the same way once their
+ * downloads finish.
+ *
+ * Dependency data only exists inside the mod zip, and the game merely warns
+ * about missing dependencies, so this is best effort: failures stay visible as
+ * entries in the downloads sheet and never fail the original download.
+ */
+async function installMissingDependencies(
+  queryClient: ReturnType<typeof useQueryClient>,
+  entry: DownloadEntry,
+): Promise<void> {
+  const modsDirectory = entry.modsDirectory;
+  const filePath = entry.savedPath;
+  if (!modsDirectory || !filePath) return;
+
+  let dependencies: Record<string, string>;
+  try {
+    dependencies = await invoke<Record<string, string>>("get_mod_dependencies", {
+      path: filePath,
+    });
+  } catch {
+    return;
+  }
+
+  const installedIds = await fetchInstalledModIds(queryClient, modsDirectory);
+  const requests = Object.entries(dependencies)
+    .filter(([rawId]) => {
+      const id = rawId.trim().toLowerCase();
+      return Boolean(id) && id !== "game" && !installedIds.has(id);
+    })
+    .map(([rawId, constraint]) => ({ modid: rawId.trim(), constraint }));
+
+  await queueDependencies(queryClient, requests, {
+    destpath: entry.destpath ?? `${modsDirectory}${pathDelimiter}Mods`,
+    modsDirectory,
+    detail: entry.detail,
+  });
+}
+
+/** Starts dependency resolution for a freshly installed mod. */
+async function resolveDependencies(
+  queryClient: ReturnType<typeof useQueryClient>,
+  entry: DownloadEntry,
+): Promise<void> {
+  if (entry.kind !== "mod" || !entry.modsDirectory) return;
+  await installMissingDependencies(queryClient, entry);
+}
+
+function queueModDownload(
+  queryClient: ReturnType<typeof useQueryClient>,
+  request: ModDownloadRequest,
+): void {
+  const store = useDownloadStore.getState();
+  const existing = store.entries[request.token];
+
+  if (existing) {
+    // A finished or failed entry from an earlier attempt would make the
+    // enqueue a no-op; drop it and start fresh. Anything else is already
+    // queued or running and is reused as-is.
+    if (existing.status !== "done" && existing.status !== "error") return;
+    store.removeEntry(request.token);
+  }
+  pauseRequests.delete(request.token);
+  store.addEntry({
+    token: request.token,
+    label: request.label,
+    detail: request.detail ?? null,
+    status: "pending",
+    kind: "mod",
+    url: request.url,
+    destpath: request.destpath,
+    modsDirectory: request.modsDirectory ?? null,
+  });
+  processQueue(queryClient);
 }
 
 async function doDownload(
@@ -67,35 +267,56 @@ async function doDownload(
   queryClient: ReturnType<typeof useQueryClient>,
 ): Promise<void> {
   const store = useDownloadStore.getState();
-  const version = token;
+  const entry = store.entries[token];
+  if (!entry) return;
 
+  const version = entry.kind === "version" ? token : null;
   store.updateEntry(token, { status: "downloading", speedBps: null });
 
   let unlisten: UnlistenFn | null = null;
+  let claimed = false;
 
   try {
-    if (!claimVersionDownload(version)) {
-      throw new Error("This version is already downloading");
+    // Resolve the request: versions pick the URL and destination themselves,
+    // mods carry both in the entry (so retry works without the caller).
+    let destpath: string;
+    let url: string;
+    let extract: boolean;
+    let extractdir: string | undefined;
+    let zipsubfolderprefix: string | undefined;
+
+    if (version !== null) {
+      if (!claimVersionDownload(version)) {
+        throw new Error("This version is already downloading");
+      }
+      claimed = true;
+
+      const appFolder = await appDataDir();
+      const { versionsParent, versionsSubdir } = useSettingsStore.getState();
+      destpath = buildVersionPath(versionsParent ?? appFolder, version, versionsSubdir);
+
+      const link = (await invoke("get_download_link", { version })) as string;
+      if (!link) throw new Error("Download URL not found");
+      url = link;
+      extract = true;
+      extractdir = destpath;
+      zipsubfolderprefix = zipfolderprefix();
+    } else {
+      if (!entry.url || !entry.destpath) throw new Error("Download URL missing");
+      destpath = entry.destpath;
+      url = entry.url;
+      extract = false;
     }
-
-    // Resolve paths
-    const appFolder = await appDataDir();
-    const { versionsParent, versionsSubdir } = useSettingsStore.getState();
-    const versionPath = buildVersionPath(versionsParent ?? appFolder, version, versionsSubdir);
-
-    // Get download URL
-    const url = (await invoke("get_download_link", { version })) as string;
-    if (!url) throw new Error("Download URL not found");
 
     // Cancelled while resolving the URL: cancel() removed the entry, so don't
     // start a ghost download that nobody can see or stop.
     if (!useDownloadStore.getState().entries[token]) return;
 
-    const evt = eventName(version);
+    const evt = eventName(token);
 
     // Set up progress listener
     unlisten = await listen<ProgressPayload>(evt, (event) => {
-      const { phase, downloaded, total, percent } = event.payload;
+      const { phase, downloaded, total, percent, message } = event.payload;
 
       if (phase === "download") {
         const bytesDownloaded = downloaded ?? 0;
@@ -119,7 +340,13 @@ async function doDownload(
       } else if (phase === "paused") {
         store.updateEntry(token, { status: "paused" });
       } else if (phase === "done") {
-        store.updateEntry(token, { status: "done", percent: 100, speedBps: null });
+        store.updateEntry(token, {
+          status: "done",
+          percent: 100,
+          speedBps: null,
+          // Plain downloads report the saved file, which Undo removes later.
+          ...(message ? { savedPath: message } : {}),
+        });
       }
     });
 
@@ -131,12 +358,12 @@ async function doDownload(
 
     const result = (await invoke("download_and_maybe_extract", {
       params: {
-        destpath: versionPath,
+        destpath,
         emitevent: evt,
-        extract: true,
-        extractdir: versionPath,
+        extract,
+        extractdir,
         url,
-        zipsubfolderprefix: zipfolderprefix(),
+        zipsubfolderprefix,
       },
     })) as string;
 
@@ -144,23 +371,29 @@ async function doDownload(
       store.updateEntry(token, { status: "paused" });
     } else if (result === "cancelled") {
       store.removeEntry(token);
+      settleWaiters(token, new Error("Download cancelled"));
     } else if (result === "success") {
       store.updateEntry(token, { status: "done", percent: 100 });
-      void queryClient.invalidateQueries({
-        queryKey: installedVersionsQueryKey(),
-      });
+      settleWaiters(token);
+      invalidateQueriesFor(entry, queryClient);
+      if (entry.kind === "mod") {
+        const finished = useDownloadStore.getState().entries[token];
+        if (finished) {
+          void resolveDependencies(queryClient, finished).catch(() => {});
+        }
+      }
     } else if (result === "already_downloaded") {
       store.removeEntry(token);
-      // The version is on disk: refresh the list even though nothing downloaded.
-      void queryClient.invalidateQueries({
-        queryKey: installedVersionsQueryKey(),
-      });
+      settleWaiters(token);
+      // The file is on disk: refresh the lists even though nothing downloaded.
+      invalidateQueriesFor(entry, queryClient);
     }
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     store.updateEntry(token, { status: "error", error: message });
+    settleWaiters(token, new Error(message));
   } finally {
-    releaseVersionDownload(version);
+    if (claimed && version !== null) releaseVersionDownload(version);
     pauseRequests.delete(token);
     unlisten?.();
     speedSamples.delete(token);
@@ -209,7 +442,7 @@ export function useDownloadManager() {
       const store = useDownloadStore.getState();
       for (const p of paused) {
         if (!store.entries[p.label]) {
-          store.addEntry({ token: p.label, label: p.label, status: "paused" });
+          store.addEntry({ token: p.label, label: p.label, status: "paused", kind: "version" });
         }
       }
 
@@ -225,9 +458,31 @@ export function useDownloadManager() {
       if (store.entries[token]) return;
       pauseRequests.delete(token);
 
-      store.addEntry({ token, label: version, status: "pending" });
+      store.addEntry({ token, label: version, status: "pending", kind: "version" });
       processQueue(queryClient);
     },
+    [queryClient],
+  );
+
+  const startModDownload = useCallback(
+    (request: ModDownloadRequest) => queueModDownload(queryClient, request),
+    [queryClient],
+  );
+
+  /**
+   * Resolves dependencies through the ModDB API and queues them in the
+   * downloads sheet (used by the missing-dependencies banner).
+   */
+  const installDependencies = useCallback(
+    (
+      requests: DependencyRequest[],
+      options: { modsDirectory: string; destpath?: string; detail?: string | null },
+    ) =>
+      queueDependencies(queryClient, requests, {
+        destpath: options.destpath ?? `${options.modsDirectory}${pathDelimiter}Mods`,
+        modsDirectory: options.modsDirectory,
+        detail: options.detail ?? null,
+      }),
     [queryClient],
   );
 
@@ -252,19 +507,25 @@ export function useDownloadManager() {
     [queryClient],
   );
 
-  const cancel = useCallback((version: string) => {
+  const cancel = useCallback((token: string) => {
     const store = useDownloadStore.getState();
-    const entry = store.entries[version];
+    const entry = store.entries[token];
 
-    pauseRequests.delete(version);
-    void emit(`${eventName(version)}:cancel`);
+    pauseRequests.delete(token);
+    void emit(`${eventName(token)}:cancel`);
 
-    // Paused downloads have no active task — clean up partial files directly.
-    if (entry?.status === "paused") {
-      void invoke("remove_installed_version", { version });
+    // Paused downloads have no active task. A paused version cleans up its
+    // partial extraction; a cancelled mod drops its partial zip and resume
+    // state so a later install starts over instead of silently resuming.
+    if (entry?.status === "paused" && entry.kind === "version") {
+      void invoke("remove_installed_version", { version: token });
+    }
+    if (entry?.kind === "mod" && entry.destpath && entry.url) {
+      void invoke("discard_download", { destpath: entry.destpath, url: entry.url });
     }
 
-    store.removeEntry(version);
+    store.removeEntry(token);
+    settleWaiters(token, new Error("Download cancelled"));
   }, []);
 
   const retry = useCallback(
@@ -289,5 +550,86 @@ export function useDownloadManager() {
     [queryClient],
   );
 
-  return { startDownload, pause, resume, cancel, retry };
+  /**
+   * Reverses a finished download: removes the installed mod file (or the game
+   * version) and drops the entry from the sheet.
+   */
+  const undo = useCallback(
+    (token: string) => {
+      const store = useDownloadStore.getState();
+      const entry = store.entries[token];
+      if (!entry || entry.status !== "done") return;
+
+      store.removeEntry(token);
+
+      if (entry.kind === "version") {
+        void invoke("remove_installed_version", { version: token })
+          .then(() => {
+            void queryClient.invalidateQueries({ queryKey: installedVersionsQueryKey() });
+          })
+          .catch((error: unknown) => {
+            toast.error(t("downloads.toasts.removeVersionFailed", { version: token }), {
+              description: String(error),
+            });
+          });
+        return;
+      }
+
+      if (!entry.savedPath) {
+        toast.error(t("downloads.toasts.downloadNoFile"));
+        return;
+      }
+      // The destination is the profile/server `Mods` folder; removal commands
+      // expect the root path that contains it.
+      const modsSuffix = `${pathDelimiter}Mods`;
+      const modsDirectory =
+        entry.modsDirectory ??
+        (entry.destpath?.endsWith(modsSuffix)
+          ? entry.destpath.slice(0, -modsSuffix.length)
+          : entry.destpath) ??
+        "";
+      void invoke("remove_mod_from_profile", {
+        params: { modpath: entry.savedPath, path: modsDirectory },
+      })
+        .then(() => {
+          if (entry.modsDirectory) {
+            void queryClient.invalidateQueries({
+              queryKey: installedModsQueryKey(entry.modsDirectory),
+            });
+            void queryClient.invalidateQueries({
+              queryKey: modUpdatesQueryKey(entry.modsDirectory),
+            });
+          }
+        })
+        .catch((error: unknown) => {
+          toast.error(t("downloads.toasts.removeFailed", { label: entry.label }), {
+            description: String(error),
+          });
+        });
+    },
+    [queryClient],
+  );
+
+  return {
+    startDownload,
+    startModDownload,
+    installDependencies,
+    pause,
+    resume,
+    cancel,
+    retry,
+    undo,
+  };
+}
+
+/** A mod (or other file) download queued into the shared sheet. */
+export interface ModDownloadRequest {
+  token: string;
+  label: string;
+  detail?: string | null;
+  url: string;
+  /** Directory that receives the file. */
+  destpath: string;
+  /** Profile root whose mod lists are refreshed on success. */
+  modsDirectory?: string | null;
 }

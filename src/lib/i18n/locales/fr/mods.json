@@ -1,0 +1,328 @@
+{
+  "standalone": "Autonome",
+  "loadingReleases": "Chargement des versions…",
+  "search": {
+    "placeholder": "Rechercher des mods…"
+  },
+  "filters": {
+    "count_one": "{{count}} mod",
+    "count_other": "{{count}} mods",
+    "gameVersions": {
+      "aria": "Filtrer par version du jeu",
+      "empty": "Aucune version trouvée.",
+      "placeholder": "Versions du jeu…"
+    },
+    "tags": {
+      "aria": "Filtrer par tag",
+      "empty": "Aucun tag trouvé.",
+      "placeholder": "Tags de mods…",
+      "label": "Tags"
+    },
+    "sort": {
+      "aria": "Trier par",
+      "toggleDirection": "Inverser le sens du tri"
+    },
+    "category": {
+      "aria": "Catégorie",
+      "label": "Catégorie"
+    },
+    "favorites": {
+      "aria": "Afficher uniquement les favoris",
+      "label": "Favoris"
+    },
+    "side": {
+      "aria": "Filtrer par côté",
+      "label": "Côté"
+    },
+    "more": "Filtres",
+    "reset": "Réinitialiser",
+    "author": {
+      "label": "Auteur"
+    }
+  },
+  "sort": {
+    "comments": "Commentaires",
+    "created": "Créé",
+    "downloads": "Téléchargements",
+    "follows": "Suivis",
+    "name": "Nom",
+    "relevance": "Pertinence",
+    "trending": "Tendances",
+    "updated": "Dernière mise à jour"
+  },
+  "sortDirection": {
+    "ascending": "Croissant",
+    "descending": "Décroissant"
+  },
+  "category": {
+    "externaltool": "Outil externe",
+    "mod": "Mod",
+    "other": "Autre"
+  },
+  "side": {
+    "both": "Les deux",
+    "client": "Client",
+    "server": "Serveur"
+  },
+  "authorFilter": {
+    "aria": "Filtrer par auteur",
+    "clear": "Effacer le filtre d'auteur",
+    "count_one": "{{count}} mod",
+    "count_other": "{{count}} mods",
+    "empty": "Aucun auteur trouvé.",
+    "placeholder": "Filtrer par auteur…"
+  },
+  "list": {
+    "empty": "Aucun mod trouvé. Essayez de modifier votre recherche ou vos filtres."
+  },
+  "item": {
+    "add": "Ajouter le mod",
+    "addTo": "Ajouter à {{destination}}",
+    "browseVersions": "Parcourir les versions",
+    "browseVersionsTooltip": "Consulter les versions disponibles",
+    "byAuthor": "par {{author}}",
+    "downloadLatest": "Télécharger la dernière version",
+    "favorite": "Ajouter aux favoris",
+    "filterBy": "Filtrer par {{author}}",
+    "filterByAuthor": "Filtrer par l'auteur {{author}}",
+    "install": "Installer le mod",
+    "installLatest": "Installer la dernière version",
+    "installTo": "Installer dans…",
+    "installToDestination": "Installer dans un profil ou un serveur hébergé",
+    "installedVersion": "v{{version}} installée",
+    "openOnModDB": "Ouvrir sur la base de données des mods",
+    "pin": "Épingler le mod",
+    "pinTooltip": "Épingler à la v{{version}} (exclu de Tout mettre à jour)",
+    "pinnedTooltip": "Épinglé à la v{{version}} — Tout mettre à jour l'ignore",
+    "removeFrom": "Retirer de {{destination}}",
+    "unpin": "Désépingler le mod",
+    "unfavorite": "Retirer des favoris",
+    "updateToLatest": "Mettre à jour vers la dernière version",
+    "enable": "Activer le mod",
+    "disable": "Désactiver le mod",
+    "enableTooltip": "Activer {{name}}",
+    "disableTooltip": "Désactiver {{name}}",
+    "disabledBadge": "Désactivé"
+  },
+  "versionPicker": {
+    "aria": "Sélectionner une version",
+    "forVersion": "pour {{version}}",
+    "moreTags_one": "(+{{count}} autre)",
+    "moreTags_other": "(+{{count}} autres)",
+    "placeholder": "Sélectionner une version…",
+    "changelog": "Nouveautés"
+  },
+  "release": {
+    "downloads_one": "{{count}} téléchargement",
+    "downloads_other": "{{count}} téléchargements"
+  },
+  "addSheet": {
+    "description": "Sélectionnez la version de {{name}} à ajouter à {{destination}}.",
+    "submit": "Ajouter le mod",
+    "title": "Ajouter <name>{{name}}</name> à <destination>{{destination}}</destination>"
+  },
+  "removeSheet": {
+    "body": "Cela supprimera définitivement <name>{{name}}</name> de {{destination}}.",
+    "description": "Cette action est irréversible.",
+    "title": "Retirer <name>{{name}}</name> de <destination>{{destination}}</destination> ?"
+  },
+  "updateSheet": {
+    "buttonDowngrade": "Rétrograder le mod",
+    "buttonUpdate": "Mettre à jour le mod",
+    "description": "Version actuellement installée : <version>{{version}}</version>. Sélectionnez la version vers laquelle basculer.",
+    "titleDowngrade": "Rétrograder <name>{{name}}</name> dans <destination>{{destination}}</destination>",
+    "titleUpdate": "Mettre à jour <name>{{name}}</name> dans <destination>{{destination}}</destination>"
+  },
+  "standaloneInstall": {
+    "description": "Aucun profil actif. Choisissez où installer ce mod et quelle version utiliser.",
+    "destination": "Destination",
+    "destinationAria": "Destination d'installation",
+    "destinationPlaceholder": "Sélectionner une destination…",
+    "hostedServers": "Serveurs hébergés",
+    "noDestinations": "Aucun profil ni serveur hébergé disponible.",
+    "noDownload": "Aucun téléchargement disponible pour {{name}}",
+    "profiles": "Profils",
+    "title": "Installer <name>{{name}}</name>"
+  },
+  "updateAll": {
+    "button_one": "Tout mettre à jour ({{count}})",
+    "button_other": "Tout mettre à jour ({{count}})",
+    "confirm": "Oui, vraiment"
+  },
+  "modpackIO": {
+    "menuTrigger": "Modpack",
+    "import": "Importer un modpack…",
+    "export": "Exporter un modpack…",
+    "jsonFilter": "Fichier modpack",
+    "exported": "Modpack exporté",
+    "exportFailed": "Impossible d'exporter le modpack",
+    "readFailed": "Ce fichier n'est pas un manifeste de modpack",
+    "importSheet": {
+      "title": "Importer un modpack",
+      "description": "{{name}} · pour Vintage Story {{version}}",
+      "gameVersionMismatch": "Ce pack est destiné à Vintage Story {{packVersion}}, mais ce profil utilise {{profileVersion}}.",
+      "empty": "Ce pack ne liste aucun mod.",
+      "alreadyInstalled": "Déjà installé",
+      "replace": "Remplacer {{from}} → {{to}}",
+      "willInstall": "Sera installé",
+      "importing": "Importation…",
+      "done": "Installé",
+      "failed": "Échec",
+      "missingVersion": "La version {{version}} n'est pas disponible sur la base de données des mods",
+      "confirm": "Importer les mods",
+      "nothing": "Rien à importer",
+      "progress": "{{done}} / {{total}}",
+      "summary_one": "{{count}} mod importé",
+      "summary_other": "{{count}} mods importés",
+      "summaryFailed_one": "{{count}} mod n'a pas pu être importé",
+      "summaryFailed_other": "{{count}} mods n'ont pas pu être importés",
+      "upToDate": "Tout est déjà installé",
+      "close": "Terminé"
+    }
+  },
+  "dependencies": {
+    "installMissing": "Installer les manquantes",
+    "missing_one": "{{count}} dépendance manquante dans {{destination}}",
+    "missing_other": "{{count}} dépendances manquantes dans {{destination}}",
+    "more": "+{{count}} de plus",
+    "requiredBy": "requis par {{names}}"
+  },
+  "errors": {
+    "add": "Erreur lors de l'ajout de {{name}} à {{destination}} : {{message}}",
+    "downgrading": "Erreur lors de la rétrogradation de {{name}} dans {{destination}} : {{message}}",
+    "install": "Erreur lors de l'installation de {{name}} dans {{destination}} : {{message}}",
+    "remove": "Erreur lors du retrait de {{name}} de {{destination}} : {{message}}",
+    "update": "Erreur lors de la mise à jour de {{name}} dans {{destination}} : {{message}}",
+    "updateIn": "Erreur lors de la mise à jour du mod dans {{destination}} : {{message}}",
+    "upgrading": "Erreur lors de la mise à niveau de {{name}} dans {{destination}} : {{message}}"
+  },
+  "issues": {
+    "title": "Problèmes de fichiers de mods dans {{destination}}",
+    "description": "Les fichiers illisibles ne sont pas chargés ; en cas d'identifiants de mods en double, une seule copie peut être chargée.",
+    "duplicateDetail": "En double : {{modid}}",
+    "remove": "Supprimer le fichier",
+    "confirmRemove": "Vraiment supprimer ?",
+    "removeFailed": "Impossible de supprimer {{file}} : {{message}}",
+    "hint": "La suppression d'un fichier est définitive."
+  },
+  "deepLink": {
+    "failed": "Impossible d'ouvrir {{modid}} depuis le lien"
+  },
+  "toggle": {
+    "enabled": "{{name}} activé",
+    "disabled": "{{name}} désactivé",
+    "enableAll": "Activer tous les mods",
+    "disableAll": "Désactiver tous les mods",
+    "bulkEnabled": "Tous les mods activés",
+    "bulkDisabled": "Tous les mods désactivés",
+    "failed": "Impossible de changer l'état du mod"
+  },
+  "installFrom": {
+    "button": "Installer un mod",
+    "file": "Depuis un fichier…",
+    "url": "Depuis une URL…",
+    "zipFilter": "Archive de mod (.zip)",
+    "urlTitle": "Installer depuis une URL",
+    "urlDescription": "Collez un lien direct vers un .zip de mod — un lien de téléchargement ModDB fonctionne, tout comme n'importe quel hôte https.",
+    "urlPlaceholder": "https://…",
+    "submit": "Installer",
+    "installed": "{{name}} {{version}} installé",
+    "failed": "Impossible d'installer le mod",
+    "invalidZip": "Ce fichier n'est pas un mod Vintage Story (.zip avec modinfo.json)",
+    "badUrl": "Saisissez un lien https:// vers un .zip de mod"
+  },
+  "updates": {
+    "skipTooltip": "Ignorer {{version}}",
+    "skippedTooltip": "Mise à jour {{version}} ignorée — restaurer",
+    "skippedToast": "{{name}} v{{version}} ignorée",
+    "restoredToast": "Mises à jour de {{name}} restaurées"
+  },
+  "bulk": {
+    "title": "Mises à jour ({{count}})",
+    "description": "Consultez les changelogs avant de mettre à jour.",
+    "noChangelog": "Aucun changelog fourni.",
+    "copy": "Copier les changelogs",
+    "copied": "Changelogs copiés",
+    "copyFailed": "Impossible de copier les changelogs",
+    "updateAll": "Tout mettre à jour ({{count}})"
+  },
+  "presets": {
+    "button": "Préréglages",
+    "title": "Préréglages de mods",
+    "description": "Enregistrez l'état activé/désactivé actuel sous un nom et réappliquez-le plus tard.",
+    "save": "Enregistrer l'état actuel",
+    "namePlaceholder": "Nom du préréglage",
+    "saveAction": "Enregistrer",
+    "currentState": "{{count}} mod(s) actuellement désactivés",
+    "saved": "Préréglage {{name}} enregistré",
+    "empty": "Aucun préréglage pour cette cible pour l'instant.",
+    "disabledCount": "Désactive {{count}} mod(s)",
+    "apply": "Appliquer",
+    "applied": "{{name}} appliqué",
+    "delete": "Supprimer le préréglage {{name}}",
+    "deleteTitle": "Supprimer le préréglage",
+    "deleteConfirm": "Vraiment supprimer ?",
+    "deleted": "{{name}} supprimé"
+  },
+  "conflicts": {
+    "button": "Conflits",
+    "title": "Conflits de mods",
+    "description": "Contenu qui se chevauche entre mods installés : le même fichier en double, ou des patchs qui touchent le même JSON. Informatif — rien n'est modifié.",
+    "scanning": "Analyse des mods installés…",
+    "rescan": "Réanalyser",
+    "empty": "Aucun contenu en chevauchement entre les mods installés.",
+    "assetKind": "Même fichier",
+    "patchKind": "Même cible de patch",
+    "patchDetail": "chevauchement au niveau de {{path}}",
+    "truncated": "Affichage des {{count}} premiers conflits.",
+    "failed": "L'analyse des conflits a échoué"
+  },
+  "view": {
+    "browse": "Parcourir",
+    "installed": "Installés ({{count}})",
+    "aria": "Vue des mods"
+  },
+  "installed": {
+    "count": "{{count}} mod(s) installés",
+    "noTarget": "Ouvrez un profil pour voir ses mods installés.",
+    "empty": "Aucun mod installé ici pour l'instant.",
+    "ungrouped": "Sans groupe",
+    "enabledCount": "{{enabled}} / {{total}} activés",
+    "selected": "{{count}} sélectionnés",
+    "select": "Sélectionner {{name}}",
+    "selectAll": "Tout sélectionner dans ce groupe",
+    "enable": "Activer",
+    "disable": "Désactiver",
+    "remove": "Supprimer",
+    "removeConfirm": "Supprimer {{count}} mod(s) ?",
+    "removePartial": "{{failed}} mod(s) n'ont pas pu être supprimés",
+    "removeFailed": "Impossible de supprimer les mods",
+    "removed": "{{count}} mod(s) supprimés",
+    "stateChanged": "{{count}} mod(s) mis à jour",
+    "clearSelection": "Effacer la sélection",
+    "moveToGroup": "Déplacer vers un groupe",
+    "moved": "{{count}} mod(s) déplacés",
+    "removeMod": "Supprimer {{name}}",
+    "emptyGroup": "Aucun mod dans ce groupe."
+  },
+  "groups": {
+    "new": "Nouveau groupe",
+    "namePlaceholder": "Nom du groupe",
+    "create": "Créer",
+    "created": "Groupe {{name}} créé",
+    "rename": "Renommer",
+    "delete": "Supprimer le groupe",
+    "deleteConfirm": "Supprimer ce groupe ? Les mods restent installés.",
+    "deleted": "Groupe {{name}} supprimé",
+    "enableAll": "Tout activer",
+    "disableAll": "Tout désactiver",
+    "menu": "Actions du groupe",
+    "save": "Enregistrer",
+    "expand": "Développer le groupe",
+    "collapse": "Réduire le groupe"
+  },
+  "actions": {
+    "more": "Plus d'actions",
+    "conflicts": "Vérifier les conflits"
+  }
+}

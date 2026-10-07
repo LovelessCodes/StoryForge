@@ -1,0 +1,183 @@
+{
+  "nav": {
+    "profiles": "Profile",
+    "mods": "Mods",
+    "modpacks": "Modpacks",
+    "versions": "Versionen",
+    "worlds": "Welten",
+    "servers": "Server",
+    "config": "Mod-Konfigs",
+    "news": "Neuigkeiten",
+    "settings": "Einstellungen",
+    "dashboard": "Dashboard"
+  },
+  "sidebar": {
+    "navigation": "Navigation",
+    "tagline": "Vintage Story Manager",
+    "openProfilesFolderTitle": "Den Profilordner öffnen",
+    "play": "{{name}} spielen",
+    "createProfileFirst": "Zuerst ein Profil erstellen",
+    "launchTitle": "{{name}} starten",
+    "pausedTitle": "Download der Spielversion {{version}} ist pausiert — setze ihn auf der Seite „Versionen“ fort",
+    "downloadTitle": "Spielversion {{version}} herunterladen, um {{name}} zu spielen",
+    "downloadPaused": "Download pausiert",
+    "downloading": "Wird heruntergeladen… {{percent}} %",
+    "downloadingNoPercent": "Wird heruntergeladen…",
+    "downloadVersion": "v{{version}} herunterladen",
+    "title": "Seitenleiste",
+    "description": "Zeigt die mobile Seitenleiste an.",
+    "toggle": "Seitenleiste umschalten",
+    "discord": "Discord"
+  },
+  "titlebar": {
+    "update": "Update v{{version}}",
+    "updateTitle": "Auf Story Forge {{version}} aktualisieren",
+    "downloads": "Downloads",
+    "downloadProgress": "Downloadfortschritt: {{percent}} %",
+    "search": "Suchen",
+    "searchTitle": "Seiten und Aktionen durchsuchen",
+    "minimize": "Fenster minimieren",
+    "maximize": "Fenster maximieren",
+    "close": "Fenster schließen"
+  },
+  "theme": {
+    "toggle": "Design umschalten",
+    "switchToLight": "Zum hellen Modus wechseln",
+    "switchToDark": "Zum dunklen Modus wechseln",
+    "light": "Hellmodus",
+    "dark": "Dunkelmodus"
+  },
+  "commandPalette": {
+    "placeholder": "Story Forge durchsuchen…",
+    "empty": "Keine Ergebnisse gefunden.",
+    "switchToTheme": "{{title}} — zum {{theme}} wechseln"
+  },
+  "commands": {
+    "groups": {
+      "goTo": "Gehe zu",
+      "application": "Anwendung",
+      "appearance": "Darstellung",
+      "game": "Spiel"
+    },
+    "commandPalette": {
+      "title": "Befehlspalette öffnen",
+      "description": "Seiten und Aktionen durchsuchen"
+    },
+    "toggleSidebar": "Seitenleiste umschalten",
+    "toggleTheme": {
+      "title": "Design umschalten",
+      "description": "Zwischen Hell- und Dunkelmodus wechseln"
+    },
+    "checkForUpdates": "Nach Updates suchen",
+    "refresh": "Daten aktualisieren",
+    "openProfilesFolder": "Profilordner öffnen",
+    "launchProfile": "Aktives Profil starten"
+  },
+  "updater": {
+    "checking": "Suche nach Updates…",
+    "downloading": "Story Forge {{version}} wird heruntergeladen…",
+    "downloadingPercent": "Story Forge {{version}} wird heruntergeladen… {{percent}} %",
+    "installed": "Update installiert — Neustart…",
+    "failed": "Update fehlgeschlagen"
+  },
+  "noActiveProfile": {
+    "title": "Kein aktives Profil",
+    "description": "Erstelle zuerst ein Profil oder wähle eines aus."
+  },
+  "launch": {
+    "errorPlaying": "Fehler beim Spielen mit Profil: {{message}}",
+    "downloadingDotnet": ".NET-Runtime wird heruntergeladen… {{percent}} %",
+    "extractingDotnet": ".NET-Runtime wird entpackt…",
+    "launching": "{{name}} wird gestartet…",
+    "launched": "{{name}} gestartet!",
+    "launchedWithWorld": "Welt {{world}} mit {{name}} gestartet!",
+    "launchedAndConnecting": "{{name}} gestartet — Verbindung zu {{server}} wird hergestellt!",
+    "errorLaunching": "Fehler beim Starten des Spiels: {{reason}}",
+    "errorConnecting": "Fehler beim Verbinden mit dem Server: {{message}}",
+    "backingUp": "{{name}} wird gesichert… {{percent}} %",
+    "backupFailed": "Backup vor dem Start fehlgeschlagen"
+  },
+  "reveal": {
+    "failed": "Anzeigen im Datei-Explorer fehlgeschlagen: {{message}}"
+  },
+  "pages": {
+    "profiles": {
+      "title": "Mod-Profile",
+      "description": "Verwalte separate Mod-Konfigurationen für verschiedene Spielstile."
+    },
+    "mods": {
+      "title": "Mods"
+    },
+    "modpacks": {
+      "title": "Modpacks",
+      "description": "Durchsuche Community-Mod-Sammlungen und installiere sie als Profile."
+    },
+    "versions": {
+      "title": "Versionen",
+      "description": "Auf diesem Rechner installierte Spielversionen. Profile starten mit einer dieser Versionen."
+    },
+    "worlds": {
+      "title": "Welten",
+      "description": "Durchsuche die Welten deiner Profile, starte sie und erkunde ihre Karten."
+    },
+    "servers": {
+      "title": "Server",
+      "description": "Gespeicherte Mehrspieler-Server, der öffentliche Serverbrowser und deine eigenen gehosteten Instanzen."
+    },
+    "serverHosting": {
+      "title": "Server",
+      "description": "Verwalte gespeicherte Server und die dedizierten Server, die du hostest."
+    },
+    "config": {
+      "title": "Mod-Konfigurationen",
+      "description": "Konfigurationsdateien in deinem aktiven Profil."
+    },
+    "news": {
+      "title": "Neuigkeiten",
+      "description": "Die neuesten Ankündigungen aus den Vintage Story Foren."
+    },
+    "settings": {
+      "title": "Einstellungen",
+      "description": "Ordner, Darstellung, Downloads und das Anwendungskonto."
+    },
+    "auth": {
+      "title": "Konto",
+      "description": "Melde dich bei der optionalen Story Forge Cloud für Modpacks an."
+    },
+    "default": {
+      "title": "Story Forge"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "description": "Deine Profile und Server auf einen Blick."
+    }
+  },
+  "header": {
+    "refreshing": "Wird aktualisiert…"
+  },
+  "errors": {
+    "title": "Etwas ist schiefgelaufen",
+    "description": "Beim Laden dieser Seite ist in Story Forge ein unerwarteter Fehler aufgetreten.",
+    "tryAgain": "Erneut versuchen",
+    "backToProfiles": "Zurück zu den Profilen",
+    "notFoundTitle": "Seite nicht gefunden",
+    "notFoundDescription": "Diese Seite existiert nicht oder wurde verschoben. Zurück zur Mod-Übersicht."
+  },
+  "scrollToTop": "Nach oben scrollen",
+  "toast": {
+    "close": "Benachrichtigung schließen"
+  },
+  "dashboard": {
+    "profiles": "Profile ({{count}})",
+    "servers": "Gespeicherte Server ({{count}})",
+    "viewAll": "Alle ansehen",
+    "emptyProfiles": "Noch keine Profile.",
+    "createProfile": "Profil erstellen",
+    "emptyServers": "Keine gespeicherten Server für das aktive Profil.",
+    "browseServers": "Server durchsuchen",
+    "active": "Aktiv",
+    "setActive": "{{name}} als aktiv festlegen",
+    "favorite": "{{name}} als Favorit",
+    "unfavorite": "Favorit für {{name}} entfernen"
+  }
+}

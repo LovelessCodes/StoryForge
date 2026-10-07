@@ -1,0 +1,32 @@
+{
+  "noActiveProfile": "No hay perfil activo",
+  "noActiveProfileDescription": "Crea o selecciona un perfil para editar sus archivos de configuración de mods.",
+  "goToProfiles": "Ir a Perfiles",
+  "liveEditor": "Editor en vivo",
+  "codeEditor": "Editor de código",
+  "loading": "Cargando configuraciones…",
+  "noConfigFiles": "No hay archivos de configuración",
+  "readFailed": "No se pudieron leer las configuraciones de mods: {{message}}",
+  "noConfigFilesHint": "Los mods que incluyen archivos JSON configurables los mostrarán aquí.",
+  "files": "Archivos",
+  "toasts": {
+    "saving": "Guardando…",
+    "saved": "¡Guardado!",
+    "saveFailed": "No se pudo guardar: {{message}}"
+  },
+  "live": {
+    "expandArray": "Expandir arreglo",
+    "collapseArray": "Contraer arreglo",
+    "expandObject": "Expandir objeto",
+    "collapseObject": "Contraer objeto",
+    "emptyArray": "Arreglo vacío",
+    "primitiveRoot": "La raíz es un valor primitivo; aquí no se admite editarla.",
+    "autoSaved": "Guardado automático al cambiar",
+    "removeItem": "Quitar elemento {{index}}"
+  },
+  "code": {
+    "loading": "Cargando editor de código…",
+    "unsaved": "Cambios sin guardar",
+    "saved": "Todos los cambios guardados"
+  }
+}

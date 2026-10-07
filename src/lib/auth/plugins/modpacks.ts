@@ -37,8 +37,80 @@ type Version = {
   modsString: string;
   downloads: number;
   modpack: string;
+  changelog?: string | null;
+  manifestVersion?: number;
+  manifestHash?: string | null;
+  modConfigsSha256?: string | null;
+  modConfigsSize?: number | null;
   createdAt: number;
   updatedAt: number;
+};
+
+/** One resolved mod file inside a structured (manifestVersion 1) manifest. */
+export type ModpackManifestMod = {
+  modId: number;
+  modIdStr: string;
+  name: string;
+  modVersion: string;
+  releaseId: number | null;
+  fileId: number;
+  filename: string;
+  url: string;
+  sha256: string | null;
+  size: number | null;
+  side: string;
+  required: boolean;
+  sortOrder: number;
+  gameVersions: string[] | null;
+  compatible: boolean | null;
+  verified: boolean;
+};
+
+export type ModpackManifestConfigs = {
+  url: string;
+  sha256: string | null;
+  size: number | null;
+} | null;
+
+export type ModpackManifestV1 = {
+  manifestVersion: 1;
+  legacy: false;
+  slug: string;
+  name: string;
+  version: string;
+  gameVersion: string | null;
+  publishedAt: string;
+  manifestHash: string;
+  generatedAt: string;
+  mods: ModpackManifestMod[];
+  modConfigs: ModpackManifestConfigs;
+};
+
+/** Pre-manifest versions keep working through `modsString` only. */
+export type ModpackManifestLegacy = {
+  manifestVersion: 0;
+  legacy: true;
+  slug: string;
+  name: string;
+  version: string;
+  gameVersion: string | null;
+  modsString: string | null;
+  mods: [];
+  modConfigs: ModpackManifestConfigs;
+};
+
+export type ModpackManifest = ModpackManifestV1 | ModpackManifestLegacy;
+
+/** Input shape accepted by the manifest write endpoints. */
+export type ModpackManifestModInput = {
+  modId: number;
+  fileId: number;
+  url: string;
+  releaseId?: number;
+  filename?: string;
+  required?: boolean;
+  side?: "client" | "server" | "both";
+  sortOrder?: number;
 };
 
 type CreateModpackVersion = {
@@ -47,6 +119,10 @@ type CreateModpackVersion = {
   modConfigsUrl: string;
   modsString: string;
   modpack: string;
+  mods?: ModpackManifestModInput[];
+  changelog?: string;
+  modConfigsSha256?: string;
+  modConfigsSize?: number;
 };
 
 export const modpacksPlugin = () => {
@@ -122,6 +198,10 @@ export const modpacksPlugin = () => {
         $fetch<Version>(`/modpacks/${slug}/versions/${version}`, {
           ...fetchOptions,
         }),
+      getModpackManifest: (slug: string, version: string, fetchOptions?: BetterFetchOption) =>
+        $fetch<ModpackManifest>(`/modpacks/${slug}/versions/${version}/manifest`, {
+          ...fetchOptions,
+        }),
       createModpackVersion: (
         slug: string,
         data: CreateModpackVersion,
@@ -181,6 +261,8 @@ export const modpacksPlugin = () => {
         $fetch<{
           url: string;
           key: string;
+          sha256: string;
+          size: number;
         }>(`https://vsapi.betterjs.dev/api/modpacks/${slug}/versions/upload`, {
           method: "POST",
           body: formData,

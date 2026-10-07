@@ -69,13 +69,13 @@ export const useAllMapTiles = (
     ...options,
   });
 
-// ── Map listing (all installations) ──
+// ── Map listing (all profiles) ──
 
 export type MapEntry = {
   id: number;
   name: string;
-  installation_id: number;
-  installation_name: string;
+  profile_id: number;
+  profile_name: string;
   path: string;
   size_bytes: number;
 };

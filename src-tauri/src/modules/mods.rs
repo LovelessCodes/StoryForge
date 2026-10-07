@@ -2,6 +2,7 @@ use json5::from_str as json5_from_str;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, json, Value};
 use std::{
+    collections::HashMap,
     fs::{create_dir_all, read_dir, remove_file, File},
     io::{Read, Write},
     path::{Path, PathBuf},
@@ -11,8 +12,8 @@ use tauri::{command, AppHandle, State};
 use zip::read::ZipArchive;
 
 use super::errors::UiError;
-use super::installations::find_installation_by_id;
 use super::paths;
+use super::profiles::find_profile_by_id;
 use super::utils::{lock, require_managed_path, safe_file_name, safe_join};
 use crate::{log_error, log_info};
 
@@ -91,6 +92,14 @@ pub struct OutputMod {
     pub authors: Vec<String>,
     pub version: String,
     pub path: String,
+    /// `modinfo.json` dependencies (modid -> version requirement), without the
+    /// special `game` entry: the frontend checks them for missing mods.
+    #[serde(default)]
+    pub dependencies: HashMap<String, String>,
+    /// True when the profile's `clientsettings.json` lists this mod in
+    /// `stringListSettings.disabledMods` as `modid@version`.
+    #[serde(default)]
+    pub disabled: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -211,14 +220,14 @@ pub async fn fetch_authors(
 }
 
 #[command]
-pub async fn add_mod_to_installation(
+pub async fn add_mod_to_profile(
     client: State<'_, Arc<reqwest::Client>>,
     app: AppHandle,
     path: String,
     url: String,
 ) -> Result<String, UiError> {
-    log_info!("add_mod_to_installation: {:?}", path);
-    require_managed_path(&app, Path::new(&path), "Installation path")?;
+    log_info!("add_mod_to_profile: {:?}", path);
+    require_managed_path(&app, Path::new(&path), "Profile path")?;
     let pb = PathBuf::from(path).join(paths::MODS_DIR);
     if !pb.exists() {
         create_dir_all(&pb).map_err(|e| UiError {
@@ -264,9 +273,9 @@ pub async fn download_mod(
     client: State<'_, Arc<reqwest::Client>>,
     modid: String,
     version: String,
-    installation_path: String,
+    profile_path: String,
 ) -> Result<String, UiError> {
-    let mods_dir = PathBuf::from(&installation_path).join(paths::MODS_DIR);
+    let mods_dir = PathBuf::from(&profile_path).join(paths::MODS_DIR);
     download_mod_file(&client, &modid, &version, &mods_dir).await
 }
 
@@ -379,6 +388,90 @@ pub async fn download_mod_file(
     Ok(filename)
 }
 
+/// Lowercase hex sha256 of a byte slice.
+pub fn sha256_hex(bytes: &[u8]) -> String {
+    use sha2::{Digest, Sha256};
+    format!("{:x}", Sha256::digest(bytes))
+}
+
+/// Downloads a mod from an explicit manifest URL, verifying size and sha256
+/// when the manifest provides them. Returns the stored filename.
+pub async fn download_manifest_mod_file(
+    client: &reqwest::Client,
+    url: &str,
+    filename: &str,
+    expected_sha256: Option<&str>,
+    expected_size: Option<u64>,
+    mods_dir: &Path,
+) -> Result<String, UiError> {
+    if !mods_dir.exists() {
+        create_dir_all(mods_dir).map_err(|e| UiError {
+            name: "create_dir_failed".into(),
+            message: format!("Failed to create Mods directory: {e}"),
+        })?;
+    }
+
+    let response = client
+        .get(url)
+        .send()
+        .await
+        .map_err(|e| UiError::new("request_error", format!("Download request error: {e}")))?;
+
+    if !response.status().is_success() {
+        return Err(UiError {
+            name: "http_error".into(),
+            message: format!("Download HTTP error: {}", response.status()),
+        });
+    }
+
+    let content = response.bytes().await.map_err(|e| UiError {
+        name: "read_response_failed".into(),
+        message: format!("Failed to read response: {e}"),
+    })?;
+
+    if let Some(expected) = expected_size {
+        if content.len() as u64 != expected {
+            return Err(UiError {
+                name: "size_mismatch".into(),
+                message: format!(
+                    "Size mismatch for {filename}: expected {expected} bytes, got {}",
+                    content.len()
+                ),
+            });
+        }
+    }
+
+    if let Some(expected) = expected_sha256 {
+        let actual = sha256_hex(&content);
+        if !actual.eq_ignore_ascii_case(expected) {
+            return Err(UiError {
+                name: "hash_mismatch".into(),
+                message: format!(
+                    "sha256 mismatch for {filename}: expected {expected}, got {actual}"
+                ),
+            });
+        }
+    }
+
+    // The name comes from the manifest; reduce it to a single component so it
+    // cannot escape the Mods directory.
+    let filename = safe_file_name(filename)?;
+    let filepath = mods_dir.join(&filename);
+
+    let mut file = File::create(&filepath).map_err(|e| UiError {
+        name: "create_file_failed".into(),
+        message: format!("Failed to create file: {e}"),
+    })?;
+    file.write_all(&content).map_err(|e| UiError {
+        name: "write_file_failed".into(),
+        message: format!("Failed to write file: {e}"),
+    })?;
+
+    log_info!("download_manifest_mod_file: saved to {:?}", filepath);
+    invalidate_mods_cache(mods_dir);
+    Ok(filename)
+}
+
 // ── Mods scan cache ──
 // Opening every zip and parsing modinfo.json is the expensive part of the
 // mods list; result entries are keyed by a fingerprint of the zip files.
@@ -445,7 +538,7 @@ fn store_mods_cache(mods_dir: &Path, result: &ModsResult) {
 }
 
 /// Drops cached scan results for `prefix` and everything below it.
-fn invalidate_mods_cache(prefix: &Path) {
+pub(crate) fn invalidate_mods_cache(prefix: &Path) {
     lock(&MODS_CACHE).retain(|path, _| !path.starts_with(prefix));
 }
 
@@ -506,6 +599,71 @@ fn modinfo_modid(value: &Value) -> String {
             }
         })
         .unwrap_or_else(|| "0".to_string())
+}
+
+/// Extracts the `dependencies` map (modid -> version requirement) from a
+/// parsed `modinfo.json`.
+fn dependencies_from_modinfo(value: &Value) -> HashMap<String, String> {
+    modinfo_field(value, "dependencies")
+        .and_then(Value::as_object)
+        .map(|map| {
+            map.iter()
+                .filter_map(|(modid, version)| {
+                    let modid = modid.trim();
+                    if modid.is_empty() {
+                        return None;
+                    }
+                    let version = version.as_str().unwrap_or_default().trim().to_string();
+                    Some((modid.to_string(), version))
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// The `dependencies` map of a mod zip's `modinfo.json` (modid -> version).
+///
+/// Dependency data is not part of the ModDB API, so it has to be read from the
+/// archive. A missing or unreadable `modinfo.json` yields an empty map: the
+/// install itself succeeded either way.
+#[command]
+pub fn get_mod_dependencies(path: String) -> Result<HashMap<String, String>, UiError> {
+    let zip_path = PathBuf::from(&path);
+    let file = File::open(&zip_path).map_err(|e| UiError {
+        name: "io_error".into(),
+        message: format!("Failed to open {}: {e}", zip_path.display()),
+    })?;
+    let mut archive = ZipArchive::new(file).map_err(|e| UiError {
+        name: "archive_error".into(),
+        message: format!("Failed to read {}: {e}", zip_path.display()),
+    })?;
+
+    for i in 0..archive.len() {
+        let Ok(mut entry) = archive.by_index(i) else {
+            continue;
+        };
+        if entry.is_dir() {
+            continue;
+        }
+        let name_in_zip = entry.name().to_string();
+        let filename = Path::new(&name_in_zip)
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("");
+        if !filename.eq_ignore_ascii_case("modinfo.json") {
+            continue;
+        }
+        let mut contents = String::new();
+        if entry.read_to_string(&mut contents).is_err() {
+            continue;
+        }
+        let Ok(json) = json5_from_str::<Value>(&contents) else {
+            continue;
+        };
+        return Ok(dependencies_from_modinfo(&json));
+    }
+
+    Ok(HashMap::new())
 }
 
 /// Try to read a single `modinfo.json` entry from an already-opened zip archive.
@@ -572,6 +730,8 @@ fn read_modinfo_from_zip(
                         authors,
                         version,
                         path: zip_path.to_string_lossy().into_owned(),
+                        dependencies: dependencies_from_modinfo(&json),
+                        disabled: false,
                     }),
                     true,
                 );
@@ -688,16 +848,396 @@ pub fn get_mods_in_dir(mods_path: &Path) -> Result<ModsResult, UiError> {
     Ok(ModsResult { mods, errors })
 }
 
+// ── Enabled / disabled mods ──
+
+/// The `modid@version` entries of `stringListSettings.disabledMods`.
+pub(crate) fn disabled_mods(settings: &Value) -> Vec<String> {
+    settings
+        .get("stringListSettings")
+        .and_then(|list| list.get("disabledMods"))
+        .and_then(Value::as_array)
+        .map(|entries| {
+            entries
+                .iter()
+                .filter_map(Value::as_str)
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn disabled_entry_modid(entry: &str) -> &str {
+    entry.split('@').next().unwrap_or(entry)
+}
+
+/// Whether the settings list this mod, at this version, as disabled.
+///
+/// An entry without a version (written by other tools) counts for every
+/// version: the game matches `modid@version`, but for a toggle the modid match
+/// is what the user means.
+pub(crate) fn is_mod_disabled(settings: &Value, modid: &str, version: &str) -> bool {
+    disabled_mods(settings).iter().any(|entry| {
+        if !disabled_entry_modid(entry).eq_ignore_ascii_case(modid) {
+            return false;
+        }
+        match entry.split_once('@') {
+            Some((_, entry_version)) => entry_version == version,
+            None => true,
+        }
+    })
+}
+
+/// Adds or removes `modid@version` in `disabledMods`, creating the section
+/// when the file has none.
+///
+/// Removing drops every entry for the modid whatever version it names, so a
+/// downgrade cannot resurrect a stale entry. Returns the updated list.
+pub(crate) fn apply_mod_enabled(
+    settings: &mut Value,
+    modid: &str,
+    version: &str,
+    enabled: bool,
+) -> Vec<String> {
+    let Some(root) = settings.as_object_mut() else {
+        return Vec::new();
+    };
+    let string_list = root
+        .entry("stringListSettings")
+        .or_insert_with(|| json!({}));
+    let Some(list) = string_list.as_object_mut() else {
+        return Vec::new();
+    };
+    let disabled = list.entry("disabledMods").or_insert_with(|| json!([]));
+    let Some(array) = disabled.as_array_mut() else {
+        return Vec::new();
+    };
+    array.retain(|entry| {
+        entry
+            .as_str()
+            .map(|text| !disabled_entry_modid(text).eq_ignore_ascii_case(modid))
+            .unwrap_or(true)
+    });
+    if !enabled {
+        array.push(json!(format!("{modid}@{version}")));
+    }
+    disabled_mods(settings)
+}
+
+fn read_settings_file(profile_dir: &Path) -> Value {
+    std::fs::read_to_string(paths::clientsettings_path(profile_dir))
+        .ok()
+        .and_then(|text| json5_from_str::<Value>(&text).ok())
+        .filter(Value::is_object)
+        .unwrap_or_else(|| json!({}))
+}
+
+fn write_settings_file(profile_dir: &Path, settings: &Value) -> Result<(), UiError> {
+    let text = serde_json::to_string_pretty(settings)
+        .map_err(|e| UiError::new("serialize_failed", format!("Failed to serialize: {e}")))?;
+    std::fs::write(paths::clientsettings_path(profile_dir), text)
+        .map_err(|e| UiError::io(format!("Failed to write clientsettings.json: {e}")))
+}
+
+// ── Installing a mod from a file or URL ──
+
+/// Identity of a mod zip, read from its own `modinfo.json`.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModFileInfo {
+    pub modid: String,
+    pub version: String,
+    pub name: String,
+    pub filename: String,
+}
+
+/// Reads a zip's identity, refusing anything without a readable `modinfo.json`.
+pub(crate) fn inspect_mod_zip(zip_path: &Path) -> Result<ModFileInfo, UiError> {
+    let file = File::open(zip_path)
+        .map_err(|e| UiError::io(format!("Failed to open {}: {e}", zip_path.display())))?;
+    let mut archive = ZipArchive::new(file)
+        .map_err(|_| UiError::new("invalid_mod", "The file is not a readable zip archive"))?;
+    let mut errors = Vec::new();
+    let (output, _) = read_modinfo_from_zip(zip_path, &mut archive, &mut errors);
+    let Some(output) = output else {
+        return Err(UiError::new(
+            "invalid_mod",
+            "The archive has no readable modinfo.json",
+        ));
+    };
+    Ok(ModFileInfo {
+        modid: output.modid,
+        version: output.version,
+        name: output.name,
+        filename: zip_path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or_default()
+            .to_string(),
+    })
+}
+
+/// Copies a local mod zip into a profile's `Mods` directory.
+///
+/// The zip must carry a `modinfo.json`; a file picked from the Mods directory
+/// itself is accepted as-is rather than copied onto itself.
+pub(crate) fn install_mod_file_at(
+    profile_dir: &Path,
+    source: &Path,
+) -> Result<ModFileInfo, UiError> {
+    if !source.is_file() {
+        return Err(UiError::not_found(format!(
+            "File not found: {}",
+            source.display()
+        )));
+    }
+    let mut info = inspect_mod_zip(source)?;
+    let mods_dir = paths::mods_dir(profile_dir);
+    create_dir_all(&mods_dir)
+        .map_err(|e| UiError::io(format!("Failed to create Mods directory: {e}")))?;
+    let filename = safe_file_name(
+        source
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or_else(|| UiError::new("invalid_filename", "The file has no usable name"))?,
+    )?;
+    let destination = mods_dir.join(&filename);
+    let same_file = match (
+        dunce::canonicalize(source),
+        dunce::canonicalize(&destination),
+    ) {
+        (Ok(a), Ok(b)) => a == b,
+        _ => source == destination,
+    };
+    if !same_file {
+        std::fs::copy(source, &destination).map_err(|e| {
+            UiError::io(format!(
+                "Failed to copy {} to {}: {e}",
+                source.display(),
+                destination.display()
+            ))
+        })?;
+    }
+    invalidate_mods_cache(&mods_dir);
+    info.filename = filename;
+    Ok(info)
+}
+
+fn validate_mod_url(url: &str) -> Result<(), UiError> {
+    let allowed = url.starts_with("https://")
+        || url.starts_with("http://127.0.0.1:")
+        || url.starts_with("http://localhost:");
+    if allowed && !url.chars().any(char::is_whitespace) {
+        Ok(())
+    } else {
+        Err(UiError::new(
+            "invalid_url",
+            "Enter an https:// link to a mod .zip",
+        ))
+    }
+}
+
+/// Downloads a mod zip from an explicit URL into a profile's `Mods` directory
+/// and verifies it is a mod. A download that is not a mod is removed again.
+pub(crate) async fn install_mod_url_at(
+    client: &reqwest::Client,
+    profile_dir: &Path,
+    url: &str,
+) -> Result<ModFileInfo, UiError> {
+    let trimmed = url.split(['?', '#']).next().unwrap_or(url);
+    let filename = trimmed
+        .rsplit('/')
+        .next()
+        .filter(|name| !name.is_empty())
+        .unwrap_or("mod.zip");
+    let filename = safe_file_name(filename)?;
+    let mods_dir = paths::mods_dir(profile_dir);
+    let stored = download_manifest_mod_file(client, url, &filename, None, None, &mods_dir).await?;
+    let path = mods_dir.join(&stored);
+    match inspect_mod_zip(&path) {
+        Ok(mut info) => {
+            info.filename = stored;
+            Ok(info)
+        }
+        Err(error) => {
+            let _ = remove_file(&path);
+            invalidate_mods_cache(&mods_dir);
+            Err(error)
+        }
+    }
+}
+
+/// Whether a preset's disabled-modid list names one mod (case-insensitive).
+pub(crate) fn is_in_disabled_set(disabled: &[String], modid: &str) -> bool {
+    disabled
+        .iter()
+        .any(|entry| entry.eq_ignore_ascii_case(modid))
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModStateParams {
+    pub path: String,
+    /// Every modid that should be disabled; installed mods not named are
+    /// enabled.
+    pub disabled: Vec<String>,
+}
+
+/// Applies a whole enabled/disabled configuration to a profile in one write:
+/// every installed mod named in `disabled` is turned off, every other
+/// installed mod is turned on. Used by mod presets.
+#[command]
+pub async fn apply_mod_state(
+    app: AppHandle,
+    params: ModStateParams,
+) -> Result<Vec<String>, UiError> {
+    log_info!(
+        "apply_mod_state: {} disabled mod(s) path={}",
+        params.disabled.len(),
+        params.path
+    );
+    require_managed_path(&app, Path::new(&params.path), "Profile path")?;
+    tokio::task::spawn_blocking(move || {
+        let profile_dir = PathBuf::from(&params.path);
+        let mods_dir = paths::mods_dir(&profile_dir);
+        let mods = if mods_dir.is_dir() {
+            get_mods_in_dir(&mods_dir)
+                .map(|result| result.mods)
+                .unwrap_or_default()
+        } else {
+            Vec::new()
+        };
+        let mut settings = read_settings_file(&profile_dir);
+        for installed in &mods {
+            let enabled = !is_in_disabled_set(&params.disabled, &installed.modid);
+            apply_mod_enabled(&mut settings, &installed.modid, &installed.version, enabled);
+        }
+        write_settings_file(&profile_dir, &settings)?;
+        Ok(disabled_mods(&settings))
+    })
+    .await
+    .map_err(|e| UiError::new("internal_error", format!("Apply mod state failed: {e}")))?
+}
+
+/// Installs a local mod zip into a profile.
+#[command]
+pub async fn install_mod_file(
+    app: AppHandle,
+    path: String,
+    file: String,
+) -> Result<ModFileInfo, UiError> {
+    log_info!("install_mod_file: {} -> {}", file, path);
+    require_managed_path(&app, Path::new(&path), "Profile path")?;
+    tokio::task::spawn_blocking(move || install_mod_file_at(Path::new(&path), Path::new(&file)))
+        .await
+        .map_err(|e| UiError::new("internal_error", format!("Install failed: {e}")))?
+}
+
+/// Installs a mod zip from a direct URL into a profile.
+#[command]
+pub async fn install_mod_url(
+    app: AppHandle,
+    client: State<'_, Arc<reqwest::Client>>,
+    path: String,
+    url: String,
+) -> Result<ModFileInfo, UiError> {
+    log_info!("install_mod_url: {} -> {}", url, path);
+    require_managed_path(&app, Path::new(&path), "Profile path")?;
+    validate_mod_url(&url)?;
+    install_mod_url_at(&client, Path::new(&path), &url).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModEnabledParams {
+    pub path: String,
+    pub modid: String,
+    pub version: String,
+    pub enabled: bool,
+}
+
+/// Enables or disables one installed mod for a profile by editing the profile's
+/// `clientsettings.json` (`stringListSettings.disabledMods`). Returns the
+/// updated list of disabled `modid@version` entries.
+#[command]
+pub async fn set_mod_enabled(
+    app: AppHandle,
+    params: ModEnabledParams,
+) -> Result<Vec<String>, UiError> {
+    log_info!(
+        "set_mod_enabled: {}@{} enabled={} path={}",
+        params.modid,
+        params.version,
+        params.enabled,
+        params.path
+    );
+    require_managed_path(&app, Path::new(&params.path), "Profile path")?;
+    tokio::task::spawn_blocking(move || {
+        let profile_dir = PathBuf::from(&params.path);
+        let mut settings = read_settings_file(&profile_dir);
+        let updated = apply_mod_enabled(
+            &mut settings,
+            &params.modid,
+            &params.version,
+            params.enabled,
+        );
+        write_settings_file(&profile_dir, &settings)?;
+        Ok(updated)
+    })
+    .await
+    .map_err(|e| UiError::new("internal_error", format!("Set mod state failed: {e}")))?
+}
+
+/// Enables or disables every installed mod of a profile in one write.
+#[command]
+pub async fn set_all_mods_enabled(
+    app: AppHandle,
+    path: String,
+    enabled: bool,
+) -> Result<Vec<String>, UiError> {
+    log_info!("set_all_mods_enabled: enabled={enabled} path={path}");
+    require_managed_path(&app, Path::new(&path), "Profile path")?;
+    tokio::task::spawn_blocking(move || {
+        let profile_dir = PathBuf::from(&path);
+        let mods_dir = paths::mods_dir(&profile_dir);
+        let mods = if mods_dir.is_dir() {
+            get_mods_in_dir(&mods_dir)
+                .map(|result| result.mods)
+                .unwrap_or_default()
+        } else {
+            Vec::new()
+        };
+        let mut settings = read_settings_file(&profile_dir);
+        let mut updated = disabled_mods(&settings);
+        for installed in mods {
+            updated =
+                apply_mod_enabled(&mut settings, &installed.modid, &installed.version, enabled);
+        }
+        write_settings_file(&profile_dir, &settings)?;
+        Ok(updated)
+    })
+    .await
+    .map_err(|e| UiError::new("internal_error", format!("Set mods state failed: {e}")))?
+}
+
 #[command]
 pub async fn get_mods(app: AppHandle, path: String) -> Result<ModsResult, UiError> {
     log_info!("get_mods: {}", path);
-    require_managed_path(&app, Path::new(&path), "Installation path")?;
-    let mods_dir = PathBuf::from(path).join(paths::MODS_DIR);
+    require_managed_path(&app, Path::new(&path), "Profile path")?;
+    let profile_dir = PathBuf::from(&path);
+    let mods_dir = profile_dir.join(paths::MODS_DIR);
 
-    // Opens every zip in the directory: keep it off the UI thread.
+    // Opens every zip in the directory: keep it off the UI thread. The
+    // disabled flag is read after the (cached) scan so it stays correct
+    // without re-opening any zip when only clientsettings.json changed.
     tokio::task::spawn_blocking(move || {
         let start = std::time::Instant::now();
-        let result = get_mods_cached(&mods_dir);
+        let mut result = get_mods_cached(&mods_dir);
+        if let Ok(scanned) = result.as_mut() {
+            let settings = read_settings_file(&profile_dir);
+            for item in &mut scanned.mods {
+                item.disabled = is_mod_disabled(&settings, &item.modid, &item.version);
+            }
+        }
         log_info!("get_mods completed in {}ms", start.elapsed().as_millis());
         result
     })
@@ -709,9 +1249,9 @@ pub async fn get_mods(app: AppHandle, path: String) -> Result<ModsResult, UiErro
 }
 
 #[command]
-pub fn get_mod_configs(app: AppHandle, installation_id: u64) -> Result<Vec<Value>, UiError> {
-    log_info!("get_mod_configs: installation={}", installation_id);
-    let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
+pub fn get_mod_configs(app: AppHandle, profile_id: u64) -> Result<Vec<Value>, UiError> {
+    log_info!("get_mod_configs: profile={}", profile_id);
+    let (pb, _profile) = find_profile_by_id(&app, profile_id)?;
     let mod_config_path = pb.join(paths::MODCONFIG_DIR);
     if !mod_config_path.exists() || !mod_config_path.is_dir() {
         return Err(UiError {
@@ -757,16 +1297,12 @@ pub fn get_mod_configs(app: AppHandle, installation_id: u64) -> Result<Vec<Value
 #[command]
 pub fn save_mod_config(
     app: AppHandle,
-    installation_id: u64,
+    profile_id: u64,
     file: String,
     new_code: String,
 ) -> Result<(), UiError> {
-    log_info!(
-        "save_mod_config: installation={} file={}",
-        installation_id,
-        file
-    );
-    let (pb, _installation) = find_installation_by_id(&app, installation_id)?;
+    log_info!("save_mod_config: profile={} file={}", profile_id, file);
+    let (pb, _profile) = find_profile_by_id(&app, profile_id)?;
     let mod_config_path = pb.join(paths::MODCONFIG_DIR);
     if !mod_config_path.exists() || !mod_config_path.is_dir() {
         return Err(UiError {
@@ -828,34 +1364,34 @@ pub async fn get_mod_updates(
 }
 
 #[command]
-pub async fn get_installation_mods(app: AppHandle, id: u64) -> Result<Vec<OutputMod>, UiError> {
-    log_info!("get_installation_mods: installation={}", id);
-    let (pb, _installation) = find_installation_by_id(&app, id)?;
+pub async fn get_profile_mods(app: AppHandle, id: u64) -> Result<Vec<OutputMod>, UiError> {
+    log_info!("get_profile_mods: profile={}", id);
+    let (pb, _profile) = find_profile_by_id(&app, id)?;
     let mods_dir = pb.join(paths::MODS_DIR);
 
     tokio::task::spawn_blocking(move || {
         let start = std::time::Instant::now();
         let result = get_mods_cached(&mods_dir).map(|res| res.mods);
         log_info!(
-            "get_installation_mods completed in {}ms",
+            "get_profile_mods completed in {}ms",
             start.elapsed().as_millis()
         );
         result
     })
     .await
     .map_err(|e| {
-        log_error!("get_installation_mods: scan task failed: {e}");
+        log_error!("get_profile_mods: scan task failed: {e}");
         UiError::new("internal_error", format!("Mods scan failed: {e}"))
     })?
 }
 
 #[command]
-pub async fn remove_mod_from_installation(
+pub async fn remove_mod_from_profile(
     app: AppHandle,
     params: ModRemoveParams,
 ) -> Result<String, UiError> {
-    log_info!("remove_mod_from_installation: {:?}", params.modpath);
-    require_managed_path(&app, Path::new(&params.path), "Installation path")?;
+    log_info!("remove_mod_from_profile: {:?}", params.modpath);
+    require_managed_path(&app, Path::new(&params.path), "Profile path")?;
     let mods_path = PathBuf::from(&params.path).join(paths::MODS_DIR);
     if !mods_path.exists() || !mods_path.is_dir() {
         return Err(UiError {
@@ -930,5 +1466,181 @@ mod tests {
 
         invalidate_mods_cache(&dir);
         assert!(try_cached_mods(&dir).is_none());
+    }
+
+    #[test]
+    fn hashes_bytes_with_sha256() {
+        // Known vector: sha256("abc").
+        assert_eq!(
+            sha256_hex(b"abc"),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+    }
+
+    #[test]
+    fn reads_dependencies_from_modinfo() {
+        let info = serde_json::json!({
+            "modID": "aculinaryartillery",
+            "dependencies": {
+                "game": "1.22.3",
+                "expandedfoods": "2.0.0",
+                "someother": ""
+            }
+        });
+        let deps = dependencies_from_modinfo(&info);
+        assert_eq!(deps.get("game").map(String::as_str), Some("1.22.3"));
+        assert_eq!(deps.get("expandedfoods").map(String::as_str), Some("2.0.0"));
+        assert_eq!(deps.get("someother").map(String::as_str), Some(""));
+
+        // Missing or non-object dependencies yield an empty map.
+        assert!(dependencies_from_modinfo(&serde_json::json!({})).is_empty());
+        assert!(
+            dependencies_from_modinfo(&serde_json::json!({ "dependencies": "nope" })).is_empty()
+        );
+    }
+
+    fn write_test_mod_zip(path: &Path, modid: &str, version: &str, name: &str) {
+        let file = File::create(path).unwrap();
+        let mut writer = zip::ZipWriter::new(file);
+        writer
+            .start_file("modinfo.json", zip::write::SimpleFileOptions::default())
+            .unwrap();
+        let info = serde_json::json!({
+            "modid": modid,
+            "name": name,
+            "version": version,
+            "type": "code",
+            "side": "universal",
+        });
+        writer.write_all(info.to_string().as_bytes()).unwrap();
+        writer.finish().unwrap();
+    }
+
+    #[test]
+    fn installs_a_local_mod_zip() {
+        let tmp = tempfile::tempdir().unwrap();
+        let profile = tmp.path().join("profile");
+        std::fs::create_dir_all(&profile).unwrap();
+        let source = tmp.path().join("carryon_1.13.0.zip");
+        write_test_mod_zip(&source, "carryon", "1.13.0", "Carry On");
+
+        let info = install_mod_file_at(&profile, &source).unwrap();
+        assert_eq!(info.modid, "carryon");
+        assert_eq!(info.version, "1.13.0");
+        assert_eq!(info.name, "Carry On");
+        assert_eq!(info.filename, "carryon_1.13.0.zip");
+        assert!(paths::mods_dir(&profile)
+            .join("carryon_1.13.0.zip")
+            .is_file());
+
+        // The installed copy scans cleanly.
+        let scanned = get_mods_in_dir(&paths::mods_dir(&profile)).unwrap();
+        assert_eq!(scanned.mods.len(), 1);
+        assert_eq!(scanned.mods[0].modid, "carryon");
+    }
+
+    #[test]
+    fn install_accepts_a_zip_already_in_the_mods_directory() {
+        let tmp = tempfile::tempdir().unwrap();
+        let profile = tmp.path().join("profile");
+        let mods_dir = paths::mods_dir(&profile);
+        std::fs::create_dir_all(&mods_dir).unwrap();
+        let existing = mods_dir.join("mod_a.zip");
+        write_test_mod_zip(&existing, "a", "1.0.0", "A");
+
+        let info = install_mod_file_at(&profile, &existing).unwrap();
+        assert_eq!(info.modid, "a");
+        assert!(existing.is_file());
+        let scanned = get_mods_in_dir(&mods_dir).unwrap();
+        assert_eq!(scanned.mods.len(), 1);
+    }
+
+    #[test]
+    fn install_rejects_files_without_modinfo() {
+        let tmp = tempfile::tempdir().unwrap();
+        let profile = tmp.path().join("profile");
+        std::fs::create_dir_all(&profile).unwrap();
+        let bad = tmp.path().join("bad.zip");
+        let file = File::create(&bad).unwrap();
+        let mut writer = zip::ZipWriter::new(file);
+        writer
+            .start_file("readme.txt", zip::write::SimpleFileOptions::default())
+            .unwrap();
+        writer.write_all(b"nope").unwrap();
+        writer.finish().unwrap();
+
+        let error = install_mod_file_at(&profile, &bad).unwrap_err();
+        assert_eq!(error.name, "invalid_mod");
+        assert!(!paths::mods_dir(&profile).join("bad.zip").exists());
+    }
+
+    #[test]
+    fn disabled_set_matching_is_case_insensitive() {
+        let disabled = vec!["carryon".to_string(), "ExtraOverlays".to_string()];
+        assert!(is_in_disabled_set(&disabled, "CarryOn"));
+        assert!(is_in_disabled_set(&disabled, "extraoverlays"));
+        assert!(!is_in_disabled_set(&disabled, "stonequarry"));
+        assert!(!is_in_disabled_set(&[], "carryon"));
+    }
+
+    #[test]
+    fn mod_url_validation_requires_https() {
+        assert!(validate_mod_url("https://mods.vintagestory.at/download/1/mod.zip").is_ok());
+        assert!(validate_mod_url("http://127.0.0.1:8080/mod.zip").is_ok());
+        assert!(validate_mod_url("http://localhost:8080/mod.zip").is_ok());
+        assert!(validate_mod_url("http://example.com/mod.zip").is_err());
+        assert!(validate_mod_url("ftp://example.com/mod.zip").is_err());
+        assert!(validate_mod_url("https://example.com/a b.zip").is_err());
+    }
+
+    #[test]
+    fn apply_mod_enabled_adds_and_removes_entries() {
+        let mut settings = serde_json::json!({
+            "stringListSettings": {"disabledMods": ["carryon@1.13.0"], "modPaths": ["x"]},
+            "intSettings": {"fov": 70}
+        });
+
+        let updated = apply_mod_enabled(&mut settings, "extraoverlays", "1.6.0", false);
+        assert_eq!(updated, vec!["carryon@1.13.0", "extraoverlays@1.6.0"]);
+
+        // Enabling drops every entry for the modid, whatever version it names.
+        let updated = apply_mod_enabled(&mut settings, "carryon", "2.0.0", true);
+        assert_eq!(updated, vec!["extraoverlays@1.6.0"]);
+
+        // Unrelated settings and other string lists survive.
+        assert_eq!(settings["intSettings"]["fov"], 70);
+        assert_eq!(settings["stringListSettings"]["modPaths"][0], "x");
+    }
+
+    #[test]
+    fn apply_mod_enabled_creates_missing_sections() {
+        let mut settings = serde_json::json!({});
+        let updated = apply_mod_enabled(&mut settings, "a", "1.0.0", false);
+        assert_eq!(updated, vec!["a@1.0.0"]);
+        assert!(is_mod_disabled(&settings, "a", "1.0.0"));
+        assert!(!is_mod_disabled(&settings, "a", "1.0.1"));
+        // Case-insensitive, like the game's own matching.
+        assert!(is_mod_disabled(&settings, "A", "1.0.0"));
+    }
+
+    #[test]
+    fn apply_mod_enabled_is_idempotent() {
+        let mut settings = serde_json::json!({});
+        apply_mod_enabled(&mut settings, "a", "1.0.0", false);
+        let updated = apply_mod_enabled(&mut settings, "a", "1.0.0", false);
+        assert_eq!(updated, vec!["a@1.0.0"]);
+    }
+
+    #[test]
+    fn disabled_mods_tolerate_foreign_entries() {
+        // A non-string entry is preserved in the raw list and ignored by the
+        // reader; an entry without a version disables every version.
+        let mut settings = serde_json::json!({
+            "stringListSettings": {"disabledMods": [7, "legacy"]}
+        });
+        assert!(is_mod_disabled(&settings, "legacy", "9.9.9"));
+        let updated = apply_mod_enabled(&mut settings, "other", "1.0.0", false);
+        assert_eq!(updated, vec!["legacy", "other@1.0.0"]);
+        assert_eq!(settings["stringListSettings"]["disabledMods"][0], 7);
     }
 }

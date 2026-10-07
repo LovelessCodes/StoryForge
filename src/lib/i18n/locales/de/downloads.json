@@ -1,0 +1,21 @@
+{
+  "title": "Downloads",
+  "description": "Spielversionen und Mods, die im Hintergrund heruntergeladen werden.",
+  "empty": "Derzeit keine Downloads.",
+  "status": {
+    "done": "Fertig",
+    "downloading": "Wird heruntergeladen",
+    "error": "Fehlgeschlagen",
+    "extracting": "Wird entpackt",
+    "paused": "Pausiert",
+    "pending": "In Warteschlange"
+  },
+  "versionRemoved": "Version entfernt",
+  "modRemoved": "Mod entfernt",
+  "toasts": {
+    "removeVersionFailed": "Spielversion {{version}} konnte nicht entfernt werden",
+    "downloadNoFile": "Dieser Download verweist nicht mehr auf eine Datei",
+    "removeFailed": "{{label}} konnte nicht entfernt werden"
+  },
+  "standalone": "Standalone"
+}

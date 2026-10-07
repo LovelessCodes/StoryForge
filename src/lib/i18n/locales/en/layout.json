@@ -1,0 +1,183 @@
+{
+  "nav": {
+    "profiles": "Profiles",
+    "mods": "Mods",
+    "modpacks": "Modpacks",
+    "versions": "Versions",
+    "worlds": "Worlds",
+    "servers": "Servers",
+    "config": "Mod Configs",
+    "news": "News",
+    "settings": "Settings",
+    "dashboard": "Dashboard"
+  },
+  "sidebar": {
+    "navigation": "Navigation",
+    "tagline": "Vintage Story Manager",
+    "openProfilesFolderTitle": "Open the profiles folder",
+    "play": "Play {{name}}",
+    "createProfileFirst": "Create a profile first",
+    "launchTitle": "Launch {{name}}",
+    "pausedTitle": "Game version {{version}} download is paused — resume it on the Versions page",
+    "downloadTitle": "Download game version {{version}} to play {{name}}",
+    "downloadPaused": "Download paused",
+    "downloading": "Downloading… {{percent}}%",
+    "downloadingNoPercent": "Downloading…",
+    "downloadVersion": "Download v{{version}}",
+    "title": "Sidebar",
+    "description": "Displays the mobile sidebar.",
+    "toggle": "Toggle Sidebar",
+    "discord": "Discord"
+  },
+  "titlebar": {
+    "update": "Update v{{version}}",
+    "updateTitle": "Update to Story Forge {{version}}",
+    "downloads": "Downloads",
+    "downloadProgress": "Download progress: {{percent}}%",
+    "search": "Search",
+    "searchTitle": "Search pages and actions",
+    "minimize": "Minimize window",
+    "maximize": "Maximize window",
+    "close": "Close window"
+  },
+  "theme": {
+    "toggle": "Toggle theme",
+    "switchToLight": "Switch to light mode",
+    "switchToDark": "Switch to dark mode",
+    "light": "light",
+    "dark": "dark"
+  },
+  "commandPalette": {
+    "placeholder": "Search Story Forge…",
+    "empty": "No results found.",
+    "switchToTheme": "{{title}} — switch to {{theme}}"
+  },
+  "commands": {
+    "groups": {
+      "goTo": "Go to",
+      "application": "Application",
+      "appearance": "Appearance",
+      "game": "Game"
+    },
+    "commandPalette": {
+      "title": "Open command palette",
+      "description": "Search pages and actions"
+    },
+    "toggleSidebar": "Toggle sidebar",
+    "toggleTheme": {
+      "title": "Toggle theme",
+      "description": "Switch between light and dark"
+    },
+    "checkForUpdates": "Check for updates",
+    "refresh": "Refresh data",
+    "openProfilesFolder": "Open profiles folder",
+    "launchProfile": "Launch active profile"
+  },
+  "updater": {
+    "checking": "Checking for updates…",
+    "downloading": "Downloading Story Forge {{version}}…",
+    "downloadingPercent": "Downloading Story Forge {{version}}… {{percent}}%",
+    "installed": "Update installed — restarting…",
+    "failed": "Update failed"
+  },
+  "noActiveProfile": {
+    "title": "No active profile",
+    "description": "Create or select a profile first."
+  },
+  "launch": {
+    "errorPlaying": "Error playing with profile: {{message}}",
+    "downloadingDotnet": "Downloading .NET runtime… {{percent}}%",
+    "extractingDotnet": "Extracting .NET runtime…",
+    "launching": "Launching {{name}}…",
+    "launched": "Launched {{name}}!",
+    "launchedWithWorld": "Launched world {{world}} with {{name}}!",
+    "launchedAndConnecting": "Launched {{name}} and connecting to {{server}}!",
+    "errorLaunching": "Error launching game: {{reason}}",
+    "errorConnecting": "Error connecting to server: {{message}}",
+    "backingUp": "Backing up {{name}}… {{percent}}%",
+    "backupFailed": "Backup before launch failed"
+  },
+  "reveal": {
+    "failed": "Failed to reveal in file explorer: {{message}}"
+  },
+  "pages": {
+    "profiles": {
+      "title": "Mod Profiles",
+      "description": "Manage separate mod configurations for different playstyles."
+    },
+    "mods": {
+      "title": "Mods"
+    },
+    "modpacks": {
+      "title": "Modpacks",
+      "description": "Browse community mod collections and install them as profiles."
+    },
+    "versions": {
+      "title": "Versions",
+      "description": "Game builds installed on this machine. Profiles launch with one of these versions."
+    },
+    "worlds": {
+      "title": "Worlds",
+      "description": "Browse the worlds of your profiles, launch them, and explore their maps."
+    },
+    "servers": {
+      "title": "Servers",
+      "description": "Saved multiplayer servers, the public server browser and your own hosted instances."
+    },
+    "serverHosting": {
+      "title": "Servers",
+      "description": "Manage saved servers and the dedicated servers you host."
+    },
+    "config": {
+      "title": "Mod Configs",
+      "description": "Config files in your active profile."
+    },
+    "news": {
+      "title": "News",
+      "description": "Latest announcements from the Vintage Story forums."
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Folders, appearance, downloads and the application account."
+    },
+    "auth": {
+      "title": "Account",
+      "description": "Sign in to the optional Story Forge cloud for modpacks."
+    },
+    "default": {
+      "title": "Story Forge"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "description": "Your profiles and servers at a glance."
+    }
+  },
+  "header": {
+    "refreshing": "Refreshing…"
+  },
+  "errors": {
+    "title": "Something went wrong",
+    "description": "Story Forge hit an unexpected error while loading this page.",
+    "tryAgain": "Try again",
+    "backToProfiles": "Back to Profiles",
+    "notFoundTitle": "Page not found",
+    "notFoundDescription": "This page does not exist or was moved. Head back to browsing mods."
+  },
+  "scrollToTop": "Scroll to top",
+  "toast": {
+    "close": "Close toast"
+  },
+  "dashboard": {
+    "profiles": "Profiles ({{count}})",
+    "servers": "Saved servers ({{count}})",
+    "viewAll": "View all",
+    "emptyProfiles": "No profiles yet.",
+    "createProfile": "Create a profile",
+    "emptyServers": "No saved servers for the active profile.",
+    "browseServers": "Browse servers",
+    "active": "Active",
+    "setActive": "Set {{name}} as active",
+    "favorite": "Favourite {{name}}",
+    "unfavorite": "Unfavorite {{name}}"
+  }
+}

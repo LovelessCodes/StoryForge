@@ -28,3 +28,6 @@ jobs:
         with:
           blocking: none
           scope: full
+          # One sticky summary comment + commit status only. Inline review
+          # comments re-post on every push and pile up (hundreds per busy PR).
+          review-comments: false
