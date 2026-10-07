@@ -8,6 +8,7 @@
   pkg-config,
   perl,
   openssl,
+  sqlite,
   wrapGAppsHook4,
   glib-networking,
   webkitgtk_4_1,
@@ -46,6 +47,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
 
   buildInputs = [
     openssl
+    sqlite
   ]
   ++ lib.optionals stdenv.hostPlatform.isLinux [
     glib-networking
