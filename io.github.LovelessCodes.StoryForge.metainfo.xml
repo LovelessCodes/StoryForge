@@ -7,7 +7,7 @@
   <summary>Story Forge is a modern desktop app for Vintage Story players, designed to make switching between game versions, modpacks, servers, and accounts effortlessly</summary>
 
   <metadata_license>MIT</metadata_license>
-  <project_license>AGPL-3.0-or-later</project_license>
+  <project_license>GPL-3.0-only</project_license>
 
   <developer id="io.github.LovelessCodes">
     <name>LovelessCodes</name>
@@ -42,13 +42,13 @@
   <launchable type="desktop-id">io.github.LovelessCodes.StoryForge.desktop</launchable>
   <screenshots>
     <screenshot type="default">
-      <image>https://github.com/LovelessCodes/StoryForge/blob/23724a2897f2828d60359fa5c746278d3636e739/screenshots/Overview.png?raw=true</image>
+      <image>https://raw.githubusercontent.com/LovelessCodes/StoryForge/release/screenshots/profiles.webp</image>
     </screenshot>
     <screenshot>
-      <image>https://github.com/LovelessCodes/StoryForge/blob/23724a2897f2828d60359fa5c746278d3636e739/screenshots/Mod_Browser.png?raw=true</image>
+      <image>https://raw.githubusercontent.com/LovelessCodes/StoryForge/release/screenshots/mods.webp</image>
     </screenshot>
     <screenshot>
-      <image>https://github.com/LovelessCodes/StoryForge/blob/23724a2897f2828d60359fa5c746278d3636e739/screenshots/Servers.png?raw=true</image>
+      <image>https://raw.githubusercontent.com/LovelessCodes/StoryForge/release/screenshots/hosting.webp</image>
     </screenshot>
   </screenshots>
 

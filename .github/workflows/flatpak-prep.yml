@@ -1,0 +1,86 @@
+name: "Flatpak Prep"
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to attach node_modules bundles to"
+        required: true
+        default: "storyforge-v2.0.0"
+  release:
+    types: [published]
+  push:
+    paths:
+      - "packaging/flatpak/**"
+      - ".github/workflows/flatpak-prep.yml"
+  pull_request:
+    paths:
+      - "packaging/flatpak/**"
+      - ".github/workflows/flatpak-prep.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  node-modules:
+    name: node_modules bundle (${{ matrix.arch }})
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-22.04
+          - arch: arm64
+            runner: ubuntu-22.04-arm
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+          persist-credentials: false
+
+      - name: setup bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: 1.4.2
+          no-cache: true
+
+      - name: Install frontend dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Pack node_modules
+        run: |
+          tar --sort=name --owner=0 --group=0 --numeric-owner \
+            --mtime='2020-01-01 00:00:00 UTC' \
+            -czf "node_modules-${{ matrix.arch }}.tar.gz" node_modules
+          sha256sum "node_modules-${{ matrix.arch }}.tar.gz"
+
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: gh release upload "$TAG" "node_modules-${{ matrix.arch }}.tar.gz" --clobber
+
+  lint:
+    name: Lint Flathub manifest
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-50
+      options: --privileged
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+
+      - name: Assemble lint workspace
+        run: |
+          mkdir -p lint
+          cp packaging/flatpak/io.github.LovelessCodes.StoryForge.yml lint/
+          cp packaging/flatpak/cargo-sources.json lint/
+          cp -r shared-modules lint/
+
+      - name: Run flatpak-builder-lint
+        run: flatpak-builder-lint manifest lint/io.github.LovelessCodes.StoryForge.yml

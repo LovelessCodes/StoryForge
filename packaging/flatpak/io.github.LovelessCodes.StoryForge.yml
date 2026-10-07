@@ -1,0 +1,111 @@
+# Flathub-ready manifest for io.github.LovelessCodes.StoryForge.
+#
+# Unlike the manifest at the repository root (which builds the GitHub-release
+# bundle and may use the network), this copy builds fully offline and is meant
+# to be copied into the flathub/io.github.LovelessCodes.StoryForge repository.
+# See README.md in this directory for the release checklist.
+
+app-id: io.github.LovelessCodes.StoryForge
+
+runtime: org.gnome.Platform
+runtime-version: "50"
+sdk: org.gnome.Sdk
+
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+
+command: /app/StoryForge/StoryForge
+
+finish-args:
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --share=network
+  - --device=all
+  - --filesystem=xdg-documents
+  - --env=XCURSOR_PATH=/run/host/user-share/icons:/run/host/share/icons
+
+modules:
+  - shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json
+
+  - name: bun
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 bun ${FLATPAK_DEST}/bin/bun
+      - install -Dm644 LICENSE.md ${FLATPAK_DEST}/share/licenses/${FLATPAK_ID}/bun/LICENSE.md
+    sources:
+      - type: archive
+        url: https://github.com/oven-sh/bun/releases/download/bun-v1.4.2/bun-linux-x64.zip
+        sha256: 36368faef7527875d5ffa52e53cd48021741f2a83eb6208a8dd64068d422a913
+        strip-components: 1
+        only-arches:
+          - x86_64
+        x-checker-data:
+          type: json
+          url: https://api.github.com/repos/oven-sh/bun/releases/latest
+          version-query: .tag_name | sub("bun-v"; "")
+          url-query: .assets[] | select(.name == "bun-linux-x64.zip") | .browser_download_url
+      - type: archive
+        url: https://github.com/oven-sh/bun/releases/download/bun-v1.4.2/bun-linux-aarch64.zip
+        sha256: 54328bbc2d9c8e0c9f892c544d66c57a83b84139e34909e5ee81758f1ac8fda7
+        strip-components: 1
+        only-arches:
+          - aarch64
+        x-checker-data:
+          type: json
+          url: https://api.github.com/repos/oven-sh/bun/releases/latest
+          version-query: .tag_name | sub("bun-v"; "")
+          url-query: .assets[] | select(.name == "bun-linux-aarch64.zip") | .browser_download_url
+      - type: file
+        url: https://raw.githubusercontent.com/oven-sh/bun/bun-v1.4.2/LICENSE.md
+        sha256: b9caf52728691b4057e371232c221a132883198be2f3d2ddf92c90404c984b1a
+
+  - name: StoryForge
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/rust-stable/bin
+      env:
+        CARGO_HOME: /run/build/StoryForge/cargo
+        CARGO_NET_OFFLINE: "true"
+    build-commands:
+      # The metainfo ships with placeholders; bump the version and date here
+      # together with the archive URLs and hashes below on every release.
+      - sed -i "s/FLATPAK_VERSION/2.0.0/g; s/FLATPAK_DATE/2026-10-07/g" io.github.LovelessCodes.StoryForge.metainfo.xml
+      # Frontend dependencies come pre-installed from the node_modules bundle.
+      - bun tauri build --no-bundle
+      - install -Dm755 -t ${FLATPAK_DEST}/StoryForge src-tauri/target/release/StoryForge
+      - install -Dm644 src-tauri/icons/icon.png ${FLATPAK_DEST}/share/icons/hicolor/512x512/apps/io.github.LovelessCodes.StoryForge.png
+      - install -Dm644 io.github.LovelessCodes.StoryForge.desktop -t ${FLATPAK_DEST}/share/applications
+      - install -Dm644 io.github.LovelessCodes.StoryForge.metainfo.xml -t ${FLATPAK_DEST}/share/metainfo
+      - install -Dm644 LICENSE ${FLATPAK_DEST}/share/licenses/${FLATPAK_ID}/StoryForge/LICENSE
+    sources:
+      - type: archive
+        url: https://github.com/LovelessCodes/StoryForge/archive/refs/tags/storyforge-v2.0.0.tar.gz
+        sha256: 31e950a2289fca00c78e11ec8e3166706d6c412914158b5a1e95696c38b3c40d
+        x-checker-data:
+          type: json
+          url: https://api.github.com/repos/LovelessCodes/StoryForge/releases/latest
+          version-query: .tag_name | sub("storyforge-v"; "")
+          url-query: '"https://github.com/LovelessCodes/StoryForge/archive/refs/tags/storyforge-v" + $version + ".tar.gz"'
+      - type: archive
+        url: https://github.com/LovelessCodes/StoryForge/releases/download/storyforge-v2.0.0/node_modules-x64.tar.gz
+        sha256: 0000000000000000000000000000000000000000000000000000000000000000
+        only-arches:
+          - x86_64
+        x-checker-data:
+          type: json
+          url: https://api.github.com/repos/LovelessCodes/StoryForge/releases/latest
+          version-query: .tag_name | sub("storyforge-v"; "")
+          url-query: .assets[] | select(.name == "node_modules-x64.tar.gz") | .browser_download_url
+      - type: archive
+        url: https://github.com/LovelessCodes/StoryForge/releases/download/storyforge-v2.0.0/node_modules-arm64.tar.gz
+        sha256: 0000000000000000000000000000000000000000000000000000000000000000
+        only-arches:
+          - aarch64
+        x-checker-data:
+          type: json
+          url: https://api.github.com/repos/LovelessCodes/StoryForge/releases/latest
+          version-query: .tag_name | sub("storyforge-v"; "")
+          url-query: .assets[] | select(.name == "node_modules-arm64.tar.gz") | .browser_download_url
+      - cargo-sources.json
