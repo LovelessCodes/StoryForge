@@ -175,6 +175,7 @@
     "createProfile": "创建档案",
     "emptyServers": "当前档案还没有保存的服务器。",
     "browseServers": "浏览服务器",
+    "connect": "连接",
     "active": "使用中",
     "setActive": "将 {{name}} 设为当前档案",
     "favorite": "收藏 {{name}}",

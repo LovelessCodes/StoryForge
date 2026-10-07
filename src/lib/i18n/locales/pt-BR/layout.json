@@ -175,6 +175,7 @@
     "createProfile": "Criar um perfil",
     "emptyServers": "Nenhum servidor salvo para o perfil ativo.",
     "browseServers": "Explorar servidores",
+    "connect": "Conectar",
     "active": "Ativo",
     "setActive": "Definir {{name}} como ativo",
     "favorite": "Favoritar {{name}}",

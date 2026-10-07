@@ -9,6 +9,7 @@ import { join } from "node:path";
  * - the same key set (locales may add extra plural forms, never drop keys)
  * - the same `{{interpolation}}` variables per key
  * - the same `<Trans>` component tags per key
+ * - every key statically referenced with `t("…")` from `src/` exists
  *
  * Usage: `bun scripts/check-i18n.ts [language...]` (defaults to all).
  */
@@ -101,8 +102,46 @@ for (const language of languages) {
   }
 }
 
+// ── Usage check: keys referenced from code must exist in the English catalog ──
+// Catches components that address a key the catalogs don't define — i18next
+// would render the raw key in every language.
+const usageProblems: string[] = [];
+const referenced = new Set<string>();
+const sourceBases = new Set([...source.keys()].map((key) => key.replace(pluralSuffix, "")));
+
+const walkFiles = (dir: string): string[] =>
+  readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) return walkFiles(path);
+    return /\.(ts|tsx)$/.test(entry.name) ? [path] : [];
+  });
+
+for (const file of walkFiles("src")) {
+  const lines = readFileSync(file, "utf8").split("\n");
+  lines.forEach((line, index) => {
+    for (const match of line.matchAll(/\bt\(\s*["']([^"']+)["']/g)) {
+      const key = match[1];
+      if (referenced.has(key)) continue;
+      referenced.add(key);
+      const base = key.replace(pluralSuffix, "");
+      if (!source.has(key) && !sourceBases.has(base)) {
+        usageProblems.push(`${key} (${file}:${index + 1})`);
+      }
+    }
+  });
+}
+
+if (usageProblems.length > 0) {
+  failures += 1;
+  console.error(`\ncode: ${usageProblems.length} referenced key(s) missing from en`);
+  for (const problem of usageProblems.slice(0, 25)) console.error(`  ${problem}`);
+  if (usageProblems.length > 25) console.error(`  …and ${usageProblems.length - 25} more`);
+} else {
+  console.log(`code: ok (${referenced.size} referenced keys)`);
+}
+
 if (failures > 0) {
-  console.error(`\n${failures} locale(s) failed.`);
+  console.error(`\n${failures} check(s) failed.`);
   process.exit(1);
 }
 console.log("\nAll locales mirror the English catalog.");

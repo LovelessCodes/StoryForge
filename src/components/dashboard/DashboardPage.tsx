@@ -41,19 +41,19 @@ export default function DashboardPage() {
       <section className="grid content-start gap-2">
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-xs font-semibold">
-            {t("dashboard.profiles", { count: profiles.length })}
+            {t("layout.dashboard.profiles", { count: profiles.length })}
           </h3>
           <Button size="sm" variant="outline" render={<Link to="/profiles" />}>
-            {t("dashboard.viewAll")}
+            {t("layout.dashboard.viewAll")}
           </Button>
         </div>
 
         {profiles.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 border border-dashed p-8 text-center">
             <FolderInput className="text-muted-foreground size-5" />
-            <p className="text-muted-foreground text-xs">{t("dashboard.emptyProfiles")}</p>
+            <p className="text-muted-foreground text-xs">{t("layout.dashboard.emptyProfiles")}</p>
             <Button size="sm" variant="accent-primary" render={<Link to="/profiles" />}>
-              {t("dashboard.createProfile")}
+              {t("layout.dashboard.createProfile")}
             </Button>
           </div>
         ) : (
@@ -66,7 +66,7 @@ export default function DashboardPage() {
                   key={profile.id}
                 >
                   <button
-                    aria-label={t("dashboard.setActive", { name: profile.name })}
+                    aria-label={t("layout.dashboard.setActive", { name: profile.name })}
                     className="bg-muted flex size-8 shrink-0 cursor-pointer items-center justify-center border"
                     onClick={() => setActiveProfileId(profile.id)}
                     type="button"
@@ -90,7 +90,7 @@ export default function DashboardPage() {
                       <span className="truncate text-sm font-medium">{profile.name}</span>
                       {isActive && (
                         <span className="text-accent-primary shrink-0 text-[10px] font-semibold tracking-wide uppercase">
-                          {t("dashboard.active")}
+                          {t("layout.dashboard.active")}
                         </span>
                       )}
                     </span>
@@ -101,8 +101,8 @@ export default function DashboardPage() {
                   <Button
                     aria-label={
                       profile.favorite
-                        ? t("dashboard.unfavorite", { name: profile.name })
-                        : t("dashboard.favorite", { name: profile.name })
+                        ? t("layout.dashboard.unfavorite", { name: profile.name })
+                        : t("layout.dashboard.favorite", { name: profile.name })
                     }
                     onClick={() => toggleFavorite(profile.id)}
                     size="icon-sm"
@@ -138,19 +138,19 @@ export default function DashboardPage() {
       <section className="grid content-start gap-2">
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-xs font-semibold">
-            {t("dashboard.servers", { count: servers.length })}
+            {t("layout.dashboard.servers", { count: servers.length })}
           </h3>
           <Button size="sm" variant="outline" render={<Link to="/servers" />}>
-            {t("dashboard.viewAll")}
+            {t("layout.dashboard.viewAll")}
           </Button>
         </div>
 
         {servers.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 border border-dashed p-8 text-center">
             <Server className="text-muted-foreground size-5" />
-            <p className="text-muted-foreground text-xs">{t("dashboard.emptyServers")}</p>
+            <p className="text-muted-foreground text-xs">{t("layout.dashboard.emptyServers")}</p>
             <Button size="sm" variant="accent-primary" render={<Link to="/servers" />}>
-              {t("dashboard.browseServers")}
+              {t("layout.dashboard.browseServers")}
             </Button>
           </div>
         ) : (
@@ -199,7 +199,7 @@ export default function DashboardPage() {
                   size="sm"
                   variant="amber"
                 >
-                  {t("dashboard.connect")}
+                  {t("layout.dashboard.connect")}
                 </Button>
               </div>
             ))}
