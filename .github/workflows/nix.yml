@@ -1,0 +1,47 @@
+name: "Nix"
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "flake.nix"
+      - "flake.lock"
+      - "bun.nix"
+      - "nix/**"
+      - ".github/workflows/nix.yml"
+  pull_request:
+    paths:
+      - "flake.nix"
+      - "flake.lock"
+      - "bun.nix"
+      - "nix/**"
+      - ".github/workflows/nix.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-linux:
+    name: Build (x86_64-linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - uses: cachix/install-nix-action@2126ae7fc54c9df00dd18f7f18754393182c73cd # v31.9.1
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Lock flake
+        run: nix flake lock && cat flake.lock
+
+      - name: Build
+        run: nix build .# --print-build-logs --accept-flake-config
+
+      - name: Verify binary
+        run: test -x ./result/bin/StoryForge
+
+      - name: Evaluate darwin packages
+        run: |
+          nix eval --raw .#packages.aarch64-darwin.default.drvPath && echo
+          nix eval --raw .#packages.x86_64-darwin.default.drvPath && echo

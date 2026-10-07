@@ -21,3 +21,8 @@ src-tauri/gen/schemas/
 
 # Tooling artifacts
 .commandcode/
+
+# Nix
+/result
+/result-*
+.direnv/
