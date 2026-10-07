@@ -1,0 +1,32 @@
+name: "Distribute"
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. storyforge-v2.0.0)"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  winget:
+    name: Publish to WinGet
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve version
+        id: version
+        env:
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: echo "value=${TAG#storyforge-v}" >> "$GITHUB_OUTPUT"
+
+      - uses: vedantmgoyal2009/winget-releaser@f29ed1ffd34f91223a2aebaa71beaab0901ff9fd # v2
+        with:
+          identifier: LovelessCodes.StoryForge
+          version: ${{ steps.version.outputs.value }}
+          release-tag: ${{ github.event.release.tag_name || inputs.tag }}
+          installers-regex: 'Story\.Forge_.*_x64-setup\.exe$'
+          token: ${{ secrets.WINGET_TOKEN }}

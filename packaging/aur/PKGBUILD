@@ -1,0 +1,28 @@
+# Maintainer: Mike Kold Hermann <mkh@cleanmanager.dk>
+pkgname=storyforge-bin
+pkgver=2.0.0
+pkgrel=1
+pkgdesc='A modern desktop launcher and mod manager for Vintage Story'
+arch=('x86_64')
+url='https://github.com/LovelessCodes/StoryForge'
+license=('GPL-3.0-only')
+depends=('gtk3' 'webkit2gtk-4.1' 'libayatana-appindicator' 'hicolor-icon-theme')
+provides=('storyforge')
+conflicts=('storyforge')
+options=('!strip')
+
+# Bump pkgver, update the sha256sums (shasum -a 256) and regenerate .SRCINFO
+# (makepkg --printsrcinfo > .SRCINFO) on each release.
+_debname="Story.Forge_${pkgver}_amd64.deb"
+source=("${_debname}::https://github.com/LovelessCodes/StoryForge/releases/download/storyforge-v${pkgver}/${_debname}")
+sha256sums=('2bf386ebe586cd640cdb6b1e1457c737f438e46f68f706b3038296170a4d4474')
+
+build() {
+  cd "${srcdir}"
+  bsdtar -xf "${_debname}"
+}
+
+package() {
+  cd "${srcdir}"
+  tar -xzf data.tar.gz -C "${pkgdir}"
+}

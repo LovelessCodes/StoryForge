@@ -1,0 +1,18 @@
+pkgbase = storyforge-bin
+	pkgdesc = A modern desktop launcher and mod manager for Vintage Story
+	pkgver = 2.0.0
+	pkgrel = 1
+	url = https://github.com/LovelessCodes/StoryForge
+	arch = x86_64
+	license = GPL-3.0-only
+	depends = gtk3
+	depends = webkit2gtk-4.1
+	depends = libayatana-appindicator
+	depends = hicolor-icon-theme
+	provides = storyforge
+	conflicts = storyforge
+	options = !strip
+	source = Story.Forge_2.0.0_amd64.deb::https://github.com/LovelessCodes/StoryForge/releases/download/storyforge-v2.0.0/Story.Forge_2.0.0_amd64.deb
+	sha256sums = 2bf386ebe586cd640cdb6b1e1457c737f438e46f68f706b3038296170a4d4474
+
+pkgname = storyforge-bin
