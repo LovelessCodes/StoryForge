@@ -45,6 +45,11 @@ modules:
       append-path: /usr/lib/sdk/rust-stable/bin
       build-args:
         - --share=network
+      env:
+        # The SDK's -O2 CFLAGS leak into jitterentropy.c, which must build at
+        # -O0. Upstream-recommended workaround; on x86_64 the RNG falls back to
+        # getrandom + RDRAND. See https://github.com/aws/aws-lc-rs/issues/1097.
+        AWS_LC_SYS_NO_JITTER_ENTROPY: "1"
     build-commands:
       # Substitute version & date in metainfo
       - export VERSION=$(git -C ./*StoryForge* describe --tags --abbrev=0 2>/dev/null || echo "1.0.0")
