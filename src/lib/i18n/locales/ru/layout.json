@@ -8,7 +8,8 @@
     "servers": "Серверы",
     "config": "Конфиги модов",
     "news": "Новости",
-    "settings": "Настройки"
+    "settings": "Настройки",
+    "dashboard": "Обзор"
   },
   "sidebar": {
     "navigation": "Навигация",
@@ -25,7 +26,8 @@
     "downloadVersion": "Скачать v{{version}}",
     "title": "Боковая панель",
     "description": "Отображает боковую панель на мобильных устройствах.",
-    "toggle": "Переключить боковую панель"
+    "toggle": "Переключить боковую панель",
+    "discord": "Discord"
   },
   "titlebar": {
     "update": "Обновить до v{{version}}",
@@ -144,6 +146,10 @@
     },
     "default": {
       "title": "Story Forge"
+    },
+    "dashboard": {
+      "title": "Обзор",
+      "description": "Ваши профили и серверы одним взглядом."
     }
   },
   "header": {
@@ -160,5 +166,18 @@
   "scrollToTop": "Прокрутить наверх",
   "toast": {
     "close": "Закрыть уведомление"
+  },
+  "dashboard": {
+    "profiles": "Профили ({{count}})",
+    "servers": "Сохранённые серверы ({{count}})",
+    "viewAll": "Показать все",
+    "emptyProfiles": "Профилей пока нет.",
+    "createProfile": "Создать профиль",
+    "emptyServers": "Для активного профиля нет сохранённых серверов.",
+    "browseServers": "Обзор серверов",
+    "active": "Активен",
+    "setActive": "Сделать {{name}} активным",
+    "favorite": "Добавить {{name}} в избранное",
+    "unfavorite": "Убрать {{name}} из избранного"
   }
 }

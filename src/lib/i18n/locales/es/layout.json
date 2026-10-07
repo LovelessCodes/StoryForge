@@ -8,7 +8,8 @@
     "servers": "Servidores",
     "config": "Configuración de mods",
     "news": "Noticias",
-    "settings": "Ajustes"
+    "settings": "Ajustes",
+    "dashboard": "Panel"
   },
   "sidebar": {
     "navigation": "Navegación",
@@ -25,7 +26,8 @@
     "downloadVersion": "Descargar v{{version}}",
     "title": "Barra lateral",
     "description": "Muestra la barra lateral móvil.",
-    "toggle": "Alternar barra lateral"
+    "toggle": "Alternar barra lateral",
+    "discord": "Discord"
   },
   "titlebar": {
     "update": "Actualizar a v{{version}}",
@@ -144,6 +146,10 @@
     },
     "default": {
       "title": "Story Forge"
+    },
+    "dashboard": {
+      "title": "Panel",
+      "description": "Tus perfiles y servidores de un vistazo."
     }
   },
   "header": {
@@ -160,5 +166,18 @@
   "scrollToTop": "Ir arriba",
   "toast": {
     "close": "Cerrar notificación"
+  },
+  "dashboard": {
+    "profiles": "Perfiles ({{count}})",
+    "servers": "Servidores guardados ({{count}})",
+    "viewAll": "Ver todo",
+    "emptyProfiles": "Aún no hay perfiles.",
+    "createProfile": "Crear un perfil",
+    "emptyServers": "No hay servidores guardados para el perfil activo.",
+    "browseServers": "Explorar servidores",
+    "active": "Activo",
+    "setActive": "Usar {{name}} como perfil activo",
+    "favorite": "Marcar {{name}} como favorito",
+    "unfavorite": "Quitar {{name}} de favoritos"
   }
 }

@@ -9,8 +9,8 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
+import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppAuthRouteImport } from './routes/_app.auth'
 import { Route as AppConfigRouteImport } from './routes/_app.config'
 import { Route as AppModpacksRouteImport } from './routes/_app.modpacks'
@@ -24,14 +24,14 @@ import { Route as AppWorldsRouteImport } from './routes/_app.worlds'
 import { Route as AppServerHostingIdRouteImport } from './routes/_app.server-hosting.$id'
 import { Route as AppServerHostingIdModsRouteImport } from './routes/_app.server-hosting.$id.mods'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppAuthRoute = AppAuthRouteImport.update({
   id: '/auth',
@@ -95,7 +95,7 @@ const AppServerHostingIdModsRoute = AppServerHostingIdModsRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AppIndexRoute
   '/auth': typeof AppAuthRoute
   '/config': typeof AppConfigRoute
   '/modpacks': typeof AppModpacksRoute
@@ -110,7 +110,6 @@ export interface FileRoutesByFullPath {
   '/server-hosting/$id/mods': typeof AppServerHostingIdModsRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/auth': typeof AppAuthRoute
   '/config': typeof AppConfigRoute
   '/modpacks': typeof AppModpacksRoute
@@ -121,12 +120,12 @@ export interface FileRoutesByTo {
   '/settings': typeof AppSettingsRoute
   '/versions': typeof AppVersionsRoute
   '/worlds': typeof AppWorldsRoute
+  '/': typeof AppIndexRoute
   '/server-hosting/$id': typeof AppServerHostingIdRouteWithChildren
   '/server-hosting/$id/mods': typeof AppServerHostingIdModsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/_app/auth': typeof AppAuthRoute
   '/_app/config': typeof AppConfigRoute
@@ -138,6 +137,7 @@ export interface FileRoutesById {
   '/_app/settings': typeof AppSettingsRoute
   '/_app/versions': typeof AppVersionsRoute
   '/_app/worlds': typeof AppWorldsRoute
+  '/_app/': typeof AppIndexRoute
   '/_app/server-hosting/$id': typeof AppServerHostingIdRouteWithChildren
   '/_app/server-hosting/$id/mods': typeof AppServerHostingIdModsRoute
 }
@@ -159,7 +159,6 @@ export interface FileRouteTypes {
     | '/server-hosting/$id/mods'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/auth'
     | '/config'
     | '/modpacks'
@@ -170,11 +169,11 @@ export interface FileRouteTypes {
     | '/settings'
     | '/versions'
     | '/worlds'
+    | '/'
     | '/server-hosting/$id'
     | '/server-hosting/$id/mods'
   id:
     | '__root__'
-    | '/'
     | '/_app'
     | '/_app/auth'
     | '/_app/config'
@@ -186,30 +185,30 @@ export interface FileRouteTypes {
     | '/_app/settings'
     | '/_app/versions'
     | '/_app/worlds'
+    | '/_app/'
     | '/_app/server-hosting/$id'
     | '/_app/server-hosting/$id/mods'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_app': {
       id: '/_app'
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/': {
+      id: '/_app/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/auth': {
       id: '/_app/auth'
@@ -320,6 +319,7 @@ interface AppRouteChildren {
   AppSettingsRoute: typeof AppSettingsRoute
   AppVersionsRoute: typeof AppVersionsRoute
   AppWorldsRoute: typeof AppWorldsRoute
+  AppIndexRoute: typeof AppIndexRoute
   AppServerHostingIdRoute: typeof AppServerHostingIdRouteWithChildren
 }
 
@@ -334,13 +334,13 @@ const AppRouteChildren: AppRouteChildren = {
   AppSettingsRoute: AppSettingsRoute,
   AppVersionsRoute: AppVersionsRoute,
   AppWorldsRoute: AppWorldsRoute,
+  AppIndexRoute: AppIndexRoute,
   AppServerHostingIdRoute: AppServerHostingIdRouteWithChildren,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
 }
 export const routeTree = rootRouteImport

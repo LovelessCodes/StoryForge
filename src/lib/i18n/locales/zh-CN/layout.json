@@ -8,7 +8,8 @@
     "servers": "服务器",
     "config": "模组配置",
     "news": "新闻",
-    "settings": "设置"
+    "settings": "设置",
+    "dashboard": "仪表盘"
   },
   "sidebar": {
     "navigation": "导航",
@@ -25,7 +26,8 @@
     "downloadVersion": "下载 v{{version}}",
     "title": "侧边栏",
     "description": "显示移动端侧边栏。",
-    "toggle": "切换侧边栏"
+    "toggle": "切换侧边栏",
+    "discord": "Discord"
   },
   "titlebar": {
     "update": "更新 v{{version}}",
@@ -144,6 +146,10 @@
     },
     "default": {
       "title": "Story Forge"
+    },
+    "dashboard": {
+      "title": "仪表盘",
+      "description": "一览你的档案与服务器。"
     }
   },
   "header": {
@@ -160,5 +166,18 @@
   "scrollToTop": "回到顶部",
   "toast": {
     "close": "关闭提示"
+  },
+  "dashboard": {
+    "profiles": "档案（{{count}}）",
+    "servers": "已保存服务器（{{count}}）",
+    "viewAll": "查看全部",
+    "emptyProfiles": "还没有档案。",
+    "createProfile": "创建档案",
+    "emptyServers": "当前档案还没有保存的服务器。",
+    "browseServers": "浏览服务器",
+    "active": "使用中",
+    "setActive": "将 {{name}} 设为当前档案",
+    "favorite": "收藏 {{name}}",
+    "unfavorite": "取消收藏 {{name}}"
   }
 }

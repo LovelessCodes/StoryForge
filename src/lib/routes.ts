@@ -1,4 +1,5 @@
 export const PAGE_PATHS = {
+  dashboard: "/",
   profiles: "/profiles",
   mods: "/mods",
   modpacks: "/modpacks",

@@ -314,6 +314,18 @@ pub fn run() {
             log_info!("Setup step 2 done: zustand plugin initialized");
             modules::logger::log_elapsed("Setup step 2 elapsed", t2);
 
+            // ── Step 2.25: Store-file data migrations ──
+            // Older releases kept installations and accounts in zustand
+            // store files; write their file-based forms before anything
+            // reads user data, so legacy import and account loading find
+            // them. Idempotent; a few file existence checks when nothing
+            // needs doing.
+            log_info!("Setup step 2.25: running store-file data migrations...");
+            let t2_25 = std::time::Instant::now();
+            modules::migrations::run_all(app_handle);
+            log_info!("Setup step 2.25 done: store-file migrations complete");
+            modules::logger::log_elapsed("Setup step 2.25 elapsed", t2_25);
+
             // ── Step 2.5: Shared HTTP client ──
             log_info!("Setup step 2.5: initializing shared HTTP client...");
             let t2_5 = std::time::Instant::now();

@@ -13,6 +13,7 @@ pub mod legacy;
 pub mod lithic;
 pub mod logger;
 pub mod maps;
+pub mod migrations;
 pub mod modpack_io;
 pub mod mods;
 pub mod mvl;

@@ -1,4 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import type { LucideIcon } from "lucide-react";
 import {
   Boxes,
@@ -8,6 +9,7 @@ import {
   FolderOpen,
   IdCard,
   Layers,
+  LayoutDashboard,
   Loader2,
   Newspaper,
   Package,
@@ -44,6 +46,7 @@ import {
   SidebarSeparator,
 } from "../ui/sidebar";
 import { notify } from "../ui/toast";
+import { DiscordIcon } from "./DiscordIcon";
 
 /** Sidebar entries; labels come from `layout.nav.<page>`. */
 interface NavItem {
@@ -52,6 +55,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
+  { page: "dashboard", icon: LayoutDashboard },
   { page: "profiles", icon: IdCard },
   { page: "mods", icon: Package },
   { page: "modpacks", icon: Layers },
@@ -210,6 +214,17 @@ export default function Sidebar() {
           <FolderOpen />
           <span className="group-data-[collapsible=icon]:hidden">
             {t("common.actions.openFolder")}
+          </span>
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:px-0"
+          onClick={() => void openUrl("https://discord.gg/gByx63peUC")}
+          title={t("layout.sidebar.discord")}
+        >
+          <DiscordIcon className="size-4" />
+          <span className="group-data-[collapsible=icon]:hidden">
+            {t("layout.sidebar.discord")}
           </span>
         </Button>
       </SidebarFooter>

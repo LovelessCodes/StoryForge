@@ -7,6 +7,10 @@ import { PAGE_PATHS } from "@/lib/routes";
 import { Button } from "../ui/button";
 
 const pageMeta: Record<string, { titleKey: string; descriptionKey?: string }> = {
+  [PAGE_PATHS.dashboard]: {
+    titleKey: "layout.pages.dashboard.title",
+    descriptionKey: "layout.pages.dashboard.description",
+  },
   [PAGE_PATHS.profiles]: {
     titleKey: "layout.pages.profiles.title",
     descriptionKey: "layout.pages.profiles.description",
