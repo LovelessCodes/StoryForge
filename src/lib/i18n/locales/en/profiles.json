@@ -209,7 +209,10 @@
     "title": "Import from the previous Story Forge",
     "description": "These folders contain the same data as profiles — mods, worlds and configuration. Each one is imported as a new profile.",
     "modeMoveHint": "Relocates the folders into your profiles directory — fast and uses no extra disk, but the previous app will no longer see them.",
-    "modeCopyHint": "Copies the folders and leaves the previous app untouched — safe, but uses extra disk space."
+    "modeCopyHint": "Copies the folders and leaves the previous app untouched — safe, but uses extra disk space.",
+    "locateHint": "Coming from an older Story Forge with a custom installations folder? Point the import at it.",
+    "locateAction": "Locate folder…",
+    "locateNoResults": "No installations from the previous Story Forge were found in that folder."
   },
   "launcher": {
     "found_one": "{{count}} item from {{name}} found",

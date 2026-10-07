@@ -203,7 +203,10 @@
     "title": "从先前的 Story Forge 导入",
     "description": "这些文件夹包含与配置档相同的数据：模组、世界和配置。每个文件夹都会作为新配置档导入。",
     "modeMoveHint": "会将文件夹移动到你的配置档目录：速度快且不额外占用磁盘，但先前的应用将无法再看到它们。",
-    "modeCopyHint": "会复制文件夹并保留先前的应用不动：安全，但会额外占用磁盘空间。"
+    "modeCopyHint": "会复制文件夹并保留先前的应用不动：安全，但会额外占用磁盘空间。",
+    "locateHint": "来自使用自定义安装文件夹的旧版 Story Forge？请指定该文件夹以导入。",
+    "locateAction": "选择文件夹…",
+    "locateNoResults": "在该文件夹中未找到来自旧版 Story Forge 的安装。"
   },
   "launcher": {
     "found_other": "发现来自 {{name}} 的 {{count}} 个项目",

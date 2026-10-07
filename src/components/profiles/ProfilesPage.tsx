@@ -12,6 +12,7 @@ import DeletedProfilesSection from "./DeletedProfilesSection";
 import GameDataBanner from "./GameDataBanner";
 import GruntLauncherBanner from "./GruntLauncherBanner";
 import ImportProfileSheet from "./ImportProfileSheet";
+import LegacyLocateRow from "./LegacyLocateRow";
 import LegacyMigrationBanner from "./LegacyMigrationBanner";
 import LithicBanner from "./LithicBanner";
 import MvlBanner from "./MvlBanner";
@@ -64,6 +65,7 @@ export default function ProfilesPage() {
 
       <GameDataBanner />
       <LegacyMigrationBanner />
+      <LegacyLocateRow />
       <VsLauncherBanner />
       <RustoryBanner />
       <GruntLauncherBanner />

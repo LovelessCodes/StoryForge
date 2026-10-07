@@ -8,7 +8,7 @@ export const legacyInstallationsQueryKey = ["legacyInstallations"] as const;
 /** Installations found in the previous Story Forge release's data folder. */
 export const useLegacyInstallations = () =>
   useQuery({
-    queryFn: () => invoke<LegacyInstallation[]>("detect_legacy_installations"),
+    queryFn: () => invoke<LegacyInstallation[]>("detect_legacy_installations", { root: null }),
     queryKey: legacyInstallationsQueryKey,
     staleTime: Infinity,
   });

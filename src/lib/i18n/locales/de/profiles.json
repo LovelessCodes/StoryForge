@@ -209,7 +209,10 @@
     "title": "Aus einer früheren Story Forge-Version importieren",
     "description": "Diese Ordner enthalten dieselben Daten wie Profile — Mods, Welten und Konfiguration. Jeder wird als neues Profil importiert.",
     "modeMoveHint": "Verschiebt die Ordner in dein Profilverzeichnis — schnell und ohne zusätzlichen Speicherplatz, aber die vorherige App sieht sie dann nicht mehr.",
-    "modeCopyHint": "Kopiert die Ordner und lässt die vorherige App unberührt — sicher, benötigt aber zusätzlichen Speicherplatz."
+    "modeCopyHint": "Kopiert die Ordner und lässt die vorherige App unberührt — sicher, benötigt aber zusätzlichen Speicherplatz.",
+    "locateHint": "Kommst du von einem älteren Story Forge mit eigenem Installationsordner? Wähle den Ordner für den Import aus.",
+    "locateAction": "Ordner auswählen…",
+    "locateNoResults": "In diesem Ordner wurden keine Installationen aus dem vorherigen Story Forge gefunden."
   },
   "launcher": {
     "found_one": "{{count}} Element von {{name}} gefunden",

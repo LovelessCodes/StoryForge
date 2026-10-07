@@ -209,7 +209,10 @@
     "title": "Importer depuis l'ancien Story Forge",
     "description": "Ces dossiers contiennent les mêmes données que des profils — mods, mondes et configuration. Chacun est importé comme nouveau profil.",
     "modeMoveHint": "Déplace les dossiers dans votre répertoire de profils — rapide et sans espace disque supplémentaire, mais l'ancienne application ne les verra plus.",
-    "modeCopyHint": "Copie les dossiers et laisse l'ancienne application intacte — sûr, mais utilise de l'espace disque supplémentaire."
+    "modeCopyHint": "Copie les dossiers et laisse l'ancienne application intacte — sûr, mais utilise de l'espace disque supplémentaire.",
+    "locateHint": "Vous venez d'une ancienne version de Story Forge avec un dossier d'installations personnalisé ? Indiquez-le pour l'import.",
+    "locateAction": "Choisir un dossier…",
+    "locateNoResults": "Aucune installation de l'ancien Story Forge n'a été trouvée dans ce dossier."
   },
   "launcher": {
     "found_one": "{{count}} élément de {{name}} détecté",

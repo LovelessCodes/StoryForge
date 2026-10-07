@@ -209,7 +209,10 @@
     "title": "Importar desde la versión anterior de Story Forge",
     "description": "Estas carpetas contienen los mismos datos que los perfiles — mods, mundos y configuración. Cada una se importa como un nuevo perfil.",
     "modeMoveHint": "Reubica las carpetas dentro de tu directorio de perfiles — es rápido y no usa disco adicional, pero la aplicación anterior ya no las verá.",
-    "modeCopyHint": "Copia las carpetas y deja intacta la aplicación anterior — es seguro, pero usa más espacio en disco."
+    "modeCopyHint": "Copia las carpetas y deja intacta la aplicación anterior — es seguro, pero usa más espacio en disco.",
+    "locateHint": "¿Vienes de un Story Forge anterior con una carpeta de instalaciones personalizada? Indícala para importar.",
+    "locateAction": "Seleccionar carpeta…",
+    "locateNoResults": "No se encontraron instalaciones del Story Forge anterior en esa carpeta."
   },
   "launcher": {
     "found_one": "{{count}} elemento de {{name}} encontrado",

@@ -114,22 +114,14 @@ fn write_migration_log(app: &AppHandle, log: &LegacyMigrationLog) -> Result<(), 
     })
 }
 
-/// Resolves the folder that held the previous app's installations.
-///
-/// Reads the legacy persisted settings for a custom parent/subdir; both the
-/// release and dev settings files are consulted (dev overrides release).
-fn legacy_root(app: &AppHandle) -> Result<Option<PathBuf>, UiError> {
-    let data = app_data_dir(app)?;
-    let store = data.join("store");
-
+/// Pure resolution of the previous app's installations folder from the raw
+/// contents of its settings files (in order; later files override earlier
+/// ones, so dev settings win over release settings).
+fn legacy_root_from_settings(data: &Path, settings: &[String]) -> Option<PathBuf> {
     let mut parent: Option<PathBuf> = None;
     let mut subdir = LEGACY_DEFAULT_SUBDIR.to_string();
-    for file in LEGACY_SETTINGS_FILES {
-        let candidate = store.join(file);
-        let Ok(content) = read_to_string(&candidate) else {
-            continue;
-        };
-        let Ok(value) = serde_json::from_str::<serde_json::Value>(&content) else {
+    for content in settings {
+        let Ok(value) = serde_json::from_str::<serde_json::Value>(content) else {
             continue;
         };
         if let Some(value) = value.get("installationsParent").and_then(|v| v.as_str()) {
@@ -144,12 +136,41 @@ fn legacy_root(app: &AppHandle) -> Result<Option<PathBuf>, UiError> {
         }
     }
 
-    let root = parent.unwrap_or(data).join(subdir);
-    if root.is_dir() {
-        Ok(Some(root))
-    } else {
-        Ok(None)
+    let root = parent.unwrap_or_else(|| data.to_path_buf()).join(subdir);
+    root.is_dir().then_some(root)
+}
+
+/// Resolves the folder that held the previous app's installations.
+///
+/// Reads the legacy persisted settings for a custom parent/subdir; both the
+/// release and dev settings files are consulted (dev overrides release).
+fn legacy_root(app: &AppHandle) -> Result<Option<PathBuf>, UiError> {
+    let data = app_data_dir(app)?;
+    let store = data.join("store");
+    let settings: Vec<String> = LEGACY_SETTINGS_FILES
+        .iter()
+        .filter_map(|file| read_to_string(store.join(file)).ok())
+        .collect();
+    Ok(legacy_root_from_settings(&data, &settings))
+}
+
+/// Resolves the folder to scan: an explicitly chosen folder (absolute and
+/// existing) or the previous app's recorded/default location.
+fn scan_root(app: &AppHandle, root_override: Option<&str>) -> Result<Option<PathBuf>, UiError> {
+    if let Some(root) = root_override {
+        let path = PathBuf::from(root);
+        if !path.is_absolute() {
+            return Err(UiError::new(
+                "invalid_path",
+                "The folder must be an absolute path",
+            ));
+        }
+        if !path.is_dir() {
+            return Err(UiError::not_found("The selected folder does not exist"));
+        }
+        return Ok(Some(path));
     }
+    legacy_root(app)
 }
 
 fn count_zips(dir: &Path) -> usize {
@@ -226,18 +247,25 @@ pub(crate) fn copy_profile_dir(
 }
 
 /// Lists installations from the previous app that can be imported.
+///
+/// `root` restricts the scan to an explicitly chosen folder (for custom
+/// installations folders the app cannot locate by itself).
 #[command]
 pub async fn detect_legacy_installations(
     app: AppHandle,
+    root: Option<String>,
 ) -> Result<Vec<LegacyInstallation>, UiError> {
     let handle = app.clone();
-    tokio::task::spawn_blocking(move || detect_blocking(&handle))
+    tokio::task::spawn_blocking(move || detect_blocking(&handle, root.as_deref()))
         .await
         .map_err(|e| UiError::new("internal_error", format!("Legacy scan failed: {e}")))?
 }
 
-fn detect_blocking(app: &AppHandle) -> Result<Vec<LegacyInstallation>, UiError> {
-    let Some(root) = legacy_root(app)? else {
+fn detect_blocking(
+    app: &AppHandle,
+    root_override: Option<&str>,
+) -> Result<Vec<LegacyInstallation>, UiError> {
+    let Some(root) = scan_root(app, root_override)? else {
         return Ok(Vec::new());
     };
     log_info!("legacy: scanning {}", root.display());
@@ -312,6 +340,7 @@ pub async fn migrate_legacy_installations(
     app: AppHandle,
     folders: Vec<String>,
     mode: String,
+    root: Option<String>,
 ) -> Result<LegacyMigrationReport, UiError> {
     if mode != "move" && mode != "copy" {
         return Err(UiError::new(
@@ -320,7 +349,7 @@ pub async fn migrate_legacy_installations(
         ));
     }
     let handle = app.clone();
-    tokio::task::spawn_blocking(move || migrate_blocking(&handle, folders, &mode))
+    tokio::task::spawn_blocking(move || migrate_blocking(&handle, folders, &mode, root.as_deref()))
         .await
         .map_err(|e| UiError::new("internal_error", format!("Migration failed: {e}")))?
 }
@@ -329,8 +358,9 @@ fn migrate_blocking(
     app: &AppHandle,
     folders: Vec<String>,
     mode: &str,
+    root_override: Option<&str>,
 ) -> Result<LegacyMigrationReport, UiError> {
-    let Some(old_root) = legacy_root(app)? else {
+    let Some(old_root) = scan_root(app, root_override)? else {
         return Err(UiError::not_found(
             "No installations from the previous Story Forge were found",
         ));
@@ -452,4 +482,66 @@ fn migrate_blocking(
     }
 
     Ok(report)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn scratch(name: &str) -> PathBuf {
+        let dir =
+            std::env::temp_dir().join(format!("storyforge-legacy-{}-{name}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(dir.join("installations")).expect("create scratch dir");
+        dir
+    }
+
+    #[test]
+    fn defaults_to_the_app_data_installations_folder() {
+        let data = scratch("default");
+        assert_eq!(
+            legacy_root_from_settings(&data, &[]),
+            Some(data.join("installations"))
+        );
+        let _ = std::fs::remove_dir_all(&data);
+    }
+
+    #[test]
+    fn honours_a_custom_parent_from_the_old_settings() {
+        let data = scratch("custom");
+        let parent = scratch("parent");
+        let settings = format!(
+            r#"{{"installationsParent":"{}","installationsSubdir":"installations"}}"#,
+            parent.display()
+        );
+        assert_eq!(
+            legacy_root_from_settings(&data, &[settings]),
+            Some(parent.join("installations"))
+        );
+        let _ = std::fs::remove_dir_all(&data);
+        let _ = std::fs::remove_dir_all(&parent);
+    }
+
+    #[test]
+    fn later_settings_override_earlier_ones() {
+        let data = scratch("override");
+        let parent = scratch("override-parent");
+        let release = format!(r#"{{"installationsParent":"{}"}}"#, parent.display());
+        let dev = r#"{"installationsSubdir":"dev-installs"}"#.to_string();
+        std::fs::create_dir_all(parent.join("dev-installs")).expect("create dev dir");
+        assert_eq!(
+            legacy_root_from_settings(&data, &[release, dev]),
+            Some(parent.join("dev-installs"))
+        );
+        let _ = std::fs::remove_dir_all(&data);
+        let _ = std::fs::remove_dir_all(&parent);
+    }
+
+    #[test]
+    fn unresolvable_root_is_none() {
+        let missing =
+            std::env::temp_dir().join(format!("storyforge-legacy-missing-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&missing);
+        assert!(legacy_root_from_settings(&missing, &[]).is_none());
+    }
 }
