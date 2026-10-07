@@ -23,7 +23,20 @@ jobs:
           TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: echo "value=${TAG#storyforge-v}" >> "$GITHUB_OUTPUT"
 
+      - name: Check the package exists in winget-pkgs
+        id: package
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh api "repos/microsoft/winget-pkgs/contents/manifests/l/LovelessCodes/StoryForge" --silent >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "LovelessCodes.StoryForge is not in winget-pkgs yet (initial submission still in review); skipping this release."
+          fi
+
       - uses: vedantmgoyal2009/winget-releaser@f29ed1ffd34f91223a2aebaa71beaab0901ff9fd # v2
+        if: steps.package.outputs.exists == 'true'
         with:
           identifier: LovelessCodes.StoryForge
           version: ${{ steps.version.outputs.value }}
