@@ -147,6 +147,21 @@ language, see [src/lib/i18n/README.md](src/lib/i18n/README.md) and run the parit
 bun run check:i18n        # keys, {{placeholders}} and <Trans> tags across all locales
 ```
 
+## Nix
+
+A flake is available for `x86_64-linux`, `aarch64-linux` and Apple Silicon macOS:
+
+```sh
+nix build github:LovelessCodes/StoryForge   # build (./result)
+nix run github:LovelessCodes/StoryForge     # Linux: build and launch
+nix develop                                 # dev shell with Bun, Rust and the Tauri prerequisites
+```
+
+On macOS the bundle is at `./result/Applications/Story Forge.app`. The flake resolves the frontend
+dependencies with [bun2nix](https://github.com/nix-community/bun2nix) — after changing `bun.lock`,
+regenerate `bun.nix` from the dev shell with `bun2nix -o bun.nix`. Intel Macs are not supported
+(nixpkgs dropped `x86_64-darwin` in 26.11).
+
 ## Development
 
 ```sh
