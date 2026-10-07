@@ -27,7 +27,8 @@
       systems = [
         "x86_64-linux"
         "aarch64-linux"
-        "x86_64-darwin"
+        # x86_64-darwin was dropped from nixpkgs unstable (26.11); Intel Mac
+        # users on NixOS can pin nixpkgs-26.05 or use the regular release DMG.
         "aarch64-darwin"
       ];
       pkgsFor =

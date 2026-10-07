@@ -41,7 +41,5 @@ jobs:
       - name: Verify binary
         run: test -x ./result/bin/StoryForge
 
-      - name: Evaluate darwin packages
-        run: |
-          nix eval --raw .#packages.aarch64-darwin.default.drvPath && echo
-          nix eval --raw .#packages.x86_64-darwin.default.drvPath && echo
+      - name: Evaluate darwin package
+        run: nix eval --raw .#packages.aarch64-darwin.default.drvPath && echo
