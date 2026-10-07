@@ -5683,14 +5683,14 @@
   {
     "type": "archive",
     "archive-type": "tar-gzip",
-    "url": "https://static.crates.io/crates/tauri-plugin-updater/tauri-plugin-updater-2.13.1.crate",
-    "sha256": "3cb0b2ea3e85ca287990d3859a29cc5cb18024240fd78f62e027fb7963670f18",
-    "dest": "cargo/vendor/tauri-plugin-updater-2.13.1"
+    "url": "https://static.crates.io/crates/tauri-plugin-updater/tauri-plugin-updater-2.13.2.crate",
+    "sha256": "8cb463cd1f26c9562a01718fe9adf6927795f764c3576e509f27cf567307ddef",
+    "dest": "cargo/vendor/tauri-plugin-updater-2.13.2"
   },
   {
     "type": "inline",
-    "contents": "{\"package\": \"3cb0b2ea3e85ca287990d3859a29cc5cb18024240fd78f62e027fb7963670f18\", \"files\": {}}",
-    "dest": "cargo/vendor/tauri-plugin-updater-2.13.1",
+    "contents": "{\"package\": \"8cb463cd1f26c9562a01718fe9adf6927795f764c3576e509f27cf567307ddef\", \"files\": {}}",
+    "dest": "cargo/vendor/tauri-plugin-updater-2.13.2",
     "dest-filename": ".cargo-checksum.json"
   },
   {
