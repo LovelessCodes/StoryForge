@@ -52,7 +52,7 @@ modules:
         path: src-tauri/icons/icon.png
         dest-filename: io.github.LovelessCodes.StoryForge.png
       # Bundled by the node_modules job in build_flatpak.yml.
-      - type: archive
+      - type: file
         path: node_modules-x64.tar.gz
       # Generated from src-tauri/Cargo.lock; see packaging/flatpak/README.md.
       - packaging/flatpak/cargo-sources.json
@@ -71,6 +71,7 @@ modules:
       - export DATE=$(date -u +%Y-%m-%d)
       - sed -i "s|FLATPAK_VERSION|$VERSION|g; s|FLATPAK_DATE|$DATE|g" io.github.LovelessCodes.StoryForge.metainfo.xml
       # Frontend dependencies come pre-installed from the node_modules archive.
+      - tar -xzf node_modules-x64.tar.gz
       - bun tauri build --no-bundle
       # Install executable
       - install -Dm755 -t /app/StoryForge src-tauri/target/release/StoryForge
