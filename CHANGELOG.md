@@ -8,7 +8,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.1] - 2026-10-07
+
+### Added
+
+- **Import installations from any folder**: the previous Story Forge could keep its installations in a custom location; the Profiles page can now be pointed at that folder directly — imports work exactly like the automatically detected ones.
+- **Nix**: the app builds and runs with `nix build` / `nix run github:LovelessCodes/StoryForge` on Linux (x86_64, aarch64) and Apple Silicon macOS.
+
+### Changed
+
+- **Linux Flatpak**: the bundle now builds against the GNOME 51 runtime with fully offline, reproducible dependencies (no network access during the build).
+
+### Fixed
+
+- **Dashboard translations**: the profile and server sections of the dashboard rendered raw translation keys in every language, and the "Connect" button had no string at all. Both are fixed, and the i18n check now verifies that every referenced key exists in the catalog.
+
+## [2.0.0] - 2026-10-07
 
 - **Linux & NVidia Rendering Fixes**: Added logic to disable the DMA Buffer by default, which has been known to cause issues with the front-end on Linux systems with NVIDIA cards running under the Wayland compositor. This sets the `WEBKIT_DISABLE_DMABUF_RENDERER` environment variable to `1`, by default. It can be overridden by running the application with the environment variable defined as follows: `WEBKIT_DISABLE_DMABUF_RENDERER=0`.
 
