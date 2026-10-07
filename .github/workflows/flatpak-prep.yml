@@ -12,10 +12,12 @@ on:
   push:
     paths:
       - "packaging/flatpak/**"
+      - "src-tauri/Cargo.lock"
       - ".github/workflows/flatpak-prep.yml"
   pull_request:
     paths:
       - "packaging/flatpak/**"
+      - "src-tauri/Cargo.lock"
       - ".github/workflows/flatpak-prep.yml"
 
 permissions:
@@ -81,6 +83,13 @@ jobs:
           cp packaging/flatpak/io.github.LovelessCodes.StoryForge.yml lint/
           cp packaging/flatpak/cargo-sources.json lint/
           cp -r shared-modules lint/
+
+      - name: Check cargo-sources.json is up to date
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          export PATH="$HOME/.local/bin:$PATH"
+          uv run --quiet "https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/refs/heads/master/cargo/flatpak-cargo-generator.py" src-tauri/Cargo.lock -o /tmp/cargo-sources.fresh.json
+          python3 -c 'import json; canon=lambda p: sorted(json.dumps(e,sort_keys=True) for e in json.load(open(p))); a=canon("packaging/flatpak/cargo-sources.json"); b=canon("/tmp/cargo-sources.fresh.json"); print("cargo-sources.json is up to date") if a==b else exit("cargo-sources.json is stale; regenerate with: uv run flatpak-cargo-generator.py src-tauri/Cargo.lock -o packaging/flatpak/cargo-sources.json")'
 
       - name: Run flatpak-builder-lint
         run: flatpak-builder-lint manifest lint/io.github.LovelessCodes.StoryForge.yml

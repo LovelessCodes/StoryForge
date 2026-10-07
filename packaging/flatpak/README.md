@@ -2,16 +2,17 @@
 
 Two manifests exist:
 
-| File                                                       | Used for                                                                                                                  |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `/io.github.LovelessCodes.StoryForge.yml` (repo root)      | The Flatpak bundle attached to GitHub releases (`build_flatpak.yml`). It may use the network while building.              |
-| `packaging/flatpak/io.github.LovelessCodes.StoryForge.yml` | The **Flathub-ready** variant. Builds fully offline (no network, no `--share=network`), immutable sources, per-arch deps. |
+| File                                                       | Used for                                                                                                                                                                                                                                                            |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/io.github.LovelessCodes.StoryForge.yml` (repo root)      | The Flatpak bundle attached to GitHub releases (`build_flatpak.yml`). Also fully offline: the workflow bundles `node_modules-x64.tar.gz` and passes it as a local source; Rust crates come from `cargo-sources.json`. The app source stays on the `release` branch. |
+| `packaging/flatpak/io.github.LovelessCodes.StoryForge.yml` | The **Flathub-ready** variant. Same offline setup with tag-pinned, immutable sources and per-arch deps.                                                                                                                                                             |
 
 ## How offline dependencies work
 
 - **Rust:** `cargo-sources.json` vendors every crate from `src-tauri/Cargo.lock`
   (`CARGO_HOME=/run/build/StoryForge/cargo` + the vendored-sources config emitted
-  in the same file). Regenerate after lockfile changes:
+  in the same file). CI fails if it drifts from `Cargo.lock`; regenerate after
+  lockfile changes:
   ```sh
   uv run https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/refs/heads/master/cargo/flatpak-cargo-generator.py \
     src-tauri/Cargo.lock -o packaging/flatpak/cargo-sources.json

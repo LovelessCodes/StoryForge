@@ -1,6 +1,12 @@
+# Self-hosted Flatpak bundle, built by .github/workflows/build_flatpak.yml and
+# attached to GitHub releases. Deps are offline: node_modules-x64.tar.gz is
+# bundled by the workflow (local source) and Rust crates come from
+# packaging/flatpak/cargo-sources.json. The Flathub-ready variant lives in
+# packaging/flatpak/.
+
 app-id: io.github.LovelessCodes.StoryForge
 runtime: org.gnome.Platform
-runtime-version: "50"
+runtime-version: "51"
 sdk: org.gnome.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.rust-stable
@@ -22,11 +28,15 @@ modules:
     buildsystem: simple
     build-commands:
       - install -Dm755 bun ${FLATPAK_DEST}/bin/bun
+      - install -Dm644 LICENSE.md ${FLATPAK_DEST}/share/licenses/${FLATPAK_ID}/bun/LICENSE.md
     sources:
       - type: archive
-        url: https://github.com/oven-sh/bun/releases/download/bun-v1.3.10/bun-linux-x64.zip
-        sha256: f57bc0187e39623de716ba3a389fda5486b2d7be7131a980ba54dc7b733d2e08
+        url: https://github.com/oven-sh/bun/releases/download/bun-v1.4.2/bun-linux-x64.zip
+        sha256: 36368faef7527875d5ffa52e53cd48021741f2a83eb6208a8dd64068d422a913
         strip-components: 1
+      - type: file
+        url: https://raw.githubusercontent.com/oven-sh/bun/bun-v1.4.2/LICENSE.md
+        sha256: b9caf52728691b4057e371232c221a132883198be2f3d2ddf92c90404c984b1a
 
   - name: StoryForge
     buildsystem: simple
@@ -41,11 +51,16 @@ modules:
       - type: file
         path: src-tauri/icons/icon.png
         dest-filename: io.github.LovelessCodes.StoryForge.png
+      # Bundled by the node_modules job in build_flatpak.yml.
+      - type: archive
+        path: node_modules-x64.tar.gz
+      # Generated from src-tauri/Cargo.lock; see packaging/flatpak/README.md.
+      - packaging/flatpak/cargo-sources.json
     build-options:
       append-path: /usr/lib/sdk/rust-stable/bin
-      build-args:
-        - --share=network
       env:
+        CARGO_HOME: /run/build/StoryForge/cargo
+        CARGO_NET_OFFLINE: "true"
         # The SDK's -O2 CFLAGS leak into jitterentropy.c, which must build at
         # -O0. Upstream-recommended workaround; on x86_64 the RNG falls back to
         # getrandom + RDRAND. See https://github.com/aws/aws-lc-rs/issues/1097.
@@ -55,8 +70,7 @@ modules:
       - export VERSION=$(git -C ./*StoryForge* describe --tags --abbrev=0 2>/dev/null || echo "1.0.0")
       - export DATE=$(date -u +%Y-%m-%d)
       - sed -i "s|FLATPAK_VERSION|$VERSION|g; s|FLATPAK_DATE|$DATE|g" io.github.LovelessCodes.StoryForge.metainfo.xml
-      # Build StoryForge
-      - bun install
+      # Frontend dependencies come pre-installed from the node_modules archive.
       - bun tauri build --no-bundle
       # Install executable
       - install -Dm755 -t /app/StoryForge src-tauri/target/release/StoryForge
@@ -66,3 +80,5 @@ modules:
       - desktop-file-install --dir=/app/share/applications io.github.LovelessCodes.StoryForge.desktop
       # Install metainfo file
       - install -Dm644 -t /app/share/metainfo io.github.LovelessCodes.StoryForge.metainfo.xml
+      # Install license
+      - install -Dm644 LICENSE ${FLATPAK_DEST}/share/licenses/${FLATPAK_ID}/StoryForge/LICENSE
