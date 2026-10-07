@@ -18,3 +18,6 @@ src-tauri/gen/schemas/
 
 # Logs
 *.log
+
+# Tooling artifacts
+.commandcode/
