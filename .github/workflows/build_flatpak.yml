@@ -80,7 +80,9 @@ jobs:
         with:
           bundle: io.github.LovelessCodes.StoryForge-v${{ steps.version.outputs.value }}.flatpak
           manifest-path: io.github.LovelessCodes.StoryForge.yml
-          cache-key: flatpak-builder-${{ github.sha }}
+          # Stable key: the cache is the flatpak-builder build state, reused
+          # across releases (bump the suffix to force a cold build).
+          cache-key: flatpak-builder-v1
 
       - name: Upload to GitHub Release
         env:

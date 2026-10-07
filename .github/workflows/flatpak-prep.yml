@@ -10,6 +10,7 @@ on:
   release:
     types: [published]
   push:
+    branches: ["release"]
     paths:
       - "packaging/flatpak/**"
       - "src-tauri/Cargo.lock"
@@ -19,6 +20,12 @@ on:
       - "packaging/flatpak/**"
       - "src-tauri/Cargo.lock"
       - ".github/workflows/flatpak-prep.yml"
+
+concurrency:
+  # Event-scoped: a later tag push must not cancel the release-published run
+  # that attaches the node_modules bundles.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

@@ -3,6 +3,7 @@ name: "Nix"
 on:
   workflow_dispatch:
   push:
+    branches: ["release"]
     paths:
       - "flake.nix"
       - "flake.lock"
@@ -16,6 +17,10 @@ on:
       - "bun.nix"
       - "nix/**"
       - ".github/workflows/nix.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

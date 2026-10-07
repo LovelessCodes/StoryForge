@@ -54,6 +54,14 @@ jobs:
           toolchain: stable
           targets: ${{ matrix.args == '--target aarch64-apple-darwin' && 'aarch64-apple-darwin' || 'x86_64-apple-darwin' }}
 
+      - name: Rust cache
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: "./src-tauri -> target"
+          # Distinct per matrix leg; the two macOS targets would otherwise share
+          # (and thrash) one cache.
+          key: ${{ matrix.platform }}-${{ matrix.args }}
+
       - name: install dependencies (linux only)
         if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
         run: |
