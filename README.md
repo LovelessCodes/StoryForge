@@ -1,11 +1,40 @@
+<p align="center">
+   <a href="https://getstoryforge.app/">
+      <img src="/public/StoryForge.png" style="height: 200px;" alt="Story Forge" />
+   </a>
+   <br />
+   <br />
+   <a href="/actions">
+      <img src="https://img.shields.io/github/actions/workflow/status/lovelesscodes/storyforge/publish.yml?branch=release&label=build&style=flat-square" alt="Build Status" />
+   </a>
+   <a href="/LICENSE">
+      <img src="https://img.shields.io/github/license/lovelesscodes/storyforge?color=brightgreen&style=flat-square" alt="License" />
+   </a><br />
+   <a href="https://discord.gg/gByx63peUC">
+      <img src="https://img.shields.io/badge/join-discord-5865F2?style=flat-square&logo=discord&logoColor=fff" alt="Join Discord" />
+   </a>
+   <a href="https://getstoryforge.app/">
+      <img src="https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=flat-square" alt="Platforms" />
+   </a>
+   <a href="/releases/latest">
+      <img src="https://img.shields.io/github/downloads/lovelesscodes/storyforge/total?color=fff&style=flat-square&logo=github" alt="Download total" />
+   </a>
+</p>
+
 # Story Forge
 
 A modern desktop manager for [Vintage Story](https://www.vintagestory.at/): install and switch
 game versions, manage **profiles** (isolated data folders with their own mods, worlds and
 settings), browse and update mods, join servers, host dedicated servers, and edit mod configs.
 
-This is a remake of the original Story Forge (see `../test-app`) with the interface rebuilt in
-the look & feel of Macheim (see `../macheim`). The core domain concept is the **profile**:
+> [!WARNING]
+> **macOS Users:** Story Forge is not notarized yet, so macOS Gatekeeper may block it from launching. After installing, run the following in your terminal to allow the app:
+>
+> ```sh
+> sudo xattr -rd com.apple.quarantine /Applications/Story\ Forge.app
+> ```
+
+The core domain concept is the **profile**:
 
 - a profile is a full Vintage Story data directory (`Mods/`, `Saves/`, `Maps/`, `ModConfig/`,
   `Logs/`, `clientsettings.json`) pinned to a game version,
@@ -148,7 +177,6 @@ and versions folders can be relocated in Settings.
 
 ### Notes
 
-- `PORTING.md` documents how the remake maps onto the original app (may be deleted later).
 - The updater endpoint still points at the original project's release feed; the version is ahead
   of it so no downgrade is offered.
 - `STORYFORGE_OPTIMUM_ORIGIN` (`http://127.0.0.1:<port>`) and `STORYFORGE_OPTIMUM_RID`
