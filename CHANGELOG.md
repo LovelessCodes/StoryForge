@@ -8,6 +8,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Moving mods into groups**: the "Move to group" menu on a mod row and on a multi-mod selection crashed the Mods page with Base UI error #31 instead of opening.
+- **Built-in mods reported as missing**: mods that depend on `survival`, `creative` or `essentials` no longer show them as missing dependencies; they ship with the game, whatever version is required.
+
 ## [2.0.2] - 2026-10-08
 
 ### Added
