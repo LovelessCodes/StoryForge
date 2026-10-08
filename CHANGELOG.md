@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Import sessions from your profiles**: the logins import sheet now offers the game session stored in any signed-in Story Forge profile (and adopted external game folders), so an account can be added without entering a password or a two-factor code.
+- **Import sessions from your profiles**: the logins import sheet now offers the game session stored in any signed-in Story Forge profile (and adopted external game folders), so an account can be added without entering a password or a two-factor code. Imported sessions are verified with the auth server first; expired ones are skipped and reported.
 
 ### Fixed
 

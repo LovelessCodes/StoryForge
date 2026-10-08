@@ -17,10 +17,18 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { launcherLoginsQueryKey, useDetectedLogins } from "@/hooks/use-launcher-logins";
+import { errorMessage } from "@/lib/errors";
 import { toast } from "@/lib/notify";
 import { useAccountStore } from "@/stores/accounts";
 
-/** Import sessions saved by MVL or legacy VS Launcher/RiftLauncher configs. */
+type ImportLoginsReport = {
+  /** Sessions written to accounts.json. */
+  imported: number;
+  /** Labels of the sessions the auth server reported as expired. */
+  expired: string[];
+};
+
+/** Import sessions saved by MVL, legacy VS Launcher/RiftLauncher configs or your own profiles. */
 export default function ImportLoginsSheet({
   open,
   onOpenChange,
@@ -51,14 +59,21 @@ export default function ImportLoginsSheet({
   }
 
   const importLogins = useMutation({
-    mutationFn: (ids: string[]) => invoke<number>("import_launcher_logins", { ids }),
+    mutationFn: (ids: string[]) => invoke<ImportLoginsReport>("import_launcher_logins", { ids }),
     onError: (error) => {
-      toast.error(t("auth.importLogins.failed"), { description: String(error) });
+      toast.error(t("auth.importLogins.failed"), { description: errorMessage(error) });
     },
-    onSuccess: async () => {
+    onSuccess: async (report) => {
       await useAccountStore.getState().loadAccounts();
       void queryClient.invalidateQueries({ queryKey: launcherLoginsQueryKey() });
-      toast.success(t("auth.importLogins.imported"));
+      if (report.expired.length > 0) {
+        toast.error(t("auth.importLogins.expiredSkipped"), {
+          description: report.expired.join(", "),
+        });
+      }
+      if (report.imported > 0) {
+        toast.success(t("auth.importLogins.imported"));
+      }
       onOpenChange(false);
     },
   });

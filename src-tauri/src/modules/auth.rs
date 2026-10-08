@@ -226,6 +226,37 @@ fn classify_login_response(response: GameLoginResponse) -> Result<GameLoginRespo
     .into())
 }
 
+/// Checks a session against the auth server.
+///
+/// `None` means the check itself failed (offline, HTTP error, unparseable
+/// response): the caller should treat the session as unverified, not invalid.
+pub async fn session_is_valid(
+    client: &reqwest::Client,
+    uid: &str,
+    sessionkey: &str,
+) -> Option<bool> {
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        CONTENT_TYPE,
+        HeaderValue::from_static("application/x-www-form-urlencoded"),
+    );
+    headers.insert(HOST, HeaderValue::from_static("auth3.vintagestory.at"));
+
+    let params = [("uid", uid), ("sessionkey", sessionkey)];
+    let res = client
+        .post("https://auth3.vintagestory.at/clientvalidate")
+        .headers(headers)
+        .form(&params)
+        .send()
+        .await
+        .ok()?;
+    if !res.status().is_success() {
+        return None;
+    }
+    let response: AuthVerifyResponse = res.json().await.ok()?;
+    Some(response.valid != 0)
+}
+
 // ── Account persistence ──
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

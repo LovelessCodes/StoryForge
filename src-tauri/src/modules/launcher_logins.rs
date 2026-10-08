@@ -15,10 +15,11 @@
 //! import re-reads the files main-side to build `SavedAccount`s.
 
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use serde::Serialize;
 use serde_json::Value;
-use tauri::{command, AppHandle, Manager};
+use tauri::{command, AppHandle, Manager, State};
 
 use super::auth::SavedAccount;
 use super::errors::UiError;
@@ -34,6 +35,15 @@ pub struct DetectedLogin {
     pub source: String,
     pub label: String,
     pub detail: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportLoginsReport {
+    /// Sessions written to `accounts.json`.
+    pub imported: usize,
+    /// Labels of the sessions the auth server reported as expired.
+    pub expired: Vec<String>,
 }
 
 /// Case-insensitive string field lookup; empty strings count as absent.
@@ -329,12 +339,22 @@ pub fn detect_launcher_logins(app: AppHandle) -> Vec<DetectedLogin> {
     logins
 }
 
-/// Import the chosen logins into `accounts.json`, skipping duplicates.
+/// Import the chosen logins into `accounts.json`, skipping duplicates and
+/// sessions the auth server rejects.
 #[command]
-pub fn import_launcher_logins(app: AppHandle, ids: Vec<String>) -> Result<usize, UiError> {
+pub async fn import_launcher_logins(
+    app: AppHandle,
+    client: State<'_, Arc<reqwest::Client>>,
+    ids: Vec<String>,
+) -> Result<ImportLoginsReport, UiError> {
+    let mut report = ImportLoginsReport {
+        imported: 0,
+        expired: Vec::new(),
+    };
     if ids.is_empty() {
-        return Ok(0);
+        return Ok(report);
     }
+
     let mut collected = collect_mvl_accounts();
     for (dir, id) in [
         ("VSLauncher", "vsl:legacy"),
@@ -363,7 +383,6 @@ pub fn import_launcher_logins(app: AppHandle, ids: Vec<String>) -> Result<usize,
         Vec::new()
     };
 
-    let mut imported = 0usize;
     for (id, account) in collected {
         if !ids.iter().any(|chosen| chosen == &id) {
             continue;
@@ -375,13 +394,25 @@ pub fn import_launcher_logins(app: AppHandle, ids: Vec<String>) -> Result<usize,
         if duplicate {
             continue;
         }
+
+        // Don't import sessions the auth server rejects. A failed check
+        // (offline, HTTP error) leaves the session unverified and imports it;
+        // the accounts list verifies again on load.
+        if let (Some(uid), Some(sessionkey)) = (account.uid.clone(), account.sessionkey.clone()) {
+            if super::auth::session_is_valid(&client, &uid, &sessionkey).await == Some(false) {
+                log_info!("launcher_logins: skipping expired session '{id}'");
+                report.expired.push(label_for(&account, &id));
+                continue;
+            }
+        }
+
         let mut account = account;
         account.selected = existing.is_empty();
         existing.push(account);
-        imported += 1;
+        report.imported += 1;
     }
 
-    if imported > 0 {
+    if report.imported > 0 {
         let json = serde_json::to_string_pretty(&existing).map_err(|e| {
             UiError::new(
                 "serialize_error",
@@ -394,8 +425,12 @@ pub fn import_launcher_logins(app: AppHandle, ids: Vec<String>) -> Result<usize,
         })?;
     }
 
-    log_info!("import_launcher_logins: {} imported", imported);
-    Ok(imported)
+    log_info!(
+        "import_launcher_logins: {} imported, {} expired",
+        report.imported,
+        report.expired.len()
+    );
+    Ok(report)
 }
 
 #[cfg(test)]
