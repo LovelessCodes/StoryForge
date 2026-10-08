@@ -1,6 +1,6 @@
 {
   "name": "story_forge",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "private": true,
   "description": "Vintage Story launcher and mod manager",
   "type": "module",
