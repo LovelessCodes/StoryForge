@@ -1,6 +1,8 @@
 //! Import of saved game logins from other launchers.
 //!
-//! Two sources are readable without touching an OS keyring:
+//! Sources readable without touching an OS keyring:
+//! - Story Forge profiles and registered external game folders, whose
+//!   `clientsettings.json` holds the session the game itself uses.
 //! - MVL's `data.json` `Accounts` list (plaintext sessions).
 //! - The single legacy account VS Launcher/RiftLauncher wrote into
 //!   `<appData>/{VSLauncher,RiftLauncher}/config.json` before sessions moved
@@ -12,7 +14,7 @@
 //! Secrets never reach the renderer: detection returns labels only, and the
 //! import re-reads the files main-side to build `SavedAccount`s.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 use serde_json::Value;
@@ -20,6 +22,7 @@ use tauri::{command, AppHandle, Manager};
 
 use super::auth::SavedAccount;
 use super::errors::UiError;
+use super::{paths, profiles, utils};
 use crate::{log_error, log_info};
 
 #[derive(Debug, Clone, Serialize)]
@@ -193,6 +196,88 @@ fn label_for(account: &SavedAccount, fallback: &str) -> String {
         .unwrap_or_else(|| fallback.to_string())
 }
 
+/// The session stored in the game's own `clientsettings.json`.
+fn account_from_clientsettings(root: &Value) -> Option<SavedAccount> {
+    let settings = root
+        .as_object()?
+        .iter()
+        .find(|(key, _)| key.eq_ignore_ascii_case("stringSettings"))
+        .map(|(_, entry)| entry)?;
+    let sessionkey = string_field(settings, &["sessionkey"])?;
+    let email = string_field(settings, &["useremail", "email"]).unwrap_or_default();
+    let playername = string_field(settings, &["playername"]);
+    let uid = string_field(settings, &["playeruid", "uid"]);
+    let sessionsignature = string_field(settings, &["sessionsignature"]);
+    Some(account_from_fields(
+        email,
+        playername,
+        uid,
+        sessionkey,
+        sessionsignature,
+    ))
+}
+
+/// A profile's game session, if the folder holds a signed-in client settings
+/// file.
+fn clientsettings_login(dir: &Path) -> Option<SavedAccount> {
+    let text = std::fs::read_to_string(dir.join(paths::CLIENTSETTINGS_JSON)).ok()?;
+    let root = serde_json::from_str::<Value>(&text).ok()?;
+    account_from_clientsettings(&root)
+}
+
+/// Profiles that can hold a game session: the app's own profiles folder and
+/// the registered external game directories. Returns `(id, label, dir)`.
+fn profile_game_dirs(app: &AppHandle) -> Vec<(String, String, PathBuf)> {
+    let mut out: Vec<(String, String, PathBuf)> = Vec::new();
+
+    if let Ok(root) = utils::profiles_folder(app.clone()) {
+        let root = root.join(utils::profiles_subdir(app.clone()));
+        if let Ok(entries) = std::fs::read_dir(root) {
+            for entry in entries.flatten() {
+                let dir = entry.path();
+                let folder = entry.file_name().to_string_lossy().to_string();
+                if !dir.is_dir() || folder.starts_with('.') {
+                    continue;
+                }
+                out.push((format!("profile:{folder}"), folder, dir));
+            }
+        }
+    }
+
+    for (index, dir) in profiles::external_profile_paths(app)
+        .into_iter()
+        .enumerate()
+    {
+        let label = dir
+            .file_name()
+            .map(|name| name.to_string_lossy().to_string())
+            .unwrap_or_else(|| dir.to_string_lossy().to_string());
+        out.push((format!("external:{index}"), label, dir));
+    }
+
+    out
+}
+
+/// Game sessions found in profiles, deduplicated across profiles signed into
+/// the same account.
+fn collect_profile_accounts(app: &AppHandle) -> Vec<(String, String, SavedAccount)> {
+    let mut out: Vec<(String, String, SavedAccount)> = Vec::new();
+    for (id, profile, dir) in profile_game_dirs(app) {
+        let Some(account) = clientsettings_login(&dir) else {
+            continue;
+        };
+        let duplicate = out.iter().any(|(_, _, seen)| {
+            (account.uid.is_some() && seen.uid == account.uid)
+                || (!account.email.is_empty() && seen.email.eq_ignore_ascii_case(&account.email))
+        });
+        if duplicate {
+            continue;
+        }
+        out.push((id, profile, account));
+    }
+    out
+}
+
 fn detail_for(account: &SavedAccount) -> Option<String> {
     if account.playername.is_some() && !account.email.is_empty() {
         Some(account.email.clone())
@@ -201,18 +286,30 @@ fn detail_for(account: &SavedAccount) -> Option<String> {
     }
 }
 
-/// Saved logins we can read from other launchers, for the import sheet.
+/// Saved logins we can read from this app's profiles and other launchers,
+/// for the import sheet.
 #[command]
-pub fn detect_launcher_logins() -> Vec<DetectedLogin> {
-    let mut logins: Vec<DetectedLogin> = collect_mvl_accounts()
+pub fn detect_launcher_logins(app: AppHandle) -> Vec<DetectedLogin> {
+    let mut logins: Vec<DetectedLogin> = collect_profile_accounts(&app)
         .into_iter()
-        .map(|(id, account)| DetectedLogin {
-            detail: detail_for(&account),
+        .map(|(id, profile, account)| DetectedLogin {
+            detail: detail_for(&account).or_else(|| Some(profile.clone())),
             id,
-            label: label_for(&account, "MVL account"),
-            source: "MVL".into(),
+            label: label_for(&account, &profile),
+            source: "Story Forge".into(),
         })
         .collect();
+
+    logins.extend(
+        collect_mvl_accounts()
+            .into_iter()
+            .map(|(id, account)| DetectedLogin {
+                detail: detail_for(&account),
+                id,
+                label: label_for(&account, "MVL account"),
+                source: "MVL".into(),
+            }),
+    );
 
     for (dir, source, id) in [
         ("VSLauncher", "VS Launcher", "vsl:legacy"),
@@ -246,6 +343,9 @@ pub fn import_launcher_logins(app: AppHandle, ids: Vec<String>) -> Result<usize,
         if let Some(entry) = collect_legacy_account(dir, id) {
             collected.push(entry);
         }
+    }
+    for (id, _profile, account) in collect_profile_accounts(&app) {
+        collected.push((id, account));
     }
 
     let data_dir = app
@@ -328,5 +428,35 @@ mod tests {
         assert!(bool_field(&offline, "offline"));
         let sessionless = serde_json::json!({ "PlayerName": "B" });
         assert!(string_field(&sessionless, &["sessionkey"]).is_none());
+    }
+
+    #[test]
+    fn reads_sessions_from_clientsettings() {
+        let value = serde_json::json!({
+            "otherSettings": { "foo": 1 },
+            "stringSettings": {
+                "sessionkey": "SECRET",
+                "sessionsignature": "SIG",
+                "playername": "Mike",
+                "playeruid": "uid-1",
+                "useremail": "mike@example.com",
+                "mptoken": "MP"
+            }
+        });
+        let account = account_from_clientsettings(&value).expect("session");
+        assert_eq!(account.sessionkey.as_deref(), Some("SECRET"));
+        assert_eq!(account.sessionsignature.as_deref(), Some("SIG"));
+        assert_eq!(account.playername.as_deref(), Some("Mike"));
+        assert_eq!(account.uid.as_deref(), Some("uid-1"));
+        assert_eq!(account.email, "mike@example.com");
+    }
+
+    #[test]
+    fn ignores_clientsettings_without_a_session() {
+        let sessionless = serde_json::json!({
+            "stringSettings": { "playername": "Mike", "useremail": "mike@example.com" }
+        });
+        assert!(account_from_clientsettings(&sessionless).is_none());
+        assert!(account_from_clientsettings(&serde_json::json!({})).is_none());
     }
 }

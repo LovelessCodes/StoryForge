@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Import sessions from your profiles**: the logins import sheet now offers the game session stored in any signed-in Story Forge profile (and adopted external game folders), so an account can be added without entering a password or a two-factor code.
+
 ### Fixed
 
 - **Sign-in for two-factor accounts**: the authenticator-code prompt now appears when Vintage Story asks for a TOTP code. The challenge response used the newer API shape (`message`/`name`), which the parser missed, and the follow-up error was rendered as `[object Object]`. Backend error messages across the app now display their actual text instead of `[object Object]`.
