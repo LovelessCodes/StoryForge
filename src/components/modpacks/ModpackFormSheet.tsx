@@ -18,6 +18,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import type { ModpackItem } from "@/hooks/use-modpacks";
 import { authClient } from "@/lib/auth";
+import { errorMessage } from "@/lib/errors";
 import { toast } from "@/lib/notify";
 
 const IMAGE_URL_PREFIX = "https://moddbcdn.vintagestory.at/";
@@ -150,7 +151,7 @@ export default function ModpackFormSheet({
       }
       onOpenChange(false);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       toast.error(isEdit ? t("modpacks.form.updateFailed") : t("modpacks.form.createFailed"), {
         description: message,
       });

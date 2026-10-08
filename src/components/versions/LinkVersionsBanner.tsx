@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sheet";
 import { installedVersionsQueryKey } from "@/hooks/use-installed-versions";
 import { linkableVersionsQueryKey, useLinkableVersions } from "@/hooks/use-linkable-versions";
+import { errorMessage } from "@/lib/errors";
 import { toast } from "@/lib/notify";
 import type { LinkVersionsReport } from "@/lib/types";
 import { useSettingsStore } from "@/stores/settings";
@@ -60,7 +61,7 @@ export default function LinkVersionsBanner() {
         setOpen(false);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       toast.error(t("versions.toast.linkFailed"), { description: message });
     } finally {
       setBusy(false);

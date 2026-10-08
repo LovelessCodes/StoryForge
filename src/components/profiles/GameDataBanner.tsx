@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/sheet";
 import { defaultGameDataQueryKey, useDefaultGameData } from "@/hooks/use-default-game-data";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
+import { errorMessage } from "@/lib/errors";
 import { compareSemverDesc } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
 import { gameVersionsQuery } from "@/lib/queries";
@@ -79,7 +80,7 @@ export default function GameDataBanner() {
       await queryClient.invalidateQueries({ queryKey: defaultGameDataQueryKey });
       setOpen(false);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       toast.error(t("profiles.gameData.adoptFailed"), { description: message });
     } finally {
       setBusy(false);

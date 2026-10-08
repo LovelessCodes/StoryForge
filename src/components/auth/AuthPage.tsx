@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { authClient } from "@/lib/auth";
+import { errorMessage } from "@/lib/errors";
 import { t as translate } from "@/lib/i18n";
 
 /** Built per parse so validation messages follow the current language. */
@@ -112,7 +113,7 @@ export default function AuthPage() {
         }
       }
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : t("auth.errors.unexpected"));
+      setFormError(errorMessage(error));
     } finally {
       setSubmitting(false);
     }

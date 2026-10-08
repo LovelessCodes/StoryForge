@@ -14,6 +14,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { errorInfo } from "@/lib/errors";
 import { toast } from "@/lib/notify";
 import { cn } from "@/lib/utils";
 import { useAccountStore } from "@/stores/accounts";
@@ -66,16 +67,18 @@ export default function AddAccountSheet({
       });
       onOpenChange(false);
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      const extra = err as Error & { prelogintoken?: string };
-      if (message.includes("requiretotpcode")) {
-        setPreloginToken(extra.prelogintoken ?? "");
+      const { message, prelogintoken } = errorInfo(err);
+      if (prelogintoken) {
+        // Two-factor account: show (or keep) the code challenge. Every attempt
+        // gets a fresh pre-login token.
+        setPreloginToken(prelogintoken);
         setChallenge("totp");
         setTotpCode("");
-        toast.info(t("auth.addAccount.totpPrompt"));
-      } else if (message.includes("wrongtotpcode")) {
-        setTotpCode("");
-        setError(t("auth.addAccount.errors.wrongTotp"));
+        if (message.includes("wrongtotpcode")) {
+          setError(t("auth.addAccount.errors.wrongTotp"));
+        } else {
+          toast.info(t("auth.addAccount.totpPrompt"));
+        }
       } else if (message.includes("ipchanged")) {
         setTotpCode("");
         setError(t("auth.addAccount.errors.ipChanged"));

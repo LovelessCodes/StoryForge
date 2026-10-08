@@ -15,6 +15,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { authClient } from "@/lib/auth";
+import { errorMessage } from "@/lib/errors";
 import { toast } from "@/lib/notify";
 import type { Profile } from "@/stores/profiles";
 
@@ -153,7 +154,7 @@ export default function ModpackVersionForm({
       }
       onSuccess();
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       toast.error(t("modpacks.versionForm.saveFailed"), { description: message });
     } finally {
       setSaving(false);

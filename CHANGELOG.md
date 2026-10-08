@@ -8,6 +8,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Sign-in for two-factor accounts**: the authenticator-code prompt now appears when Vintage Story asks for a TOTP code. The challenge response used the newer API shape (`message`/`name`), which the parser missed, and the follow-up error was rendered as `[object Object]`. Backend error messages across the app now display their actual text instead of `[object Object]`.
+
 ## [2.0.1] - 2026-10-07
 
 ### Added

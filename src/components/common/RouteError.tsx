@@ -2,11 +2,13 @@ import { Link, type ErrorComponentProps } from "@tanstack/react-router";
 import { RotateCcw, TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { errorMessage } from "@/lib/errors";
+
 import { Button, buttonVariants } from "../ui/button";
 
 export default function RouteError({ error, reset }: ErrorComponentProps) {
   const { t } = useTranslation();
-  const message = error instanceof Error ? error.message : String(error);
+  const message = errorMessage(error);
   return (
     <div className="bg-background flex h-svh items-center justify-center p-6">
       <div className="flex w-full max-w-md flex-col items-center gap-5 text-center">

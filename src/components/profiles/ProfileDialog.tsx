@@ -24,6 +24,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
+import { errorMessage } from "@/lib/errors";
 import {
   baseGameVersion,
   buildProfilePath,
@@ -205,7 +206,7 @@ export default function ProfileDialog({
 
       onOpenChange(false);
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = errorMessage(err);
       setError(message);
       toast.error(isEdit ? t("profiles.dialog.saveFailed") : t("profiles.dialog.createFailed"), {
         description: message,

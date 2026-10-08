@@ -4,6 +4,7 @@ import { Trans, useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth";
+import { errorMessage } from "@/lib/errors";
 import { toast } from "@/lib/notify";
 
 interface DeleteVersionInlineProps {
@@ -30,7 +31,7 @@ export default function DeleteVersionInline({
       await authClient.deleteModpackVersion(modpackSlug, version);
       onCancel();
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       toast.error(t("modpacks.deleteVersion.failed"), { description: message });
     } finally {
       setDeleting(false);

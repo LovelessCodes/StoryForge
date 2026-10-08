@@ -24,6 +24,7 @@ import {
 import { useActiveProfile } from "@/hooks/use-active-profile";
 import { useAddServerToProfile } from "@/hooks/use-add-server-to-profile";
 import { useRemoveServerFromProfile } from "@/hooks/use-remove-server-from-profile";
+import { errorMessage } from "@/lib/errors";
 import { toast } from "@/lib/notify";
 import { useProfiles } from "@/stores/profiles";
 import { useServerStore, type Server } from "@/stores/servers";
@@ -95,9 +96,7 @@ export default function ServerFormSheet({
       });
       setSniffResult(result);
     } catch (err) {
-      toast.error(
-        t("servers.form.testFailed", { error: err instanceof Error ? err.message : String(err) }),
-      );
+      toast.error(t("servers.form.testFailed", { error: errorMessage(err) }));
       setSniffResult(null);
     } finally {
       setTesting(false);
@@ -170,7 +169,7 @@ export default function ServerFormSheet({
         );
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(errorMessage(err));
     }
   }
 

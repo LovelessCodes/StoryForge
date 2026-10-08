@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { profileBackupsQueryKey, useProfileBackups } from "@/hooks/use-profile-backups";
+import { errorMessage } from "@/lib/errors";
 import { useDateLocale } from "@/lib/i18n/date-locale";
 import { toast } from "@/lib/notify";
 import { type Profile, useProfilesStore } from "@/stores/profiles";
@@ -43,7 +44,7 @@ interface ProfileBackupsSheetProps {
 }
 
 function messageOf(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
+  return errorMessage(error);
 }
 
 /**

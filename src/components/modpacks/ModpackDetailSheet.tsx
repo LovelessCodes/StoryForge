@@ -24,6 +24,7 @@ import { resolveInstalledVersionName, useInstalledVersions } from "@/hooks/use-i
 import type { ModpackItem } from "@/hooks/use-modpacks";
 import { authClient } from "@/lib/auth";
 import type { ModpackManifestMod } from "@/lib/auth/plugins/modpacks";
+import { errorMessage } from "@/lib/errors";
 import { buildProfilePath, makeStringFolderSafe } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
 import { useProfiles, useProfilesStore } from "@/stores/profiles";
@@ -213,7 +214,7 @@ export default function ModpackDetailSheet({
       listenRef.current = null;
       setImporting(false);
       setImportProgress(null);
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       toast.error(t("modpacks.install.failed"), { description: message });
     }
   };

@@ -5,6 +5,7 @@ import { appDataDir } from "@tauri-apps/api/path";
 import { useCallback } from "react";
 
 import { useMountEffect } from "@/hooks/use-mount-effect";
+import { errorMessage } from "@/lib/errors";
 import { buildVersionPath, hashPath, pathDelimiter, zipfolderprefix } from "@/lib/helpers";
 import { t } from "@/lib/i18n";
 import { pickDependencyRelease } from "@/lib/mod-dependencies";
@@ -389,7 +390,7 @@ async function doDownload(
       invalidateQueriesFor(entry, queryClient);
     }
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = errorMessage(err);
     store.updateEntry(token, { status: "error", error: message });
     settleWaiters(token, new Error(message));
   } finally {

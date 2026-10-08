@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useAppVersion } from "@/hooks/use-app-version";
+import { errorMessage } from "@/lib/errors";
 import { LOCALES, resolveLocale } from "@/lib/i18n";
 import { type SortBy, sortOptions } from "@/lib/mod-sort";
 import { toast } from "@/lib/notify";
@@ -216,7 +217,7 @@ function UpdatesCard() {
     } catch (error) {
       toast.error(
         t("settings.updates.checkFailed", {
-          message: error instanceof Error ? error.message : String(error),
+          message: errorMessage(error),
         }),
         { id: "update-check" },
       );

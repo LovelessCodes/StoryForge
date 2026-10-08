@@ -18,6 +18,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { installedVersionsQueryKey } from "@/hooks/use-installed-versions";
+import { errorMessage } from "@/lib/errors";
 import { logToFile } from "@/lib/logger";
 import { toast } from "@/lib/notify";
 import { useProfilesStore } from "@/stores/profiles";
@@ -27,7 +28,7 @@ type ParentField = "profilesParent" | "versionsParent";
 type DialogChoice = "keep" | "delete" | "move";
 
 function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+  return errorMessage(error);
 }
 
 function ParentRow({

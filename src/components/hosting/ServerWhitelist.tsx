@@ -15,6 +15,7 @@ import {
   useSetWhitelistMode,
   useWhitelist,
 } from "@/hooks/queries/server-hosting";
+import { errorMessage } from "@/lib/errors";
 import { t as translate } from "@/lib/i18n";
 import { toast } from "@/lib/notify";
 import type { WhitelistEntry } from "@/lib/server-hosting-types";
@@ -315,7 +316,7 @@ function BulkImportForm({ instanceId }: { instanceId: number }) {
     try {
       entries = parseBulkEntries(json);
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = errorMessage(err);
       toast.error(t("hosting.whitelist.invalidJson", { message }));
       return;
     }

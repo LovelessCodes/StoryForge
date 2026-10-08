@@ -10,6 +10,7 @@ import {
   legacyInstallationsQueryKey,
   useLegacyInstallations,
 } from "@/hooks/use-legacy-installations";
+import { errorMessage } from "@/lib/errors";
 import { toast } from "@/lib/notify";
 import type { LegacyInstallation } from "@/lib/types";
 import { useProfilesStore } from "@/stores/profiles";
@@ -51,7 +52,7 @@ export default function LegacyLocateRow() {
       setInstallations(found);
       setOpen(true);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       toast.error(message);
     }
   }

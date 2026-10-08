@@ -16,6 +16,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { errorMessage } from "@/lib/errors";
 import { toast } from "@/lib/notify";
 import type { ForeignInstallation, LegacyMigrationReport } from "@/lib/types";
 import { useProfilesStore } from "@/stores/profiles";
@@ -89,7 +90,7 @@ export function LauncherImportBanner({
         setOpen(false);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       toast.error(t("profiles.errors.importFailed"), { description: message });
     } finally {
       setBusy(false);

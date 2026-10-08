@@ -15,8 +15,16 @@ pub struct GameLoginResponse {
     pub entitlements: Option<serde_json::Value>,
     pub playername: Option<String>,
     pub hasgameserver: Option<bool>,
+    /// `0` when the response is a failure or challenge (the v2 API omits the
+    /// field entirely there).
+    #[serde(default)]
     pub valid: u8,
+    /// v1 spelling of the failure/challenge code.
     pub reason: Option<String>,
+    /// v2 spelling of the failure/challenge code (`requiretotpcode`, …).
+    pub message: Option<String>,
+    /// v2 error name (`prelogin_required`, …).
+    pub name: Option<String>,
     pub prelogintoken: Option<String>,
 }
 
@@ -182,24 +190,40 @@ pub async fn login(
         format!("JSON error: {e}")
     })?;
 
-    if json_response.valid == 0 {
-        if let Some(token) = json_response.prelogintoken {
-            return Err(LoginError::Prelogin(PreloginChallenge {
-                name: "prelogin_required".into(),
-                message: json_response
-                    .reason
-                    .unwrap_or("Pre-login required".to_string()),
-                prelogintoken: token,
-            }));
-        }
-        return Err(UiError {
-            name: "invalid_login".into(),
-            message: json_response.reason.unwrap_or("Invalid login".to_string()),
-        }
-        .into());
+    classify_login_response(json_response)
+}
+
+/// Splits a gamelogin response into success, a pre-login challenge or a
+/// failure.
+///
+/// The v2 API reports the code in `message` (with `name` carrying the stable
+/// challenge kind) and omits `valid`; older responses use `reason` with
+/// `valid: 0`. Both shapes are accepted.
+fn classify_login_response(response: GameLoginResponse) -> Result<GameLoginResponse, LoginError> {
+    if response.valid != 0 {
+        return Ok(response);
     }
 
-    Ok(json_response)
+    let code = response.message.clone().or_else(|| response.reason.clone());
+    if let Some(token) = response.prelogintoken.clone() {
+        return Err(LoginError::Prelogin(PreloginChallenge {
+            name: response
+                .name
+                .clone()
+                .unwrap_or_else(|| "prelogin_required".to_string()),
+            message: code.unwrap_or_else(|| "Pre-login required".to_string()),
+            prelogintoken: token,
+        }));
+    }
+
+    Err(UiError {
+        name: response
+            .name
+            .clone()
+            .unwrap_or_else(|| "invalid_login".to_string()),
+        message: code.unwrap_or_else(|| "Invalid login".to_string()),
+    }
+    .into())
 }
 
 // ── Account persistence ──
@@ -276,5 +300,44 @@ mod tests {
         assert_eq!(redact_email("user@example.com"), "u***@example.com");
         assert_eq!(redact_email("a@b"), "a***@b");
         assert_eq!(redact_email("not-an-email"), "***");
+    }
+
+    #[test]
+    fn login_classifies_the_v2_totp_challenge() {
+        let response: GameLoginResponse = serde_json::from_str(
+            r#"{"message":"requiretotpcode","name":"prelogin_required","prelogintoken":"tok"}"#,
+        )
+        .expect("challenge response parses");
+        match classify_login_response(response).expect_err("challenge expected") {
+            LoginError::Prelogin(challenge) => {
+                assert_eq!(challenge.message, "requiretotpcode");
+                assert_eq!(challenge.name, "prelogin_required");
+                assert_eq!(challenge.prelogintoken, "tok");
+            }
+            other => panic!("expected prelogin challenge, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn login_classifies_invalid_credentials() {
+        let response: GameLoginResponse =
+            serde_json::from_str(r#"{"valid":0,"reason":"invalidemailorpassword"}"#)
+                .expect("failure response parses");
+        match classify_login_response(response).expect_err("failure expected") {
+            LoginError::Ui(error) => {
+                assert_eq!(error.name, "invalid_login");
+                assert_eq!(error.message, "invalidemailorpassword");
+            }
+            other => panic!("expected ui error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn login_passes_success_through() {
+        let response: GameLoginResponse =
+            serde_json::from_str(r#"{"valid":1,"sessionkey":"s","uid":"u"}"#).expect("parses");
+        let ok = classify_login_response(response).expect("valid response");
+        assert_eq!(ok.sessionkey.as_deref(), Some("s"));
+        assert_eq!(ok.uid.as_deref(), Some("u"));
     }
 }

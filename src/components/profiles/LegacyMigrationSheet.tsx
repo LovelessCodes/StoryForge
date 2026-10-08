@@ -15,6 +15,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { errorMessage } from "@/lib/errors";
 import { toast } from "@/lib/notify";
 import type { LegacyInstallation, LegacyMigrationReport } from "@/lib/types";
 
@@ -67,7 +68,7 @@ export default function LegacyMigrationSheet({
         onOpenChange(false);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       toast.error(t("profiles.errors.importFailed"), { description: message });
     } finally {
       setBusy(false);

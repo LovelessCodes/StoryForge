@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/sheet";
 import { notify } from "@/components/ui/toast";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
+import { errorMessage } from "@/lib/errors";
 import { useDateLocale } from "@/lib/i18n/date-locale";
 import { toast } from "@/lib/notify";
 import { useProfilesStore, type Profile } from "@/stores/profiles";
@@ -126,7 +127,7 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
       await loadProfiles();
       setCloneOpen(false);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       toast.error(t("profiles.clone.failed"), { description: message });
     } finally {
       setCloneBusy(false);
@@ -178,7 +179,7 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
         },
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       toast.error(t("profiles.delete.failed"), { description: message });
     } finally {
       setDeleteBusy(false);

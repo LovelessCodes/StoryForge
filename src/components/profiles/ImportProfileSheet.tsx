@@ -24,6 +24,7 @@ import {
   installedVersionsQueryKey,
   useInstalledVersionNames,
 } from "@/hooks/use-installed-versions";
+import { errorMessage } from "@/lib/errors";
 import { makeStringFolderSafe } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
 import { useProfilesStore } from "@/stores/profiles";
@@ -153,7 +154,7 @@ export default function ImportProfileSheet({ open, onOpenChange }: ImportProfile
       onOpenChange(false);
       setText("");
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       toast.error(t("profiles.errors.importFailed"), { description: message });
     } finally {
       listenRef.current?.();

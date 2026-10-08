@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/sheet";
 import { installedVersionsQueryKey } from "@/hooks/use-installed-versions";
 import { linkableVersionsQueryKey } from "@/hooks/use-linkable-versions";
+import { errorMessage } from "@/lib/errors";
 import { pathBasename } from "@/lib/helpers";
 import type { LinkVersionsReport } from "@/lib/types";
 
@@ -68,7 +69,7 @@ export default function LinkExistingVersionSheet({
       await queryClient.invalidateQueries({ queryKey: linkableVersionsQueryKey });
       onOpenChange(false);
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = errorMessage(err);
       setError(message);
     } finally {
       setBusy(false);

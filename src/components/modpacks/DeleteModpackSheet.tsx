@@ -16,6 +16,7 @@ import {
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import type { ModpackItem } from "@/hooks/use-modpacks";
 import { authClient } from "@/lib/auth";
+import { errorMessage } from "@/lib/errors";
 import { toast } from "@/lib/notify";
 
 interface DeleteModpackSheetProps {
@@ -49,7 +50,7 @@ export default function DeleteModpackSheet({
       onDeleted?.(modpack.slug);
       onOpenChange(false);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       toast.error(t("modpacks.delete.failed"), { description: message });
     } finally {
       setDeleting(false);
