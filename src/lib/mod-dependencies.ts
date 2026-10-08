@@ -32,11 +32,15 @@ export type MissingDependency = {
   requiredBy: string[];
 };
 
+/** Dependency ids the game itself provides: its version entry and the bundled mods. */
+const BUILT_IN_MODIDS = new Set(["game", "essentials", "survival", "creative"]);
+
 /**
  * Dependencies named by the installed mods that are not installed themselves.
  *
- * The `game` entry is the game version requirement, not a mod, and modids are
- * compared case-insensitively (zip metadata is inconsistent about casing).
+ * The `game` entry is the game version requirement, not a mod, the built-in
+ * mods ship with the game rather than in the profile's Mods folder, and modids
+ * are compared case-insensitively (zip metadata is inconsistent about casing).
  */
 export function findMissingDependencies(mods: OutputMod[] | undefined): MissingDependency[] {
   const installed = new Set((mods ?? []).map((mod) => mod.modid.toLowerCase()));
@@ -45,7 +49,7 @@ export function findMissingDependencies(mods: OutputMod[] | undefined): MissingD
   for (const mod of mods ?? []) {
     for (const [rawId, constraint] of Object.entries(mod.dependencies ?? {})) {
       const id = rawId.trim().toLowerCase();
-      if (!id || id === "game" || installed.has(id)) continue;
+      if (!id || BUILT_IN_MODIDS.has(id) || installed.has(id)) continue;
 
       const entry = missing.get(id) ?? { modid: id, constraint: "", requiredBy: [] };
       if (!entry.constraint) entry.constraint = constraint.trim();

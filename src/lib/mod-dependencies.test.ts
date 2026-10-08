@@ -79,6 +79,14 @@ describe("findMissingDependencies", () => {
     expect(missing).toEqual([]);
   });
 
+  it("ignores the mods bundled with the game, whatever version they require", () => {
+    const missing = findMissingDependencies([
+      installed("alpha", "Alpha", { survival: "1.22.0", Creative: "", essentials: "1.19.8" }),
+      installed("beta", "Beta", { Survival: "1.21.5", creative: "9.9.9", ESSENTIALS: "" }),
+    ]);
+    expect(missing).toEqual([]);
+  });
+
   it("handles missing dependency data", () => {
     expect(findMissingDependencies(undefined)).toEqual([]);
     expect(findMissingDependencies([installed("alpha", "Alpha", {})])).toEqual([]);
