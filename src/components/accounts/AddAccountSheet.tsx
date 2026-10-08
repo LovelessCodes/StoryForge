@@ -79,6 +79,9 @@ export default function AddAccountSheet({
         } else {
           toast.info(t("auth.addAccount.totpPrompt"));
         }
+      } else if (message.includes("wrongtotpcode")) {
+        setTotpCode("");
+        setError(t("auth.addAccount.errors.wrongTotp"));
       } else if (message.includes("ipchanged")) {
         setTotpCode("");
         setError(t("auth.addAccount.errors.ipChanged"));
