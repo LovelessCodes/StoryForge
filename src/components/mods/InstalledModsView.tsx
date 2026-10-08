@@ -22,6 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -497,20 +498,22 @@ export function InstalledModsView({
                 <FolderInput />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" side="top">
-                <DropdownMenuLabel>{t("mods.installed.moveToGroup")}</DropdownMenuLabel>
-                <DropdownMenuItem className="text-nowrap" onClick={() => moveSelection(null)}>
-                  {t("mods.installed.ungrouped")}
-                </DropdownMenuItem>
-                {groups.length > 0 && <DropdownMenuSeparator />}
-                {groups.map((group) => (
-                  <DropdownMenuItem
-                    className="text-nowrap"
-                    key={group.id}
-                    onClick={() => moveSelection(group.id)}
-                  >
-                    {group.name}
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>{t("mods.installed.moveToGroup")}</DropdownMenuLabel>
+                  <DropdownMenuItem className="text-nowrap" onClick={() => moveSelection(null)}>
+                    {t("mods.installed.ungrouped")}
                   </DropdownMenuItem>
-                ))}
+                  {groups.length > 0 && <DropdownMenuSeparator />}
+                  {groups.map((group) => (
+                    <DropdownMenuItem
+                      className="text-nowrap"
+                      key={group.id}
+                      onClick={() => moveSelection(group.id)}
+                    >
+                      {group.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
             {confirmBatchRemove ? (

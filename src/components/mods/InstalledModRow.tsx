@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -113,23 +114,25 @@ export function InstalledModRow({
               <FolderInput />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{t("mods.installed.moveToGroup")}</DropdownMenuLabel>
-              <DropdownMenuItem
-                className="text-nowrap"
-                onClick={() => onMove([installed.modid], null)}
-              >
-                {t("mods.installed.ungrouped")}
-              </DropdownMenuItem>
-              {groups.length > 0 && <DropdownMenuSeparator />}
-              {groups.map((group) => (
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>{t("mods.installed.moveToGroup")}</DropdownMenuLabel>
                 <DropdownMenuItem
                   className="text-nowrap"
-                  key={group.id}
-                  onClick={() => onMove([installed.modid], group.id)}
+                  onClick={() => onMove([installed.modid], null)}
                 >
-                  {group.name}
+                  {t("mods.installed.ungrouped")}
                 </DropdownMenuItem>
-              ))}
+                {groups.length > 0 && <DropdownMenuSeparator />}
+                {groups.map((group) => (
+                  <DropdownMenuItem
+                    className="text-nowrap"
+                    key={group.id}
+                    onClick={() => onMove([installed.modid], group.id)}
+                  >
+                    {group.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
 
