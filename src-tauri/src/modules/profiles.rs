@@ -598,6 +598,46 @@ fn manifest_skip_reason(entry: &ManifestModParam) -> Option<&'static str> {
     None
 }
 
+/// Rejects an import folder name that is not a single plain path component.
+///
+/// Imports arrive from files and share codes, so a name that could escape the
+/// profiles root (`..`, absolute paths, separators, control characters) is
+/// rejected instead of being silently rewritten.
+fn require_import_folder_name(safe_name: &str) -> Result<(), UiError> {
+    let mut components = Path::new(safe_name).components();
+    let single_component =
+        matches!(components.next(), Some(Component::Normal(_))) && components.next().is_none();
+    let invalid_chars = safe_name
+        .chars()
+        .any(|c| c.is_control() || matches!(c, '/' | '\\'));
+
+    if !single_component || invalid_chars {
+        return Err(UiError::new(
+            "invalid_name",
+            format!("Invalid profile folder name: {safe_name}"),
+        ));
+    }
+    Ok(())
+}
+
+/// True when a folder holds nothing but the `Mods` directory that
+/// `initialize_game` creates for a fresh install.
+///
+/// The modpack install flow initializes the folder before importing into it, so
+/// that skeleton must not be mistaken for a re-import over an existing profile.
+fn is_fresh_install_dir(dir: &Path) -> bool {
+    let Ok(entries) = read_dir(dir) else {
+        return false;
+    };
+    let mut names = entries
+        .flatten()
+        .map(|entry| entry.file_name().to_string_lossy().to_string());
+
+    names.next().as_deref() == Some(paths::MODS_DIR)
+        && names.next().is_none()
+        && mods_dir(dir).is_dir()
+}
+
 /// Arguments for [`import_profile`].
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -653,10 +693,22 @@ pub async fn import_profile(
         mod_config_url
     );
 
-    // 1. Create the profile directory
+    // 1. Validate the folder name, then create the profile directory
+    require_import_folder_name(&safe_name)?;
     let subdir = profiles_subdir(app.clone());
     let profiles_dir = profiles_folder(app.clone())?.join(&subdir);
     let inst_dir = profiles_dir.join(&safe_name);
+    require_managed_path(&app, &inst_dir, "profile")?;
+
+    // Importing over an existing folder would overwrite that profile's
+    // profile.json, so refuse before anything is written.
+    if inst_dir.exists() && !is_fresh_install_dir(&inst_dir) {
+        return Err(UiError::new(
+            "name_taken",
+            format!("A profile named \"{name}\" already exists"),
+        ));
+    }
+
     create_dir_all(&inst_dir).map_err(|e| UiError {
         name: "create_dir_failed".into(),
         message: format!("Failed to create profile directory: {e}"),
