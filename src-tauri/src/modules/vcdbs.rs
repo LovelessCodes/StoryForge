@@ -11,6 +11,16 @@ use super::errors::UiError;
 use super::proto::GameData;
 use crate::log_error;
 
+/// Escapes the characters SQLite's URI parser would otherwise interpret.
+///
+/// `%` must be escaped first, or it would double-escape the `%` of the escapes
+/// added below.
+fn escape_uri_path(path: &str) -> String {
+    path.replace('%', "%25")
+        .replace('#', "%23")
+        .replace('?', "%3F")
+}
+
 /// Opens a `.vcdbs` database.
 ///
 /// Read-only opens use SQLite's `immutable` flag so reads never create
@@ -23,7 +33,10 @@ pub fn open(path: &Path, writable: bool) -> Result<Connection, UiError> {
             UiError::new("db_error", format!("DB open error: {e}"))
         })
     } else {
-        let uri = format!("file:{}?immutable=1", path.to_string_lossy());
+        let uri = format!(
+            "file:{}?immutable=1",
+            escape_uri_path(&path.to_string_lossy())
+        );
         Connection::open_with_flags(
             &uri,
             OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
@@ -124,5 +137,40 @@ mod tests {
         conn.execute("CREATE TABLE gamedata (data BLOB)", [])
             .unwrap();
         assert_eq!(read_gamedata(&conn).unwrap_err().name, "not_found");
+    }
+
+    #[test]
+    fn escapes_uri_metacharacters() {
+        assert_eq!(escape_uri_path("plain/path.vcdbs"), "plain/path.vcdbs");
+        assert_eq!(
+            escape_uri_path("/tmp/50%#1?x.vcdbs"),
+            "/tmp/50%25%231%3Fx.vcdbs"
+        );
+    }
+
+    /// Without escaping, the URI parser truncates at `?`/`#` and percent-decodes
+    /// `%`, so the read-only open would hit the wrong (or no) file.
+    #[test]
+    fn readonly_open_handles_uri_metacharacters() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("world%20#1?save.vcdbs");
+
+        let conn = Connection::open(&path).unwrap();
+        conn.execute("CREATE TABLE gamedata (data BLOB)", [])
+            .unwrap();
+        conn.execute("INSERT INTO gamedata (data) VALUES (X'00')", [])
+            .unwrap();
+        write_gamedata(
+            &conn,
+            &GameData {
+                world_name: "Weird Path".into(),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        drop(conn);
+
+        let conn = open_readonly(&path).unwrap();
+        assert_eq!(read_gamedata(&conn).unwrap().world_name, "Weird Path");
     }
 }
