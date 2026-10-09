@@ -1152,38 +1152,6 @@ pub async fn set_mod_enabled(
     .map_err(|e| UiError::new("internal_error", format!("Set mod state failed: {e}")))?
 }
 
-/// Enables or disables every installed mod of a profile in one write.
-#[command]
-pub async fn set_all_mods_enabled(
-    app: AppHandle,
-    path: String,
-    enabled: bool,
-) -> Result<Vec<String>, UiError> {
-    log_info!("set_all_mods_enabled: enabled={enabled} path={path}");
-    require_managed_path(&app, Path::new(&path), "Profile path")?;
-    tokio::task::spawn_blocking(move || {
-        let profile_dir = PathBuf::from(&path);
-        let mods_dir = paths::mods_dir(&profile_dir);
-        let mods = if mods_dir.is_dir() {
-            get_mods_in_dir(&mods_dir)
-                .map(|result| result.mods)
-                .unwrap_or_default()
-        } else {
-            Vec::new()
-        };
-        let mut settings = read_settings_file(&profile_dir)?;
-        let mut updated = disabled_mods(&settings);
-        for installed in mods {
-            updated =
-                apply_mod_enabled(&mut settings, &installed.modid, &installed.version, enabled);
-        }
-        write_settings_file(&profile_dir, &settings)?;
-        Ok(updated)
-    })
-    .await
-    .map_err(|e| UiError::new("internal_error", format!("Set mods state failed: {e}")))?
-}
-
 #[command]
 pub async fn get_mods(app: AppHandle, path: String) -> Result<ModsResult, UiError> {
     log_info!("get_mods: {}", path);

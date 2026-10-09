@@ -378,7 +378,6 @@ pub fn run() {
             mods::remove_mod_from_profile,
             mods::save_mod_config,
             mods::set_mod_enabled,
-            mods::set_all_mods_enabled,
             mods::install_mod_file,
             mods::install_mod_url,
             mods::apply_mod_state,
@@ -484,7 +483,6 @@ pub fn run() {
             servers::check_server_in_profile,
             servers::set_server_favorite,
             // Saves
-            saves::get_profile_saves,
             saves::get_all_saves,
             saves::update_world,
             saves::remove_world,
@@ -518,10 +516,8 @@ pub fn run() {
             server_hosting::get_server_data_dir_size,
             // Maps
             maps::get_all_maps,
-            maps::inspect_map_database,
             maps::get_map_bounds,
             maps::get_map_bounds_by_path,
-            maps::get_map_tile,
             maps::get_all_map_tiles,
             maps::get_all_map_tiles_by_path,
         ]);

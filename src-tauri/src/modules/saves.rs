@@ -311,33 +311,6 @@ pub async fn get_all_saves(app: AppHandle) -> Result<Vec<World>, UiError> {
 }
 
 #[command]
-pub fn get_profile_saves(app: AppHandle, profile_id: u64) -> Result<Vec<String>, UiError> {
-    let (pb, _profile) = find_profile_by_id(&app, profile_id)?;
-    let saves_path = paths::saves_dir(&pb);
-
-    let mut saves = Vec::new();
-    if saves_path.exists() && saves_path.is_dir() {
-        for entry in read_dir(saves_path).map_err(|e| {
-            log_error!("saves: Read dir error: {e}");
-            UiError::new("io_error", format!("Read dir error: {e}"))
-        })? {
-            let entry = entry.map_err(|e| {
-                log_error!("saves: Dir entry error: {e}");
-                UiError::new("io_error", format!("Dir entry error: {e}"))
-            })?;
-            let path = entry.path();
-            if path.is_file() && path.extension() == Some(OsStr::new("vcdbs")) {
-                if let Some(save_name) = path.file_stem().and_then(|s| s.to_str()) {
-                    saves.push(save_name.to_string());
-                }
-            }
-        }
-    }
-
-    Ok(saves)
-}
-
-#[command]
 pub fn update_world(
     app: AppHandle,
     profile_id: u64,
