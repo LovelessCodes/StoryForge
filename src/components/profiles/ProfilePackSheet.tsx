@@ -66,7 +66,7 @@ export default function ProfilePackSheet({
   const { data: status, isPending } = useProfileLockStatus(profile.id, open);
   const create = useCreateProfileLock(profile.id);
   const remove = useRemoveProfileLock(profile.id);
-  const sync = useApplyProfileLock(profile.id);
+  const sync = useApplyProfileLock(profile.id, profile.path);
   const [confirmRemove, setConfirmRemove] = useState(false);
 
   const busy = create.isPending || remove.isPending || sync.isPending;
