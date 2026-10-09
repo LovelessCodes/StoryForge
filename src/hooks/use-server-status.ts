@@ -3,8 +3,12 @@ import { invoke } from "@tauri-apps/api/core";
 
 import type { Server } from "@/stores/servers";
 
-export const serverStatusQueryKey = (server: Pick<Server, "id">) =>
-  ["serverStatus", server.id] as const;
+/**
+ * Keyed by the connection inputs, not just the address hash: a password-only
+ * edit must not reuse the cached probe result.
+ */
+export const serverSniffQueryKey = (server: Pick<Server, "id" | "ip" | "password" | "port">) =>
+  ["serverSniff", server.id, server.ip, server.port, server.password] as const;
 
 /**
  * Pings a saved server using the same handshake probe as the "Test Server"
@@ -21,7 +25,7 @@ export const useServerStatus = (server: Server) => {
         // Tauri camelCases direct command arguments (`timeout_secs` in Rust).
         timeoutSecs: 3,
       }),
-    queryKey: serverStatusQueryKey(server),
+    queryKey: serverSniffQueryKey(server),
     retry: false,
     staleTime: 60_000,
     refetchOnWindowFocus: false,
