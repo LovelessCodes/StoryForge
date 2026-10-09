@@ -627,7 +627,11 @@ fn dependencies_from_modinfo(value: &Value) -> HashMap<String, String> {
 /// archive. A missing or unreadable `modinfo.json` yields an empty map: the
 /// install itself succeeded either way.
 #[command]
-pub fn get_mod_dependencies(path: String) -> Result<HashMap<String, String>, UiError> {
+pub fn get_mod_dependencies(
+    app: AppHandle,
+    path: String,
+) -> Result<HashMap<String, String>, UiError> {
+    require_managed_path(&app, Path::new(&path), "Mod path")?;
     let zip_path = PathBuf::from(&path);
     let file = File::open(&zip_path).map_err(|e| UiError {
         name: "io_error".into(),
