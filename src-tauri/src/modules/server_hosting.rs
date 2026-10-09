@@ -781,7 +781,7 @@ pub async fn create_hosted_server(
         use std::time::{SystemTime, UNIX_EPOCH};
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or_default()
             .as_secs();
         let display_name = if default_whitelist_name.is_empty() {
             default_whitelist_uid.clone()
@@ -1328,7 +1328,7 @@ pub async fn add_to_whitelist(
     use std::time::{SystemTime, UNIX_EPOCH};
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .unwrap()
+        .unwrap_or_default()
         .as_secs();
 
     let entry = WhitelistEntry {
