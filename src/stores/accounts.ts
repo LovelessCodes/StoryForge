@@ -1,6 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 
+import { errorMessage } from "@/lib/errors";
+import { t } from "@/lib/i18n";
+import { toast } from "@/lib/notify";
+
 export type User = {
   uid: string | undefined;
   email: string;
@@ -80,6 +84,7 @@ export const useAccountStore = create<AccountStore>((set, get) => ({
       await invoke("save_accounts", { accounts });
     } catch (e) {
       console.error("Failed to save accounts:", e);
+      toast.error(t("auth.errors.unexpected"), { description: errorMessage(e) });
     }
   },
   selectedUser: null,
