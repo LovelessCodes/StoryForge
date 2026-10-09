@@ -94,7 +94,7 @@ export default function ProfileDialog({
   }, [gameVersions, installedVersions, installedSet, t]);
   const { appFolder } = useAppFolder();
   const { profilesParent, profilesSubdir } = useSettingsStore();
-  const { loadProfiles, addProfile } = useProfilesStore();
+  const { profiles, loadProfiles, addProfile } = useProfilesStore();
   const setActiveProfileId = useSettingsStore((s) => s.setActiveProfileId);
 
   const defaultVersion =
@@ -128,17 +128,25 @@ export default function ProfileDialog({
       setError(t("profiles.dialog.noAppFolder"));
       return;
     }
+
+    let path = isEdit
+      ? profile.path
+      : buildProfilePath(
+          profilesParent ?? appFolder ?? "",
+          makeStringFolderSafe(trimmedName),
+          profilesSubdir,
+        );
+    // A profile is keyed on its folder: creating over an existing one would
+    // overwrite that profile (the backend keeps playtime and modpack fields but
+    // resets favorite, icon and start parameters).
+    if (!isEdit && profiles.some((existing) => existing.path === path)) {
+      setError(t("profiles.store.pathExists", { path }));
+      return;
+    }
     setError(null);
 
     try {
       const envVars = envEntriesToMap(envEntries);
-      let path = isEdit
-        ? profile.path
-        : buildProfilePath(
-            profilesParent ?? appFolder ?? "",
-            makeStringFolderSafe(trimmedName),
-            profilesSubdir,
-          );
 
       setBusy(isEdit ? t("profiles.dialog.saving") : t("profiles.dialog.creating"));
       if (!isEdit) {
