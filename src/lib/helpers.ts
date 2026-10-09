@@ -93,11 +93,6 @@ export function buildProfilesPath(parentPath: string, subdir = "profiles"): stri
   return `${parentPath}${pathDelimiter}${subdir}`;
 }
 
-/** Builds the full versions directory path. */
-export function buildVersionsPath(parentPath: string, subdir = "versions"): string {
-  return `${parentPath}${pathDelimiter}${subdir}`;
-}
-
 /** Builds a path to a specific profile. */
 export function buildProfilePath(
   parentPath: string,

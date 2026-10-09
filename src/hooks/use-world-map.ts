@@ -1,7 +1,7 @@
 import { type UseQueryOptions, keepPreviousData, useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
-import type { MapBounds, MapDatabaseInfo, MapTile } from "@/lib/types";
+import type { MapBounds, MapTile } from "@/lib/types";
 
 // ── Query key factories ──
 
@@ -9,25 +9,9 @@ export const worldMapKeys = {
   all: ["world-map"] as const,
   allTiles: (worldPath: string) => [...worldMapKeys.all, "tiles", worldPath] as const,
   bounds: (worldPath: string) => [...worldMapKeys.all, "bounds", worldPath] as const,
-  inspection: (worldPath: string) => [...worldMapKeys.all, "inspection", worldPath] as const,
-  tile: (worldPath: string, position: number) =>
-    [...worldMapKeys.all, "tile", worldPath, position] as const,
 };
 
 // ── World-based hooks (existing) ──
-
-export const useMapDatabaseInspection = (
-  worldPath: string,
-  options?: Omit<UseQueryOptions<MapDatabaseInfo, Error, MapDatabaseInfo>, "queryKey" | "queryFn">,
-) =>
-  useQuery({
-    enabled: !!worldPath,
-    queryFn: () => invoke<MapDatabaseInfo>("inspect_map_database", { worldPath }),
-    queryKey: worldMapKeys.inspection(worldPath),
-    staleTime: Infinity,
-    placeholderData: keepPreviousData,
-    ...options,
-  });
 
 export const useMapBounds = (
   worldPath: string,
@@ -41,20 +25,6 @@ export const useMapBounds = (
     // The backend returns null for a world with no map tiles yet.
     queryFn: () => invoke<MapBounds | null>("get_map_bounds", { worldPath }),
     queryKey: worldMapKeys.bounds(worldPath),
-    staleTime: Infinity,
-    placeholderData: keepPreviousData,
-    ...options,
-  });
-
-export const useMapTile = (
-  worldPath: string,
-  position: number,
-  options?: Omit<UseQueryOptions<MapTile, Error, MapTile>, "queryKey" | "queryFn">,
-) =>
-  useQuery({
-    enabled: !!worldPath && position !== undefined,
-    queryFn: () => invoke<MapTile>("get_map_tile", { position, worldPath }),
-    queryKey: worldMapKeys.tile(worldPath, position),
     staleTime: Infinity,
     placeholderData: keepPreviousData,
     ...options,
@@ -130,34 +100,6 @@ export const useAllMapTilesByPath = (
     ...options,
   });
 
-// ── Map favorites (localStorage-backed) ──
-
-const FAV_KEY = "storyforge-map-favorites";
-
-export function getFavoriteMaps(): Set<number> {
-  try {
-    const raw = localStorage.getItem(FAV_KEY);
-    return raw ? new Set(JSON.parse(raw)) : new Set();
-  } catch {
-    return new Set();
-  }
-}
-
-export function saveFavoriteMaps(favorites: Set<number>) {
-  localStorage.setItem(FAV_KEY, JSON.stringify([...favorites]));
-}
-
-export function toggleFavoriteMap(mapId: number) {
-  const favs = getFavoriteMaps();
-  if (favs.has(mapId)) {
-    favs.delete(mapId);
-  } else {
-    favs.add(mapId);
-  }
-  saveFavoriteMaps(favs);
-  return favs;
-}
-
 // ── Utilities ──
 
 export function imageDataToDataUrl(imageData: number[]): string {
@@ -168,13 +110,4 @@ export function imageDataToDataUrl(imageData: number[]): string {
   }
   const base64 = btoa(binary);
   return `data:image/png;base64,${base64}`;
-}
-
-export function createImageFromTile(tile: MapTile): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = imageDataToDataUrl(tile.image_data);
-  });
 }

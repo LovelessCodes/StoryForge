@@ -39,24 +39,6 @@ export const useSetModEnabled = (modsDirectory: string | undefined) => {
   });
 };
 
-/** Enables or disables every installed mod of a profile in one write. */
-export const useSetAllModsEnabled = (modsDirectory: string | undefined) => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (enabled: boolean) =>
-      invoke<string[]>("set_all_mods_enabled", { path: modsDirectory, enabled }),
-    onSuccess: (_, enabled) => {
-      void queryClient.invalidateQueries({
-        queryKey: installedModsQueryKey(modsDirectory ?? ""),
-      });
-      toast.success(enabled ? t("mods.toggle.bulkEnabled") : t("mods.toggle.bulkDisabled"));
-    },
-    onError: (error) => {
-      toast.error(t("mods.toggle.failed"), { description: String(error) });
-    },
-  });
-};
-
 /**
  * Applies a whole enabled/disabled configuration in one write: every installed
  * mod named in `disabled` is turned off, everything else on. Used by presets.

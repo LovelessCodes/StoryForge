@@ -67,18 +67,6 @@ export type ModInfo = {
 };
 
 // Map-related types
-export type TableInfo = {
-  name: string;
-  schema: string;
-};
-
-export type MapDatabaseInfo = {
-  exists: boolean;
-  tables: TableInfo[];
-  tile_count: number;
-  sample_positions: number[];
-};
-
 export type MapTile = {
   x: number;
   y: number;
@@ -127,11 +115,6 @@ export interface JSONObject {
   [k: string]: JSONValue;
 }
 export interface JSONArray extends Array<JSONValue> {}
-
-export type MapPieceDb = {
-  /** Flat `Vec<i32>` on the Rust side. */
-  pixels: number[];
-};
 
 export type ServerWorldPlayerData = {
   player_uid: string;
@@ -294,29 +277,6 @@ export type Mod = {
   lastreleased: string;
 };
 
-export type ModFilterState = {
-  searchText: string;
-  selectedModTags: { tagid: number; name: string; color: string }[];
-  selectedGameVersions: string[];
-  sortBy: "created" | "name" | "trending" | "downloads" | "follows" | "comments" | "updated";
-  orderDirection: "ascending" | "descending";
-  author: string;
-  side: "any" | "client" | "server" | "both" | "installed";
-  category: "mod" | "externaltool" | "other";
-};
-
-/** Local profile export payload (file or share code). */
-export type ProfileExportPayload = {
-  format: string;
-  name: string;
-  version: string;
-  startParams: string;
-  mods: string;
-  modpackSlug?: string | null;
-  modpackVersion?: string | null;
-  envVars?: Record<string, string>;
-};
-
 export type DeletedProfile = {
   archive_name: string;
   name: string;
@@ -324,19 +284,6 @@ export type DeletedProfile = {
   mod_count: number;
   deleted_at: number;
 };
-
-export type ModsResult = {
-  mods: OutputMod[];
-  errors: { file: string; stage: string; message: string }[];
-};
-
-export interface LogChunk {
-  text: string;
-  path: string | null;
-  offset: number;
-  reset: boolean;
-  truncated: boolean;
-}
 
 // ── Legacy installations migration (previous Story Forge release) ──
 

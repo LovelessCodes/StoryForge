@@ -14,15 +14,3 @@ export const useSaves = (
     placeholderData: keepPreviousData,
     ...props,
   });
-
-export const useSavesFromProfile = (
-  profileId: number,
-  props?: Omit<UseQueryOptions<string[], Error, string[]>, "queryKey" | "queryFn">,
-) =>
-  useQuery({
-    queryFn: () => invoke("get_profile_saves", { profileId }) as Promise<string[]>,
-    queryKey: ["saves", profileId],
-    staleTime: Infinity,
-    placeholderData: keepPreviousData,
-    ...props,
-  });
