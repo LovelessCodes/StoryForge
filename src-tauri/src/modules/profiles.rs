@@ -1958,6 +1958,12 @@ pub fn remove_profile(app: AppHandle, id: u64) -> Result<String, UiError> {
     let start = Instant::now();
     log_info!("remove_profile: id={}", id);
     let (pb, _info) = find_profile_by_id(&app, id)?;
+    if is_profile_running(id) {
+        return Err(UiError::new(
+            "profile_running",
+            "Stop the game before deleting this profile.",
+        ));
+    }
     if is_external_profile_dir(&app, &pb) {
         return Err(UiError::new(
             "external_profile",

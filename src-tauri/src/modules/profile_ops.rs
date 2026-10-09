@@ -333,6 +333,13 @@ fn soft_delete_profile_blocking(app: &AppHandle, id: u64) -> Result<DeletedProfi
     let (source_dir, info) = find_profile_by_id(app, id)?;
     require_managed_path(app, &source_dir, "profile")?;
 
+    if super::profiles::is_profile_running(id) {
+        return Err(UiError::new(
+            "profile_running",
+            "Stop the game before deleting this profile.",
+        ));
+    }
+
     if super::profiles::is_external_profile_dir(app, &source_dir) {
         return Err(UiError::new(
             "external_profile",
