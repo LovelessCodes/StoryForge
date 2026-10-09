@@ -5,7 +5,7 @@ use std::{
     collections::HashMap,
     fs::{create_dir_all, read_dir, read_to_string, remove_dir_all, write, File},
     io::Read,
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
     process::Stdio,
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -1937,6 +1937,24 @@ pub fn remove_profile(app: AppHandle, id: u64) -> Result<String, UiError> {
     Ok("removed".into())
 }
 
+/// Joins a webview-supplied `subdir` onto `base`, refusing anything that could
+/// leave it: empty values, `..` components and absolute paths.
+fn join_subdir(base: &Path, subdir: &str, what: &str) -> Result<PathBuf, UiError> {
+    let stays_inside = !subdir.is_empty()
+        && Path::new(subdir)
+            .components()
+            .all(|component| matches!(component, Component::Normal(_)))
+        && normalize_path(&base.join(subdir)).starts_with(normalize_path(base));
+
+    if !stays_inside {
+        return Err(UiError::new(
+            "invalid_path",
+            format!("{what} must stay inside {}: {subdir}", base.display()),
+        ));
+    }
+    Ok(base.join(subdir))
+}
+
 #[command]
 pub async fn rename_profiles_folder(
     app: AppHandle,
@@ -1944,9 +1962,11 @@ pub async fn rename_profiles_folder(
     new_name: String,
     subdir: String,
 ) -> Result<String, UiError> {
-    let source_path = PathBuf::from(source)
-        .join(profiles_subdir(app.clone()))
-        .join(&subdir);
+    let source_path = join_subdir(
+        &PathBuf::from(source).join(profiles_subdir(app.clone())),
+        &subdir,
+        "Source directory",
+    )?;
     require_managed_path(&app, &source_path, "Source directory")?;
     let new_name = safe_file_name(&new_name)?;
     let destination_path = source_path
@@ -1971,9 +1991,9 @@ pub async fn move_profiles_folder(
     destination: String,
     subdir: String,
 ) -> Result<String, UiError> {
-    let src = PathBuf::from(&source).join(&subdir);
-    let dst = PathBuf::from(&destination).join(&subdir);
-    require_managed_path(&app, Path::new(&source), "Source directory")?;
+    let src = join_subdir(Path::new(&source), &subdir, "Source directory")?;
+    let dst = join_subdir(Path::new(&destination), &subdir, "Destination")?;
+    require_managed_path(&app, &src, "Source directory")?;
     require_safe_destination(Path::new(&destination), "Destination")?;
     log_info!("move_profiles_folder: {:?} -> {:?}", src, dst);
     let outcome = move_folder(src, dst)?;
@@ -1987,8 +2007,8 @@ pub async fn remove_all_profiles(
     source: String,
     subdir: String,
 ) -> Result<String, UiError> {
-    require_managed_path(&app, Path::new(&source), "Source directory")?;
-    let source_path = PathBuf::from(source).join(&subdir);
+    let source_path = join_subdir(Path::new(&source), &subdir, "Source directory")?;
+    require_managed_path(&app, &source_path, "Source directory")?;
     if !source_path.exists() || !source_path.is_dir() {
         return Ok("not_exists".into());
     }
