@@ -6,6 +6,9 @@ import { useEffect, useRef, useState } from "react";
 import { t } from "@/lib/i18n";
 import { toast } from "@/lib/notify";
 
+import { installedModsQueryKey } from "./use-installed-mods";
+import { modUpdatesQueryKey } from "./use-mod-updates";
+
 export type LockedMod = {
   modid: string;
   version: string;
@@ -119,7 +122,7 @@ export function syncFailureMessage(reason: string): string {
   return t("profiles.pack.failure.generic");
 }
 
-export function useApplyProfileLock(profileId: number) {
+export function useApplyProfileLock(profileId: number, profilePath: string) {
   const queryClient = useQueryClient();
   const [progress, setProgress] = useState<LockSyncProgress | null>(null);
   const unlistenRef = useRef<UnlistenFn | null>(null);
@@ -153,7 +156,11 @@ export function useApplyProfileLock(profileId: number) {
       setProgress(null);
     },
     onSuccess: (report) => {
+      // Sync downloads missing mods and deletes superseded files, so the mods
+      // lists (staleTime: Infinity) have to be refreshed alongside the lock.
       void queryClient.invalidateQueries({ queryKey: profileLockQueryKey(profileId) });
+      void queryClient.invalidateQueries({ queryKey: installedModsQueryKey(profilePath) });
+      void queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(profilePath) });
       if (report.failed.length > 0) {
         toast.warning(
           t("profiles.pack.syncDoneWithFailures", {

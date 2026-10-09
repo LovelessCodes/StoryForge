@@ -333,6 +333,13 @@ fn soft_delete_profile_blocking(app: &AppHandle, id: u64) -> Result<DeletedProfi
     let (source_dir, info) = find_profile_by_id(app, id)?;
     require_managed_path(app, &source_dir, "profile")?;
 
+    if super::profiles::is_profile_running(id) {
+        return Err(UiError::new(
+            "profile_running",
+            "Stop the game before deleting this profile.",
+        ));
+    }
+
     if super::profiles::is_external_profile_dir(app, &source_dir) {
         return Err(UiError::new(
             "external_profile",
@@ -571,19 +578,6 @@ fn build_export(app: &AppHandle, id: u64) -> Result<ProfileExport, UiError> {
         env_vars: info.env_vars,
         lock,
     })
-}
-
-/// Returns a profile as a pretty-printed JSON export string.
-#[command]
-pub async fn export_profile(app: AppHandle, id: u64) -> Result<String, UiError> {
-    let handle = app.clone();
-    tokio::task::spawn_blocking(move || {
-        let export = build_export(&handle, id)?;
-        serde_json::to_string_pretty(&export)
-            .map_err(|e| UiError::new("serialize_failed", format!("Failed to serialize: {e}")))
-    })
-    .await
-    .map_err(|e| UiError::new("internal_error", format!("Export failed: {e}")))?
 }
 
 /// Writes a profile export to a user-chosen file path.

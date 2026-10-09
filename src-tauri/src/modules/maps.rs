@@ -26,21 +26,6 @@ pub struct MapInfo {
     pub size_bytes: u64,
 }
 
-/// Information about the Maps database structure
-#[derive(Serialize, Deserialize, Debug)]
-pub struct MapDatabaseInfo {
-    pub exists: bool,
-    pub tables: Vec<TableInfo>,
-    pub tile_count: i64,
-    pub sample_positions: Vec<i64>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct TableInfo {
-    pub name: String,
-    pub schema: String,
-}
-
 /// A single map tile with coordinates and image data
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MapTile {
@@ -152,16 +137,6 @@ fn find_map_table(conn: &Connection) -> Result<String, UiError> {
     Ok(name)
 }
 
-/// Return an empty/default database info payload.
-fn empty_db_info() -> MapDatabaseInfo {
-    MapDatabaseInfo {
-        exists: false,
-        tables: Vec::new(),
-        tile_count: 0,
-        sample_positions: Vec::new(),
-    }
-}
-
 // ── Commands ──
 
 /// Scan the profiles root (plus adopted folders) for Maps databases.
@@ -250,124 +225,26 @@ pub fn get_all_maps(app: AppHandle) -> Result<Vec<MapInfo>, UiError> {
     result
 }
 
-/// Inspect the Maps database for a given world
+/// Get the bounds (min/max X and Y) of all map tiles.
+///
+/// Returns `None` for an empty tile table, so callers never see the sentinel
+/// bounds an `i32::MAX`/`i32::MIN` accumulation would produce.
 #[command]
-pub async fn inspect_map_database(world_path: String) -> Result<MapDatabaseInfo, UiError> {
-    tokio::task::spawn_blocking(move || inspect_map_database_blocking(world_path))
-        .await
-        .map_err(|e| UiError::new("internal_error", format!("Map query failed: {e}")))?
-}
-
-/// Blocking implementation of [`inspect_map_database`].
-fn inspect_map_database_blocking(world_path: String) -> Result<MapDatabaseInfo, UiError> {
-    let world_path_obj = Path::new(&world_path);
-    let conn = open_world_db(world_path_obj)?;
-    let gamedata = vcdbs::read_gamedata(&conn)?;
-
-    let maps_path = maps_db_path(world_path_obj, &gamedata.savegame_identifier)?;
-    if !maps_path.exists() {
-        return Ok(empty_db_info());
-    }
-
-    let map_conn = vcdbs::open_readonly(&maps_path)?;
-
-    let mut tables = Vec::new();
-    let mut table_stmt = map_conn
-        .prepare("SELECT name, sql FROM sqlite_master WHERE type='table' ORDER BY name")
-        .map_err(|e| {
-            log_error!("maps: Schema query error: {e}");
-            UiError::new("db_error", format!("Schema query error: {e}"))
-        })?;
-
-    let mut table_rows = table_stmt.query([]).map_err(|e| {
-        log_error!("maps: Schema query error: {e}");
-        UiError::new("db_error", format!("Schema query error: {e}"))
-    })?;
-
-    let mut main_table_name: Option<String> = None;
-
-    while let Some(row) = table_rows.next().map_err(|e| {
-        log_error!("maps: Schema row error: {e}");
-        UiError::new("db_error", format!("Schema row error: {e}"))
-    })? {
-        let name: String = row.get(0).map_err(|e| {
-            log_error!("maps: Schema name error: {e}");
-            UiError::new("db_error", format!("Schema name error: {e}"))
-        })?;
-        let schema: Option<String> = row.get(1).ok();
-
-        if checked_table_name(&name).is_ok() && main_table_name.is_none() {
-            main_table_name = Some(name.clone());
-        }
-
-        tables.push(TableInfo {
-            name,
-            schema: schema.unwrap_or_default(),
-        });
-    }
-
-    let (tile_count, sample_positions) = if let Some(table_name) = main_table_name {
-        let count: i64 = map_conn
-            .query_row(&format!("SELECT COUNT(*) FROM {}", table_name), [], |row| {
-                row.get(0)
-            })
-            .unwrap_or(0);
-
-        let mut pos_stmt = map_conn
-            .prepare(&format!(
-                "SELECT position FROM {} ORDER BY position LIMIT 20",
-                table_name
-            ))
-            .map_err(|e| {
-                log_error!("maps: Position query error: {e}");
-                UiError::new("db_error", format!("Position query error: {e}"))
-            })?;
-
-        let mut pos_rows = pos_stmt.query([]).map_err(|e| {
-            log_error!("maps: Position query error: {e}");
-            UiError::new("db_error", format!("Position query error: {e}"))
-        })?;
-
-        let mut positions = Vec::new();
-        while let Some(row) = pos_rows.next().map_err(|e| {
-            log_error!("maps: Position row error: {e}");
-            UiError::new("db_error", format!("Position row error: {e}"))
-        })? {
-            if let Ok(pos) = row.get::<_, i64>(0) {
-                positions.push(pos);
-            }
-        }
-
-        (count, positions)
-    } else {
-        (0, Vec::new())
-    };
-
-    Ok(MapDatabaseInfo {
-        exists: true,
-        tables,
-        tile_count,
-        sample_positions,
-    })
-}
-
-/// Get the bounds (min/max X and Y) of all map tiles
-#[command]
-pub async fn get_map_bounds(world_path: String) -> Result<MapBounds, UiError> {
+pub async fn get_map_bounds(world_path: String) -> Result<Option<MapBounds>, UiError> {
     tokio::task::spawn_blocking(move || get_map_bounds_blocking(world_path))
         .await
         .map_err(|e| UiError::new("internal_error", format!("Map query failed: {e}")))?
 }
 
 /// Blocking implementation of [`get_map_bounds`].
-fn get_map_bounds_blocking(world_path: String) -> Result<MapBounds, UiError> {
+fn get_map_bounds_blocking(world_path: String) -> Result<Option<MapBounds>, UiError> {
     let maps_path = get_maps_db_path(&world_path)?;
     let conn = vcdbs::open_readonly(&maps_path)?;
     let table_name = find_map_table(&conn)?;
     bounds_from_conn(&conn, &table_name)
 }
 
-fn bounds_from_conn(conn: &Connection, table_name: &str) -> Result<MapBounds, UiError> {
+fn bounds_from_conn(conn: &Connection, table_name: &str) -> Result<Option<MapBounds>, UiError> {
     let tile_count: i64 = conn
         .query_row(&format!("SELECT COUNT(*) FROM {}", table_name), [], |row| {
             row.get(0)
@@ -376,6 +253,10 @@ fn bounds_from_conn(conn: &Connection, table_name: &str) -> Result<MapBounds, Ui
             log_error!("maps: Count query error: {e}");
             UiError::new("db_error", format!("Count query error: {e}"))
         })?;
+
+    if tile_count == 0 {
+        return Ok(None);
+    }
 
     let mut stmt = conn
         .prepare(&format!("SELECT position FROM {}", table_name))
@@ -410,41 +291,13 @@ fn bounds_from_conn(conn: &Connection, table_name: &str) -> Result<MapBounds, Ui
         max_y = max_y.max(y);
     }
 
-    Ok(MapBounds {
+    Ok(Some(MapBounds {
         min_x,
         max_x,
         min_y,
         max_y,
         tile_count,
-    })
-}
-
-/// Read a single map tile by position
-#[command]
-pub async fn get_map_tile(world_path: String, position: i64) -> Result<MapTile, UiError> {
-    tokio::task::spawn_blocking(move || get_map_tile_blocking(world_path, position))
-        .await
-        .map_err(|e| UiError::new("internal_error", format!("Map query failed: {e}")))?
-}
-
-/// Blocking implementation of [`get_map_tile`].
-fn get_map_tile_blocking(world_path: String, position: i64) -> Result<MapTile, UiError> {
-    let maps_path = get_maps_db_path(&world_path)?;
-    let conn = vcdbs::open_readonly(&maps_path)?;
-    let table_name = find_map_table(&conn)?;
-
-    let data: Vec<u8> = conn
-        .query_row(
-            &format!("SELECT data FROM {} WHERE position = ?1", table_name),
-            [position],
-            |row| row.get(0),
-        )
-        .map_err(|e| {
-            log_error!("maps: Tile query error: {e}");
-            UiError::new("db_error", format!("Tile query error: {e}"))
-        })?;
-
-    decode_tile(position, data)
+    }))
 }
 
 /// Decode raw tile data (protobuf MapPieceDb or raw image bytes) into a `MapTile`.
@@ -485,7 +338,7 @@ fn decode_tile(position: i64, data: Vec<u8>) -> Result<MapTile, UiError> {
     })
 }
 
-/// Get all map tiles for a world (legacy bulk API; prefer on-demand `get_map_tile`)
+/// Get all map tiles for a world.
 #[command]
 pub async fn get_all_map_tiles(world_path: String) -> Result<Vec<MapTile>, UiError> {
     tokio::task::spawn_blocking(move || get_all_map_tiles_blocking(world_path))
@@ -576,14 +429,14 @@ fn detect_image_dimensions(data: &[u8]) -> Option<(u32, u32)> {
 // ── Direct-path variants (no world needed) ──
 
 #[command]
-pub async fn get_map_bounds_by_path(map_path: String) -> Result<MapBounds, UiError> {
+pub async fn get_map_bounds_by_path(map_path: String) -> Result<Option<MapBounds>, UiError> {
     tokio::task::spawn_blocking(move || get_map_bounds_by_path_blocking(map_path))
         .await
         .map_err(|e| UiError::new("internal_error", format!("Map query failed: {e}")))?
 }
 
 /// Blocking implementation of [`get_map_bounds_by_path`].
-fn get_map_bounds_by_path_blocking(map_path: String) -> Result<MapBounds, UiError> {
+fn get_map_bounds_by_path_blocking(map_path: String) -> Result<Option<MapBounds>, UiError> {
     log_info!("get_map_bounds_by_path");
     let conn = read_map_db(&map_path)?;
     let table_name = find_map_table(&conn)?;
@@ -643,5 +496,33 @@ mod tests {
 
         let tile = decode_tile(0, buf).unwrap();
         assert_eq!((tile.width, tile.height), (2, 2));
+    }
+
+    #[test]
+    fn empty_tile_table_reports_no_bounds() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute("CREATE TABLE tiles (position INTEGER)", [])
+            .unwrap();
+
+        assert!(bounds_from_conn(&conn, "tiles").unwrap().is_none());
+    }
+
+    #[test]
+    fn populated_tile_table_reports_bounds() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute("CREATE TABLE tiles (position INTEGER)", [])
+            .unwrap();
+        let packed = (5i64 << COORD_BITS) | 7;
+        let negative = (-2i64) << COORD_BITS | 9;
+        conn.execute(
+            "INSERT INTO tiles (position) VALUES (?1), (?2)",
+            [packed, negative],
+        )
+        .unwrap();
+
+        let bounds = bounds_from_conn(&conn, "tiles").unwrap().unwrap();
+        assert_eq!((bounds.min_x, bounds.max_x), (-2, 5));
+        assert_eq!((bounds.min_y, bounds.max_y), (7, 9));
+        assert_eq!(bounds.tile_count, 2);
     }
 }

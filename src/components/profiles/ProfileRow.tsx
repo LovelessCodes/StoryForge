@@ -164,8 +164,8 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
         actionProps: {
           children: t("profiles.delete.undo"),
           onClick: () => {
-            void invoke("restore_deleted_profile", { archiveName: result.archive_name }).then(
-              async () => {
+            void invoke("restore_deleted_profile", { archiveName: result.archive_name })
+              .then(async () => {
                 await loadProfiles();
                 void queryClient.invalidateQueries({ queryKey: ["deleted-profiles"] });
                 void notify(`profile-restored-${result.archive_name}`, {
@@ -173,8 +173,12 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
                   title: t("profiles.delete.restored", { name: profile.name }),
                   timeout: 4000,
                 });
-              },
-            );
+              })
+              .catch((error) => {
+                toast.error(t("profiles.errors.restoreFailed"), {
+                  description: errorMessage(error),
+                });
+              });
           },
         },
       });

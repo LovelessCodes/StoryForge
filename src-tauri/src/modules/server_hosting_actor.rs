@@ -8,9 +8,13 @@
 //! removes the need for `unsafe { libc::kill(...) }`.
 
 use std::{
+    collections::{HashMap, HashSet},
     path::{Path, PathBuf},
     process::Stdio,
-    sync::{Arc, LazyLock, Mutex},
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc, LazyLock, Mutex,
+    },
     time::{Duration, Instant},
 };
 use tokio::{
@@ -62,9 +66,31 @@ impl ServerActorHandle {
     }
 }
 
+/// One registered actor: its handle plus the token of the generation that
+/// registered it, so a stale teardown cannot remove a newer actor's entry.
+#[derive(Clone, Debug)]
+struct ActorEntry {
+    token: u64,
+    handle: ServerActorHandle,
+}
+
 /// Global map of running server actors, keyed by instance ID.
-static ACTORS: LazyLock<Mutex<std::collections::HashMap<u64, ServerActorHandle>>> =
-    LazyLock::new(|| Mutex::new(std::collections::HashMap::new()));
+static ACTORS: LazyLock<Mutex<HashMap<u64, ActorEntry>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+/// Instance IDs whose `start_hosted_server` setup is still in flight, i.e. a
+/// start was reserved but no actor has been registered yet.
+static STARTING: LazyLock<Mutex<HashSet<u64>>> = LazyLock::new(|| Mutex::new(HashSet::new()));
+
+/// PID of the process the actor is currently supervising, per instance.
+///
+/// Shutdown needs this to kill a server whose actor is busy inside its stop
+/// sequence and therefore no longer reading commands from the channel.
+static CHILD_PIDS: LazyLock<Mutex<HashMap<u64, u32>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+/// Source of actor generation tokens; tokens are never reused.
+static NEXT_ACTOR_TOKEN: AtomicU64 = AtomicU64::new(1);
 
 /// Returns true if an actor is registered for the given instance.
 pub fn is_running(instance_id: u64) -> bool {
@@ -76,19 +102,61 @@ pub fn running_instance_ids() -> Vec<u64> {
     lock(&ACTORS).keys().copied().collect()
 }
 
-/// Register a new actor handle.
-pub fn register(instance_id: u64, handle: ServerActorHandle) {
-    lock(&ACTORS).insert(instance_id, handle);
+/// Reserve an instance for a start whose actor does not exist yet.
+///
+/// Starting a server awaits runtime setup (`ensure_dotnet`), so without this
+/// reservation two concurrent starts would both pass the "not running" check
+/// and the second `spawn` would overwrite the first actor's handle, orphaning
+/// a live process. Returns `None` when the instance is running or already
+/// being started; the returned guard releases the reservation on drop, so
+/// every error path leaves the instance startable again.
+pub fn try_reserve(instance_id: u64) -> Option<StartReservation> {
+    let mut starting = lock(&STARTING);
+    if starting.contains(&instance_id) || is_running(instance_id) {
+        return None;
+    }
+    starting.insert(instance_id);
+    Some(StartReservation { instance_id })
+}
+
+/// RAII guard for a start reservation; see [`try_reserve`].
+#[derive(Debug)]
+pub struct StartReservation {
+    instance_id: u64,
+}
+
+impl Drop for StartReservation {
+    fn drop(&mut self) {
+        release(self.instance_id);
+    }
+}
+
+/// Releases a start reservation without touching a registered actor.
+fn release(instance_id: u64) {
+    lock(&STARTING).remove(&instance_id);
+}
+
+/// Register a new actor handle under a fresh generation token.
+pub fn register(instance_id: u64, token: u64, handle: ServerActorHandle) {
+    lock(&ACTORS).insert(instance_id, ActorEntry { token, handle });
 }
 
 /// Unregister an actor handle. Does not stop the process.
-pub fn unregister(instance_id: u64) {
-    lock(&ACTORS).remove(&instance_id);
+///
+/// The entry is only removed while it still belongs to `token`, so the
+/// teardown of an old actor cannot drop a newer actor's handle.
+pub fn unregister(instance_id: u64, token: u64) {
+    let mut actors = lock(&ACTORS);
+    if actors.get(&instance_id).map(|entry| entry.token) == Some(token) {
+        actors.remove(&instance_id);
+    }
 }
 
 /// Get a clone of an actor handle if one exists.
 pub fn get_handle(instance_id: u64) -> Option<ServerActorHandle> {
-    lock(&ACTORS).get(&instance_id).cloned()
+    lock(&ACTORS)
+        .get(&instance_id)
+        .map(|entry| entry.handle.clone())
 }
 
 /// Spawn a new server process and actor task for the given instance.
@@ -103,11 +171,12 @@ pub async fn spawn(
 
     let (tx, rx) = mpsc::unbounded_channel();
     let handle = ServerActorHandle { tx };
-    register(instance_id, handle.clone());
+    let token = NEXT_ACTOR_TOKEN.fetch_add(1, Ordering::Relaxed);
+    register(instance_id, token, handle.clone());
 
     let app_clone = app.clone();
     tokio::spawn(async move {
-        run_actor(app_clone, instance, process, rx, dotnet_root).await;
+        run_actor(app_clone, instance, process, rx, dotnet_root, token).await;
     });
 
     log_info!("start_hosted_server: spawned instance {instance_id}");
@@ -245,6 +314,7 @@ async fn run_actor(
     first_process: ServerProcess,
     mut cmd_rx: mpsc::UnboundedReceiver<ServerCommand>,
     dotnet_root: PathBuf,
+    token: u64,
 ) {
     let instance_id = instance.id;
     let mut process = Some(first_process);
@@ -320,7 +390,7 @@ async fn run_actor(
         }
     };
 
-    unregister(instance_id);
+    unregister(instance_id, token);
     emit_status(&app, instance_id, &final_status, None, None);
     log_info!(
         "server_hosting: instance {instance_id} exited ({})",
@@ -345,6 +415,9 @@ async fn run_session(
     } = process;
     let instance_id = instance.id;
     let started_at = Instant::now();
+    if let Some(pid) = pid {
+        lock(&CHILD_PIDS).insert(instance_id, pid);
+    }
     let log_writer = Arc::new(std::sync::Mutex::new(open_instance_log(app, instance_id)));
     let stdin = Arc::new(tokio::sync::Mutex::new(stdin));
     let status = Arc::new(tokio::sync::Mutex::new(ServerStatus::Starting));
@@ -502,6 +575,8 @@ async fn run_session(
             }
         }
     };
+
+    lock(&CHILD_PIDS).remove(&instance_id);
 
     SessionResult {
         exit,
@@ -672,7 +747,47 @@ pub async fn status(instance_id: u64) -> ServerStatusInfo {
     }
 }
 
+/// How long one instance gets to stop gracefully during shutdown.
+const SHUTDOWN_STOP_TIMEOUT: Duration = Duration::from_secs(5);
+/// How long a force-killed instance gets to unregister its actor.
+const SHUTDOWN_KILL_WAIT: Duration = Duration::from_secs(1);
+
+/// Kill an instance's process without going through its actor.
+///
+/// A channel command cannot be used here: after a `Stop` the actor is inside
+/// the graceful stop sequence for up to 15s and does not read further commands,
+/// while app shutdown tears the runtime down as soon as `kill_all` returns.
+/// Returns false when no live process is known for the instance.
+pub fn force_kill(instance_id: u64) -> bool {
+    let pid = match lock(&CHILD_PIDS).get(&instance_id).copied() {
+        Some(pid) => pid,
+        None => return false,
+    };
+
+    #[cfg(unix)]
+    // SAFETY: `pid` is the live child recorded at spawn; `build_command` puts
+    // the child in its own process group (`setpgid(0, 0)`), so signalling the
+    // group also stops children the server spawned.
+    unsafe {
+        let _ = libc::killpg(pid as i32, libc::SIGKILL);
+    }
+    #[cfg(windows)]
+    {
+        let _ = std::process::Command::new("taskkill")
+            .args(["/PID", &pid.to_string(), "/F", "/T"])
+            .output();
+    }
+
+    log_info!("server_hosting: instance {instance_id} force-killed (pid {pid})");
+    true
+}
+
 /// Force-kill all running server processes. Called on app shutdown.
+///
+/// A plain `stop()` only enqueues `ServerCommand::Stop` and returns, so the
+/// runtime would be torn down before the actors ran their stop sequence and
+/// the servers would survive as orphans. Each instance therefore gets a
+/// bounded window to stop gracefully and is killed outright when it misses it.
 pub async fn kill_all() {
     log_info!("server_hosting: killing all running servers on shutdown");
     let ids = running_instance_ids();
@@ -682,9 +797,32 @@ pub async fn kill_all() {
     for id in &ids {
         log_info!("server_hosting: requesting stop for instance {id}");
     }
-    let _ = futures_util::future::join_all(ids.iter().copied().map(stop)).await;
+    futures_util::future::join_all(ids.iter().copied().map(stop_for_shutdown)).await;
     log_info!(
-        "server_hosting: stop requests sent for {} server(s)",
+        "server_hosting: shutdown finished, {} server(s) still registered",
         running_instance_ids().len()
     );
+}
+
+/// One instance's shutdown: graceful stop with a deadline, then force kill.
+async fn stop_for_shutdown(instance_id: u64) {
+    match stop_and_wait(instance_id, SHUTDOWN_STOP_TIMEOUT).await {
+        Ok(()) => return,
+        Err(e) if e.name == "not_running" => return,
+        Err(e) => log_info!(
+            "server_hosting: instance {instance_id} did not stop in time ({}), killing it",
+            e.message
+        ),
+    }
+
+    if !force_kill(instance_id) {
+        return;
+    }
+
+    // Give the actor a moment to reap the process and unregister before the
+    // runtime goes away.
+    let deadline = Instant::now() + SHUTDOWN_KILL_WAIT;
+    while is_running(instance_id) && Instant::now() < deadline {
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
 }

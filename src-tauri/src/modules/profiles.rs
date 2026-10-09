@@ -5,7 +5,7 @@ use std::{
     collections::HashMap,
     fs::{create_dir_all, read_dir, read_to_string, remove_dir_all, write, File},
     io::Read,
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
     process::Stdio,
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -29,7 +29,7 @@ use super::paths::{self, clientsettings_path, mods_dir, profile_json_path};
 use super::utils::{
     dir_name, dir_size, dir_size_cached, find_dir_by_id, format_size, generate_id, lock,
     move_folder, normalize_path, parse_start_params, profiles_folder, profiles_subdir,
-    require_managed_path, require_safe_destination, safe_file_name, safe_join,
+    require_managed_path, require_safe_destination, safe_join,
 };
 use crate::{log_debug, log_error, log_info};
 
@@ -598,6 +598,46 @@ fn manifest_skip_reason(entry: &ManifestModParam) -> Option<&'static str> {
     None
 }
 
+/// Rejects an import folder name that is not a single plain path component.
+///
+/// Imports arrive from files and share codes, so a name that could escape the
+/// profiles root (`..`, absolute paths, separators, control characters) is
+/// rejected instead of being silently rewritten.
+fn require_import_folder_name(safe_name: &str) -> Result<(), UiError> {
+    let mut components = Path::new(safe_name).components();
+    let single_component =
+        matches!(components.next(), Some(Component::Normal(_))) && components.next().is_none();
+    let invalid_chars = safe_name
+        .chars()
+        .any(|c| c.is_control() || matches!(c, '/' | '\\'));
+
+    if !single_component || invalid_chars {
+        return Err(UiError::new(
+            "invalid_name",
+            format!("Invalid profile folder name: {safe_name}"),
+        ));
+    }
+    Ok(())
+}
+
+/// True when a folder holds nothing but the `Mods` directory that
+/// `initialize_game` creates for a fresh install.
+///
+/// The modpack install flow initializes the folder before importing into it, so
+/// that skeleton must not be mistaken for a re-import over an existing profile.
+fn is_fresh_install_dir(dir: &Path) -> bool {
+    let Ok(entries) = read_dir(dir) else {
+        return false;
+    };
+    let mut names = entries
+        .flatten()
+        .map(|entry| entry.file_name().to_string_lossy().to_string());
+
+    names.next().as_deref() == Some(paths::MODS_DIR)
+        && names.next().is_none()
+        && mods_dir(dir).is_dir()
+}
+
 /// Arguments for [`import_profile`].
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -653,10 +693,22 @@ pub async fn import_profile(
         mod_config_url
     );
 
-    // 1. Create the profile directory
+    // 1. Validate the folder name, then create the profile directory
+    require_import_folder_name(&safe_name)?;
     let subdir = profiles_subdir(app.clone());
     let profiles_dir = profiles_folder(app.clone())?.join(&subdir);
     let inst_dir = profiles_dir.join(&safe_name);
+    require_managed_path(&app, &inst_dir, "profile")?;
+
+    // Importing over an existing folder would overwrite that profile's
+    // profile.json, so refuse before anything is written.
+    if inst_dir.exists() && !is_fresh_install_dir(&inst_dir) {
+        return Err(UiError::new(
+            "name_taken",
+            format!("A profile named \"{name}\" already exists"),
+        ));
+    }
+
     create_dir_all(&inst_dir).map_err(|e| UiError {
         name: "create_dir_failed".into(),
         message: format!("Failed to create profile directory: {e}"),
@@ -1013,19 +1065,6 @@ pub async fn initialize_game(app: AppHandle, path: String) -> Result<String, UiE
         })?;
     }
     Ok("initialized".into())
-}
-
-#[command]
-pub fn confirm_vintage_story_exe(path: String) -> Result<String, UiError> {
-    let pb = PathBuf::from(path);
-    if pb.exists() && pb.is_file() {
-        Ok(pb.to_string_lossy().into_owned())
-    } else {
-        Err(UiError {
-            name: "not_found".into(),
-            message: "Could not find Vintage Story executable.".into(),
-        })
-    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -1901,67 +1940,22 @@ pub fn reveal_in_file_explorer(app: AppHandle, path: String) -> Result<String, U
     Ok(path.to_string_lossy().to_string())
 }
 
-#[command]
-pub fn remove_profile(app: AppHandle, id: u64) -> Result<String, UiError> {
-    let start = Instant::now();
-    log_info!("remove_profile: id={}", id);
-    let (pb, _info) = find_profile_by_id(&app, id)?;
-    if is_external_profile_dir(&app, &pb) {
+/// Joins a webview-supplied `subdir` onto `base`, refusing anything that could
+/// leave it: empty values, `..` components and absolute paths.
+fn join_subdir(base: &Path, subdir: &str, what: &str) -> Result<PathBuf, UiError> {
+    let stays_inside = !subdir.is_empty()
+        && Path::new(subdir)
+            .components()
+            .all(|component| matches!(component, Component::Normal(_)))
+        && normalize_path(&base.join(subdir)).starts_with(normalize_path(base));
+
+    if !stays_inside {
         return Err(UiError::new(
-            "external_profile",
-            "This profile points at an existing game data folder — remove it from Story Forge or delete the folder yourself",
+            "invalid_path",
+            format!("{what} must stay inside {}: {subdir}", base.display()),
         ));
     }
-    if pb.exists() && pb.is_dir() {
-        let remove_dir_all_start = Instant::now();
-        remove_dir_all(&pb).map_err(|e| {
-            log_error!("profiles: remove_failed: {e}");
-            UiError {
-                name: "remove_failed".into(),
-                message: format!("Failed to remove profile directory: {e}"),
-            }
-        })?;
-        log_info!(
-            "remove_profile: id={}, remove_dir_all took {}ms",
-            id,
-            remove_dir_all_start.elapsed().as_millis(),
-        );
-    } else {
-        log_info!("remove_profile: id={}, directory not found, no-op", id);
-    }
-    log_info!(
-        "remove_profile: id={}, total command took {}ms",
-        id,
-        start.elapsed().as_millis(),
-    );
-    Ok("removed".into())
-}
-
-#[command]
-pub async fn rename_profiles_folder(
-    app: AppHandle,
-    source: String,
-    new_name: String,
-    subdir: String,
-) -> Result<String, UiError> {
-    let source_path = PathBuf::from(source)
-        .join(profiles_subdir(app.clone()))
-        .join(&subdir);
-    require_managed_path(&app, &source_path, "Source directory")?;
-    let new_name = safe_file_name(&new_name)?;
-    let destination_path = source_path
-        .parent()
-        .ok_or_else(|| UiError {
-            name: "invalid_path".into(),
-            message: "Source path has no parent directory".into(),
-        })?
-        .join(new_name);
-    log_info!(
-        "rename_profiles_folder: {:?} -> {:?}",
-        source_path,
-        destination_path
-    );
-    move_folder(source_path, destination_path)
+    Ok(base.join(subdir))
 }
 
 #[command]
@@ -1971,9 +1965,9 @@ pub async fn move_profiles_folder(
     destination: String,
     subdir: String,
 ) -> Result<String, UiError> {
-    let src = PathBuf::from(&source).join(&subdir);
-    let dst = PathBuf::from(&destination).join(&subdir);
-    require_managed_path(&app, Path::new(&source), "Source directory")?;
+    let src = join_subdir(Path::new(&source), &subdir, "Source directory")?;
+    let dst = join_subdir(Path::new(&destination), &subdir, "Destination")?;
+    require_managed_path(&app, &src, "Source directory")?;
     require_safe_destination(Path::new(&destination), "Destination")?;
     log_info!("move_profiles_folder: {:?} -> {:?}", src, dst);
     let outcome = move_folder(src, dst)?;
@@ -1987,8 +1981,8 @@ pub async fn remove_all_profiles(
     source: String,
     subdir: String,
 ) -> Result<String, UiError> {
-    require_managed_path(&app, Path::new(&source), "Source directory")?;
-    let source_path = PathBuf::from(source).join(&subdir);
+    let source_path = join_subdir(Path::new(&source), &subdir, "Source directory")?;
+    require_managed_path(&app, &source_path, "Source directory")?;
     if !source_path.exists() || !source_path.is_dir() {
         return Ok("not_exists".into());
     }

@@ -665,7 +665,6 @@ export function createFixtures(options: FixtureOptions): Record<string, unknown>
     fetch_mod_tags: MOD_TAGS,
     fetch_mod_info: MOD_INFOS,
     get_mods: { mods: INSTALLED_MODS },
-    get_profile_mods: { mods: INSTALLED_MODS, errors: [] },
     get_mod_updates: MOD_UPDATES,
     get_mod_configs: MOD_CONFIGS,
     get_all_saves: SAVES,

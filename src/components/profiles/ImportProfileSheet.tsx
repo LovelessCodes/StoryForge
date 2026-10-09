@@ -19,13 +19,14 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { useAppFolder } from "@/hooks/use-app-folder";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import {
   installedVersionsQueryKey,
   useInstalledVersionNames,
 } from "@/hooks/use-installed-versions";
 import { errorMessage } from "@/lib/errors";
-import { makeStringFolderSafe } from "@/lib/helpers";
+import { buildProfilePath, makeStringFolderSafe } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
 import { useProfilesStore } from "@/stores/profiles";
 import { useSettingsStore } from "@/stores/settings";
@@ -59,8 +60,10 @@ interface ImportProfileSheetProps {
 export default function ImportProfileSheet({ open, onOpenChange }: ImportProfileSheetProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const { loadProfiles } = useProfilesStore();
+  const { profiles, loadProfiles } = useProfilesStore();
+  const { profilesParent, profilesSubdir } = useSettingsStore();
   const setActiveProfileId = useSettingsStore((s) => s.setActiveProfileId);
+  const { appFolder } = useAppFolder();
   const installedNames = useInstalledVersionNames();
   const { mutateAsync: downloadVersion } = useDownloadVersion();
 
@@ -104,6 +107,19 @@ export default function ImportProfileSheet({ open, onOpenChange }: ImportProfile
       const { name, version, startParams, mods, modpackSlug, modpackVersion, lock } = parsed.data;
       const modsString =
         typeof mods === "string" ? mods : (mods ?? []).map((m) => `${m.id}@${m.version}`).join(",");
+
+      // A profile is keyed on its folder: importing over an existing one would
+      // overwrite that profile's settings.
+      const profilePath = buildProfilePath(
+        profilesParent ?? appFolder ?? "",
+        makeStringFolderSafe(name),
+        profilesSubdir,
+      );
+      if (profiles.some((existing) => existing.path === profilePath)) {
+        toast.error(t("profiles.store.pathExists", { path: profilePath }));
+        setBusy(null);
+        return;
+      }
 
       if (!installedNames.includes(version)) {
         setBusy(t("profiles.import.downloadingVersion", { version }));

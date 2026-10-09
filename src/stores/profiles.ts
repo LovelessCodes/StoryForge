@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useMemo } from "react";
 import { create } from "zustand/react";
 
+import { errorMessage } from "@/lib/errors";
 import { makeStringFolderSafe, pathDelimiter } from "@/lib/helpers";
 import { t } from "@/lib/i18n";
 import { toast } from "@/lib/notify";
@@ -183,7 +184,16 @@ export const useProfilesStore = create<ProfilesStore>((set) => ({
           path: inst.path,
           startParams: inst.startParams,
           version: inst.version,
-        }).catch((e) => console.error("Failed to save favorite:", e));
+        }).catch((e) => {
+          console.error("Failed to save favorite:", e);
+          toast.error(t("profiles.dialog.saveFailed"), { description: errorMessage(e) });
+          // Roll the optimistic flip back; profile.json is authoritative.
+          set((state) => ({
+            profiles: state.profiles.map((i) =>
+              i.id === id && i.favorite === newFavorite ? { ...i, favorite: !newFavorite } : i,
+            ),
+          }));
+        });
         return {
           profiles: state.profiles.map((i) => (i.id === id ? { ...i, favorite: newFavorite } : i)),
         };

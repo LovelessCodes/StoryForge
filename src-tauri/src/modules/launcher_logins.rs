@@ -378,7 +378,13 @@ pub async fn import_launcher_logins(
             log_error!("launcher_logins: read accounts failed: {e}");
             UiError::new("io_error", format!("Failed to read accounts.json: {e}"))
         })?;
-        serde_json::from_str(&text).unwrap_or_default()
+        // Never fall back to an empty list here: the import writes this list
+        // back, so an unreadable file would erase every saved account. Report
+        // the parse failure the way `auth::load_accounts` does.
+        serde_json::from_str(&text).map_err(|e| {
+            log_error!("launcher_logins: parse accounts failed: {e}");
+            UiError::new("parse_error", format!("Failed to parse accounts.json: {e}"))
+        })?
     } else {
         Vec::new()
     };

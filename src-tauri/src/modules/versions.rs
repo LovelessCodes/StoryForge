@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::HashSet,
     fs::{read_dir, read_to_string, remove_dir_all, write},
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
     sync::Arc,
 };
 use tauri::{command, AppHandle, Manager, State};
@@ -481,16 +481,6 @@ fn apply_links(
     report
 }
 
-/// Stops linking a version. The folder is left untouched.
-#[command]
-pub fn unregister_external_version(app: AppHandle, name: String) -> Result<(), UiError> {
-    let remaining: Vec<ExternalVersion> = external_versions(&app)
-        .into_iter()
-        .filter(|entry| entry.name != name)
-        .collect();
-    set_external_versions(&app, &remaining)
-}
-
 #[command]
 pub async fn fetch_versions(
     client: State<'_, Arc<reqwest::Client>>,
@@ -520,6 +510,24 @@ pub async fn fetch_versions(
     Ok(json)
 }
 
+/// Joins a webview-supplied `subdir` onto `base`, refusing anything that could
+/// leave it: empty values, `..` components and absolute paths.
+fn join_subdir(base: &Path, subdir: &str, what: &str) -> Result<PathBuf, UiError> {
+    let stays_inside = !subdir.is_empty()
+        && Path::new(subdir)
+            .components()
+            .all(|component| matches!(component, Component::Normal(_)))
+        && normalize_path(&base.join(subdir)).starts_with(normalize_path(base));
+
+    if !stays_inside {
+        return Err(UiError::new(
+            "invalid_path",
+            format!("{what} must stay inside {}: {subdir}", base.display()),
+        ));
+    }
+    Ok(base.join(subdir))
+}
+
 #[command]
 pub async fn move_versions_folder(
     app: AppHandle,
@@ -527,9 +535,9 @@ pub async fn move_versions_folder(
     destination: String,
     subdir: String,
 ) -> Result<String, UiError> {
-    let src = PathBuf::from(&source).join(&subdir);
-    let dst = PathBuf::from(&destination).join(&subdir);
-    require_managed_path(&app, Path::new(&source), "Source directory")?;
+    let src = join_subdir(Path::new(&source), &subdir, "Source directory")?;
+    let dst = join_subdir(Path::new(&destination), &subdir, "Destination")?;
+    require_managed_path(&app, &src, "Source directory")?;
     require_safe_destination(Path::new(&destination), "Destination")?;
     log_info!("move_versions_folder: {:?} -> {:?}", src, dst);
     let outcome = move_folder(src, dst)?;
@@ -543,8 +551,8 @@ pub async fn remove_all_versions(
     source: String,
     subdir: String,
 ) -> Result<String, UiError> {
-    require_managed_path(&app, Path::new(&source), "Source directory")?;
-    let source_path = PathBuf::from(source).join(&subdir);
+    let source_path = join_subdir(Path::new(&source), &subdir, "Source directory")?;
+    require_managed_path(&app, &source_path, "Source directory")?;
 
     if !source_path.exists() || !source_path.is_dir() {
         return Ok("not_exists".into());

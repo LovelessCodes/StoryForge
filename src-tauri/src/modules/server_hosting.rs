@@ -12,7 +12,7 @@ use tokio::process::Command;
 use super::dotnet;
 use super::errors::UiError;
 use super::paths;
-use super::utils::{dir_size, format_size, lock, normalize_path};
+use super::utils::{dir_size, format_size, lock, normalize_path, profiles_folder, versions_folder};
 use crate::modules::server_hosting_actor;
 use crate::{log_error, log_info};
 
@@ -311,6 +311,27 @@ pub(crate) fn data_dirs(app: &AppHandle) -> Vec<PathBuf> {
                 .collect()
         })
         .unwrap_or_default()
+}
+
+/// True when `path` is one of the app's managed roots itself or contains one.
+///
+/// The profiles root, the versions root and the app data dir hold data that
+/// does not belong to a single hosted server; recursively deleting such a
+/// directory (or using it as a server's data dir) would destroy unrelated
+/// user data.
+fn is_managed_data_dir(app: &AppHandle, path: &Path) -> bool {
+    let candidate = normalize_path(path);
+    [
+        app.path().app_data_dir().ok(),
+        profiles_folder(app.clone()).ok(),
+        versions_folder(app.clone()).ok(),
+    ]
+    .into_iter()
+    .flatten()
+    .any(|root| {
+        let root = normalize_path(&root);
+        root == candidate || root.starts_with(&candidate)
+    })
 }
 
 /// Find an instance by ID — scan from hosted-servers dir
@@ -781,7 +802,7 @@ pub async fn create_hosted_server(
         use std::time::{SystemTime, UNIX_EPOCH};
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or_default()
             .as_secs();
         let display_name = if default_whitelist_name.is_empty() {
             default_whitelist_uid.clone()
@@ -831,7 +852,7 @@ pub async fn update_hosted_server(
 ) -> Result<(), UiError> {
     log_info!("update_hosted_server: id={instance_id}");
 
-    let (dir, mut instance) = find_instance(&app, instance_id)?;
+    let (mut dir, mut instance) = find_instance(&app, instance_id)?;
 
     // Check if running before allowing port/ip changes
     let is_running = server_hosting_actor::is_running(instance_id);
@@ -845,11 +866,45 @@ pub async fn update_hosted_server(
         }
         // Renaming changes the derived ID; refuse collisions.
         let new_id = generate_id(name);
-        if new_id != instance.id && scan_instances(&app)?.iter().any(|other| other.id == new_id) {
-            return Err(UiError {
-                name: "instance_exists".into(),
-                message: format!("A server instance named \"{name}\" already exists."),
-            });
+        if new_id != instance.id {
+            if scan_instances(&app)?.iter().any(|other| other.id == new_id) {
+                return Err(UiError {
+                    name: "instance_exists".into(),
+                    message: format!("A server instance named \"{name}\" already exists."),
+                });
+            }
+            // The directory name has to follow the ID: create_hosted_server
+            // derives `hosted-servers/{id}` from the name, so a config left in
+            // the old directory would be overwritten by an instance reusing
+            // the old name.
+            let new_dir = match dir.parent() {
+                Some(parent) => parent.join(new_id.to_string()),
+                None => {
+                    return Err(UiError {
+                        name: "path_error".into(),
+                        message: format!(
+                            "Failed to resolve the instance directory of {}",
+                            dir.to_string_lossy()
+                        ),
+                    })
+                }
+            };
+            if new_dir.exists() {
+                return Err(UiError {
+                    name: "instance_exists".into(),
+                    message: format!("A server instance named \"{name}\" already exists."),
+                });
+            }
+            std::fs::rename(&dir, &new_dir).map_err(|e| UiError {
+                name: "rename_failed".into(),
+                message: format!(
+                    "Failed to rename {} to {}: {e}",
+                    dir.to_string_lossy(),
+                    new_dir.to_string_lossy()
+                ),
+            })?;
+            log_info!("update_hosted_server: moved {:?} to {:?}", dir, new_dir);
+            dir = new_dir;
         }
         instance.name = name.clone();
         instance.id = new_id;
@@ -872,7 +927,19 @@ pub async fn update_hosted_server(
         instance.bind_ip = bind_ip.clone();
     }
     if let Some(ref data_dir) = partial.data_dir {
-        instance.data_dir = PathBuf::from(data_dir);
+        let new_data_dir = PathBuf::from(data_dir);
+        // A server writing into (and a later delete wiping) app-managed
+        // content would destroy unrelated user data.
+        if is_managed_data_dir(&app, &new_data_dir) {
+            return Err(UiError {
+                name: "unsafe_data_dir".into(),
+                message: format!(
+                    "\"{}\" is an app-managed directory and cannot be used as a server data directory.",
+                    new_data_dir.to_string_lossy()
+                ),
+            });
+        }
+        instance.data_dir = new_data_dir;
     }
     if let Some(ref start_params) = partial.start_params {
         instance.start_params = start_params.clone();
@@ -919,6 +986,19 @@ pub async fn delete_hosted_server(
     }
 
     let (dir, instance) = find_instance(&app, instance_id)?;
+
+    // Never delete app-managed content: a data dir that is (or contains) the
+    // profiles root, the versions root or the app data dir does not belong to
+    // this instance alone.
+    if delete_data && instance.data_dir != dir && is_managed_data_dir(&app, &instance.data_dir) {
+        return Err(UiError {
+            name: "unsafe_data_dir".into(),
+            message: format!(
+                "Refusing to delete \"{}\": it is an app-managed directory. Point the instance at its own data directory first.",
+                instance.data_dir.to_string_lossy()
+            ),
+        });
+    }
 
     // Remove logs (keyed by ID, same as append_log)
     if let Ok(data_dir) = app.path().app_data_dir() {
@@ -990,12 +1070,14 @@ pub async fn start_hosted_server(app: AppHandle, instance_id: u64) -> Result<(),
 
     let (_dir, instance) = find_instance(&app, instance_id)?;
 
-    if server_hosting_actor::is_running(instance_id) {
-        return Err(UiError {
-            name: "already_running".into(),
-            message: "Instance is already running.".into(),
-        });
-    }
+    // Reserve the instance for the whole setup: `ensure_dotnet` below awaits,
+    // so without this a second start would slip past the "not running" check
+    // and spawn a competing actor. The guard releases the reservation on every
+    // return path (including the error ones).
+    let _reservation = server_hosting_actor::try_reserve(instance_id).ok_or_else(|| UiError {
+        name: "already_running".into(),
+        message: "Instance is already running.".into(),
+    })?;
 
     full_port_check(&app, instance_id, instance.port, &instance.bind_ip)?;
 
@@ -1179,14 +1261,6 @@ pub async fn write_server_config(
     Ok(())
 }
 
-#[command]
-pub async fn get_default_server_config(version: String) -> Result<String, UiError> {
-    // Return a sensible default config template
-    // In the future, this could be version-specific
-    let _ = version;
-    Ok(get_default_config_json())
-}
-
 fn get_default_config_json() -> String {
     get_default_config_json_with_port("Vintage Story Server", 42420)
 }
@@ -1216,33 +1290,6 @@ fn get_default_config_json_with_port(server_name: &str, port: u16) -> String {
         "BlockTickSamplesPerChunk": 32
     }))
     .unwrap_or_else(|_| "{}".to_string())
-}
-
-// ────────── Port checking ──────────
-
-#[command]
-pub async fn check_port_available(
-    app: AppHandle,
-    port: u16,
-    bind_ip: String,
-    exclude_instance_id: Option<u64>,
-) -> Result<bool, UiError> {
-    let instances = scan_instances(&app)?;
-
-    let running_ids = server_hosting_actor::running_instance_ids();
-
-    for inst in &instances {
-        if Some(inst.id) == exclude_instance_id {
-            continue;
-        }
-        if running_ids.contains(&inst.id) && ports_overlap(&inst.bind_ip, inst.port, &bind_ip, port)
-        {
-            return Ok(false);
-        }
-    }
-
-    // Also catch ports held by unrelated processes.
-    Ok(port_is_free(&bind_ip, port))
 }
 
 // ────────── Whitelist management ──────────
@@ -1292,7 +1339,7 @@ pub async fn add_to_whitelist(
     use std::time::{SystemTime, UNIX_EPOCH};
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .unwrap()
+        .unwrap_or_default()
         .as_secs();
 
     let entry = WhitelistEntry {

@@ -518,15 +518,24 @@ export function useDownloadManager() {
     // Paused downloads have no active task. A paused version cleans up its
     // partial extraction; a cancelled mod drops its partial zip and resume
     // state so a later install starts over instead of silently resuming.
+    // Both are awaited: a swallowed failure would leave a partial file behind
+    // with no diagnostic.
+    const cleanup: Promise<unknown>[] = [];
     if (entry?.status === "paused" && entry.kind === "version") {
-      void invoke("remove_installed_version", { version: token });
+      cleanup.push(invoke("remove_installed_version", { version: token }));
     }
     if (entry?.kind === "mod" && entry.destpath && entry.url) {
-      void invoke("discard_download", { destpath: entry.destpath, url: entry.url });
+      cleanup.push(invoke("discard_download", { destpath: entry.destpath, url: entry.url }));
     }
 
     store.removeEntry(token);
     settleWaiters(token, new Error("Download cancelled"));
+
+    void Promise.all(cleanup).catch((error: unknown) => {
+      toast.error(t("downloads.toasts.removeFailed", { label: entry?.label ?? token }), {
+        description: errorMessage(error),
+      });
+    });
   }, []);
 
   const retry = useCallback(
