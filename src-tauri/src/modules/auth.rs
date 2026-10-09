@@ -1,5 +1,6 @@
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, HOST};
 use serde::{Deserialize, Serialize};
+use std::path::Path;
 use std::sync::Arc;
 use tauri::{command, State};
 
@@ -270,23 +271,36 @@ pub struct SavedAccount {
     pub selected: bool,
 }
 
-#[command]
-pub fn save_accounts(app: tauri::AppHandle, accounts: Vec<SavedAccount>) -> Result<(), UiError> {
-    use std::fs::write;
-    use tauri::Manager;
-    let data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| UiError::new("path_error", format!("Failed to resolve app data dir: {e}")))?;
+/// Writes `accounts` to `<data_dir>/accounts.json`, atomically.
+///
+/// The JSON goes to a temp file in the same directory first and is renamed over
+/// the target, so a crash mid-write leaves the previous file intact instead of
+/// a truncated one that every reader reports as "no accounts".
+fn write_accounts(data_dir: &Path, accounts: &[SavedAccount]) -> Result<(), UiError> {
     let path = data_dir.join("accounts.json");
-    let json = serde_json::to_string_pretty(&accounts).map_err(|e| {
+    let partial = data_dir.join("accounts.json.tmp");
+    let json = serde_json::to_string_pretty(accounts).map_err(|e| {
         UiError::new(
             "serialize_error",
             format!("Failed to serialize accounts: {e}"),
         )
     })?;
-    write(&path, json)
-        .map_err(|e| UiError::new("io_error", format!("Failed to write accounts.json: {e}")))
+    std::fs::write(&partial, json)
+        .map_err(|e| UiError::new("io_error", format!("Failed to write accounts.json: {e}")))?;
+    std::fs::rename(&partial, &path).map_err(|e| {
+        let _ = std::fs::remove_file(&partial);
+        UiError::new("io_error", format!("Failed to write accounts.json: {e}"))
+    })
+}
+
+#[command]
+pub fn save_accounts(app: tauri::AppHandle, accounts: Vec<SavedAccount>) -> Result<(), UiError> {
+    use tauri::Manager;
+    let data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| UiError::new("path_error", format!("Failed to resolve app data dir: {e}")))?;
+    write_accounts(&data_dir, &accounts)
 }
 
 #[command]
