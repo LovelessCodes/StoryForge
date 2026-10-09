@@ -38,13 +38,16 @@ export const useAddModUpdateToProfile = (
       if (!mod.mainfile) {
         throw new Error(`No download available for ${mod.filename}`);
       }
-      const token = `mod:${mod.modidstr}:${mod.modversion}:${hashPath(modsDirectory)}`;
+      // The token hashes the directory the file lands in (not the profile
+      // root), so two entries targeting the same file share one token.
+      const destpath = `${modsDirectory}${pathDelimiter}Mods`;
+      const token = `mod:${mod.modidstr}:${mod.modversion}:${hashPath(destpath)}`;
       startModDownload({
         token,
         label: label ?? `${mod.filename.replace(/\.zip$/i, "")} v${mod.modversion}`,
         detail: destinationLabel ?? null,
         url: mod.mainfile,
-        destpath: `${modsDirectory}${pathDelimiter}Mods`,
+        destpath,
         modsDirectory,
       });
       await waitForDownload(token);
