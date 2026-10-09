@@ -831,7 +831,7 @@ pub async fn update_hosted_server(
 ) -> Result<(), UiError> {
     log_info!("update_hosted_server: id={instance_id}");
 
-    let (dir, mut instance) = find_instance(&app, instance_id)?;
+    let (mut dir, mut instance) = find_instance(&app, instance_id)?;
 
     // Check if running before allowing port/ip changes
     let is_running = server_hosting_actor::is_running(instance_id);
@@ -845,11 +845,45 @@ pub async fn update_hosted_server(
         }
         // Renaming changes the derived ID; refuse collisions.
         let new_id = generate_id(name);
-        if new_id != instance.id && scan_instances(&app)?.iter().any(|other| other.id == new_id) {
-            return Err(UiError {
-                name: "instance_exists".into(),
-                message: format!("A server instance named \"{name}\" already exists."),
-            });
+        if new_id != instance.id {
+            if scan_instances(&app)?.iter().any(|other| other.id == new_id) {
+                return Err(UiError {
+                    name: "instance_exists".into(),
+                    message: format!("A server instance named \"{name}\" already exists."),
+                });
+            }
+            // The directory name has to follow the ID: create_hosted_server
+            // derives `hosted-servers/{id}` from the name, so a config left in
+            // the old directory would be overwritten by an instance reusing
+            // the old name.
+            let new_dir = match dir.parent() {
+                Some(parent) => parent.join(new_id.to_string()),
+                None => {
+                    return Err(UiError {
+                        name: "path_error".into(),
+                        message: format!(
+                            "Failed to resolve the instance directory of {}",
+                            dir.to_string_lossy()
+                        ),
+                    })
+                }
+            };
+            if new_dir.exists() {
+                return Err(UiError {
+                    name: "instance_exists".into(),
+                    message: format!("A server instance named \"{name}\" already exists."),
+                });
+            }
+            std::fs::rename(&dir, &new_dir).map_err(|e| UiError {
+                name: "rename_failed".into(),
+                message: format!(
+                    "Failed to rename {} to {}: {e}",
+                    dir.to_string_lossy(),
+                    new_dir.to_string_lossy()
+                ),
+            })?;
+            log_info!("update_hosted_server: moved {:?} to {:?}", dir, new_dir);
+            dir = new_dir;
         }
         instance.name = name.clone();
         instance.id = new_id;
