@@ -6,7 +6,7 @@ use std::{
     collections::HashMap,
     fs::{self, File},
     io::{self, BufReader, Write},
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
         Arc, Mutex, OnceLock,
@@ -690,14 +690,41 @@ fn extract_tar_sync(
 
     if is_gz {
         let decoder = flate2::read::GzDecoder::new(reader);
-        extract_tar_archive(ctx, decoder, extract_dir)
+        extract_tar_archive(&ctx.token, decoder, extract_dir)
     } else {
-        extract_tar_archive(ctx, reader, extract_dir)
+        extract_tar_archive(&ctx.token, reader, extract_dir)
     }
 }
 
+/// Rejects tar entry paths that would escape the extraction directory.
+///
+/// The check is lexical on purpose: canonicalizing a not-yet-extracted path
+/// fails, and a raw `<out>/../evil` still starts with `<out>` as a string.
+fn check_tar_entry_path(stripped: &Path) -> Result<(), UiError> {
+    for component in stripped.components() {
+        match component {
+            Component::ParentDir | Component::RootDir | Component::Prefix(_) => {
+                return Err(UiError::from("unsafe path in tar (zip slip)"));
+            }
+            Component::CurDir | Component::Normal(_) => {}
+        }
+    }
+    Ok(())
+}
+
+/// Rejects symlink and hard-link entries.
+///
+/// They bypass the lexical path check above (later entries can be written
+/// through them) and Vintage Story server archives contain neither.
+fn check_tar_entry_type(entry_type: tar::EntryType) -> Result<(), UiError> {
+    if entry_type.is_symlink() || entry_type.is_hard_link() {
+        return Err(UiError::from("unsafe link entry in tar (zip slip)"));
+    }
+    Ok(())
+}
+
 fn extract_tar_archive<Rdr: io::Read>(
-    ctx: &DownloadContext,
+    token: &CancellationToken,
     reader: Rdr,
     extract_dir: &Path,
 ) -> Result<(), UiError> {
@@ -709,7 +736,7 @@ fn extract_tar_archive<Rdr: io::Read>(
     let strip_components: usize = if cfg!(target_os = "macos") { 0 } else { 1 };
 
     for entry in entries {
-        if ctx.is_cancelled() {
+        if token.is_cancelled() {
             return Ok(());
         }
 
@@ -730,14 +757,24 @@ fn extract_tar_archive<Rdr: io::Read>(
             continue;
         }
 
+        // Zip-slip protection. The lexical check is the primary guard; the
+        // canonicalize check below only adds value for paths that already
+        // exist (e.g. a symlink left in place by a previous extraction).
+        check_tar_entry_path(stripped)?;
+        check_tar_entry_type(entry.header().entry_type())?;
+
         let out_path = extract_dir.join(stripped);
 
-        // Zip-slip protection.
-        let canon_base =
-            dunce::canonicalize(extract_dir).unwrap_or_else(|_| extract_dir.to_path_buf());
-        let canon_cand = dunce::canonicalize(&out_path).unwrap_or(out_path.clone());
-        if !canon_cand.starts_with(&canon_base) {
-            return Err(UiError::from("unsafe path in tar (zip slip)"));
+        // Defense in depth: an already existing target must resolve inside the
+        // extraction directory. Only fires when both sides canonicalize, so it
+        // cannot be the primary guard (see `check_tar_entry_path`).
+        if let (Ok(canon_base), Ok(canon_cand)) = (
+            dunce::canonicalize(extract_dir),
+            dunce::canonicalize(&out_path),
+        ) {
+            if !canon_cand.starts_with(&canon_base) {
+                return Err(UiError::from("unsafe path in tar (zip slip)"));
+            }
         }
 
         entry
@@ -1251,5 +1288,123 @@ mod tests {
         std::fs::write(version_dir.join("leftover"), b"x").unwrap();
         cleanup(&partial, Some(&version_dir));
         assert!(!version_dir.exists());
+    }
+
+    /// Appends an entry whose name/link bytes are written raw, bypassing the
+    /// sanitizing `Header::set_path` applies, so malicious archives can be
+    /// reproduced.
+    fn append_raw_entry(
+        builder: &mut tar::Builder<Vec<u8>>,
+        name: &str,
+        entry_type: tar::EntryType,
+        link_name: &str,
+        data: &[u8],
+    ) {
+        let mut header = tar::Header::new_gnu();
+        header.set_entry_type(entry_type);
+        header.set_size(data.len() as u64);
+        header.set_mode(0o644);
+        let bytes = header.as_mut_bytes();
+        bytes[..name.len()].copy_from_slice(name.as_bytes());
+        bytes[157..157 + link_name.len()].copy_from_slice(link_name.as_bytes());
+        header.set_cksum();
+        builder.append(&header, data).unwrap();
+    }
+
+    #[test]
+    fn tar_entry_path_check_rejects_escaping_components() {
+        for path in ["../evil.txt", "dir/../../evil.txt", "/tmp/evil.txt"] {
+            let err = check_tar_entry_path(Path::new(path)).unwrap_err();
+            assert_eq!(err.message, "unsafe path in tar (zip slip)", "path: {path}");
+        }
+        for path in ["ok.txt", "./ok.txt", "dir/ok.txt"] {
+            assert!(
+                check_tar_entry_path(Path::new(path)).is_ok(),
+                "path: {path}"
+            );
+        }
+    }
+
+    #[test]
+    fn tar_entry_type_check_rejects_links() {
+        assert!(check_tar_entry_type(tar::EntryType::file()).is_ok());
+        assert!(check_tar_entry_type(tar::EntryType::dir()).is_ok());
+        assert!(check_tar_entry_type(tar::EntryType::symlink()).is_err());
+        assert!(check_tar_entry_type(tar::EntryType::hard_link()).is_err());
+    }
+
+    #[test]
+    fn parent_dir_entries_do_not_escape_the_extract_dir() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut builder = tar::Builder::new(Vec::new());
+        // Keeps a `..` even after `strip_components` (1 on Linux, 0 on macOS).
+        append_raw_entry(
+            &mut builder,
+            "creds/../../evil.txt",
+            tar::EntryType::file(),
+            "",
+            b"boom",
+        );
+        let archive = builder.into_inner().unwrap();
+
+        let token = CancellationToken::new();
+        let err = extract_tar_archive(&token, archive.as_slice(), dir.path()).unwrap_err();
+        assert!(err.message.contains("zip slip"), "got: {}", err.message);
+        assert!(!dir.path().parent().unwrap().join("evil.txt").exists());
+    }
+
+    #[test]
+    fn symlink_entries_are_rejected() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut builder = tar::Builder::new(Vec::new());
+        // Two components so the entry survives `strip_components` on Linux.
+        append_raw_entry(
+            &mut builder,
+            "dir/link",
+            tar::EntryType::symlink(),
+            "../../../../tmp/evil.txt",
+            b"",
+        );
+        let archive = builder.into_inner().unwrap();
+
+        let token = CancellationToken::new();
+        let err = extract_tar_archive(&token, archive.as_slice(), dir.path()).unwrap_err();
+        assert!(err.message.contains("zip slip"), "got: {}", err.message);
+        assert!(!dir.path().join("dir/link").exists());
+    }
+
+    #[test]
+    fn normal_tar_entries_still_extract() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut builder = tar::Builder::new(Vec::new());
+
+        let mut dir_header = tar::Header::new_gnu();
+        dir_header.set_entry_type(tar::EntryType::dir());
+        dir_header.set_size(0);
+        dir_header.set_mode(0o755);
+        dir_header.set_cksum();
+        builder
+            .append_data(&mut dir_header, "dir/", &[][..])
+            .unwrap();
+
+        let mut file_header = tar::Header::new_gnu();
+        file_header.set_entry_type(tar::EntryType::file());
+        file_header.set_size(6);
+        file_header.set_mode(0o644);
+        file_header.set_cksum();
+        builder
+            .append_data(&mut file_header, "dir/hello.txt", &b"hello\n"[..])
+            .unwrap();
+
+        let archive = builder.into_inner().unwrap();
+        let token = CancellationToken::new();
+        extract_tar_archive(&token, archive.as_slice(), dir.path()).unwrap();
+
+        let extracted = if cfg!(target_os = "macos") {
+            dir.path().join("dir/hello.txt")
+        } else {
+            dir.path().join("hello.txt")
+        };
+        assert_eq!(std::fs::read(&extracted).unwrap(), b"hello\n");
     }
 }
