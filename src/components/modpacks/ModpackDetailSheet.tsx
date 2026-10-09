@@ -117,6 +117,13 @@ export default function ModpackDetailSheet({
     const basePath = profilesParent ?? appFolder ?? "";
     const profilePath = buildProfilePath(basePath, safeName, profilesSubdir);
 
+    // Installing the same pack and version twice reuses the folder — importing
+    // there would overwrite the profile that already lives in it.
+    if (profiles.some((existing) => existing.path === profilePath)) {
+      toast.error(t("profiles.store.pathExists", { path: profilePath }));
+      return;
+    }
+
     setImporting(true);
     setImportProgress(null);
 
