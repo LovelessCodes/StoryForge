@@ -1024,12 +1024,14 @@ pub async fn start_hosted_server(app: AppHandle, instance_id: u64) -> Result<(),
 
     let (_dir, instance) = find_instance(&app, instance_id)?;
 
-    if server_hosting_actor::is_running(instance_id) {
-        return Err(UiError {
-            name: "already_running".into(),
-            message: "Instance is already running.".into(),
-        });
-    }
+    // Reserve the instance for the whole setup: `ensure_dotnet` below awaits,
+    // so without this a second start would slip past the "not running" check
+    // and spawn a competing actor. The guard releases the reservation on every
+    // return path (including the error ones).
+    let _reservation = server_hosting_actor::try_reserve(instance_id).ok_or_else(|| UiError {
+        name: "already_running".into(),
+        message: "Instance is already running.".into(),
+    })?;
 
     full_port_check(&app, instance_id, instance.port, &instance.bind_ip)?;
 

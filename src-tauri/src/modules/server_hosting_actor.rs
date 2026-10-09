@@ -8,9 +8,13 @@
 //! removes the need for `unsafe { libc::kill(...) }`.
 
 use std::{
+    collections::{HashMap, HashSet},
     path::{Path, PathBuf},
     process::Stdio,
-    sync::{Arc, LazyLock, Mutex},
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc, LazyLock, Mutex,
+    },
     time::{Duration, Instant},
 };
 use tokio::{
@@ -62,9 +66,24 @@ impl ServerActorHandle {
     }
 }
 
+/// One registered actor: its handle plus the token of the generation that
+/// registered it, so a stale teardown cannot remove a newer actor's entry.
+#[derive(Clone, Debug)]
+struct ActorEntry {
+    token: u64,
+    handle: ServerActorHandle,
+}
+
 /// Global map of running server actors, keyed by instance ID.
-static ACTORS: LazyLock<Mutex<std::collections::HashMap<u64, ServerActorHandle>>> =
-    LazyLock::new(|| Mutex::new(std::collections::HashMap::new()));
+static ACTORS: LazyLock<Mutex<HashMap<u64, ActorEntry>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+/// Instance IDs whose `start_hosted_server` setup is still in flight, i.e. a
+/// start was reserved but no actor has been registered yet.
+static STARTING: LazyLock<Mutex<HashSet<u64>>> = LazyLock::new(|| Mutex::new(HashSet::new()));
+
+/// Source of actor generation tokens; tokens are never reused.
+static NEXT_ACTOR_TOKEN: AtomicU64 = AtomicU64::new(1);
 
 /// Returns true if an actor is registered for the given instance.
 pub fn is_running(instance_id: u64) -> bool {
@@ -76,19 +95,61 @@ pub fn running_instance_ids() -> Vec<u64> {
     lock(&ACTORS).keys().copied().collect()
 }
 
-/// Register a new actor handle.
-pub fn register(instance_id: u64, handle: ServerActorHandle) {
-    lock(&ACTORS).insert(instance_id, handle);
+/// Reserve an instance for a start whose actor does not exist yet.
+///
+/// Starting a server awaits runtime setup (`ensure_dotnet`), so without this
+/// reservation two concurrent starts would both pass the "not running" check
+/// and the second `spawn` would overwrite the first actor's handle, orphaning
+/// a live process. Returns `None` when the instance is running or already
+/// being started; the returned guard releases the reservation on drop, so
+/// every error path leaves the instance startable again.
+pub fn try_reserve(instance_id: u64) -> Option<StartReservation> {
+    let mut starting = lock(&STARTING);
+    if starting.contains(&instance_id) || is_running(instance_id) {
+        return None;
+    }
+    starting.insert(instance_id);
+    Some(StartReservation { instance_id })
+}
+
+/// RAII guard for a start reservation; see [`try_reserve`].
+#[derive(Debug)]
+pub struct StartReservation {
+    instance_id: u64,
+}
+
+impl Drop for StartReservation {
+    fn drop(&mut self) {
+        release(self.instance_id);
+    }
+}
+
+/// Releases a start reservation without touching a registered actor.
+fn release(instance_id: u64) {
+    lock(&STARTING).remove(&instance_id);
+}
+
+/// Register a new actor handle under a fresh generation token.
+pub fn register(instance_id: u64, token: u64, handle: ServerActorHandle) {
+    lock(&ACTORS).insert(instance_id, ActorEntry { token, handle });
 }
 
 /// Unregister an actor handle. Does not stop the process.
-pub fn unregister(instance_id: u64) {
-    lock(&ACTORS).remove(&instance_id);
+///
+/// The entry is only removed while it still belongs to `token`, so the
+/// teardown of an old actor cannot drop a newer actor's handle.
+pub fn unregister(instance_id: u64, token: u64) {
+    let mut actors = lock(&ACTORS);
+    if actors.get(&instance_id).map(|entry| entry.token) == Some(token) {
+        actors.remove(&instance_id);
+    }
 }
 
 /// Get a clone of an actor handle if one exists.
 pub fn get_handle(instance_id: u64) -> Option<ServerActorHandle> {
-    lock(&ACTORS).get(&instance_id).cloned()
+    lock(&ACTORS)
+        .get(&instance_id)
+        .map(|entry| entry.handle.clone())
 }
 
 /// Spawn a new server process and actor task for the given instance.
@@ -103,11 +164,12 @@ pub async fn spawn(
 
     let (tx, rx) = mpsc::unbounded_channel();
     let handle = ServerActorHandle { tx };
-    register(instance_id, handle.clone());
+    let token = NEXT_ACTOR_TOKEN.fetch_add(1, Ordering::Relaxed);
+    register(instance_id, token, handle.clone());
 
     let app_clone = app.clone();
     tokio::spawn(async move {
-        run_actor(app_clone, instance, process, rx, dotnet_root).await;
+        run_actor(app_clone, instance, process, rx, dotnet_root, token).await;
     });
 
     log_info!("start_hosted_server: spawned instance {instance_id}");
@@ -245,6 +307,7 @@ async fn run_actor(
     first_process: ServerProcess,
     mut cmd_rx: mpsc::UnboundedReceiver<ServerCommand>,
     dotnet_root: PathBuf,
+    token: u64,
 ) {
     let instance_id = instance.id;
     let mut process = Some(first_process);
@@ -320,7 +383,7 @@ async fn run_actor(
         }
     };
 
-    unregister(instance_id);
+    unregister(instance_id, token);
     emit_status(&app, instance_id, &final_status, None, None);
     log_info!(
         "server_hosting: instance {instance_id} exited ({})",
