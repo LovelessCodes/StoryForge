@@ -196,89 +196,6 @@ pub async fn fetch_mod_info(
     Ok(json)
 }
 
-#[command]
-pub async fn fetch_authors(
-    client: State<'_, Arc<reqwest::Client>>,
-    search: String,
-) -> Result<Value, UiError> {
-    let url = format!(
-        "https://mods.vintagestory.at/api/v2/users/by-name/{}?contributors-only=true",
-        search
-    );
-    let res = client
-        .get(&url)
-        .send()
-        .await
-        .map_err(|e| UiError::new("request_error", format!("Request error: {e}")))?
-        .text()
-        .await
-        .map_err(|e| UiError::new("io_error", format!("Read error: {e}")))?;
-
-    let json: Value = from_str(&res)
-        .map_err(|e| UiError::new("parse_error", format!("JSON parse error: {e}")))?;
-    Ok(json)
-}
-
-#[command]
-pub async fn add_mod_to_profile(
-    client: State<'_, Arc<reqwest::Client>>,
-    app: AppHandle,
-    path: String,
-    url: String,
-) -> Result<String, UiError> {
-    log_info!("add_mod_to_profile: {:?}", path);
-    require_managed_path(&app, Path::new(&path), "Profile path")?;
-    let pb = PathBuf::from(path).join(paths::MODS_DIR);
-    if !pb.exists() {
-        create_dir_all(&pb).map_err(|e| UiError {
-            name: "create_dir_failed".into(),
-            message: format!("Failed to create directory: {e}"),
-        })?;
-    }
-    let response = client
-        .get(&url)
-        .send()
-        .await
-        .map_err(|e| UiError::new("request_error", format!("Request error: {e}")))?;
-    if !response.status().is_success() {
-        return Err(UiError {
-            name: "http_error".into(),
-            message: format!("HTTP error: {}", response.status()),
-        });
-    }
-    let filename = url
-        .split('=')
-        .next_back()
-        .ok_or_else(|| UiError::from("Invalid URL"))?;
-    let filename = safe_file_name(filename)?;
-    let filepath = pb.join(&filename);
-    let mut file = File::create(&filepath).map_err(|e| UiError {
-        name: "create_file_failed".into(),
-        message: format!("Failed to create file: {e}"),
-    })?;
-    let content = response.bytes().await.map_err(|e| UiError {
-        name: "read_response_failed".into(),
-        message: format!("Failed to read response: {e}"),
-    })?;
-    file.write_all(&content).map_err(|e| UiError {
-        name: "write_file_failed".into(),
-        message: format!("Failed to write file: {e}"),
-    })?;
-    invalidate_mods_cache(&pb);
-    Ok("added".into())
-}
-
-#[command]
-pub async fn download_mod(
-    client: State<'_, Arc<reqwest::Client>>,
-    modid: String,
-    version: String,
-    profile_path: String,
-) -> Result<String, UiError> {
-    let mods_dir = PathBuf::from(&profile_path).join(paths::MODS_DIR);
-    download_mod_file(&client, &modid, &version, &mods_dir).await
-}
-
 /// Download a mod by modid + version into a Mods directory.
 /// Returns the saved filename.
 pub async fn download_mod_file(
@@ -1409,28 +1326,6 @@ pub async fn get_mod_updates(
     let json: Value = from_str(&res_text)
         .map_err(|e| UiError::new("parse_error", format!("Parse error: {e}")))?;
     Ok(json)
-}
-
-#[command]
-pub async fn get_profile_mods(app: AppHandle, id: u64) -> Result<Vec<OutputMod>, UiError> {
-    log_info!("get_profile_mods: profile={}", id);
-    let (pb, _profile) = find_profile_by_id(&app, id)?;
-    let mods_dir = pb.join(paths::MODS_DIR);
-
-    tokio::task::spawn_blocking(move || {
-        let start = std::time::Instant::now();
-        let result = get_mods_cached(&mods_dir).map(|res| res.mods);
-        log_info!(
-            "get_profile_mods completed in {}ms",
-            start.elapsed().as_millis()
-        );
-        result
-    })
-    .await
-    .map_err(|e| {
-        log_error!("get_profile_mods: scan task failed: {e}");
-        UiError::new("internal_error", format!("Mods scan failed: {e}"))
-    })?
 }
 
 #[command]

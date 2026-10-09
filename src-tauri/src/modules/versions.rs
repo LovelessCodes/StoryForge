@@ -481,16 +481,6 @@ fn apply_links(
     report
 }
 
-/// Stops linking a version. The folder is left untouched.
-#[command]
-pub fn unregister_external_version(app: AppHandle, name: String) -> Result<(), UiError> {
-    let remaining: Vec<ExternalVersion> = external_versions(&app)
-        .into_iter()
-        .filter(|entry| entry.name != name)
-        .collect();
-    set_external_versions(&app, &remaining)
-}
-
 #[command]
 pub async fn fetch_versions(
     client: State<'_, Arc<reqwest::Client>>,

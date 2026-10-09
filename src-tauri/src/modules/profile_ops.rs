@@ -580,19 +580,6 @@ fn build_export(app: &AppHandle, id: u64) -> Result<ProfileExport, UiError> {
     })
 }
 
-/// Returns a profile as a pretty-printed JSON export string.
-#[command]
-pub async fn export_profile(app: AppHandle, id: u64) -> Result<String, UiError> {
-    let handle = app.clone();
-    tokio::task::spawn_blocking(move || {
-        let export = build_export(&handle, id)?;
-        serde_json::to_string_pretty(&export)
-            .map_err(|e| UiError::new("serialize_failed", format!("Failed to serialize: {e}")))
-    })
-    .await
-    .map_err(|e| UiError::new("internal_error", format!("Export failed: {e}")))?
-}
-
 /// Writes a profile export to a user-chosen file path.
 #[command]
 pub async fn export_profile_file(app: AppHandle, id: u64, path: String) -> Result<(), UiError> {

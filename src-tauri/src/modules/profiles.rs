@@ -29,7 +29,7 @@ use super::paths::{self, clientsettings_path, mods_dir, profile_json_path};
 use super::utils::{
     dir_name, dir_size, dir_size_cached, find_dir_by_id, format_size, generate_id, lock,
     move_folder, normalize_path, parse_start_params, profiles_folder, profiles_subdir,
-    require_managed_path, require_safe_destination, safe_file_name, safe_join,
+    require_managed_path, require_safe_destination, safe_join,
 };
 use crate::{log_debug, log_error, log_info};
 
@@ -1067,19 +1067,6 @@ pub async fn initialize_game(app: AppHandle, path: String) -> Result<String, UiE
     Ok("initialized".into())
 }
 
-#[command]
-pub fn confirm_vintage_story_exe(path: String) -> Result<String, UiError> {
-    let pb = PathBuf::from(path);
-    if pb.exists() && pb.is_file() {
-        Ok(pb.to_string_lossy().into_owned())
-    } else {
-        Err(UiError {
-            name: "not_found".into(),
-            message: "Could not find Vintage Story executable.".into(),
-        })
-    }
-}
-
 #[derive(Debug, Clone, Deserialize)]
 pub struct PlayGameParams {
     pub profile_id: u64,
@@ -1953,48 +1940,6 @@ pub fn reveal_in_file_explorer(app: AppHandle, path: String) -> Result<String, U
     Ok(path.to_string_lossy().to_string())
 }
 
-#[command]
-pub fn remove_profile(app: AppHandle, id: u64) -> Result<String, UiError> {
-    let start = Instant::now();
-    log_info!("remove_profile: id={}", id);
-    let (pb, _info) = find_profile_by_id(&app, id)?;
-    if is_profile_running(id) {
-        return Err(UiError::new(
-            "profile_running",
-            "Stop the game before deleting this profile.",
-        ));
-    }
-    if is_external_profile_dir(&app, &pb) {
-        return Err(UiError::new(
-            "external_profile",
-            "This profile points at an existing game data folder — remove it from Story Forge or delete the folder yourself",
-        ));
-    }
-    if pb.exists() && pb.is_dir() {
-        let remove_dir_all_start = Instant::now();
-        remove_dir_all(&pb).map_err(|e| {
-            log_error!("profiles: remove_failed: {e}");
-            UiError {
-                name: "remove_failed".into(),
-                message: format!("Failed to remove profile directory: {e}"),
-            }
-        })?;
-        log_info!(
-            "remove_profile: id={}, remove_dir_all took {}ms",
-            id,
-            remove_dir_all_start.elapsed().as_millis(),
-        );
-    } else {
-        log_info!("remove_profile: id={}, directory not found, no-op", id);
-    }
-    log_info!(
-        "remove_profile: id={}, total command took {}ms",
-        id,
-        start.elapsed().as_millis(),
-    );
-    Ok("removed".into())
-}
-
 /// Joins a webview-supplied `subdir` onto `base`, refusing anything that could
 /// leave it: empty values, `..` components and absolute paths.
 fn join_subdir(base: &Path, subdir: &str, what: &str) -> Result<PathBuf, UiError> {
@@ -2011,35 +1956,6 @@ fn join_subdir(base: &Path, subdir: &str, what: &str) -> Result<PathBuf, UiError
         ));
     }
     Ok(base.join(subdir))
-}
-
-#[command]
-pub async fn rename_profiles_folder(
-    app: AppHandle,
-    source: String,
-    new_name: String,
-    subdir: String,
-) -> Result<String, UiError> {
-    let source_path = join_subdir(
-        &PathBuf::from(source).join(profiles_subdir(app.clone())),
-        &subdir,
-        "Source directory",
-    )?;
-    require_managed_path(&app, &source_path, "Source directory")?;
-    let new_name = safe_file_name(&new_name)?;
-    let destination_path = source_path
-        .parent()
-        .ok_or_else(|| UiError {
-            name: "invalid_path".into(),
-            message: "Source path has no parent directory".into(),
-        })?
-        .join(new_name);
-    log_info!(
-        "rename_profiles_folder: {:?} -> {:?}",
-        source_path,
-        destination_path
-    );
-    move_folder(source_path, destination_path)
 }
 
 #[command]

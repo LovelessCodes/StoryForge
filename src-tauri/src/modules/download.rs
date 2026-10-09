@@ -1,7 +1,6 @@
 use futures_util::StreamExt;
 use reqwest::header::CONTENT_DISPOSITION;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::{
     collections::HashMap,
     fs::{self, File},
@@ -1031,29 +1030,6 @@ fn make_output_path(base: &Path, entry_name: &str, prefix: &str) -> Result<PathB
 
     // Rejects zip-slip entries (absolute paths, `..` components).
     safe_join(base, trimmed).map_err(|e| e.message)
-}
-
-#[command]
-pub async fn get_download_links(client: State<'_, Arc<reqwest::Client>>) -> Result<Value, UiError> {
-    let res = client
-        .get("https://vsapi.betterjs.dev/download")
-        .send()
-        .await
-        .map_err(|e| {
-            log_error!("download: Request error: {e}");
-            UiError::new("request_error", format!("Request error: {e}"))
-        })?
-        .text()
-        .await
-        .map_err(|e| {
-            log_error!("download: Read error: {e}");
-            UiError::new("io_error", format!("Read error: {e}"))
-        })?;
-    let json: Value = serde_json::from_str(&res).map_err(|e| {
-        log_error!("download: JSON parse error: {e}");
-        UiError::new("parse_error", format!("JSON parse error: {e}"))
-    })?;
-    Ok(json)
 }
 
 #[command]

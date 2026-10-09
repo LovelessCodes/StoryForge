@@ -1261,14 +1261,6 @@ pub async fn write_server_config(
     Ok(())
 }
 
-#[command]
-pub async fn get_default_server_config(version: String) -> Result<String, UiError> {
-    // Return a sensible default config template
-    // In the future, this could be version-specific
-    let _ = version;
-    Ok(get_default_config_json())
-}
-
 fn get_default_config_json() -> String {
     get_default_config_json_with_port("Vintage Story Server", 42420)
 }
@@ -1298,33 +1290,6 @@ fn get_default_config_json_with_port(server_name: &str, port: u16) -> String {
         "BlockTickSamplesPerChunk": 32
     }))
     .unwrap_or_else(|_| "{}".to_string())
-}
-
-// ────────── Port checking ──────────
-
-#[command]
-pub async fn check_port_available(
-    app: AppHandle,
-    port: u16,
-    bind_ip: String,
-    exclude_instance_id: Option<u64>,
-) -> Result<bool, UiError> {
-    let instances = scan_instances(&app)?;
-
-    let running_ids = server_hosting_actor::running_instance_ids();
-
-    for inst in &instances {
-        if Some(inst.id) == exclude_instance_id {
-            continue;
-        }
-        if running_ids.contains(&inst.id) && ports_overlap(&inst.bind_ip, inst.port, &bind_ip, port)
-        {
-            return Ok(false);
-        }
-    }
-
-    // Also catch ports held by unrelated processes.
-    Ok(port_is_free(&bind_ip, port))
 }
 
 // ────────── Whitelist management ──────────
