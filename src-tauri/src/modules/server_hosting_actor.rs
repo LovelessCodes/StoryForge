@@ -82,6 +82,13 @@ static ACTORS: LazyLock<Mutex<HashMap<u64, ActorEntry>>> =
 /// start was reserved but no actor has been registered yet.
 static STARTING: LazyLock<Mutex<HashSet<u64>>> = LazyLock::new(|| Mutex::new(HashSet::new()));
 
+/// PID of the process the actor is currently supervising, per instance.
+///
+/// Shutdown needs this to kill a server whose actor is busy inside its stop
+/// sequence and therefore no longer reading commands from the channel.
+static CHILD_PIDS: LazyLock<Mutex<HashMap<u64, u32>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
 /// Source of actor generation tokens; tokens are never reused.
 static NEXT_ACTOR_TOKEN: AtomicU64 = AtomicU64::new(1);
 
@@ -408,6 +415,9 @@ async fn run_session(
     } = process;
     let instance_id = instance.id;
     let started_at = Instant::now();
+    if let Some(pid) = pid {
+        lock(&CHILD_PIDS).insert(instance_id, pid);
+    }
     let log_writer = Arc::new(std::sync::Mutex::new(open_instance_log(app, instance_id)));
     let stdin = Arc::new(tokio::sync::Mutex::new(stdin));
     let status = Arc::new(tokio::sync::Mutex::new(ServerStatus::Starting));
@@ -565,6 +575,8 @@ async fn run_session(
             }
         }
     };
+
+    lock(&CHILD_PIDS).remove(&instance_id);
 
     SessionResult {
         exit,
@@ -735,7 +747,47 @@ pub async fn status(instance_id: u64) -> ServerStatusInfo {
     }
 }
 
+/// How long one instance gets to stop gracefully during shutdown.
+const SHUTDOWN_STOP_TIMEOUT: Duration = Duration::from_secs(5);
+/// How long a force-killed instance gets to unregister its actor.
+const SHUTDOWN_KILL_WAIT: Duration = Duration::from_secs(1);
+
+/// Kill an instance's process without going through its actor.
+///
+/// A channel command cannot be used here: after a `Stop` the actor is inside
+/// the graceful stop sequence for up to 15s and does not read further commands,
+/// while app shutdown tears the runtime down as soon as `kill_all` returns.
+/// Returns false when no live process is known for the instance.
+pub fn force_kill(instance_id: u64) -> bool {
+    let pid = match lock(&CHILD_PIDS).get(&instance_id).copied() {
+        Some(pid) => pid,
+        None => return false,
+    };
+
+    #[cfg(unix)]
+    // SAFETY: `pid` is the live child recorded at spawn; `build_command` puts
+    // the child in its own process group (`setpgid(0, 0)`), so signalling the
+    // group also stops children the server spawned.
+    unsafe {
+        let _ = libc::killpg(pid as i32, libc::SIGKILL);
+    }
+    #[cfg(windows)]
+    {
+        let _ = std::process::Command::new("taskkill")
+            .args(["/PID", &pid.to_string(), "/F", "/T"])
+            .output();
+    }
+
+    log_info!("server_hosting: instance {instance_id} force-killed (pid {pid})");
+    true
+}
+
 /// Force-kill all running server processes. Called on app shutdown.
+///
+/// A plain `stop()` only enqueues `ServerCommand::Stop` and returns, so the
+/// runtime would be torn down before the actors ran their stop sequence and
+/// the servers would survive as orphans. Each instance therefore gets a
+/// bounded window to stop gracefully and is killed outright when it misses it.
 pub async fn kill_all() {
     log_info!("server_hosting: killing all running servers on shutdown");
     let ids = running_instance_ids();
@@ -745,9 +797,32 @@ pub async fn kill_all() {
     for id in &ids {
         log_info!("server_hosting: requesting stop for instance {id}");
     }
-    let _ = futures_util::future::join_all(ids.iter().copied().map(stop)).await;
+    futures_util::future::join_all(ids.iter().copied().map(stop_for_shutdown)).await;
     log_info!(
-        "server_hosting: stop requests sent for {} server(s)",
+        "server_hosting: shutdown finished, {} server(s) still registered",
         running_instance_ids().len()
     );
+}
+
+/// One instance's shutdown: graceful stop with a deadline, then force kill.
+async fn stop_for_shutdown(instance_id: u64) {
+    match stop_and_wait(instance_id, SHUTDOWN_STOP_TIMEOUT).await {
+        Ok(()) => return,
+        Err(e) if e.name == "not_running" => return,
+        Err(e) => log_info!(
+            "server_hosting: instance {instance_id} did not stop in time ({}), killing it",
+            e.message
+        ),
+    }
+
+    if !force_kill(instance_id) {
+        return;
+    }
+
+    // Give the actor a moment to reap the process and unregister before the
+    // runtime goes away.
+    let deadline = Instant::now() + SHUTDOWN_KILL_WAIT;
+    while is_running(instance_id) && Instant::now() < deadline {
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
 }
