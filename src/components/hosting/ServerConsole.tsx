@@ -46,12 +46,21 @@ export default function ServerConsole({ instanceId }: { instanceId: number }) {
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
+    let cancelled = false;
     void (async () => {
-      unlisten = await listen<LogEntry>(`server-log:${instanceId}`, (event) => {
+      const dispose = await listen<LogEntry>(`server-log:${instanceId}`, (event) => {
         setLogLines((prev) => [...prev.slice(-1000), event.payload]);
       });
+      // Unmounted before `listen` resolved: dispose here instead, otherwise
+      // the cleanup below would have seen `unlisten` still undefined.
+      if (cancelled) {
+        dispose();
+        return;
+      }
+      unlisten = dispose;
     })();
     return () => {
+      cancelled = true;
       unlisten?.();
     };
   }, [instanceId]);

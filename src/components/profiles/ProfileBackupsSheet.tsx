@@ -95,6 +95,7 @@ export default function ProfileBackupsSheet({
   useEffect(() => {
     if (!open) return undefined;
     let unlisten: (() => void) | null = null;
+    let cancelled = false;
     void listen<BackupEvent>(`backup-${profile.id}`, (event) => {
       const { phase, current, total } = event.payload;
       if (phase === "backing-up" || phase === "restoring") {
@@ -103,9 +104,18 @@ export default function ProfileBackupsSheet({
         setProgress(null);
       }
     }).then((dispose) => {
+      // Unmounted before `listen` resolved: dispose here instead, otherwise
+      // the cleanup below would have seen `unlisten` still null.
+      if (cancelled) {
+        dispose();
+        return;
+      }
       unlisten = dispose;
     });
-    return () => unlisten?.();
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
   }, [open, profile.id]);
 
   const percent =
