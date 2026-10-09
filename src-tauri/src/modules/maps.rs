@@ -351,23 +351,26 @@ fn inspect_map_database_blocking(world_path: String) -> Result<MapDatabaseInfo, 
     })
 }
 
-/// Get the bounds (min/max X and Y) of all map tiles
+/// Get the bounds (min/max X and Y) of all map tiles.
+///
+/// Returns `None` for an empty tile table, so callers never see the sentinel
+/// bounds an `i32::MAX`/`i32::MIN` accumulation would produce.
 #[command]
-pub async fn get_map_bounds(world_path: String) -> Result<MapBounds, UiError> {
+pub async fn get_map_bounds(world_path: String) -> Result<Option<MapBounds>, UiError> {
     tokio::task::spawn_blocking(move || get_map_bounds_blocking(world_path))
         .await
         .map_err(|e| UiError::new("internal_error", format!("Map query failed: {e}")))?
 }
 
 /// Blocking implementation of [`get_map_bounds`].
-fn get_map_bounds_blocking(world_path: String) -> Result<MapBounds, UiError> {
+fn get_map_bounds_blocking(world_path: String) -> Result<Option<MapBounds>, UiError> {
     let maps_path = get_maps_db_path(&world_path)?;
     let conn = vcdbs::open_readonly(&maps_path)?;
     let table_name = find_map_table(&conn)?;
     bounds_from_conn(&conn, &table_name)
 }
 
-fn bounds_from_conn(conn: &Connection, table_name: &str) -> Result<MapBounds, UiError> {
+fn bounds_from_conn(conn: &Connection, table_name: &str) -> Result<Option<MapBounds>, UiError> {
     let tile_count: i64 = conn
         .query_row(&format!("SELECT COUNT(*) FROM {}", table_name), [], |row| {
             row.get(0)
@@ -376,6 +379,10 @@ fn bounds_from_conn(conn: &Connection, table_name: &str) -> Result<MapBounds, Ui
             log_error!("maps: Count query error: {e}");
             UiError::new("db_error", format!("Count query error: {e}"))
         })?;
+
+    if tile_count == 0 {
+        return Ok(None);
+    }
 
     let mut stmt = conn
         .prepare(&format!("SELECT position FROM {}", table_name))
@@ -410,13 +417,13 @@ fn bounds_from_conn(conn: &Connection, table_name: &str) -> Result<MapBounds, Ui
         max_y = max_y.max(y);
     }
 
-    Ok(MapBounds {
+    Ok(Some(MapBounds {
         min_x,
         max_x,
         min_y,
         max_y,
         tile_count,
-    })
+    }))
 }
 
 /// Read a single map tile by position
@@ -576,14 +583,14 @@ fn detect_image_dimensions(data: &[u8]) -> Option<(u32, u32)> {
 // ── Direct-path variants (no world needed) ──
 
 #[command]
-pub async fn get_map_bounds_by_path(map_path: String) -> Result<MapBounds, UiError> {
+pub async fn get_map_bounds_by_path(map_path: String) -> Result<Option<MapBounds>, UiError> {
     tokio::task::spawn_blocking(move || get_map_bounds_by_path_blocking(map_path))
         .await
         .map_err(|e| UiError::new("internal_error", format!("Map query failed: {e}")))?
 }
 
 /// Blocking implementation of [`get_map_bounds_by_path`].
-fn get_map_bounds_by_path_blocking(map_path: String) -> Result<MapBounds, UiError> {
+fn get_map_bounds_by_path_blocking(map_path: String) -> Result<Option<MapBounds>, UiError> {
     log_info!("get_map_bounds_by_path");
     let conn = read_map_db(&map_path)?;
     let table_name = find_map_table(&conn)?;
@@ -643,5 +650,33 @@ mod tests {
 
         let tile = decode_tile(0, buf).unwrap();
         assert_eq!((tile.width, tile.height), (2, 2));
+    }
+
+    #[test]
+    fn empty_tile_table_reports_no_bounds() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute("CREATE TABLE tiles (position INTEGER)", [])
+            .unwrap();
+
+        assert!(bounds_from_conn(&conn, "tiles").unwrap().is_none());
+    }
+
+    #[test]
+    fn populated_tile_table_reports_bounds() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute("CREATE TABLE tiles (position INTEGER)", [])
+            .unwrap();
+        let packed = (5i64 << COORD_BITS) | 7;
+        let negative = (-2i64) << COORD_BITS | 9;
+        conn.execute(
+            "INSERT INTO tiles (position) VALUES (?1), (?2)",
+            [packed, negative],
+        )
+        .unwrap();
+
+        let bounds = bounds_from_conn(&conn, "tiles").unwrap().unwrap();
+        assert_eq!((bounds.min_x, bounds.max_x), (-2, 5));
+        assert_eq!((bounds.min_y, bounds.max_y), (7, 9));
+        assert_eq!(bounds.tile_count, 2);
     }
 }

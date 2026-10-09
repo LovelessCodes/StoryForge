@@ -31,11 +31,15 @@ export const useMapDatabaseInspection = (
 
 export const useMapBounds = (
   worldPath: string,
-  options?: Omit<UseQueryOptions<MapBounds, Error, MapBounds>, "queryKey" | "queryFn">,
+  options?: Omit<
+    UseQueryOptions<MapBounds | null, Error, MapBounds | null>,
+    "queryKey" | "queryFn"
+  >,
 ) =>
   useQuery({
     enabled: !!worldPath,
-    queryFn: () => invoke<MapBounds>("get_map_bounds", { worldPath }),
+    // The backend returns null for a world with no map tiles yet.
+    queryFn: () => invoke<MapBounds | null>("get_map_bounds", { worldPath }),
     queryKey: worldMapKeys.bounds(worldPath),
     staleTime: Infinity,
     placeholderData: keepPreviousData,
@@ -101,11 +105,15 @@ const dirMapKeys = {
 
 export const useMapBoundsByPath = (
   mapPath: string,
-  options?: Omit<UseQueryOptions<MapBounds, Error, MapBounds>, "queryKey" | "queryFn">,
+  options?: Omit<
+    UseQueryOptions<MapBounds | null, Error, MapBounds | null>,
+    "queryKey" | "queryFn"
+  >,
 ) =>
   useQuery({
     enabled: !!mapPath,
-    queryFn: () => invoke<MapBounds>("get_map_bounds_by_path", { mapPath }),
+    // The backend returns null for a map database without tiles.
+    queryFn: () => invoke<MapBounds | null>("get_map_bounds_by_path", { mapPath }),
     queryKey: dirMapKeys.bounds(mapPath),
     ...options,
   });
