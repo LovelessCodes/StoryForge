@@ -300,6 +300,77 @@ fn extract_version(text: &str) -> Option<String> {
     None
 }
 
+// ── Status detection ──
+
+/// Whole words and phrases that carry a status flag, matched case-insensitively
+/// against the server's messages: the vanilla server refuses with "Password is
+/// invalid", "This server only allows whitelisted players to join. You are not
+/// on the whitelist.", its `banned-until-reason` message, "Server and
+/// Connection queue is full (…)" and "Bad game session, try relogging".
+const PASSWORD_MARKERS: &[&str] = &["password"];
+const WHITELIST_MARKERS: &[&str] = &["whitelist", "whitelisted"];
+const BANNED_MARKERS: &[&str] = &["banned"];
+const FULL_MARKERS: &[&str] = &["queue", "is full", "full server", "server full"];
+const AUTH_MARKERS: &[&str] = &["bad game session"];
+
+/// The messages a probe response carries.
+///
+/// A packet parse flattens every string a packet holds into one object, which
+/// includes identity text: server name, MOTD, login tokens, the mod list. The
+/// status flags only apply to the server's message field — the disconnect
+/// reason (or the connection-queue notice) — which the parse keeps as `str_8`
+/// when the payload is plain text and as `msg_8` with the text in field 1
+/// otherwise (the HTML-ish version screen).
+fn status_messages(packets: &[serde_json::Value]) -> Vec<String> {
+    let mut messages = Vec::new();
+    for packet in packets {
+        if let Some(serde_json::Value::String(text)) = packet.get("str_8") {
+            messages.push(text.clone());
+        }
+        if let Some(serde_json::Value::Object(nested)) = packet.get("msg_8") {
+            messages.extend(
+                nested
+                    .values()
+                    .filter_map(serde_json::Value::as_str)
+                    .map(str::to_string),
+            );
+        }
+    }
+    messages
+}
+
+/// Whether `text` mentions `phrase` as a whole word or phrase.
+///
+/// A bare substring match flags "Full Moon" and "beautifully" for "full" and
+/// "Bandits" for "ban", which are exactly the strings a server picks for its
+/// name and MOTD.
+fn mentions(text: &str, phrase: &str) -> bool {
+    let haystack = text.to_lowercase();
+    let needle = phrase.to_lowercase();
+    let mut offset = 0;
+    while let Some(index) = haystack[offset..].find(&needle) {
+        let start = offset + index;
+        let end = start + needle.len();
+        let before = !haystack[..start]
+            .chars()
+            .next_back()
+            .is_some_and(|c| c.is_alphanumeric());
+        let after = !haystack[end..]
+            .chars()
+            .next()
+            .is_some_and(|c| c.is_alphanumeric());
+        if before && after {
+            return true;
+        }
+        offset = end;
+    }
+    false
+}
+
+fn mentions_any(text: &str, phrases: &[&str]) -> bool {
+    phrases.iter().any(|phrase| mentions(text, phrase))
+}
+
 fn extract_server_info(packets: &[serde_json::Value]) -> ServerSniffResult {
     let mut info = ServerSniffResult::default();
 
@@ -325,13 +396,18 @@ fn extract_server_info(packets: &[serde_json::Value]) -> ServerSniffResult {
         }
     }
 
-    let lower = full_text.to_lowercase();
-    // Print debug info
-    info.password_protected = lower.contains("password") || lower.contains("enter password");
-    info.whitelisted = lower.contains("whitelist");
-    info.banned = lower.contains("banned");
-    info.server_full = lower.contains("queue") || lower.contains("full");
-    info.auth_required = lower.contains("bad game session");
+    // Status flags come from the server's messages only, and only as whole
+    // words or phrases: substring matches over every string a server sent
+    // flagged a server named "Full Moon" or a MOTD saying "beautifully" as
+    // full.
+    for message in status_messages(packets) {
+        info.password_protected =
+            info.password_protected || mentions_any(&message, PASSWORD_MARKERS);
+        info.whitelisted = info.whitelisted || mentions_any(&message, WHITELIST_MARKERS);
+        info.banned = info.banned || mentions_any(&message, BANNED_MARKERS);
+        info.server_full = info.server_full || mentions_any(&message, FULL_MARKERS);
+        info.auth_required = info.auth_required || mentions_any(&message, AUTH_MARKERS);
+    }
     // password_valid set by sniff_server step 3
 
     for p in packets {
@@ -473,17 +549,14 @@ fn sniff_server_blocking(
                 timeout,
             ) {
                 let info3 = extract_server_info(&parse_response_packets(&data3));
-                // If server says "bad game session", password was accepted
-                // If server still says "password", the password was wrong
-                let lower3 = info3
-                    .disconnect_message
-                    .as_deref()
-                    .unwrap_or("")
-                    .to_lowercase();
-                info.auth_required = info3.auth_required || lower3.contains("bad game session");
-                info.password_valid = if info.auth_required {
+                // If the server says "bad game session", the password was
+                // accepted and only the fake session was rejected. If it still
+                // asks for a password, the password was wrong. Both come from
+                // the step's messages, not from every string it returned.
+                info.auth_required = info3.auth_required;
+                info.password_valid = if info3.auth_required {
                     Some(true)
-                } else if lower3.contains("password") || info3.password_protected {
+                } else if info3.password_protected {
                     Some(false) // server still asking for password → wrong
                 } else {
                     None
@@ -560,5 +633,136 @@ mod tests {
         let mut data = 5u32.to_be_bytes().to_vec(); // claims 5 bytes
         data.push(0x01); // provides 1
         assert!(parse_response_packets(&data).is_empty());
+    }
+
+    /// A packet holding one status message, shaped like the captured ones: the
+    /// leading control bytes are the protobuf framing the parse keeps in the
+    /// string.
+    fn message_packet(message: &str) -> Vec<serde_json::Value> {
+        vec![serde_json::json!({ "int_90": 9, "str_8": message })]
+    }
+
+    #[test]
+    fn real_refusals_still_raise_status_flags() {
+        // Message texts as captured from live servers (1.18-1.22).
+        assert!(
+            extract_server_info(&message_packet("\n\x13Password is invalid")).password_protected
+        );
+        assert!(extract_server_info(&message_packet(
+            "\nRThis server only allows whitelisted players to join. You are not on the whitelist."
+        ))
+        .whitelisted);
+        assert!(
+            extract_server_info(&message_packet(
+                "\nRYou are banned from this server until 2026-01-01."
+            ))
+            .banned
+        );
+        assert!(extract_server_info(&message_packet(
+            "\nRServer and Connection queue is full (16 max clients, 8 queue size). Please try again later."
+        ))
+        .server_full);
+        assert!(
+            extract_server_info(&message_packet("\n\x1fBad game session, try relogging"))
+                .auth_required
+        );
+    }
+
+    #[test]
+    fn mentions_matches_whole_words_only() {
+        assert!(mentions("Password is invalid", "password"));
+        assert!(mentions(
+            "Server and Connection queue is full (16)",
+            "is full"
+        ));
+        assert!(!mentions("beautifully", "full"));
+        assert!(!mentions("Soulsprout Bandits", "banned"));
+        // A plain word is not a phrase.
+        assert!(!mentions("Full Moon", "is full"));
+    }
+
+    #[test]
+    fn identity_text_never_raises_status_flags() {
+        // Server name, MOTD and mod list are user text, kept under other fields
+        // than the message: they must not be scanned even when they use the
+        // marker words.
+        let packets = vec![
+            serde_json::json!({ "int_90": 2, "str_16": "Full Moon" }),
+            serde_json::json!({ "int_90": 3, "str_17": "beautifully crafted worlds" }),
+            serde_json::json!({
+                "int_90": 5,
+                "msg_4": { "str_1": "Soulsprout Bandits", "str_2": "full of queue jokes" }
+            }),
+        ];
+        let info = extract_server_info(&packets);
+        assert!(!info.server_full);
+        assert!(!info.banned);
+        assert!(!info.password_protected);
+        assert!(!info.whitelisted);
+        assert!(!info.auth_required);
+    }
+
+    #[test]
+    fn status_flags_need_whole_words_and_phrases() {
+        // Even inside a message, "full" must not fire on "Full Moon" or
+        // "beautifully", and "ban" must not fire on "Bandits".
+        let info = extract_server_info(&message_packet(
+            "Welcome to Full Moon - beautifully crafted, and Bandits beware!",
+        ));
+        assert!(!info.server_full);
+        assert!(!info.banned);
+        assert!(!info.password_protected);
+        assert!(!info.whitelisted);
+        assert!(!info.auth_required);
+    }
+
+    #[test]
+    fn version_screen_is_read_from_the_message_field() {
+        let packets = vec![serde_json::json!({
+            "int_90": 9,
+            "msg_8": {
+                "str_1": "Incompatible Server Version.\nYou: v1.99.99 (nv: 999.99.99)\nServer: v1.22.2 (nv: 1.22.6)"
+            }
+        })];
+        let info = extract_server_info(&packets);
+        assert_eq!(info.server_game_version.as_deref(), Some("1.22.2"));
+        assert_eq!(info.server_network_version.as_deref(), Some("1.22.6"));
+    }
+
+    #[test]
+    fn captured_refusals_raise_the_right_flags() {
+        // Raw responses captured from live 1.22 servers, parsed end to end: a
+        // password-protected server, a whitelisted one, and a rejected session.
+        let password: &[u8] = &[
+            0x00, 0x00, 0x00, 0x1a, 0xd0, 0x05, 0x09, 0x42, 0x15, 0x0a, 0x13, 0x50, 0x61, 0x73,
+            0x73, 0x77, 0x6f, 0x72, 0x64, 0x20, 0x69, 0x73, 0x20, 0x69, 0x6e, 0x76, 0x61, 0x6c,
+            0x69, 0x64,
+        ];
+        let info = extract_server_info(&parse_response_packets(password));
+        assert!(info.password_protected);
+        assert!(!info.whitelisted && !info.banned && !info.server_full);
+
+        let whitelist: &[u8] = &[
+            0x00, 0x00, 0x00, 0x59, 0xd0, 0x05, 0x09, 0x42, 0x54, 0x0a, 0x52, 0x54, 0x68, 0x69,
+            0x73, 0x20, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x20, 0x6f, 0x6e, 0x6c, 0x79, 0x20,
+            0x61, 0x6c, 0x6c, 0x6f, 0x77, 0x73, 0x20, 0x77, 0x68, 0x69, 0x74, 0x65, 0x6c, 0x69,
+            0x73, 0x74, 0x65, 0x64, 0x20, 0x70, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x73, 0x20, 0x74,
+            0x6f, 0x20, 0x6a, 0x6f, 0x69, 0x6e, 0x2e, 0x20, 0x59, 0x6f, 0x75, 0x20, 0x61, 0x72,
+            0x65, 0x20, 0x6e, 0x6f, 0x74, 0x20, 0x6f, 0x6e, 0x20, 0x74, 0x68, 0x65, 0x20, 0x77,
+            0x68, 0x69, 0x74, 0x65, 0x6c, 0x69, 0x73, 0x74, 0x2e,
+        ];
+        let info = extract_server_info(&parse_response_packets(whitelist));
+        assert!(info.whitelisted);
+        assert!(!info.password_protected && !info.banned && !info.server_full);
+
+        let session: &[u8] = &[
+            0x00, 0x00, 0x00, 0x06, 0xd0, 0x05, 0x02, 0x82, 0x01, 0x00, 0x00, 0x00, 0x00, 0x26,
+            0xd0, 0x05, 0x09, 0x42, 0x21, 0x0a, 0x1f, 0x42, 0x61, 0x64, 0x20, 0x67, 0x61, 0x6d,
+            0x65, 0x20, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x2c, 0x20, 0x74, 0x72, 0x79,
+            0x20, 0x72, 0x65, 0x6c, 0x6f, 0x67, 0x67, 0x69, 0x6e, 0x67,
+        ];
+        let info = extract_server_info(&parse_response_packets(session));
+        assert!(info.auth_required);
+        assert!(!info.password_protected && !info.whitelisted && !info.banned && !info.server_full);
     }
 }
