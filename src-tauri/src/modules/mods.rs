@@ -923,12 +923,56 @@ pub(crate) fn apply_mod_enabled(
     disabled_mods(settings)
 }
 
-fn read_settings_file(profile_dir: &Path) -> Value {
-    std::fs::read_to_string(paths::clientsettings_path(profile_dir))
-        .ok()
-        .and_then(|text| json5_from_str::<Value>(&text).ok())
-        .filter(Value::is_object)
-        .unwrap_or_else(|| json!({}))
+/// Reads a profile's `clientsettings.json` for a write.
+///
+/// A missing file is fine: the write creates it. Anything else is not. The
+/// write paths replace the whole file with the keys they edited, so a file that
+/// only fails to *parse* (the game rewrites it while it runs, so a torn read is
+/// enough) must stop the write instead of being treated as empty — that would
+/// drop keybinds, video settings and the stored account session.
+fn read_settings_file(profile_dir: &Path) -> Result<Value, UiError> {
+    let path = paths::clientsettings_path(profile_dir);
+    let text = match std::fs::read_to_string(&path) {
+        Ok(text) => text,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(json!({})),
+        Err(error) => {
+            return Err(UiError::io(format!(
+                "Failed to read {}: {error}",
+                path.display()
+            )))
+        }
+    };
+    let settings = json5_from_str::<Value>(&text).map_err(|error| {
+        UiError::new(
+            "settings_parse_error",
+            format!(
+                "Refusing to overwrite {}: failed to parse it: {error}",
+                path.display()
+            ),
+        )
+    })?;
+    if !settings.is_object() {
+        return Err(UiError::new(
+            "settings_parse_error",
+            format!(
+                "Refusing to overwrite {}: it is not a settings object",
+                path.display()
+            ),
+        ));
+    }
+    Ok(settings)
+}
+
+/// `clientsettings.json` for reading only (the mod scan's disabled flag): a
+/// missing or unparseable file simply means no mod is disabled.
+fn read_settings_file_or_default(profile_dir: &Path) -> Value {
+    match read_settings_file(profile_dir) {
+        Ok(settings) => settings,
+        Err(error) => {
+            log_error!("clientsettings.json unreadable, ignoring it: {error}");
+            json!({})
+        }
+    }
 }
 
 fn write_settings_file(profile_dir: &Path, settings: &Value) -> Result<(), UiError> {
@@ -1106,7 +1150,7 @@ pub async fn apply_mod_state(
         } else {
             Vec::new()
         };
-        let mut settings = read_settings_file(&profile_dir);
+        let mut settings = read_settings_file(&profile_dir)?;
         for installed in &mods {
             let enabled = !is_in_disabled_set(&params.disabled, &installed.modid);
             apply_mod_enabled(&mut settings, &installed.modid, &installed.version, enabled);
@@ -1173,7 +1217,7 @@ pub async fn set_mod_enabled(
     require_managed_path(&app, Path::new(&params.path), "Profile path")?;
     tokio::task::spawn_blocking(move || {
         let profile_dir = PathBuf::from(&params.path);
-        let mut settings = read_settings_file(&profile_dir);
+        let mut settings = read_settings_file(&profile_dir)?;
         let updated = apply_mod_enabled(
             &mut settings,
             &params.modid,
@@ -1206,7 +1250,7 @@ pub async fn set_all_mods_enabled(
         } else {
             Vec::new()
         };
-        let mut settings = read_settings_file(&profile_dir);
+        let mut settings = read_settings_file(&profile_dir)?;
         let mut updated = disabled_mods(&settings);
         for installed in mods {
             updated =
@@ -1233,7 +1277,7 @@ pub async fn get_mods(app: AppHandle, path: String) -> Result<ModsResult, UiErro
         let start = std::time::Instant::now();
         let mut result = get_mods_cached(&mods_dir);
         if let Ok(scanned) = result.as_mut() {
-            let settings = read_settings_file(&profile_dir);
+            let settings = read_settings_file_or_default(&profile_dir);
             for item in &mut scanned.mods {
                 item.disabled = is_mod_disabled(&settings, &item.modid, &item.version);
             }
@@ -1642,5 +1686,38 @@ mod tests {
         let updated = apply_mod_enabled(&mut settings, "other", "1.0.0", false);
         assert_eq!(updated, vec!["legacy", "other@1.0.0"]);
         assert_eq!(settings["stringListSettings"]["disabledMods"][0], 7);
+    }
+
+    #[test]
+    fn settings_write_refuses_an_unparseable_file() {
+        let tmp = tempfile::tempdir().unwrap();
+        let profile = tmp.path().join("profile");
+        std::fs::create_dir_all(&profile).unwrap();
+
+        // A missing file is a fresh start, not an error.
+        assert_eq!(read_settings_file(&profile).unwrap(), json!({}));
+
+        // A file that only fails to parse stops the write instead of being
+        // replaced with an empty document.
+        let path = paths::clientsettings_path(&profile);
+        std::fs::write(&path, "{\"keybinds\": ").unwrap();
+        let error = read_settings_file(&profile).unwrap_err();
+        assert_eq!(error.name, "settings_parse_error");
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "{\"keybinds\": ");
+
+        // Non-object documents are refused too.
+        std::fs::write(&path, "[1, 2]").unwrap();
+        assert_eq!(
+            read_settings_file(&profile).unwrap_err().name,
+            "settings_parse_error"
+        );
+
+        // The read-only path tolerates what the write paths refuse.
+        assert_eq!(read_settings_file_or_default(&profile), json!({}));
+
+        // A parseable document round-trips through the tolerant path unchanged.
+        std::fs::write(&path, "{\"intSettings\": {\"fov\": 70}}").unwrap();
+        let settings = read_settings_file_or_default(&profile);
+        assert_eq!(settings["intSettings"]["fov"], 70);
     }
 }
