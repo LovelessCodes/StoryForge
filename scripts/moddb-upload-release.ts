@@ -244,12 +244,23 @@ let changelogHtml: string;
 
 // 4) Session check + action token.
 const editUrl = `${MODDB}/edit/release/?modid=${args.modid}`;
+const cookieSegments = cookie.split(";").filter((part) => part.trim()).length;
+log(
+  `Cookie header: ${cookieSegments} segment(s); PHPSESSID ${cookie.includes("PHPSESSID") ? "present" : "MISSING"}; ` +
+    `vs_websessionkey ${cookie.includes("vs_websessionkey") ? "present" : "MISSING"}.`,
+);
 log("Checking the ModDB session and scraping the action token…");
 const pageRes = await fetch(editUrl, {
   headers: { Cookie: cookie, "User-Agent": UA },
   redirect: "follow",
 });
 const pageHtml = await pageRes.text();
+if (pageRes.status === 401) {
+  abort(
+    "MODDB_COOKIE was rejected by the ModDB (HTTP 401): the session has expired, or the secret value is malformed. " +
+      "Log in again, copy the `Cookie` request header, and update the secret.",
+  );
+}
 if (pageRes.url.includes("account.vintagestory.at") || /name="password"/.test(pageHtml)) {
   abort(
     "MODDB_COOKIE is expired or invalid (redirected to login). Log in again and refresh the secret.",
@@ -258,7 +269,8 @@ if (pageRes.url.includes("account.vintagestory.at") || /name="password"/.test(pa
 const token = pageHtml.match(/name="at"\s+value="([^"]+)"/)?.[1];
 if (!token)
   abort(
-    "Could not find the action token on the edit page — layout may have changed, or the cookie is invalid.",
+    `Could not find the action token on the edit page (HTTP ${pageRes.status}, final URL ${pageRes.url}, ` +
+      `${pageHtml.length} bytes) — layout may have changed, or the cookie is invalid.`,
   );
 log("Session valid, token found.");
 
