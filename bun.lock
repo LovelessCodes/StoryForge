@@ -60,6 +60,7 @@
         "oxlint-tsgolint": "^7.0.2003",
         "playwright": "^1.63.0",
         "sharp": "^0.35.5",
+        "tsc-rs": "^0.2.0",
         "typescript": "~7.0.2",
         "vite": "^8.3.1",
         "vitest": "^5.0.2",
@@ -520,6 +521,12 @@
     "@tauri-store/zustand": ["@tauri-store/zustand@1.2.1", "", { "dependencies": { "@tauri-apps/api": "^2.11.1", "@tauri-store/shared": "0.10.6", "zustand": "^5.0.14" } }, "sha512-YJnHU0ZG4EZ7F6HLrl36eMLFgiEJ764FPzlJY1IqkwnJvVnw9yNfHkhKdGN6zxlW1BGoNJ2yFrac+rhID28Z0g=="],
 
     "@ts-morph/common": ["@ts-morph/common@0.27.0", "", { "dependencies": { "fast-glob": "^3.3.3", "minimatch": "^10.0.1", "path-browserify": "^1.0.1" } }, "sha512-Wf29UqxWDpc+i61k3oIOzcUfQt79PIT9y/MWfAGlrkjg6lBC1hwDECLXPVJAhWjiGbfBCxZd65F/LIZF3+jeJQ=="],
+
+    "@tsc-rs/darwin-arm64": ["@tsc-rs/darwin-arm64@0.2.0", "", { "os": "darwin", "cpu": "arm64" }, "sha512-sf8+KeIFuENwGM/rf09g0Yp6ttMxvJXUsM1rvc/h6RhsvFhzmwUwj3fe/YtHm80EoJCQ/TtFUT2CjHJu6Pl1EQ=="],
+
+    "@tsc-rs/linux-arm64": ["@tsc-rs/linux-arm64@0.2.0", "", { "os": "linux", "cpu": "arm64" }, "sha512-3j4Res9jkcwt5H5M6MLoNZEvWbx49Pg2rjJcylpRk767wW3Rm4TboQkTJmhWTnjewT9CeTIjKaXn/DU3QRCxPQ=="],
+
+    "@tsc-rs/linux-x64": ["@tsc-rs/linux-x64@0.2.0", "", { "os": "linux", "cpu": "x64" }, "sha512-gdzYIwgtFANiAdGi8xzDRk9o5gUXGeCEHYLggXmthclYlOJnZv82dAeOLIcrL//p6+K4SAogTKy2fFm8sARGtw=="],
 
     "@types/bun": ["@types/bun@1.4.2", "", { "dependencies": { "bun-types": "1.4.2" } }, "sha512-GimotNn7+ZV0uVArItBbriZsR1oNf0+WTzPkdcFrzShI7k2norL0uzEaJT8T33dWr7O/c9ZDuAFQrctKCi72oQ=="],
 
@@ -1216,6 +1223,8 @@
     "toidentifier": ["toidentifier@1.0.1", "", {}, "sha512-o5sSPKEkg/DIQNmH43V0/uerLrpzVedkUh8tGNvaeXpfpuwjKenlSox/2O/BTlZUtEe+JG7s5YhEz608PlAHRA=="],
 
     "ts-morph": ["ts-morph@26.0.0", "", { "dependencies": { "@ts-morph/common": "~0.27.0", "code-block-writer": "^13.0.3" } }, "sha512-ztMO++owQnz8c/gIENcM9XfCEzgoGphTv+nKpYNM1bgsdOVC/jRZuEBf6N+mLLDNg68Kl+GgUZfOySaRiG1/Ug=="],
+
+    "tsc-rs": ["tsc-rs@0.2.0", "", { "optionalDependencies": { "@tsc-rs/darwin-arm64": "0.2.0", "@tsc-rs/linux-arm64": "0.2.0", "@tsc-rs/linux-x64": "0.2.0" }, "bin": { "tsc-rs": "bin/tsc-rs" } }, "sha512-cALwflE/WoaqyD22552kPPVhDe3v4yMZ1X0LsLJFoBz2VrL6RrGE6Uuss7kfNpFpDICtSXYgE+muz5zV25qtVA=="],
 
     "tsconfig-paths": ["tsconfig-paths@4.2.0", "", { "dependencies": { "json5": "^2.2.2", "minimist": "^1.2.6", "strip-bom": "^3.0.0" } }, "sha512-NoZ4roiN7LnbKn9QqE1amc9DJfzvZXxF4xDavcOWt1BPkdx+m+0gJuPM+S0vCe7zTJMYUP0R8pO2XMr+Y8oLIg=="],
 
