@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useEffect, useRef, useState } from "react";
 
+import { errorMessage } from "@/lib/errors";
 import { t } from "@/lib/i18n";
 import { toast } from "@/lib/notify";
 
@@ -93,7 +94,7 @@ export const useCreateProfileLock = (profileId: number) => {
       toast.success(t("profiles.pack.created", { count: lock.mods.length }));
     },
     onError: (error) => {
-      toast.error(t("profiles.pack.createFailed"), { description: String(error) });
+      toast.error(t("profiles.pack.createFailed"), { description: errorMessage(error) });
     },
   });
 };
@@ -107,7 +108,7 @@ export const useRemoveProfileLock = (profileId: number) => {
       toast.success(t("profiles.pack.removed"));
     },
     onError: (error) => {
-      toast.error(t("profiles.pack.removeFailed"), { description: String(error) });
+      toast.error(t("profiles.pack.removeFailed"), { description: errorMessage(error) });
     },
   });
 };
@@ -173,7 +174,7 @@ export function useApplyProfileLock(profileId: number, profilePath: string) {
       }
     },
     onError: (error) => {
-      toast.error(t("profiles.pack.syncFailed"), { description: String(error) });
+      toast.error(t("profiles.pack.syncFailed"), { description: errorMessage(error) });
     },
   });
 
