@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useServerConfig, useWriteServerConfig } from "@/hooks/queries/server-hosting";
 import "@/lib/monaco";
+import { errorMessage } from "@/lib/errors";
 import { toast } from "@/lib/notify";
 
 const Editor = lazy(() => import("@monaco-editor/react"));
@@ -30,7 +31,7 @@ export default function ServerConfigEditor({ instanceId }: { instanceId: number 
     try {
       JSON.parse(config);
     } catch (err) {
-      toast.error(t("hosting.config.saveFailed", { message: String(err) }));
+      toast.error(t("hosting.config.saveFailed", { message: errorMessage(err) }));
       return;
     }
     writeConfig.mutate(
@@ -40,7 +41,8 @@ export default function ServerConfigEditor({ instanceId }: { instanceId: number 
           setSaved(config);
           toast.success(t("hosting.config.saved"));
         },
-        onError: (err) => toast.error(t("hosting.config.saveFailed", { message: String(err) })),
+        onError: (err) =>
+          toast.error(t("hosting.config.saveFailed", { message: errorMessage(err) })),
       },
     );
   }
