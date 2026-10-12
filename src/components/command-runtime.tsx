@@ -6,6 +6,7 @@ import { useActiveProfile } from "@/hooks/use-active-profile";
 import { usePlayProfile } from "@/hooks/use-play-profile";
 import { openProfilesFolderInFileExplorer } from "@/lib/app-paths";
 import { COMMANDS, type AppCommandId, type CommandRuntime } from "@/lib/commands";
+import { errorMessage } from "@/lib/errors";
 import { t } from "@/lib/i18n";
 import { queryClient } from "@/lib/query-client";
 import { PAGE_PATHS } from "@/lib/routes";
@@ -56,7 +57,7 @@ export function CommandRuntimeProvider({
       openCommandPalette: () => onCommandOpenChange(true),
       openProfilesFolder: () => {
         void openProfilesFolderInFileExplorer().catch((err) => {
-          notify("profiles-folder", { type: "error", title: String(err) });
+          notify("profiles-folder", { type: "error", title: errorMessage(err) });
         });
       },
       refresh: () => {

@@ -1919,8 +1919,6 @@ pub mod macos {
 
 #[command]
 pub fn reveal_in_file_explorer(app: AppHandle, path: String) -> Result<String, UiError> {
-    use tauri_plugin_opener::OpenerExt;
-
     let path = PathBuf::from(&path);
     if !path.exists() {
         create_dir_all(&path).map_err(|e| {
@@ -1932,10 +1930,7 @@ pub fn reveal_in_file_explorer(app: AppHandle, path: String) -> Result<String, U
         })?;
     }
 
-    // The plugin canonicalizes the path, so it must exist by now.
-    app.opener()
-        .reveal_item_in_dir(&path)
-        .map_err(|e| UiError::new("reveal_failed", format!("Failed to open file manager: {e}")))?;
+    super::reveal::reveal_in_file_manager(&app, &path)?;
 
     Ok(path.to_string_lossy().to_string())
 }

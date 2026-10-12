@@ -24,6 +24,9 @@ pub mod paths;
 pub mod profile_ops;
 pub mod profiles;
 pub mod proto;
+pub mod reveal;
+#[cfg(target_os = "linux")]
+pub mod reveal_linux;
 pub mod rustory;
 pub mod saves;
 pub mod screenshots;

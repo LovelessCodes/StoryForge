@@ -20,6 +20,7 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { openProfilesFolderInFileExplorer } from "@/lib/app-paths";
+import { errorMessage } from "@/lib/errors";
 import { PAGE_PATHS, type RoutePage } from "@/lib/routes";
 
 import { useActiveProfile } from "../../hooks/use-active-profile";
@@ -206,7 +207,7 @@ export default function Sidebar() {
           className="w-full group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:px-0"
           onClick={() => {
             void openProfilesFolderInFileExplorer().catch((err) => {
-              notify("profiles-folder", { type: "error", title: String(err) });
+              notify("profiles-folder", { type: "error", title: errorMessage(err) });
             });
           }}
           title={t("layout.sidebar.openProfilesFolderTitle")}

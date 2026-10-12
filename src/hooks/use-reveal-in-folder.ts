@@ -2,6 +2,7 @@ import { type UseMutationOptions, useMutation } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { platform } from "@tauri-apps/plugin-os";
 
+import { errorMessage } from "@/lib/errors";
 import { t } from "@/lib/i18n";
 import { toast } from "@/lib/notify";
 
@@ -15,6 +16,6 @@ export const useRevealInFolder = (props?: UseMutationOptions<string, Error, stri
       invoke("reveal_in_file_explorer", {
         path: currentPlatform === "windows" ? path.replace(/\//g, "\\") : path,
       }) as Promise<string>,
-    onError: (error) => toast.error(t("layout.reveal.failed", { message: error.message })),
+    onError: (error) => toast.error(t("layout.reveal.failed", { message: errorMessage(error) })),
   });
 };

@@ -90,6 +90,12 @@ rusqlite = { version = "0.40", features = ["bundled"] }
 [target.'cfg(unix)'.dependencies]
 rusqlite = "0.40"
 
+# Reveal-in-file-manager goes through xdg-desktop-portal on Linux, which is the
+# only way that also works inside the Flatpak sandbox. Matches the version the
+# opener plugin already pulls in, so the dependency tree is unchanged.
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus = "5.9"
+
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2"
 
