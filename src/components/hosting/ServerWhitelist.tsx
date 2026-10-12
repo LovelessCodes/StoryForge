@@ -52,7 +52,7 @@ export default function ServerWhitelist({ instanceId }: { instanceId: number }) 
               { id: instanceId, enabled: !whitelistEnabled },
               {
                 onError: (err) =>
-                  toast.error(t("hosting.whitelist.modeFailed", { message: String(err) })),
+                  toast.error(t("hosting.whitelist.modeFailed", { message: errorMessage(err) })),
               },
             )
           }
@@ -117,7 +117,7 @@ function WhitelistRow({
       { id: instanceId, uid: entry.uid },
       {
         onError: (err) =>
-          toast.error(t("hosting.whitelist.removeFailed", { message: String(err) })),
+          toast.error(t("hosting.whitelist.removeFailed", { message: errorMessage(err) })),
         onSuccess: (_data, { uid }) => {
           setConfirming(false);
           if (!isRunning) return;
@@ -198,7 +198,7 @@ function AddPlayerForm({ instanceId, isRunning }: { instanceId: number; isRunnin
         toast.error(t("hosting.whitelist.playerNotFound", { name: query }));
       }
     } catch (err) {
-      toast.error(t("hosting.whitelist.lookupFailed", { message: String(err) }));
+      toast.error(t("hosting.whitelist.lookupFailed", { message: errorMessage(err) }));
     }
   }
 
@@ -218,7 +218,8 @@ function AddPlayerForm({ instanceId, isRunning }: { instanceId: number; isRunnin
     addMutation.mutate(
       { id: instanceId, uid, name: newName.trim() || uid },
       {
-        onError: (err) => toast.error(t("hosting.whitelist.addFailed", { message: String(err) })),
+        onError: (err) =>
+          toast.error(t("hosting.whitelist.addFailed", { message: errorMessage(err) })),
         onSuccess: (entry) => {
           setNewUid("");
           setNewName("");
@@ -324,7 +325,7 @@ function BulkImportForm({ instanceId }: { instanceId: number }) {
       { id: instanceId, entries },
       {
         onError: (err) =>
-          toast.error(t("hosting.whitelist.importFailed", { message: String(err) })),
+          toast.error(t("hosting.whitelist.importFailed", { message: errorMessage(err) })),
         onSuccess: () => {
           setJson("");
         },
