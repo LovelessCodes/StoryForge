@@ -16,6 +16,22 @@ use super::utils::{
 };
 use crate::{log_error, log_info};
 
+/// Suffixes that mark a managed version as a client-fork build of its base
+/// game version: Optimum (`+optimum`) patches a copy of the game, VulkanStory
+/// (`+vulkanstory`) extracts a package into a copy. A version carries at most
+/// one of them.
+pub const OPTIMUM_SUFFIX: &str = "+optimum";
+pub const VULKANSTORY_SUFFIX: &str = "+vulkanstory";
+
+/// The base game version a version name carries: `1.22.7+optimum` and
+/// `1.22.7+vulkanstory` both resolve to `1.22.7`.
+pub fn base_game_version(version: &str) -> &str {
+    version
+        .strip_suffix(OPTIMUM_SUFFIX)
+        .or_else(|| version.strip_suffix(VULKANSTORY_SUFFIX))
+        .unwrap_or(version)
+}
+
 /// File in the app data dir listing game versions that live outside the
 /// versions folder (installed by another launcher or the stock game).
 const EXTERNAL_VERSIONS_FILE: &str = "external-versions.json";
@@ -53,6 +69,8 @@ pub struct VersionInfo {
     pub source: Option<String>,
     /// Optimum version this folder is patched with, when it is an Optimum build.
     pub optimum_version: Option<String>,
+    /// VulkanStory version this folder is carrying, when it is a VulkanStory build.
+    pub vulkanstory_version: Option<String>,
 }
 
 /// A game version found in another launcher's data.
@@ -221,6 +239,7 @@ pub async fn get_installed_versions(app: AppHandle) -> Result<Vec<VersionInfo>, 
             external: true,
             source: entry.source,
             optimum_version: super::optimum::read_optimum_version(&path),
+            vulkanstory_version: super::vulkanstory::read_vulkanstory_version(&path),
         });
     }
 
@@ -259,6 +278,7 @@ fn scan_installed_versions(versions_dir: &Path) -> Result<Vec<VersionInfo>, UiEr
                     external: false,
                     source: None,
                     optimum_version: super::optimum::read_optimum_version(&path),
+                    vulkanstory_version: super::vulkanstory::read_vulkanstory_version(&path),
                 });
             }
         }
@@ -602,6 +622,14 @@ mod tests {
 
         std::fs::write(tmp.path().join("Vintagestory.dll"), b"x").unwrap();
         assert!(looks_like_game_dir(tmp.path()));
+    }
+
+    #[test]
+    fn base_game_version_strips_client_flavor_suffixes() {
+        assert_eq!(base_game_version("1.22.7+optimum"), "1.22.7");
+        assert_eq!(base_game_version("1.22.7+vulkanstory"), "1.22.7");
+        assert_eq!(base_game_version("1.22.7"), "1.22.7");
+        assert_eq!(base_game_version("1.22.0-rc.1"), "1.22.0-rc.1");
     }
 
     #[test]

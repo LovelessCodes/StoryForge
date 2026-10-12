@@ -1216,7 +1216,7 @@ async fn resolve_launch_context(
     let dotnet_root = dotnet::ensure_dotnet(
         app,
         &app_data,
-        super::optimum::base_game_version(&profile.version),
+        super::versions::base_game_version(&profile.version),
         options.profile_id,
         options.use_system_dotnet,
     )

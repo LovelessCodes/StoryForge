@@ -8,6 +8,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **VulkanStory installs**: install the [VulkanStory](https://github.com/KillerPixelCrew/VulkanStory)
+  renderer fork for an installed version in one click. The release package is downloaded from
+  VulkanStory's releases and verified against its SHA-256 archive hash; the launcher reads the file
+  inventory embedded in the package straight from the remote archive over HTTP range requests, so
+  unsupported game versions are refused before anything is downloaded, and every extracted file is
+  verified afterwards. The package goes into a copy (`1.22.7+vulkanstory`), the original stays
+  vanilla, updates are offered when a newer release still supports the game version, and an edited
+  `VulkanStory/loader.ini` survives them. Windows (x64) only: VulkanStory publishes no macOS
+  package, and its Linux package is not part of a release yet.
+
 ## [2.0.3] - 2026-10-12
 
 ### Fixed

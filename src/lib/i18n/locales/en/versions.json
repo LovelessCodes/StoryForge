@@ -124,5 +124,45 @@
       "incomplete": "The game version is still downloading.",
       "targetExists": "A folder with this Optimum version name already exists."
     }
+  },
+  "vulkanstory": {
+    "badge": "VulkanStory {{version}}",
+    "label": "VulkanStory",
+    "install": "Install VulkanStory",
+    "update": "Update VulkanStory",
+    "sheet": {
+      "description": "Adds a VulkanStory build for version {{version}}. Your original version folder is left untouched; the package is extracted into a copy.",
+      "unsupportedSystem": "VulkanStory isn't available for this system.",
+      "platformNote": "VulkanStory currently publishes builds for Windows (x64) only.",
+      "manifestUnavailable": "VulkanStory's release information couldn't be loaded.",
+      "noBuildForVersion": "VulkanStory has no build for version {{version}} yet.",
+      "summary": "VulkanStory {{version}} for Vintage Story {{base}}",
+      "copyNote": "Creates one extra copy of the version folder; the original stays untouched.",
+      "retry": "Retry"
+    },
+    "phase": {
+      "manifest": "Checking VulkanStory releases…",
+      "download": "Downloading package…",
+      "copy": "Copying game version…",
+      "extract": "Extracting package…",
+      "verify": "Verifying files…",
+      "done": "Done",
+      "cancelled": "Cancelled"
+    },
+    "toast": {
+      "installed": "VulkanStory {{version}} installed ({{base}}).",
+      "failed": "VulkanStory install failed",
+      "cancelled": "VulkanStory install cancelled."
+    },
+    "failure": {
+      "badInput": "VulkanStory can only be installed for a vanilla version.",
+      "unsupportedVersion": "This game version isn't supported by the package.",
+      "downloadFailed": "The download or its contents failed verification.",
+      "verification": "The extracted files failed verification.",
+      "officialMismatch": "The game files don't match what VulkanStory expects.",
+      "busy": "Another VulkanStory install is already running.",
+      "incomplete": "The game version is still downloading.",
+      "targetExists": "A folder with this VulkanStory version name already exists."
+    }
   }
 }

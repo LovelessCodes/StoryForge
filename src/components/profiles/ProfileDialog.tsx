@@ -30,6 +30,7 @@ import {
   buildProfilePath,
   compareSemverDesc,
   isOptimumVersion,
+  isVulkanStoryVersion,
   makeStringFolderSafe,
 } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
@@ -66,8 +67,9 @@ export default function ProfileDialog({
   );
 
   // The picker lists every published version plus any installed build the
-  // catalog does not carry — most importantly Optimum builds, which are their
-  // own version folders (`1.22.7+optimum`) but the same game version.
+  // catalog does not carry — most importantly Optimum and VulkanStory builds,
+  // which are their own version folders (`1.22.7+optimum`, `1.22.7+vulkanstory`)
+  // but the same game version.
   const versionItems = useMemo(() => {
     const remote = (gameVersions ?? []).toSorted(compareSemverDesc);
     const extras = installedVersions.filter((installed) => !remote.includes(installed.name));
@@ -82,7 +84,12 @@ export default function ProfileDialog({
               version: baseGameVersion(installed.name),
               optimum: installed.optimum_version ?? "",
             })
-          : installed.name,
+          : isVulkanStoryVersion(installed.name)
+            ? t("profiles.fields.vulkanStoryVersion", {
+                version: baseGameVersion(installed.name),
+                vulkanstory: installed.vulkanstory_version ?? "",
+              })
+            : installed.name,
         value: installed.name,
       })),
     ];
@@ -268,11 +275,13 @@ export default function ProfileDialog({
                   {versionItems.map((item) => (
                     <SelectItem key={item.value} value={item.value}>
                       {item.label}
-                      {installedSet.has(item.value) && !isOptimumVersion(item.value) && (
-                        <span className="text-muted-foreground ml-2 text-xs">
-                          {t("profiles.fields.installed")}
-                        </span>
-                      )}
+                      {installedSet.has(item.value) &&
+                        !isOptimumVersion(item.value) &&
+                        !isVulkanStoryVersion(item.value) && (
+                          <span className="text-muted-foreground ml-2 text-xs">
+                            {t("profiles.fields.installed")}
+                          </span>
+                        )}
                     </SelectItem>
                   ))}
                 </SelectContent>

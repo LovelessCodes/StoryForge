@@ -760,7 +760,7 @@ pub async fn create_hosted_server(
     let dotnet_root = dotnet::ensure_dotnet(
         &app,
         &app_data_dir,
-        super::optimum::base_game_version(&instance.version),
+        super::versions::base_game_version(&instance.version),
         id,
         true,
     )
@@ -1096,7 +1096,7 @@ pub async fn start_hosted_server(app: AppHandle, instance_id: u64) -> Result<(),
     let dotnet_root = dotnet::ensure_dotnet(
         &app,
         &app_data,
-        super::optimum::base_game_version(&instance.version),
+        super::versions::base_game_version(&instance.version),
         instance_id,
         true,
     )
@@ -1482,7 +1482,7 @@ pub async fn set_whitelist_mode(
     let dotnet_root = dotnet::ensure_dotnet(
         &app,
         &app_data,
-        super::optimum::base_game_version(&instance.version),
+        super::versions::base_game_version(&instance.version),
         instance_id,
         true,
     )

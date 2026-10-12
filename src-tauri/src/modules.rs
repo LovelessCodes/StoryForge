@@ -38,5 +38,6 @@ pub mod utils;
 pub mod vcdbs;
 pub mod versions;
 pub mod vs_launcher;
+pub mod vulkanstory;
 pub mod waxlight;
 pub mod yelloowstone;

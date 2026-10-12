@@ -10,7 +10,8 @@
     "installed": "(установлено)",
     "installedVersion": "{{version}} (установлено)",
     "profileName": "Название профиля",
-    "optimumVersion": "{{version}} · Optimum {{optimum}}"
+    "optimumVersion": "{{version}} · Optimum {{optimum}}",
+    "vulkanStoryVersion": "{{version}} · VulkanStory {{vulkanstory}}"
   },
   "errors": {
     "importFailed": "Не удалось импортировать",

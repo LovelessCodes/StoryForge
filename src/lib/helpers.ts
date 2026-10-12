@@ -37,9 +37,14 @@ export function compareSemverAsc(a: string, b: string) {
 /** Suffix marking a managed version as an Optimum build of its base version. */
 export const OPTIMUM_SUFFIX = "+optimum";
 
-/** The base game version a version name carries: `1.22.7+optimum` → `1.22.7`. */
+/** Suffix marking a managed version as a VulkanStory build of its base version. */
+export const VULKANSTORY_SUFFIX = "+vulkanstory";
+
+/** The base game version a version name carries: `1.22.7+optimum`/`1.22.7+vulkanstory` → `1.22.7`. */
 export function baseGameVersion(name: string) {
-  return name.endsWith(OPTIMUM_SUFFIX) ? name.slice(0, -OPTIMUM_SUFFIX.length) : name;
+  if (name.endsWith(OPTIMUM_SUFFIX)) return name.slice(0, -OPTIMUM_SUFFIX.length);
+  if (name.endsWith(VULKANSTORY_SUFFIX)) return name.slice(0, -VULKANSTORY_SUFFIX.length);
+  return name;
 }
 
 /** Whether a version name is an Optimum build. */
@@ -50,6 +55,16 @@ export function isOptimumVersion(name: string) {
 /** The name an Optimum build of `base` is registered under. */
 export function optimumVersionName(base: string) {
   return `${base}${OPTIMUM_SUFFIX}`;
+}
+
+/** Whether a version name is a VulkanStory build. */
+export function isVulkanStoryVersion(name: string) {
+  return name.endsWith(VULKANSTORY_SUFFIX);
+}
+
+/** The name a VulkanStory build of `base` is registered under. */
+export function vulkanStoryVersionName(base: string) {
+  return `${base}${VULKANSTORY_SUFFIX}`;
 }
 
 /** Finds the latest mod version — releases[] isn't guaranteed sorted by version. */

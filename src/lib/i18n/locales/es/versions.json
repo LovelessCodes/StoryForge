@@ -124,5 +124,45 @@
       "incomplete": "La versión del juego aún se está descargando.",
       "targetExists": "Ya existe una carpeta con este nombre de versión de Optimum."
     }
+  },
+  "vulkanstory": {
+    "badge": "VulkanStory {{version}}",
+    "label": "VulkanStory",
+    "install": "Instalar VulkanStory",
+    "update": "Actualizar VulkanStory",
+    "sheet": {
+      "description": "Añade una versión VulkanStory para {{version}}. La carpeta original no se toca; el paquete se extrae en una copia.",
+      "unsupportedSystem": "VulkanStory no está disponible para este sistema.",
+      "platformNote": "Actualmente VulkanStory solo publica compilaciones para Windows (x64).",
+      "manifestUnavailable": "No se pudo cargar la información de versiones de VulkanStory.",
+      "noBuildForVersion": "VulkanStory aún no tiene una compilación para la versión {{version}}.",
+      "summary": "VulkanStory {{version}} para Vintage Story {{base}}",
+      "copyNote": "Crea una copia adicional de la carpeta de la versión; el original permanece intacto.",
+      "retry": "Reintentar"
+    },
+    "phase": {
+      "manifest": "Comprobando versiones de VulkanStory…",
+      "download": "Descargando el paquete…",
+      "copy": "Copiando la versión del juego…",
+      "extract": "Extrayendo el paquete…",
+      "verify": "Verificando archivos…",
+      "done": "Listo",
+      "cancelled": "Cancelado"
+    },
+    "toast": {
+      "installed": "VulkanStory {{version}} instalado ({{base}}).",
+      "failed": "La instalación de VulkanStory falló",
+      "cancelled": "Instalación de VulkanStory cancelada."
+    },
+    "failure": {
+      "badInput": "VulkanStory solo se puede instalar para una versión vanilla.",
+      "unsupportedVersion": "Esta versión del juego no está soportada por el paquete.",
+      "downloadFailed": "La descarga o su contenido no pasaron la verificación.",
+      "verification": "Los archivos extraídos no pasaron la verificación.",
+      "officialMismatch": "Los archivos del juego no coinciden con lo que VulkanStory espera.",
+      "busy": "Ya hay otra instalación de VulkanStory en curso.",
+      "incomplete": "La versión del juego aún se está descargando.",
+      "targetExists": "Ya existe una carpeta con este nombre de versión de VulkanStory."
+    }
   }
 }

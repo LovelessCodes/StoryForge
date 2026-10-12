@@ -132,5 +132,45 @@
       "incomplete": "Версия игры ещё загружается.",
       "targetExists": "Папка с таким именем версии Optimum уже существует."
     }
+  },
+  "vulkanstory": {
+    "badge": "VulkanStory {{version}}",
+    "label": "VulkanStory",
+    "install": "Установить VulkanStory",
+    "update": "Обновить VulkanStory",
+    "sheet": {
+      "description": "Добавляет сборку VulkanStory для версии {{version}}. Исходная папка не изменяется — пакет распаковывается в копию.",
+      "unsupportedSystem": "VulkanStory недоступен для этой системы.",
+      "platformNote": "Сейчас VulkanStory публикует сборки только для Windows (x64).",
+      "manifestUnavailable": "Не удалось загрузить информацию о версиях VulkanStory.",
+      "noBuildForVersion": "Для версии {{version}} ещё нет сборки VulkanStory.",
+      "summary": "VulkanStory {{version}} для Vintage Story {{base}}",
+      "copyNote": "Создаёт дополнительную копию папки версии; оригинал остаётся неизменным.",
+      "retry": "Повторить"
+    },
+    "phase": {
+      "manifest": "Проверка версий VulkanStory…",
+      "download": "Загрузка пакета…",
+      "copy": "Копирование версии игры…",
+      "extract": "Распаковка пакета…",
+      "verify": "Проверка файлов…",
+      "done": "Готово",
+      "cancelled": "Отменено"
+    },
+    "toast": {
+      "installed": "VulkanStory {{version}} установлен ({{base}}).",
+      "failed": "Не удалось установить VulkanStory",
+      "cancelled": "Установка VulkanStory отменена."
+    },
+    "failure": {
+      "badInput": "VulkanStory можно установить только для ванильной версии.",
+      "unsupportedVersion": "Эта версия игры не поддерживается пакетом.",
+      "downloadFailed": "Загрузка или её содержимое не прошли проверку.",
+      "verification": "Распакованные файлы не прошли проверку.",
+      "officialMismatch": "Файлы игры не совпадают с тем, что ожидает VulkanStory.",
+      "busy": "Другая установка VulkanStory уже выполняется.",
+      "incomplete": "Версия игры ещё загружается.",
+      "targetExists": "Папка с таким именем версии VulkanStory уже существует."
+    }
   }
 }

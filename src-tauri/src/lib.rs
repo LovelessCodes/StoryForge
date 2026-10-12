@@ -3,7 +3,7 @@ use modules::{
     auth, backups, cairn, conflicts, download, game_data, game_defaults, gruntlauncher,
     launcher_logins, legacy, lithic, maps, modpack_io, mods, mvl, news, optimum, packs,
     profile_ops, profiles, rustory, saves, screenshots, server_hosting, servers, sniffer, versions,
-    vs_launcher, waxlight, yelloowstone,
+    vs_launcher, vulkanstory, waxlight, yelloowstone,
 };
 use tauri::RunEvent;
 
@@ -402,6 +402,9 @@ pub fn run() {
             // Optimum (client fork) overlay install
             optimum::get_optimum_status,
             optimum::install_optimum,
+            // VulkanStory (client renderer fork) package install
+            vulkanstory::get_vulkanstory_status,
+            vulkanstory::install_vulkanstory,
             // Profile pack locks (pin, verify, sync/repair)
             packs::create_profile_lock,
             packs::get_profile_lock_status,
