@@ -47,6 +47,7 @@ dependencies = [
  "uuid",
  "walkdir",
  "which",
+ "zbus",
  "zip 8.6.0",
 ]
 
