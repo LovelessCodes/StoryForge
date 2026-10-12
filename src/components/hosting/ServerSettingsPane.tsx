@@ -20,6 +20,7 @@ import {
   useHostedServer,
   useUpdateInstance,
 } from "@/hooks/queries/server-hosting";
+import { errorMessage } from "@/lib/errors";
 import { toast } from "@/lib/notify";
 
 interface ServerSettingsPaneProps {
@@ -64,7 +65,8 @@ export default function ServerSettingsPane({ instanceId, canDelete }: ServerSett
     updateInstance.mutate(
       { id: instanceId, partial: { restart_schedule: value } },
       {
-        onError: (err) => toast.error(t("hosting.settings.saveFailed", { message: String(err) })),
+        onError: (err) =>
+          toast.error(t("hosting.settings.saveFailed", { message: errorMessage(err) })),
         onSuccess: () => {
           setEditedSchedule(null);
           toast.success(t("hosting.settings.saved"));
@@ -78,7 +80,8 @@ export default function ServerSettingsPane({ instanceId, canDelete }: ServerSett
     updateInstance.mutate(
       { id: instanceId, partial: { restart_schedule: "" } },
       {
-        onError: (err) => toast.error(t("hosting.settings.saveFailed", { message: String(err) })),
+        onError: (err) =>
+          toast.error(t("hosting.settings.saveFailed", { message: errorMessage(err) })),
         onSuccess: () => {
           setEditedSchedule(null);
           toast.success(t("hosting.settings.saved"));
@@ -98,7 +101,8 @@ export default function ServerSettingsPane({ instanceId, canDelete }: ServerSett
         },
       },
       {
-        onError: (err) => toast.error(t("hosting.settings.saveFailed", { message: String(err) })),
+        onError: (err) =>
+          toast.error(t("hosting.settings.saveFailed", { message: errorMessage(err) })),
         onSuccess: () => {
           setEditedName(null);
           setEditedPort(null);
@@ -113,7 +117,8 @@ export default function ServerSettingsPane({ instanceId, canDelete }: ServerSett
     deleteInstance.mutate(
       { id: instanceId, deleteData },
       {
-        onError: (err) => toast.error(t("hosting.settings.deleteFailed", { message: String(err) })),
+        onError: (err) =>
+          toast.error(t("hosting.settings.deleteFailed", { message: errorMessage(err) })),
         onSuccess: () => {
           setDeleteOpen(false);
           void navigate({
@@ -184,7 +189,7 @@ export default function ServerSettingsPane({ instanceId, canDelete }: ServerSett
                   { id: instanceId, partial: { auto_restart } },
                   {
                     onError: (err) =>
-                      toast.error(t("hosting.settings.saveFailed", { message: String(err) })),
+                      toast.error(t("hosting.settings.saveFailed", { message: errorMessage(err) })),
                     onSuccess: () => toast.success(t("hosting.settings.saved")),
                   },
                 )
