@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { useIsMobile } from "../../hooks/use-mobile";
 import { Button } from "./button";
 import { Input } from "./input";
+import { ScrollArea } from "./scroll-area";
 import { Separator } from "./separator";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "./sheet";
 import { Skeleton } from "./skeleton";
@@ -344,15 +345,13 @@ function SidebarSeparator({ className, ...props }: React.ComponentProps<typeof S
   );
 }
 
-function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
+function SidebarContent({ className, ...props }: React.ComponentProps<typeof ScrollArea>) {
   return (
-    <div
+    <ScrollArea
+      scrollFade
       data-slot="sidebar-content"
       data-sidebar="content"
-      className={cn(
-        "no-scrollbar flex min-h-0 flex-1 flex-col gap-0 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
-        className,
-      )}
+      className={cn("min-h-0 flex-1", className)}
       {...props}
     />
   );
