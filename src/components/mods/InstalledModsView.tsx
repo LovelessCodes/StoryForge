@@ -34,6 +34,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { installedModsQueryKey, useInstalledMods } from "@/hooks/use-installed-mods";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import { useApplyModState, useSetModEnabled } from "@/hooks/use-set-mod-enabled";
+import { errorMessage } from "@/lib/errors";
 import { sectionMods, type ModSection } from "@/lib/mod-groups";
 import { toast } from "@/lib/notify";
 import type { OutputMod } from "@/lib/types";
@@ -104,7 +105,7 @@ export function InstalledModsView({
       if (removed > 0) toast.success(t("mods.installed.removed", { count: removed }));
     },
     onError: (error) => {
-      toast.error(t("mods.installed.removeFailed"), { description: String(error) });
+      toast.error(t("mods.installed.removeFailed"), { description: errorMessage(error) });
     },
   });
 
