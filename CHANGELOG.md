@@ -31,7 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Type checks** run through `tsc-rs`, a drop-in Rust port of the TypeScript 7 compiler, in the build and in CI — same diagnostics, roughly twice as fast.
-- **Releases** are mirrored to the Vintage Story ModDB automatically: the workflow zips the macOS and Windows installers, renders the matching section of this changelog as the release notes, skips versions already published, and fails with a clear message plus a Discord ping when the session cookie has expired.
 
 ### Removed
 
