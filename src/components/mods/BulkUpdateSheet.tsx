@@ -23,6 +23,7 @@ import {
   type ModUpdatesResponse,
   modUpdatesQueryKey,
 } from "@/hooks/use-mod-updates";
+import { errorMessage } from "@/lib/errors";
 import { hashPath } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
 import type { ModInfo, OutputMod } from "@/lib/types";
@@ -167,7 +168,7 @@ export function BulkUpdateSheet({
       await writeText(text);
       toast.success(t("mods.bulk.copied"));
     } catch (error) {
-      toast.error(t("mods.bulk.copyFailed"), { description: String(error) });
+      toast.error(t("mods.bulk.copyFailed"), { description: errorMessage(error) });
     }
   };
 
