@@ -579,7 +579,7 @@ export function useDownloadManager() {
           })
           .catch((error: unknown) => {
             toast.error(t("downloads.toasts.removeVersionFailed", { version: token }), {
-              description: String(error),
+              description: errorMessage(error),
             });
           });
         return;
@@ -613,7 +613,7 @@ export function useDownloadManager() {
         })
         .catch((error: unknown) => {
           toast.error(t("downloads.toasts.removeFailed", { label: entry.label }), {
-            description: String(error),
+            description: errorMessage(error),
           });
         });
     },

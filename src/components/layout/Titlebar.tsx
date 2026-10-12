@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { notify } from "@/components/ui/toast";
 import { useUpdater } from "@/hooks/use-updater";
+import { errorMessage } from "@/lib/errors";
 import { isMac, isWindows, modifierLabel } from "@/lib/helpers";
 import { useDownloadStore } from "@/stores/downloads";
 
@@ -85,7 +86,7 @@ export default function Titlebar() {
       notify("updater", {
         type: "error",
         title: t("layout.updater.failed"),
-        description: String(error),
+        description: errorMessage(error),
       });
     }
   }

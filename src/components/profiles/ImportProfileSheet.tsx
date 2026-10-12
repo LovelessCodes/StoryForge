@@ -82,7 +82,7 @@ export default function ImportProfileSheet({ open, onOpenChange }: ImportProfile
       const json = await invoke<string>("read_profile_file", { path });
       setText(json);
     } catch (error) {
-      toast.error(t("profiles.import.readFailed"), { description: String(error) });
+      toast.error(t("profiles.import.readFailed"), { description: errorMessage(error) });
     }
   }
 

@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
+import { errorMessage } from "@/lib/errors";
 import { t } from "@/lib/i18n";
 import { toast } from "@/lib/notify";
 
@@ -31,6 +32,6 @@ export const useScanModConflicts = (modsDirectory: string | undefined) =>
   useMutation({
     mutationFn: () => invoke<ConflictReport>("scan_mod_conflicts", { path: modsDirectory }),
     onError: (error) => {
-      toast.error(t("mods.conflicts.failed"), { description: String(error) });
+      toast.error(t("mods.conflicts.failed"), { description: errorMessage(error) });
     },
   });

@@ -25,6 +25,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useCreateInstance } from "@/hooks/queries/server-hosting";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
+import { errorMessage } from "@/lib/errors";
 import { compareSemverDesc } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
 import { gameVersionsQuery } from "@/lib/queries";
@@ -94,7 +95,7 @@ export default function CreateHostedServerSheet({
         toast.error(t("servers.create.playerNotFound", { name: query }));
       }
     } catch (err) {
-      toast.error(t("servers.create.lookupFailed", { error: String(err) }));
+      toast.error(t("servers.create.lookupFailed", { error: errorMessage(err) }));
     } finally {
       setLookingUp(false);
     }
@@ -135,7 +136,8 @@ export default function CreateHostedServerSheet({
         defaultWhitelistName,
       },
       {
-        onError: (err) => toast.error(t("servers.create.createFailed", { error: String(err) })),
+        onError: (err) =>
+          toast.error(t("servers.create.createFailed", { error: errorMessage(err) })),
         onSuccess: () => {
           reset();
           onOpenChange(false);

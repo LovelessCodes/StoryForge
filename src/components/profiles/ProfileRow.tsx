@@ -104,7 +104,7 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
       await invoke("export_profile_file", { id: profile.id, path });
       toast.success(t("profiles.export.exported"));
     } catch (error) {
-      toast.error(t("profiles.export.failed"), { description: String(error) });
+      toast.error(t("profiles.export.failed"), { description: errorMessage(error) });
     }
   }
 
@@ -114,7 +114,7 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
       await writeText(code);
       toast.success(t("profiles.export.shareCodeCopied"));
     } catch (error) {
-      toast.error(t("profiles.export.shareCodeFailed"), { description: String(error) });
+      toast.error(t("profiles.export.shareCodeFailed"), { description: errorMessage(error) });
     }
   }
 

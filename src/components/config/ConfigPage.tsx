@@ -11,20 +11,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useActiveProfile } from "@/hooks/use-active-profile";
 import { modConfigsQueryKey, useModConfigs } from "@/hooks/use-mod-configs";
+import { errorMessage } from "@/lib/errors";
 import { toast } from "@/lib/notify";
 
 import CodeEditor from "./CodeEditor";
 import LiveEditor from "./LiveEditor";
 
 type EditorMode = "live" | "code";
-
-function errorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (typeof error === "object" && error !== null && "message" in error) {
-    return String((error as { message: unknown }).message);
-  }
-  return String(error);
-}
 
 export default function ConfigPage() {
   const { t } = useTranslation();
