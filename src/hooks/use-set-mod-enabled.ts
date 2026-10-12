@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
+import { errorMessage } from "@/lib/errors";
 import { t } from "@/lib/i18n";
 import { toast } from "@/lib/notify";
 
@@ -34,7 +35,7 @@ export const useSetModEnabled = (modsDirectory: string | undefined) => {
       );
     },
     onError: (error) => {
-      toast.error(t("mods.toggle.failed"), { description: String(error) });
+      toast.error(t("mods.toggle.failed"), { description: errorMessage(error) });
     },
   });
 };
@@ -54,7 +55,7 @@ export const useApplyModState = (modsDirectory: string | undefined) => {
       });
     },
     onError: (error) => {
-      toast.error(t("mods.toggle.failed"), { description: String(error) });
+      toast.error(t("mods.toggle.failed"), { description: errorMessage(error) });
     },
   });
 };
