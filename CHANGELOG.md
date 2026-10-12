@@ -8,12 +8,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.3] - 2026-10-12
 
 ### Fixed
 
 - **Moving mods into groups**: the "Move to group" menu on a mod row and on a multi-mod selection crashed the Mods page with Base UI error #31 instead of opening.
 - **Built-in mods reported as missing**: mods that depend on `survival`, `creative` or `essentials` no longer show them as missing dependencies; they ship with the game, whatever version is required.
+- **Error toasts show the real message**: actions that failed across mods, profiles, downloads, server hosting, the updater and the folder shortcuts rendered `[object Object]` instead of the backend's message, because Tauri rejects with a structured error object. They now show the actual text.
+- **Open Folder on Linux**: revealing a folder goes through the XDG desktop portal, which also works inside the Flatpak sandbox where the file-manager D-Bus call is blocked. `xdg-open` remains the fallback, failures are written to the journal, and macOS and Windows are unchanged.
+- **Sidebar scroll fade**: the navigation menu is now a proper scroll area with edge fades, matching the rest of the app.
+- **Server status probes**: only the server's own status messages are inspected, and markers must match whole words, so a server named "Bandits" or an MOTD mentioning a "full moon" no longer reports banned/full status. Changing a server's address, port or password invalidates its cached probe result.
+- **Profile deletion**: a profile whose game is running can no longer be deleted, and a failed undo-delete reports the error instead of silently doing nothing.
+- **Profile name collisions**: creating or importing a profile — including installing a modpack — over a folder that already holds a profile is refused with a "path exists" message instead of overwriting it. Imported folder names that are not a plain name (e.g. `..` or separators) are rejected.
+- **Mod settings safety**: enabling or disabling a mod no longer overwrites `clientsettings.json` when the file cannot be parsed (the running game may rewrite it mid-read), which previously dropped keybinds, video settings and the stored account session.
+- **Account handling**: the accounts file is written atomically, failed saves surface as an error toast, launcher-login imports refuse to overwrite a corrupt accounts file, and removing the selected account selects a remaining one.
+- **Server hosting**: app shutdown waits for running servers to stop, a double start can no longer spawn two instances, renaming a server keeps its instance directory in sync, and deleting a server is refused when its data directory points at the app's profiles or versions folders.
+- **Map viewer**: a world whose map database contains no tiles now reports that there is nothing to show instead of plotting nonsensical bounds.
+- **Download cleanup**: cancelling a download reports cleanup failures instead of silently leaving a partial file, and mod downloads are keyed by their destination folder like dependency downloads already were, so the same file never gets two entries in the downloads sheet.
+- **Pack locks**: the installed-mods list refreshes after applying a pack lock (Sync / repair).
+- **Archive and path hardening**: version downloads reject tar entries that would escape the extraction folder, profile and version move/remove validate the joined subdirectory, mod dependency reads stay inside managed folders, and map databases open correctly when their path contains URI characters.
+
+### Changed
+
+- **Type checks** run through `tsc-rs`, a drop-in Rust port of the TypeScript 7 compiler, in the build and in CI — same diagnostics, roughly twice as fast.
+- **Releases** are mirrored to the Vintage Story ModDB automatically: the workflow zips the macOS and Windows installers, renders the matching section of this changelog as the release notes, skips versions already published, and fails with a clear message plus a Discord ping when the session cookie has expired.
+
+### Removed
+
+- Unused frontend components, hooks and types, and backend commands left orphaned by earlier refactors.
 
 ## [2.0.2] - 2026-10-08
 
