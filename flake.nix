@@ -43,6 +43,12 @@
       packages = forAllSystems (pkgs: rec {
         default = pkgs.callPackage ./nix/package.nix { };
         storyforge = default;
+
+        # CI realises this package to verify every hash in `bun.nix` without
+        # compiling the app (see .github/workflows/nix.yml).
+        bun-deps = pkgs.bun2nix.fetchBunDeps {
+          bunNix = ./bun.nix;
+        };
       });
 
       devShells = forAllSystems (pkgs: {
