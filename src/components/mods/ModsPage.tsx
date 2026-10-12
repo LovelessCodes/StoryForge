@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useActiveProfile } from "@/hooks/use-active-profile";
+import { errorMessage } from "@/lib/errors";
 import { baseGameVersion, pathBasename } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
 import type { Mod, ModInfo, OutputMod } from "@/lib/types";
@@ -118,7 +119,7 @@ export default function ModsPage({
         };
         openSheet(profilePath ? { kind: "add", mod } : { kind: "standalone", mod });
       } catch (error) {
-        toast.error(t("mods.deepLink.failed", { modid }), { description: String(error) });
+        toast.error(t("mods.deepLink.failed", { modid }), { description: errorMessage(error) });
       }
     })();
     // Consumed once per queued id; the sheet state is local to this page.
