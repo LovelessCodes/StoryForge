@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useSendCommand, useServerStatus } from "@/hooks/queries/server-hosting";
+import { errorMessage } from "@/lib/errors";
 import { toast } from "@/lib/notify";
 
 /** Quick kick / ban / unban actions over the server console. */
@@ -25,7 +26,7 @@ export default function ServerModeration({ instanceId }: { instanceId: number })
       { id: instanceId, command: `/${action} ${name}` },
       {
         onError: (error) =>
-          toast.error(t("hosting.moderation.failed"), { description: String(error) }),
+          toast.error(t("hosting.moderation.failed"), { description: errorMessage(error) }),
         onSuccess: () => {
           toast.success(
             t(
