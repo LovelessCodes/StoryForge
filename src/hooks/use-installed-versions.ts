@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { useMemo } from "react";
 
-import { optimumVersionName } from "@/lib/helpers";
+import { optimumVersionName, vulkanStoryVersionName } from "@/lib/helpers";
 
 export const installedVersionsQueryKey = () => ["installedVersions"] as const;
 
@@ -18,6 +18,8 @@ export type InstalledVersion = {
   source: string | null;
   /** Optimum version this folder is patched with, when it is an Optimum build. */
   optimum_version: string | null;
+  /** VulkanStory version this folder is carrying, when it is a VulkanStory build. */
+  vulkanstory_version: string | null;
 };
 
 export const useInstalledVersions = () => {
@@ -37,7 +39,8 @@ export const useInstalledVersionNames = () => {
 
 /**
  * The installed folder a game version resolves to: the exact version when it
- * is installed, otherwise its Optimum build. `null` when neither is installed.
+ * is installed, otherwise its Optimum build, otherwise its VulkanStory build.
+ * `null` when none of them is installed.
  */
 export function resolveInstalledVersionName(
   versions: InstalledVersion[],
@@ -45,5 +48,7 @@ export function resolveInstalledVersionName(
 ): string | null {
   if (versions.some((version) => version.name === gameVersion)) return gameVersion;
   const optimum = optimumVersionName(gameVersion);
-  return versions.some((version) => version.name === optimum) ? optimum : null;
+  if (versions.some((version) => version.name === optimum)) return optimum;
+  const vulkanstory = vulkanStoryVersionName(gameVersion);
+  return versions.some((version) => version.name === vulkanstory) ? vulkanstory : null;
 }

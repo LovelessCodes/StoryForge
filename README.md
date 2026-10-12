@@ -80,6 +80,14 @@ The core domain concept is the **profile**:
   `1.22.7+optimum` and patches the copy — the original stays vanilla, and profiles pick either build.
   Updates are offered when a newer overlay still supports the game version. Linux and Windows (x64)
   only; Optimum publishes no macOS or arm64 overlay.
+- **VulkanStory client** — install the
+  [VulkanStory](https://github.com/KillerPixelCrew/VulkanStory) renderer fork for an installed version
+  in one click: Story Forge reads the release package's file inventory straight from the remote archive
+  over HTTP range requests, downloads and hash-checks the package, verifies every extracted file, and
+  copies the version to `1.22.7+vulkanstory` — the original stays vanilla, and profiles pick either
+  build. Updates are offered when a newer release still supports the game version, and an edited
+  `VulkanStory/loader.ini` survives them. Windows (x64) only for now: VulkanStory publishes no macOS
+  package, and its Linux package is a development package that is not part of a release.
 - **Mods** — search the mod database, filter by version/side/tags/author, install, update,
   downgrade, remove, and update everything at once. Installs read each mod's `modinfo.json`
   and queue its missing dependencies (recursively) in the downloads sheet; installed mods are
@@ -198,3 +206,7 @@ and versions folders can be relocated in Settings.
   (`linux-x64`/`win-x64`) point the Optimum install flow at a local origin so it can be exercised
   on a machine Optimum publishes no overlay for. The origin is honoured only for loopback
   addresses, and nothing in a shipped build sets either variable.
+- `STORYFORGE_VULKANSTORY_ORIGIN` (`http://127.0.0.1:<port>`) and `STORYFORGE_VULKANSTORY_RID`
+  (`win-x64`) point the VulkanStory install flow at a local origin so it can be exercised on a
+  machine VulkanStory publishes no package for. The origin is honoured only for loopback addresses,
+  and nothing in a shipped build sets either variable.

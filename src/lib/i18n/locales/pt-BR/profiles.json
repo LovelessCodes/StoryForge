@@ -8,7 +8,8 @@
     "installed": "(instalada)",
     "installedVersion": "{{version}} (instalada)",
     "profileName": "Nome do perfil",
-    "optimumVersion": "{{version}} · Optimum {{optimum}}"
+    "optimumVersion": "{{version}} · Optimum {{optimum}}",
+    "vulkanStoryVersion": "{{version}} · VulkanStory {{vulkanstory}}"
   },
   "errors": {
     "importFailed": "Falha na importação",

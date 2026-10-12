@@ -120,5 +120,45 @@
       "incomplete": "游戏版本仍在下载中。",
       "targetExists": "已存在使用该 Optimum 版本名称的文件夹。"
     }
+  },
+  "vulkanstory": {
+    "badge": "VulkanStory {{version}}",
+    "label": "VulkanStory",
+    "install": "安装 VulkanStory",
+    "update": "更新 VulkanStory",
+    "sheet": {
+      "description": "为版本 {{version}} 添加 VulkanStory 构建。原始版本文件夹不会被修改，安装包只会解压到副本。",
+      "unsupportedSystem": "当前系统不支持 VulkanStory。",
+      "platformNote": "VulkanStory 目前仅发布 Windows (x64) 构建。",
+      "manifestUnavailable": "无法加载 VulkanStory 的版本信息。",
+      "noBuildForVersion": "VulkanStory 还没有适用于版本 {{version}} 的构建。",
+      "summary": "适用于 Vintage Story {{base}} 的 VulkanStory {{version}}",
+      "copyNote": "会额外复制一份版本文件夹，原始文件夹保持原样。",
+      "retry": "重试"
+    },
+    "phase": {
+      "manifest": "正在检查 VulkanStory 版本…",
+      "download": "正在下载安装包…",
+      "copy": "正在复制游戏版本…",
+      "extract": "正在解压安装包…",
+      "verify": "正在校验文件…",
+      "done": "完成",
+      "cancelled": "已取消"
+    },
+    "toast": {
+      "installed": "已安装 VulkanStory {{version}}（{{base}}）。",
+      "failed": "VulkanStory 安装失败",
+      "cancelled": "VulkanStory 安装已取消。"
+    },
+    "failure": {
+      "badInput": "VulkanStory 只能安装到原版版本。",
+      "unsupportedVersion": "该游戏版本不受此安装包支持。",
+      "downloadFailed": "下载内容未通过校验。",
+      "verification": "解压后的文件未通过校验。",
+      "officialMismatch": "游戏文件与 VulkanStory 期望的不一致。",
+      "busy": "另一个 VulkanStory 安装正在进行中。",
+      "incomplete": "游戏版本仍在下载中。",
+      "targetExists": "已存在使用该 VulkanStory 版本名称的文件夹。"
+    }
   }
 }

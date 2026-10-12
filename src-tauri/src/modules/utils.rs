@@ -1,8 +1,10 @@
 use fs_extra::dir::{copy, CopyOptions};
 use semver::Version;
+use sha2::{Digest, Sha256};
 use std::{
     collections::HashMap,
-    fs::{read_dir, remove_dir_all, rename},
+    fs::{read_dir, remove_dir_all, rename, File},
+    io::Read,
     path::{Component, Path, PathBuf},
     sync::{LazyLock, Mutex},
     time::{Duration, Instant},
@@ -13,6 +15,7 @@ use walkdir::WalkDir;
 
 use super::errors::UiError;
 use super::paths;
+use crate::log_info;
 
 /// Root folder that holds installed game versions.
 ///
@@ -462,6 +465,81 @@ pub fn copy_dir_contents(from: &Path, to: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// Streams a file through SHA-256 so a large assembly is never held in memory.
+pub fn sha256_file(path: &Path) -> Result<String, UiError> {
+    let mut file = File::open(path)
+        .map_err(|error| UiError::io(format!("Failed to open {}: {error}", path.display())))?;
+    let mut hasher = Sha256::new();
+    let mut buffer = [0u8; 64 * 1024];
+    loop {
+        let read = file
+            .read(&mut buffer)
+            .map_err(|error| UiError::io(format!("Failed to read {}: {error}", path.display())))?;
+        if read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..read]);
+    }
+    Ok(format!("{:x}", hasher.finalize()))
+}
+
+/// True when a path is relative, forward-slashed and stays inside the folder it
+/// is read against.
+pub fn is_safe_relative_path(value: &str) -> bool {
+    if value.is_empty() || value.len() > 1024 || value.contains('\0') || value.contains('\\') {
+        return false;
+    }
+    if Path::new(value).is_absolute() {
+        return false;
+    }
+    Path::new(value)
+        .components()
+        .all(|component| matches!(component, Component::Normal(segment) if !segment.is_empty()))
+}
+
+/// Accepts exactly `http://127.0.0.1:<port>` (trailing slash optional).
+///
+/// A loopback test origin is the only variable that may point a client-fork
+/// install flow somewhere other than its published host, so the shape is
+/// checked rather than trusted.
+pub fn parse_loopback_origin(raw: &str) -> Option<String> {
+    let rest = raw.strip_prefix("http://127.0.0.1:")?;
+    let rest = rest.strip_suffix('/').unwrap_or(rest);
+    if rest.is_empty() || !rest.chars().all(|c| c.is_ascii_digit()) {
+        return None;
+    }
+    Some(format!("http://127.0.0.1:{rest}"))
+}
+
+/// Removes the freshly created target folder when a later step fails, so a
+/// failed first install never leaves a broken version behind.
+///
+/// Guards `Drop` rather than an explicit error path, so cancellation and panics
+/// clean up exactly like ordinary failures. [`CleanupTarget::defuse`] is called
+/// once the folder is a finished install the user should keep.
+pub struct CleanupTarget {
+    path: Option<PathBuf>,
+}
+
+impl CleanupTarget {
+    pub fn defer(path: PathBuf) -> Self {
+        Self { path: Some(path) }
+    }
+
+    pub fn defuse(&mut self) {
+        self.path = None;
+    }
+}
+
+impl Drop for CleanupTarget {
+    fn drop(&mut self) {
+        if let Some(path) = self.path.take() {
+            log_info!("[cleanup] removing failed install at {}", path.display());
+            let _ = remove_dir_all(&path);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -582,6 +660,49 @@ mod tests {
             normalize_path(Path::new("a/../../b")),
             PathBuf::from("../b")
         );
+    }
+
+    #[test]
+    fn sha256_file_matches_known_digest() {
+        let tmp = tempfile::tempdir().unwrap();
+        let file = tmp.path().join("payload.bin");
+        fs::write(&file, b"hello").unwrap();
+        assert_eq!(
+            sha256_file(&file).unwrap(),
+            "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+        );
+
+        assert!(sha256_file(&tmp.path().join("missing")).is_err());
+    }
+
+    #[test]
+    fn rejects_unsafe_relative_paths() {
+        assert!(is_safe_relative_path("a/b"));
+        assert!(is_safe_relative_path(".optimum/version"));
+        assert!(!is_safe_relative_path("../evil"));
+        assert!(!is_safe_relative_path("a/../../evil"));
+        assert!(!is_safe_relative_path("/etc/passwd"));
+        assert!(!is_safe_relative_path("a\\b"));
+        assert!(!is_safe_relative_path(""));
+        // A leading `./` is kept as a `CurDir` component and refused; an
+        // interior `.` is normalized away and resolves inside the folder.
+        assert!(!is_safe_relative_path("./a"));
+        assert!(is_safe_relative_path("a/./b"));
+    }
+
+    #[test]
+    fn loopback_origin_validation() {
+        assert_eq!(
+            parse_loopback_origin("http://127.0.0.1:8971/"),
+            Some("http://127.0.0.1:8971".to_string())
+        );
+        assert_eq!(
+            parse_loopback_origin("http://127.0.0.1:1"),
+            Some("http://127.0.0.1:1".to_string())
+        );
+        assert!(parse_loopback_origin("http://127.0.0.1:8971/sub").is_none());
+        assert!(parse_loopback_origin("https://127.0.0.1:8971").is_none());
+        assert!(parse_loopback_origin("http://example.com:80").is_none());
     }
 
     #[test]

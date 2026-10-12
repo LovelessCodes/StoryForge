@@ -6,7 +6,13 @@ import { Trans, useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
-import { baseGameVersion, compareSemverDesc, isMac, isOptimumVersion } from "@/lib/helpers";
+import {
+  baseGameVersion,
+  compareSemverDesc,
+  isMac,
+  isOptimumVersion,
+  isVulkanStoryVersion,
+} from "@/lib/helpers";
 import { useDownloadStore } from "@/stores/downloads";
 
 import AddVersionSheet, { MAC_WIKI_URL } from "./AddVersionSheet";
@@ -15,6 +21,7 @@ import LinkExistingVersionSheet from "./LinkExistingVersionSheet";
 import LinkVersionsBanner from "./LinkVersionsBanner";
 import { OptimumInstallSheet } from "./OptimumInstallSheet";
 import VersionRow from "./VersionRow";
+import { VulkanStoryInstallSheet } from "./VulkanStoryInstallSheet";
 
 function InstalledVersionsSkeleton() {
   return (
@@ -40,12 +47,15 @@ export default function VersionsPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [optimumBase, setOptimumBase] = useState<string | null>(null);
+  const [vulkanStoryBase, setVulkanStoryBase] = useState<string | null>(null);
 
-  // Optimum builds sort next to their base version, vanilla first.
+  // Client-fork builds sort next to their base version, vanilla first.
+  const flavorRank = (name: string) =>
+    isOptimumVersion(name) ? 1 : isVulkanStoryVersion(name) ? 2 : 0;
   const sorted = (versions ?? []).toSorted((a, b) => {
     const byBase = compareSemverDesc(baseGameVersion(a.name), baseGameVersion(b.name));
     if (byBase !== 0) return byBase;
-    const byFlavor = Number(isOptimumVersion(a.name)) - Number(isOptimumVersion(b.name));
+    const byFlavor = flavorRank(a.name) - flavorRank(b.name);
     if (byFlavor !== 0) return byFlavor;
     return a.name.localeCompare(b.name);
   });
@@ -126,7 +136,12 @@ export default function VersionsPage() {
         ) : (
           <div className="grid gap-2">
             {sorted.map((version) => (
-              <VersionRow key={version.name} version={version} onOptimum={setOptimumBase} />
+              <VersionRow
+                key={version.name}
+                version={version}
+                onOptimum={setOptimumBase}
+                onVulkanStory={setVulkanStoryBase}
+              />
             ))}
           </div>
         )}
@@ -139,6 +154,13 @@ export default function VersionsPage() {
         open={!!optimumBase}
         onOpenChange={(open) => {
           if (!open) setOptimumBase(null);
+        }}
+      />
+      <VulkanStoryInstallSheet
+        baseVersion={vulkanStoryBase}
+        open={!!vulkanStoryBase}
+        onOpenChange={(open) => {
+          if (!open) setVulkanStoryBase(null);
         }}
       />
     </div>

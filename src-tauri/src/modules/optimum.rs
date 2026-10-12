@@ -29,7 +29,7 @@
 use std::{
     collections::HashMap,
     fs::{self, File},
-    io::{Read, Write},
+    io::Write,
     path::{Component, Path, PathBuf},
     process::Stdio,
     sync::{
@@ -50,11 +50,12 @@ use tokio_util::sync::CancellationToken;
 use walkdir::WalkDir;
 
 use super::errors::UiError;
-use super::utils::{lock, require_managed_path, versions_folder, versions_subdir};
+use super::utils::{
+    is_safe_relative_path, lock, parse_loopback_origin, require_managed_path, sha256_file,
+    versions_folder, versions_subdir, CleanupTarget,
+};
+use super::versions::OPTIMUM_SUFFIX;
 use crate::{log_debug, log_error, log_info};
-
-/// Suffix that marks a managed version as an Optimum build of its base version.
-pub const OPTIMUM_SUFFIX: &str = "+optimum";
 
 /// Folder the patch keeps its own state in, inside the game folder.
 const OPTIMUM_STATE_FOLDER: &str = ".optimum";
@@ -86,11 +87,6 @@ const MANIFEST_TTL: Duration = Duration::from_secs(30 * 60);
 const OPTIMUM_DOTNET_PROBE_VERSION: &str = "1.22.0";
 
 // ── Version naming ──────────────────────────────────────────────────────────
-
-/// The base game version a version name carries: `1.22.7+optimum` → `1.22.7`.
-pub fn base_game_version(version: &str) -> &str {
-    version.strip_suffix(OPTIMUM_SUFFIX).unwrap_or(version)
-}
 
 /// Whether a version name is an Optimum build.
 pub fn is_optimum_version(version: &str) -> bool {
@@ -156,16 +152,6 @@ fn test_origin() -> Option<String> {
             None
         }
     }
-}
-
-/// Accepts exactly `http://127.0.0.1:<port>` (trailing slash optional).
-fn parse_loopback_origin(raw: &str) -> Option<String> {
-    let rest = raw.strip_prefix("http://127.0.0.1:")?;
-    let rest = rest.strip_suffix('/').unwrap_or(rest);
-    if rest.is_empty() || !rest.chars().all(|c| c.is_ascii_digit()) {
-        return None;
-    }
-    Some(format!("http://127.0.0.1:{rest}"))
 }
 
 /// The effective rid: the host's, unless a loopback test origin explicitly
@@ -290,20 +276,6 @@ fn read_hash(value: &str) -> Option<String> {
     } else {
         None
     }
-}
-
-/// True when a path is relative, forward-slashed and stays inside the folder it
-/// is read against.
-fn is_safe_relative_path(value: &str) -> bool {
-    if value.is_empty() || value.len() > 1024 || value.contains('\0') || value.contains('\\') {
-        return false;
-    }
-    if Path::new(value).is_absolute() {
-        return false;
-    }
-    Path::new(value)
-        .components()
-        .all(|component| matches!(component, Component::Normal(segment) if !segment.is_empty()))
 }
 
 fn valid_game_versions(raw: &[String]) -> Vec<String> {
@@ -553,26 +525,6 @@ pub async fn get_optimum_status(
             })
         }
     }
-}
-
-// ── Hashing ─────────────────────────────────────────────────────────────────
-
-/// Streams a file through SHA-256 so a large assembly is never held in memory.
-fn sha256_file(path: &Path) -> Result<String, UiError> {
-    let mut file = File::open(path)
-        .map_err(|error| UiError::io(format!("Failed to open {}: {error}", path.display())))?;
-    let mut hasher = Sha256::new();
-    let mut buffer = [0u8; 64 * 1024];
-    loop {
-        let read = file
-            .read(&mut buffer)
-            .map_err(|error| UiError::io(format!("Failed to read {}: {error}", path.display())))?;
-        if read == 0 {
-            break;
-        }
-        hasher.update(&buffer[..read]);
-    }
-    Ok(format!("{:x}", hasher.finalize()))
 }
 
 // ── Progress emitter ────────────────────────────────────────────────────────
@@ -1336,31 +1288,6 @@ fn copy_tree(
     Ok(())
 }
 
-/// Removes the freshly created target folder when a later step fails, so a
-/// failed first install never leaves a broken version behind.
-struct CleanupTarget {
-    path: Option<PathBuf>,
-}
-
-impl CleanupTarget {
-    fn defer(path: PathBuf) -> Self {
-        Self { path: Some(path) }
-    }
-
-    fn defuse(&mut self) {
-        self.path = None;
-    }
-}
-
-impl Drop for CleanupTarget {
-    fn drop(&mut self) {
-        if let Some(path) = self.path.take() {
-            log_info!("[optimum] removing failed install at {}", path.display());
-            let _ = fs::remove_dir_all(&path);
-        }
-    }
-}
-
 // ── Install ─────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize)]
@@ -1757,26 +1684,9 @@ mod tests {
 
     #[test]
     fn version_naming_helpers() {
-        assert_eq!(base_game_version("1.22.7+optimum"), "1.22.7");
-        assert_eq!(base_game_version("1.22.7"), "1.22.7");
         assert!(is_optimum_version("1.22.7+optimum"));
         assert!(!is_optimum_version("1.22.7"));
         assert_eq!(optimum_version_name("1.22.7"), "1.22.7+optimum");
-    }
-
-    #[test]
-    fn loopback_origin_validation() {
-        assert_eq!(
-            parse_loopback_origin("http://127.0.0.1:8971/"),
-            Some("http://127.0.0.1:8971".to_string())
-        );
-        assert_eq!(
-            parse_loopback_origin("http://127.0.0.1:1"),
-            Some("http://127.0.0.1:1".to_string())
-        );
-        assert!(parse_loopback_origin("http://127.0.0.1:8971/sub").is_none());
-        assert!(parse_loopback_origin("https://127.0.0.1:8971").is_none());
-        assert!(parse_loopback_origin("http://example.com:80").is_none());
     }
 
     #[test]
@@ -1899,21 +1809,6 @@ mod tests {
         // A tampered file fails.
         fs::write(root.join(".optimum/version"), b"tampered").unwrap();
         assert!(verify_staged_overlay(&root, &manifest).is_err());
-    }
-
-    #[test]
-    fn rejects_unsafe_relative_paths() {
-        assert!(is_safe_relative_path("a/b"));
-        assert!(is_safe_relative_path(".optimum/version"));
-        assert!(!is_safe_relative_path("../evil"));
-        assert!(!is_safe_relative_path("a/../../evil"));
-        assert!(!is_safe_relative_path("/etc/passwd"));
-        assert!(!is_safe_relative_path("a\\b"));
-        assert!(!is_safe_relative_path(""));
-        // A leading `./` is kept as a `CurDir` component and refused; an
-        // interior `.` is normalized away and resolves inside the folder.
-        assert!(!is_safe_relative_path("./a"));
-        assert!(is_safe_relative_path("a/./b"));
     }
 
     #[test]

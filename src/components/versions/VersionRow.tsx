@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { Box, FolderOpen, Gauge, Link2, Loader2, Trash2 } from "lucide-react";
+import { Box, FolderOpen, Gauge, Link2, Loader2, Sparkles, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -14,26 +14,32 @@ import {
 import { linkableVersionsQueryKey } from "@/hooks/use-linkable-versions";
 import { useOptimumStatus } from "@/hooks/use-optimum";
 import { useRevealInFolder } from "@/hooks/use-reveal-in-folder";
+import { useVulkanStoryStatus } from "@/hooks/use-vulkanstory";
 import {
   baseGameVersion,
   compareSemverDesc,
   isOptimumVersion,
+  isVulkanStoryVersion,
   optimumVersionName,
+  vulkanStoryVersionName,
 } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
 
 export default function VersionRow({
   version,
   onOptimum,
+  onVulkanStory,
 }: {
   version: InstalledVersion;
   onOptimum: (baseVersion: string) => void;
+  onVulkanStory: (baseVersion: string) => void;
 }) {
   const { t } = useTranslation();
   const { mutate: openFolder } = useRevealInFolder();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState(false);
   const { data: optimumStatus } = useOptimumStatus();
+  const { data: vulkanStoryStatus } = useVulkanStoryStatus();
   const { data: versions } = useInstalledVersions();
 
   const { mutate: removeVersion, isPending } = useMutation({
@@ -64,17 +70,21 @@ export default function VersionRow({
   const isRc = version.name.includes("rc");
   const folderMissing = version.external && version.size_bytes === 0;
 
+  const base = baseGameVersion(version.name);
+  const isOptimum = isOptimumVersion(version.name);
+  const isVulkanStory = isVulkanStoryVersion(version.name);
+  // Only the vanilla row installs a client fork; a build row updates itself.
+  const isVanilla = version.name === base;
+
   // Optimum: a vanilla row offers an install when no Optimum build of it
   // exists yet; an Optimum row offers an update when the newest published
   // overlay still supports its base version and is newer than the installed
   // one.
-  const base = baseGameVersion(version.name);
-  const isOptimum = isOptimumVersion(version.name);
   const optimumBuild = (versions ?? []).find((v) => v.name === optimumVersionName(base));
   const manifest = optimumStatus?.manifest ?? null;
   const manifestSupports = !!manifest && manifest.supportedGameVersions.includes(base);
   const canInstall =
-    !isOptimum &&
+    isVanilla &&
     !optimumBuild &&
     !!optimumStatus?.platformSupported &&
     manifestSupports &&
@@ -87,11 +97,38 @@ export default function VersionRow({
   // Vanilla rows offer Optimum whenever the platform has a build, enabled only
   // when the newest overlay supports this game version.
   const offerOptimum =
-    !isOptimum && !optimumBuild && !!optimumStatus?.platformSupported && !folderMissing;
+    isVanilla && !optimumBuild && !!optimumStatus?.platformSupported && !folderMissing;
   const optimumTitle = !manifest
     ? t("versions.optimum.sheet.manifestUnavailable")
     : !manifestSupports
       ? t("versions.optimum.sheet.noBuildForVersion", { version: base })
+      : undefined;
+
+  // VulkanStory works the same way: a vanilla row installs the package build
+  // when none exists yet, a VulkanStory row updates when the newest release
+  // supports the base version and is newer than the installed one.
+  const vulkanStoryBuild = (versions ?? []).find((v) => v.name === vulkanStoryVersionName(base));
+  const vulkanStoryManifest = vulkanStoryStatus?.manifest ?? null;
+  const vulkanStorySupports =
+    !!vulkanStoryManifest && vulkanStoryManifest.supportedGameVersions.includes(base);
+  const canInstallVulkanStory =
+    isVanilla &&
+    !vulkanStoryBuild &&
+    !!vulkanStoryStatus?.platformSupported &&
+    vulkanStorySupports &&
+    !folderMissing;
+  const canUpdateVulkanStory =
+    isVulkanStory &&
+    !!version.vulkanstory_version &&
+    !!vulkanStoryManifest &&
+    vulkanStorySupports &&
+    compareSemverDesc(vulkanStoryManifest.vulkanstoryVersion, version.vulkanstory_version) < 0;
+  const offerVulkanStory =
+    isVanilla && !vulkanStoryBuild && !!vulkanStoryStatus?.platformSupported && !folderMissing;
+  const vulkanStoryTitle = !vulkanStoryManifest
+    ? t("versions.vulkanstory.sheet.manifestUnavailable")
+    : !vulkanStorySupports
+      ? t("versions.vulkanstory.sheet.noBuildForVersion", { version: base })
       : undefined;
 
   return (
@@ -101,7 +138,7 @@ export default function VersionRow({
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="truncate font-mono text-xs font-medium" title={version.name}>
-            {isOptimum ? base : version.name}
+            {isOptimum || isVulkanStory ? base : version.name}
           </span>
           {isOptimum && (
             <Badge
@@ -112,6 +149,17 @@ export default function VersionRow({
               {version.optimum_version
                 ? t("versions.optimum.badge", { version: version.optimum_version })
                 : t("versions.optimum.label")}
+            </Badge>
+          )}
+          {isVulkanStory && (
+            <Badge
+              variant="outline"
+              className="border-accent-primary/40 text-accent-primary shrink-0 text-[10px]"
+            >
+              <Sparkles className="size-3" />
+              {version.vulkanstory_version
+                ? t("versions.vulkanstory.badge", { version: version.vulkanstory_version })
+                : t("versions.vulkanstory.label")}
             </Badge>
           )}
           {isRc && (
@@ -184,6 +232,24 @@ export default function VersionRow({
             <Button variant="outline" size="sm" onClick={() => onOptimum(base)}>
               <Gauge />
               <span className="hidden sm:inline">{t("versions.optimum.update")}</span>
+            </Button>
+          )}
+          {offerVulkanStory && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!canInstallVulkanStory}
+              title={vulkanStoryTitle}
+              onClick={() => onVulkanStory(base)}
+            >
+              <Sparkles />
+              <span className="hidden sm:inline">{t("versions.vulkanstory.install")}</span>
+            </Button>
+          )}
+          {canUpdateVulkanStory && (
+            <Button variant="outline" size="sm" onClick={() => onVulkanStory(base)}>
+              <Sparkles />
+              <span className="hidden sm:inline">{t("versions.vulkanstory.update")}</span>
             </Button>
           )}
           <Button variant="outline" size="sm" onClick={() => openFolder(version.path)}>
