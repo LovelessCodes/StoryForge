@@ -78,8 +78,8 @@ export default function ServerRow({ server, onEdit }: ServerRowProps) {
   function connect() {
     if (versionInstalled && profile) {
       connectToServer.mutate({
+        address,
         name: server.name,
-        ip: address,
         password: server.password,
         profileId: profile.id,
       });
