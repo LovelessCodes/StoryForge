@@ -8,6 +8,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.4] - 2026-10-13
+
+### Fixed
+
+- **Connecting to a server from the dashboard**: the dashboard sent only the host into the connect flow, so the game fell back to the default port and a second, portless entry was written to the profile's saved servers (a regression of the 0.1.8 dashboard fix). The dashboard now shows, launches and stores servers as `host:port` through the same helper every other screen uses.
+
 ## [2.0.3] - 2026-10-12
 
 ### Added
