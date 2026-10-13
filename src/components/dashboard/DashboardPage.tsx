@@ -12,6 +12,7 @@ import { useServerStore } from "@/stores/servers";
 import { useSettingsStore } from "@/stores/settings";
 
 import { PROFILE_ICON_BASE } from "../profiles/ProfileIconPicker";
+import { serverAddress } from "../servers/server-utils";
 
 /**
  * Landing page: the profiles and saved servers of the active profile, with
@@ -164,8 +165,7 @@ export default function DashboardPage() {
                 <div className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">{server.name}</span>
                   <span className="text-muted-foreground block font-mono text-[10px]">
-                    {server.ip}
-                    {server.port ? `:${server.port}` : ""} · {server.profileName}
+                    {serverAddress(server)} · {server.profileName}
                   </span>
                 </div>
                 <Button
@@ -190,7 +190,7 @@ export default function DashboardPage() {
                   disabled={connect.isPending}
                   onClick={() =>
                     connect.mutate({
-                      ip: server.ip,
+                      address: serverAddress(server),
                       name: server.name,
                       password: server.password,
                       profileId: server.profileId,

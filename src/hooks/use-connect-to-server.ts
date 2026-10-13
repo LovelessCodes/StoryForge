@@ -17,7 +17,8 @@ export const useConnectToServer = (
     Error,
     {
       name: string;
-      ip: string;
+      /** The game's connect address: `ip:port`, or the bare host for its default port. */
+      address: string;
       password: string;
       profileId: number;
       pub?: boolean;
@@ -55,13 +56,13 @@ export const useConnectToServer = (
   // react-doctor-disable-next-line query-mutation-missing-invalidation
   return useMutation({
     ...props,
-    mutationFn: async ({ name, ip, password, profileId, pub }) => {
+    mutationFn: async ({ name, address, password, profileId, pub }) => {
       const resolvedProfile = findProfileForServer(profiles, profileId);
       const resolvedId = resolvedProfile?.id ?? profileId;
       if (!pub) {
         await mutateAsync({
           profileId: resolvedId,
-          server: `${name},${ip},${password ? password : ""}`,
+          server: `${name},${address},${password ? password : ""}`,
         });
       }
       const { useSystemDotnet } = useSettingsStore.getState();
@@ -69,7 +70,7 @@ export const useConnectToServer = (
         options: {
           profile_id: resolvedId,
           password,
-          server: ip,
+          server: address,
           use_system_dotnet: useSystemDotnet,
         },
       });

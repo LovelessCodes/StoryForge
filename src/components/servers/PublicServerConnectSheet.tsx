@@ -62,8 +62,9 @@ export default function PublicServerConnectSheet({
     if (!server || selectedProfile === undefined) return;
     connectToServer.mutate(
       {
+        // The master server list hands out the address as `ip:port`.
+        address: server.serverIP,
         name: server.serverName,
-        ip: server.serverIP,
         password,
         profileId: selectedProfile.id,
         pub: true,
