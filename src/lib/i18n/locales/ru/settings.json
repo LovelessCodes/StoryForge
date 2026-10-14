@@ -5,6 +5,8 @@
     "darkModeDescription": "Использовать тёмную тему во всём приложении.",
     "language": "Язык",
     "languageDescription": "Язык меню и интерфейса.",
+    "textScale": "Размер текста",
+    "textScaleDescription": "Масштабирует текст и элементы интерфейса.",
     "systemLanguage": "Системный"
   },
   "folders": {

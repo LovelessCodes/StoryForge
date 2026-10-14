@@ -12,6 +12,7 @@ import { ensureDefaultProfile } from "./lib/ensure-default-profile";
 import { i18n, resolveLocale } from "./lib/i18n";
 import { queryClient } from "./lib/query-client";
 import { QUERY_CACHE_MAX_AGE, queryCachePersister, shouldPersistQuery } from "./lib/query-persist";
+import { applyTextScale } from "./lib/text-scale";
 import { routeTree } from "./routeTree.gen";
 import { useAccountStore } from "./stores/accounts";
 import { useProfilesStore } from "./stores/profiles";
@@ -58,6 +59,13 @@ async function bootstrap() {
   try {
     await invoke("log_webview_gap").catch(() => {});
     await tauriSettingsHandler.start();
+
+    // Apply the saved interface scale before the first paint, then follow it
+    // live so the Settings dropdown previews immediately.
+    applyTextScale(useSettingsStore.getState().textScale);
+    useSettingsStore.subscribe((state, previous) => {
+      if (state.textScale !== previous.textScale) applyTextScale(state.textScale);
+    });
 
     // Resolve the UI language before the first paint so the app never flashes
     // English for non-English users.

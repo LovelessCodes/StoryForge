@@ -5,6 +5,8 @@
     "darkModeDescription": "在整个应用中使用深色主题。",
     "language": "语言",
     "languageDescription": "菜单和界面语言。",
+    "textScale": "文字大小",
+    "textScaleDescription": "缩放界面文字和控件。",
     "systemLanguage": "跟随系统"
   },
   "folders": {

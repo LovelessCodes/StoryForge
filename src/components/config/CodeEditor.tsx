@@ -3,7 +3,9 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import "@/lib/monaco";
+import { scalePixels } from "@/lib/text-scale";
 import type { JSONValue } from "@/lib/types";
+import { useSettingsStore } from "@/stores/settings";
 
 const Editor = lazy(() => import("@monaco-editor/react"));
 
@@ -23,6 +25,7 @@ export default function CodeEditor({
   onSave: (params: SaveParams) => void;
 }) {
   const { t } = useTranslation();
+  const textScale = useSettingsStore((s) => s.textScale);
   const [editableCode, setEditableCode] = useState(() => JSON.stringify(code, null, 2));
   const savedCode = useMemo(() => JSON.stringify(code, null, 2), [code]);
   const canSave = editableCode !== savedCode;
@@ -38,7 +41,7 @@ export default function CodeEditor({
           language="json"
           onChange={(value) => setEditableCode(value ?? "")}
           options={{
-            fontSize: 13,
+            fontSize: Math.round(scalePixels(13, textScale)),
             lineNumbers: "off",
             minimap: { enabled: false },
             scrollBeyondLastLine: false,
