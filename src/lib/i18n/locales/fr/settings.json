@@ -5,6 +5,8 @@
     "darkModeDescription": "Utiliser le thème sombre dans toute l'application.",
     "language": "Langue",
     "languageDescription": "Langue des menus et de l'interface.",
+    "textScale": "Taille du texte",
+    "textScaleDescription": "Ajuste la taille du texte et des éléments de l'interface.",
     "systemLanguage": "Système"
   },
   "folders": {

@@ -5,6 +5,8 @@
     "darkModeDescription": "Verwende das dunkle Design in der gesamten App.",
     "language": "Sprache",
     "languageDescription": "Sprache für Menüs und Oberfläche.",
+    "textScale": "Textgröße",
+    "textScaleDescription": "Skaliert Text und Bedienelemente der Oberfläche.",
     "systemLanguage": "System"
   },
   "folders": {

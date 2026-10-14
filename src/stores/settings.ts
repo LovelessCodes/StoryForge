@@ -6,6 +6,7 @@ import { create } from "zustand";
 import { logToFile } from "@/lib/logger";
 import { moveMods, type ModGroup } from "@/lib/mod-groups";
 import type { SortBy } from "@/lib/mod-sort";
+import { clampTextScale, TEXT_SCALE_DEFAULT } from "@/lib/text-scale";
 
 export type SetParentConfigProps = {
   deleteCurrentData: boolean;
@@ -80,6 +81,9 @@ type SettingsStore = {
   toggleFavoriteMod: (modidstr: string) => void;
   defaultModSortBy: SortBy;
   setDefaultModSortBy: (sortBy: SortBy) => void;
+  /** Interface text/control scale as a percentage (see lib/text-scale). */
+  textScale: number;
+  setTextScale: (scale: number) => void;
   /** Apply the source profile's settings to every other profile on launch. */
   applyGameDefaults: boolean;
   setApplyGameDefaults: (applyGameDefaults: boolean) => void;
@@ -241,6 +245,8 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
     }),
   defaultModSortBy: "trending",
   setDefaultModSortBy: (sortBy) => set(() => ({ defaultModSortBy: sortBy })),
+  textScale: TEXT_SCALE_DEFAULT,
+  setTextScale: (scale) => set(() => ({ textScale: clampTextScale(scale) })),
   applyGameDefaults: false,
   setApplyGameDefaults: (applyGameDefaults) => set(() => ({ applyGameDefaults })),
   gameDefaultsProfileId: null,

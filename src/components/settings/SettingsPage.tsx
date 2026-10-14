@@ -21,6 +21,7 @@ import { errorMessage } from "@/lib/errors";
 import { LOCALES, resolveLocale } from "@/lib/i18n";
 import { type SortBy, sortOptions } from "@/lib/mod-sort";
 import { toast } from "@/lib/notify";
+import { TEXT_SCALE_OPTIONS } from "@/lib/text-scale";
 import { elementCenter, switchTheme } from "@/lib/theme-transition";
 import { useSettingsStore } from "@/stores/settings";
 
@@ -56,6 +57,8 @@ function AppearanceCard() {
   const { i18n, t } = useTranslation();
   const language = useSettingsStore((s) => s.language);
   const setLanguage = useSettingsStore((s) => s.setLanguage);
+  const textScale = useSettingsStore((s) => s.textScale);
+  const setTextScale = useSettingsStore((s) => s.setTextScale);
   const isDark = resolvedTheme === "dark";
   const switchRef = useRef<HTMLSpanElement>(null);
 
@@ -63,6 +66,11 @@ function AppearanceCard() {
     { label: t("settings.appearance.systemLanguage"), value: "system" },
     ...LOCALES.map((entry) => ({ label: entry.label, value: entry.code })),
   ];
+
+  const textScaleItems = TEXT_SCALE_OPTIONS.map((value) => ({
+    label: `${value}%`,
+    value: String(value),
+  }));
 
   async function changeLanguage(next: string) {
     setLanguage(next);
@@ -100,6 +108,29 @@ function AppearanceCard() {
               }
             />
           </span>
+        </SettingRow>
+        <SettingRow
+          description={t("settings.appearance.textScaleDescription")}
+          label={t("settings.appearance.textScale")}
+        >
+          <Select
+            items={textScaleItems}
+            onValueChange={(value) => {
+              if (value) setTextScale(Number(value));
+            }}
+            value={String(textScale)}
+          >
+            <SelectTrigger aria-label={t("settings.appearance.textScale")} className="w-28">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {textScaleItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </SettingRow>
         <SettingRow
           description={t("settings.appearance.languageDescription")}
