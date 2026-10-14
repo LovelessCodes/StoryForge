@@ -51,6 +51,8 @@
     "systemDotnetDescription": "Сначала пробовать системную среду .NET, а потом скачивать её.",
     "defaultModSort": "Сортировка модов по умолчанию",
     "defaultModSortDescription": "Порядок сортировки при открытии браузера модов.",
+    "promptModInstallDestination": "Всегда спрашивать, куда устанавливать",
+    "promptModInstallDestinationDescription": "Ссылки установки в один клик открывают выбор назначения вместо активного профиля.",
     "sort": {
       "comments": "Комментарии",
       "created": "Дата создания",

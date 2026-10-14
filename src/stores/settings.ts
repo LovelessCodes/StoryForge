@@ -81,6 +81,12 @@ type SettingsStore = {
   toggleFavoriteMod: (modidstr: string) => void;
   defaultModSortBy: SortBy;
   setDefaultModSortBy: (sortBy: SortBy) => void;
+  /**
+   * 1-click install links (ModDB's button or `storyforge://install?mod=…`)
+   * ask for a destination instead of preselecting the active profile.
+   */
+  promptModInstallDestination: boolean;
+  togglePromptModInstallDestination: () => void;
   /** Interface text/control scale as a percentage (see lib/text-scale). */
   textScale: number;
   setTextScale: (scale: number) => void;
@@ -96,6 +102,9 @@ type SettingsStore = {
   /** Mod id from a `storyforge://install?mod=…` link, for the Mods page. */
   pendingDeepLinkMod: string | null;
   setPendingDeepLinkMod: (modid: string | null) => void;
+  /** Release version from the deep link, preselected in the install sheet. */
+  pendingDeepLinkModVersion: string | null;
+  setPendingDeepLinkModVersion: (version: string | null) => void;
   /** Modpack slug from a `storyforge://install?pack=…` link, for the Modpacks page. */
   pendingDeepLinkPack: string | null;
   setPendingDeepLinkPack: (slug: string | null) => void;
@@ -245,6 +254,9 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
     }),
   defaultModSortBy: "trending",
   setDefaultModSortBy: (sortBy) => set(() => ({ defaultModSortBy: sortBy })),
+  promptModInstallDestination: false,
+  togglePromptModInstallDestination: () =>
+    set((state) => ({ promptModInstallDestination: !state.promptModInstallDestination })),
   textScale: TEXT_SCALE_DEFAULT,
   setTextScale: (scale) => set(() => ({ textScale: clampTextScale(scale) })),
   applyGameDefaults: false,
@@ -256,6 +268,9 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
     set(() => ({ gameDefaultsIncludeAccount })),
   pendingDeepLinkMod: null,
   setPendingDeepLinkMod: (pendingDeepLinkMod) => set(() => ({ pendingDeepLinkMod })),
+  pendingDeepLinkModVersion: null,
+  setPendingDeepLinkModVersion: (pendingDeepLinkModVersion) =>
+    set(() => ({ pendingDeepLinkModVersion })),
   pendingDeepLinkPack: null,
   setPendingDeepLinkPack: (pendingDeepLinkPack) => set(() => ({ pendingDeepLinkPack })),
   profilesParent: null,

@@ -207,6 +207,42 @@ pub fn run() {
         .setup(|app| {
             let app_handle = app.handle();
 
+            // ── Deep link registration ──
+            // Installers register the configured schemes on Windows and
+            // macOS, and Linux packages ship a desktop file. AppImages and
+            // dev builds are associated by nothing though, so claim schemes
+            // that no one handles yet — including ModDB's 1-click install
+            // scheme (`vintagestorymodinstall://`). Never fight an existing
+            // handler, e.g. the official launcher. Flatpak exports its own
+            // desktop file and cannot write host associations from inside
+            // the sandbox.
+            #[cfg(any(target_os = "linux", all(debug_assertions, windows)))]
+            {
+                use tauri_plugin_deep_link::DeepLinkExt;
+                if std::env::var("FLATPAK_ID").is_err() {
+                    let deep_link = app.deep_link();
+                    for scheme in ["storyforge", "sf", "vintagestorymodinstall"] {
+                        match deep_link.is_registered(scheme) {
+                            Ok(true) => {}
+                            Ok(false) => {
+                                if let Err(error) = deep_link.register(scheme) {
+                                    eprintln!(
+                                        "[StoryForge] could not register {scheme}:// links: {error}"
+                                    );
+                                } else {
+                                    log_info!("deep links: registered the {scheme}:// scheme");
+                                }
+                            }
+                            Err(error) => {
+                                eprintln!(
+                                    "[StoryForge] could not check the {scheme}:// registration: {error}"
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+
             // ── Window placement ──
             // The window-state plugin restores the previous size and position
             // verbatim: the size can predate the configured minimum, and the

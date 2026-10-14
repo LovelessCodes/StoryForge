@@ -51,6 +51,8 @@
     "systemDotnetDescription": "Versuche zuerst die .NET-Runtime deines Systems, bevor eine heruntergeladen wird.",
     "defaultModSort": "Standard-Mod-Sortierung",
     "defaultModSortDescription": "Sortierreihenfolge beim Öffnen des Mod-Browsers.",
+    "promptModInstallDestination": "Immer nach dem Installationsziel fragen",
+    "promptModInstallDestinationDescription": "1-Klick-Installationslinks öffnen die Zielauswahl, statt das aktive Profil zu verwenden.",
     "sort": {
       "comments": "Kommentare",
       "created": "Erstellt",

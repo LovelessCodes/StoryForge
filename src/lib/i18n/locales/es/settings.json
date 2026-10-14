@@ -51,6 +51,8 @@
     "systemDotnetDescription": "Probar el runtime de .NET del sistema antes de descargar uno.",
     "defaultModSort": "Orden predeterminado de mods",
     "defaultModSortDescription": "Orden usado al abrir el explorador de mods.",
+    "promptModInstallDestination": "Preguntar siempre dónde instalar",
+    "promptModInstallDestinationDescription": "Los enlaces de instalación en un clic abren el selector de destino en lugar de usar el perfil activo.",
     "sort": {
       "comments": "Comentarios",
       "created": "Creado",

@@ -40,10 +40,10 @@ export type ModsPageProps = {
 };
 
 type SheetRequest =
-  | { kind: "add"; mod: Mod }
+  | { kind: "add"; mod: Mod; version?: string }
   | { kind: "update"; mod: Mod; installedMod: OutputMod }
   | { kind: "remove"; mod: Mod; installedMod: OutputMod }
-  | { kind: "standalone"; mod: Mod };
+  | { kind: "standalone"; mod: Mod; prompt?: boolean; version?: string };
 
 export default function ModsPage({
   targetPath,
@@ -88,14 +88,22 @@ export default function ModsPage({
     setSheetOpen(true);
   };
 
-  // A deep link (`storyforge://install?mod=…`) queued a mod id; open the add
-  // sheet for it once this page is mounted.
+  // A deep link (`storyforge://install?mod=…`, or ModDB's 1-click
+  // `vintagestorymodinstall://<id>@<version>` button) queued a mod id and
+  // optionally a release; open the install sheet for it once this page is
+  // mounted. With the "always ask" preference the standalone picker opens
+  // even when an active profile exists, preselecting that profile.
   const pendingDeepLinkMod = useSettingsStore((s) => s.pendingDeepLinkMod);
+  const pendingDeepLinkModVersion = useSettingsStore((s) => s.pendingDeepLinkModVersion);
+  const promptModInstallDestination = useSettingsStore((s) => s.promptModInstallDestination);
   const setPendingDeepLinkMod = useSettingsStore((s) => s.setPendingDeepLinkMod);
+  const setPendingDeepLinkModVersion = useSettingsStore((s) => s.setPendingDeepLinkModVersion);
   useEffect(() => {
     const modid = pendingDeepLinkMod;
     if (!modid) return;
+    const version = pendingDeepLinkModVersion ?? undefined;
     setPendingDeepLinkMod(null);
+    setPendingDeepLinkModVersion(null);
     void (async () => {
       try {
         const info = await invoke<ModInfo>("fetch_mod_info", { modid });
@@ -117,14 +125,27 @@ export default function ModsPage({
           type: info.mod.type,
           urlalias: info.mod.urlalias ?? null,
         };
-        openSheet(profilePath ? { kind: "add", mod } : { kind: "standalone", mod });
+        if (version && !info.mod.releases.some((release) => release.modversion === version)) {
+          toast.warning(t("mods.deepLink.versionUnavailable", { modid, version }));
+        }
+        if (promptModInstallDestination || !profilePath) {
+          openSheet({
+            kind: "standalone",
+            mod,
+            prompt: promptModInstallDestination,
+            version,
+          });
+        } else {
+          openSheet({ kind: "add", mod, version });
+        }
       } catch (error) {
         toast.error(t("mods.deepLink.failed", { modid }), { description: errorMessage(error) });
       }
     })();
-    // Consumed once per queued id; the sheet state is local to this page.
+    // Consumed once per queued id/version; the sheet state is local to this
+    // page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingDeepLinkMod]);
+  }, [pendingDeepLinkMod, pendingDeepLinkModVersion]);
 
   return (
     <TooltipProvider>
@@ -204,6 +225,7 @@ export default function ModsPage({
       {sheet?.kind === "add" && profilePath && (
         <AddModSheet
           destinationLabel={destinationLabel}
+          initialVersion={sheet.version}
           key={sheet.mod.modid}
           mod={sheet.mod}
           modsDirectory={profilePath}
@@ -235,10 +257,13 @@ export default function ModsPage({
       )}
       {sheet?.kind === "standalone" && (
         <StandaloneInstallPickerSheet
+          initialDestinationId={activeProfile ? `profile-${activeProfile.id}` : null}
+          initialVersion={sheet.version}
           key={sheet.mod.modid}
           mod={sheet.mod}
           onOpenChange={setSheetOpen}
           open={sheetOpen}
+          prompt={sheet.prompt}
         />
       )}
     </TooltipProvider>

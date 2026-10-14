@@ -168,6 +168,10 @@ function BehaviourCard() {
   const toggleUseSystemDotnet = useSettingsStore((s) => s.toggleUseSystemDotnet);
   const defaultModSortBy = useSettingsStore((s) => s.defaultModSortBy);
   const setDefaultModSortBy = useSettingsStore((s) => s.setDefaultModSortBy);
+  const promptModInstallDestination = useSettingsStore((s) => s.promptModInstallDestination);
+  const togglePromptModInstallDestination = useSettingsStore(
+    (s) => s.togglePromptModInstallDestination,
+  );
 
   const sortItems = (Object.keys(sortOptions) as SortBy[]).map((key) => ({
     label: t(`settings.behaviour.sort.${key}`),
@@ -227,6 +231,17 @@ function BehaviourCard() {
               ))}
             </SelectContent>
           </Select>
+        </SettingRow>
+
+        <SettingRow
+          description={t("settings.behaviour.promptModInstallDestinationDescription")}
+          label={t("settings.behaviour.promptModInstallDestination")}
+        >
+          <Switch
+            aria-label={t("settings.behaviour.promptModInstallDestination")}
+            checked={promptModInstallDestination}
+            onCheckedChange={() => togglePromptModInstallDestination()}
+          />
         </SettingRow>
       </CardContent>
     </Card>

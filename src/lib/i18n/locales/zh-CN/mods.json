@@ -131,6 +131,7 @@
   },
   "standaloneInstall": {
     "description": "没有活动配置档。选择该模组的安装位置和使用的版本。",
+    "descriptionPrompt": "选择此模组的安装位置以及要使用的版本。",
     "destination": "目标位置",
     "destinationAria": "安装目标位置",
     "destinationPlaceholder": "选择目标位置…",
@@ -198,7 +199,8 @@
     "hint": "删除文件后无法恢复。"
   },
   "deepLink": {
-    "failed": "无法通过链接打开 {{modid}}"
+    "failed": "无法通过链接打开 {{modid}}",
+    "versionUnavailable": "{{modid}} 的 {{version}} 版本已不可用，已改为预选最新版本。"
   },
   "toggle": {
     "enabled": "已启用 {{name}}",
