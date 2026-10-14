@@ -4,7 +4,7 @@ import { createTauriStore } from "@tauri-store/zustand";
 import { create } from "zustand";
 
 import { logToFile } from "@/lib/logger";
-import { moveMods, type ModGroup } from "@/lib/mod-groups";
+import { moveMods, reorderGroups, type ModGroup } from "@/lib/mod-groups";
 import type { SortBy } from "@/lib/mod-sort";
 import { clampTextScale, TEXT_SCALE_DEFAULT } from "@/lib/text-scale";
 
@@ -75,6 +75,8 @@ type SettingsStore = {
   createModGroup: (path: string, name: string) => void;
   renameModGroup: (path: string, groupId: string, name: string) => void;
   deleteModGroup: (path: string, groupId: string) => void;
+  /** Moves a group into the slot of another one, e.g. after a drag. */
+  reorderModGroups: (path: string, activeId: string, overId: string) => void;
   moveModsToGroup: (path: string, modids: string[], groupId: string | null) => void;
   /** Favourite mod listings (lowercased modidstrs), shared across profiles. */
   favoriteMods: string[];
@@ -200,6 +202,13 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
       else delete modGroups[path];
       return { modGroups };
     }),
+  reorderModGroups: (path, activeId, overId) =>
+    set((state) => ({
+      modGroups: {
+        ...state.modGroups,
+        [path]: reorderGroups(state.modGroups[path] ?? [], activeId, overId),
+      },
+    })),
   moveModsToGroup: (path, modids, groupId) =>
     set((state) => ({
       modGroups: {

@@ -313,7 +313,14 @@
     "menu": "分组操作",
     "save": "保存",
     "expand": "展开分组",
-    "collapse": "折叠分组"
+    "collapse": "折叠分组",
+    "dragHandle": "拖动以重新排序分组",
+    "a11yRole": "可重新排序的分组",
+    "a11yInstructions": "要重新排序分组，请在其拖动手柄上按空格键或回车键，用方向键移动，然后再次按空格键或回车键放下。",
+    "a11yLifted": "已拿起分组 {{name}}。",
+    "a11yMoved": "分组 {{name}} 现在位于第 {{position}} 个，共 {{total}} 个。",
+    "a11yDropped": "分组 {{name}} 已放在第 {{position}} 个，共 {{total}} 个。",
+    "a11yCancelled": "已取消重新排序。"
   },
   "actions": {
     "more": "更多操作",

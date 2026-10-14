@@ -321,7 +321,14 @@
     "menu": "Actions du groupe",
     "save": "Enregistrer",
     "expand": "Développer le groupe",
-    "collapse": "Réduire le groupe"
+    "collapse": "Réduire le groupe",
+    "dragHandle": "Glisser pour réordonner le groupe",
+    "a11yRole": "groupe réorganisable",
+    "a11yInstructions": "Pour réordonner un groupe, appuyez sur Espace ou Entrée sur sa poignée, déplacez-le avec les flèches, puis appuyez à nouveau sur Espace ou Entrée pour le déposer.",
+    "a11yLifted": "Groupe {{name}} saisi.",
+    "a11yMoved": "Le groupe {{name}} est maintenant en position {{position}} sur {{total}}.",
+    "a11yDropped": "Groupe {{name}} déposé en position {{position}} sur {{total}}.",
+    "a11yCancelled": "Réordonnancement annulé."
   },
   "actions": {
     "more": "Plus d'actions",

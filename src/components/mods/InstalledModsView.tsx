@@ -1,3 +1,25 @@
+import {
+  closestCenter,
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type Announcements,
+  type DragEndEvent,
+  type DraggableAttributes,
+  type DraggableSyntheticListeners,
+  type UniqueIdentifier,
+} from "@dnd-kit/core";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import {
+  sortableKeyboardCoordinates,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { cn } from "cn";
@@ -8,13 +30,14 @@ import {
   Ellipsis,
   FolderInput,
   FolderPlus,
+  GripVertical,
   Pencil,
   Power,
   PowerOff,
   Trash2,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -67,6 +90,7 @@ export function InstalledModsView({
   const createModGroup = useSettingsStore((s) => s.createModGroup);
   const renameModGroup = useSettingsStore((s) => s.renameModGroup);
   const deleteModGroup = useSettingsStore((s) => s.deleteModGroup);
+  const reorderModGroups = useSettingsStore((s) => s.reorderModGroups);
   const moveModsToGroup = useSettingsStore((s) => s.moveModsToGroup);
   const applyState = useApplyModState(modsDirectory);
   const { mutate: setModEnabled } = useSetModEnabled(modsDirectory);
@@ -80,9 +104,16 @@ export function InstalledModsView({
   const [confirmDeleteGroupId, setConfirmDeleteGroupId] = useState<string | null>(null);
   const [confirmBatchRemove, setConfirmBatchRemove] = useState(false);
   const [presetsOpen, setPresetsOpen] = useState(false);
+  const [draggingGroupId, setDraggingGroupId] = useState<string | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const mods = useMemo(() => data?.mods ?? [], [data]);
   const sections = useMemo(() => sectionMods(groups, mods), [groups, mods]);
+  const groupIds = useMemo(() => groups.map((group) => group.id), [groups]);
+  const draggingGroup = groups.find((group) => group.id === draggingGroupId);
   const selectedMods = useMemo(
     () => mods.filter((mod) => selected.has(mod.modid.toLowerCase())),
     [mods, selected],
@@ -173,6 +204,40 @@ export function InstalledModsView({
     setSelected(new Set());
   };
 
+  const groupName = (id: UniqueIdentifier) =>
+    groups.find((group) => group.id === String(id))?.name ?? "";
+
+  const groupPosition = (id: UniqueIdentifier) =>
+    groups.findIndex((group) => group.id === String(id)) + 1;
+
+  /** Spoken during a drag; dnd-kit's defaults would announce the internal ids. */
+  const announcements: Announcements = {
+    onDragStart: ({ active }) => t("mods.groups.a11yLifted", { name: groupName(active.id) }),
+    onDragOver: ({ active, over }) =>
+      over && over.id !== active.id
+        ? t("mods.groups.a11yMoved", {
+            name: groupName(active.id),
+            position: groupPosition(over.id),
+            total: groups.length,
+          })
+        : undefined,
+    onDragEnd: ({ active, over }) =>
+      over
+        ? t("mods.groups.a11yDropped", {
+            name: groupName(active.id),
+            position: groupPosition(over.id),
+            total: groups.length,
+          })
+        : undefined,
+    onDragCancel: ({ active }) => t("mods.groups.a11yCancelled", { name: groupName(active.id) }),
+  };
+
+  const finishGroupDrag = ({ active, over }: DragEndEvent) => {
+    setDraggingGroupId(null);
+    if (!over) return;
+    reorderModGroups(modsDirectory, String(active.id), String(over.id));
+  };
+
   const saveNewGroup = () => {
     const name = newGroupName.trim();
     if (!name) return;
@@ -200,369 +265,473 @@ export function InstalledModsView({
   }
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-muted-foreground text-xs">
-          {t("mods.installed.count", { count: mods.length })}
-        </span>
-        <div className="flex flex-wrap items-center gap-2">
-          {canToggleMods && (
-            <>
-              <Button
-                aria-label={t("mods.groups.enableAll")}
-                disabled={applyState.isPending || mods.length === 0}
-                onClick={() => applyEnabled(mods, true)}
-                size="icon-sm"
-                title={t("mods.groups.enableAll")}
-                variant="outline"
-              >
-                <Power />
-              </Button>
-              <Button
-                aria-label={t("mods.groups.disableAll")}
-                disabled={applyState.isPending || mods.length === 0}
-                onClick={() => applyEnabled(mods, false)}
-                size="icon-sm"
-                title={t("mods.groups.disableAll")}
-                variant="outline"
-              >
-                <PowerOff />
-              </Button>
-              <Button onClick={() => setPresetsOpen(true)} size="sm" variant="outline">
-                <Bookmark />
-                {t("mods.presets.button")}
-              </Button>
-            </>
-          )}
-          {creatingGroup ? (
-            <div className="flex items-center gap-2">
-              <Input
-                aria-label={t("mods.groups.namePlaceholder")}
-                className="h-8 max-w-48"
-                placeholder={t("mods.groups.namePlaceholder")}
-                value={newGroupName}
-                onChange={(event) => setNewGroupName(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") saveNewGroup();
-                  if (event.key === "Escape") setCreatingGroup(false);
-                }}
-              />
-              <Button disabled={newGroupName.trim().length === 0} onClick={saveNewGroup} size="sm">
-                {t("mods.groups.create")}
-              </Button>
-              <Button onClick={() => setCreatingGroup(false)} size="sm" variant="ghost">
-                {t("common.actions.cancel")}
-              </Button>
-            </div>
-          ) : (
-            <Button onClick={() => setCreatingGroup(true)} size="sm" variant="outline">
-              <FolderPlus />
-              {t("mods.groups.new")}
-            </Button>
-          )}
-        </div>
-      </div>
-
-      <ScrollArea scrollFade className="min-h-0 flex-1">
-        <div className={cn("grid gap-3 pr-1", selected.size > 0 ? "pb-16" : "pb-1")}>
-          {mods.length === 0 ? (
-            <p className="text-muted-foreground border border-dashed p-6 text-center text-xs">
-              {t("mods.installed.empty")}
-            </p>
-          ) : (
-            sections.map((section) => {
-              const key = section.group?.id ?? "__ungrouped__";
-              const isCollapsed = collapsed.has(key);
-              const { total, enabled, selectedHere } = sectionState(section);
-              return (
-                <section className="grid gap-1.5" key={key}>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      aria-label={isCollapsed ? t("mods.groups.expand") : t("mods.groups.collapse")}
-                      onClick={() =>
-                        setCollapsed((previous) => {
-                          const next = new Set(previous);
-                          if (next.has(key)) next.delete(key);
-                          else next.add(key);
-                          return next;
-                        })
-                      }
-                      size="icon-sm"
-                      variant="ghost"
-                    >
-                      {isCollapsed ? <ChevronRight /> : <ChevronDown />}
-                    </Button>
-                    <Checkbox
-                      aria-label={t("mods.installed.selectAll")}
-                      checked={total > 0 && selectedHere === total}
-                      disabled={total === 0}
-                      indeterminate={selectedHere > 0 && selectedHere < total}
-                      onCheckedChange={(checked) => selectSection(section, checked === true)}
-                    />
-                    {section.group && renamingId === section.group.id ? (
-                      <>
-                        <Input
-                          className="h-7 max-w-48"
-                          value={renameName}
-                          onChange={(event) => setRenameName(event.target.value)}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" && section.group)
-                              saveRename(section.group.id);
-                            if (event.key === "Escape") setRenamingId(null);
-                          }}
-                        />
-                        <Button
-                          onClick={() => section.group && saveRename(section.group.id)}
-                          size="sm"
-                          variant="outline"
-                        >
-                          {t("mods.groups.save")}
-                        </Button>
-                        <Button onClick={() => setRenamingId(null)} size="sm" variant="ghost">
-                          {t("common.actions.cancel")}
-                        </Button>
-                      </>
-                    ) : (
-                      <h3 className="text-sm font-medium">
-                        {section.group ? section.group.name : t("mods.installed.ungrouped")}
-                      </h3>
-                    )}
-                    <span className="text-muted-foreground text-[11px]">
-                      {t("mods.installed.enabledCount", { enabled, total })}
-                    </span>
-                    <div className="ms-auto flex items-center gap-1">
-                      {canToggleMods && (
-                        <>
-                          <Button
-                            aria-label={t("mods.groups.enableAll")}
-                            disabled={applyState.isPending || total === 0}
-                            onClick={() => applyEnabled(section.mods, true)}
-                            size="icon-sm"
-                            title={t("mods.groups.enableAll")}
-                            variant="ghost"
-                          >
-                            <Power />
-                          </Button>
-                          <Button
-                            aria-label={t("mods.groups.disableAll")}
-                            disabled={applyState.isPending || total === 0}
-                            onClick={() => applyEnabled(section.mods, false)}
-                            size="icon-sm"
-                            title={t("mods.groups.disableAll")}
-                            variant="ghost"
-                          >
-                            <PowerOff />
-                          </Button>
-                        </>
-                      )}
-                      {section.group && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger
-                            render={
-                              <Button
-                                aria-label={t("mods.groups.menu")}
-                                size="icon-sm"
-                                variant="ghost"
-                              />
-                            }
-                          >
-                            <Ellipsis />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              className="text-nowrap"
-                              onClick={() => {
-                                if (!section.group) return;
-                                setRenamingId(section.group.id);
-                                setRenameName(section.group.name);
-                              }}
-                            >
-                              <Pencil /> {t("mods.groups.rename")}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive text-nowrap"
-                              onClick={() => setConfirmDeleteGroupId(section.group?.id ?? null)}
-                            >
-                              <Trash2 /> {t("mods.groups.delete")}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                    </div>
-                    {section.group && confirmDeleteGroupId === section.group.id && (
-                      <div className="flex w-full items-center gap-2">
-                        <span className="text-destructive text-[11px]">
-                          {t("mods.groups.deleteConfirm")}
-                        </span>
-                        <Button
-                          onClick={() => setConfirmDeleteGroupId(null)}
-                          size="sm"
-                          variant="ghost"
-                        >
-                          {t("common.actions.cancel")}
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            if (!section.group) return;
-                            deleteModGroup(modsDirectory, section.group.id);
-                            toast.success(t("mods.groups.deleted", { name: section.group.name }));
-                            setConfirmDeleteGroupId(null);
-                          }}
-                          size="sm"
-                          variant="destructive"
-                        >
-                          {t("mods.groups.delete")}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                  {!isCollapsed &&
-                    (section.mods.length === 0 ? (
-                      <p className="text-muted-foreground px-1 text-[11px]">
-                        {t("mods.installed.emptyGroup")}
-                      </p>
-                    ) : (
-                      <div className="grid gap-1.5">
-                        {section.mods.map((installed) => (
-                          <InstalledModRow
-                            canToggleMods={canToggleMods}
-                            groups={groups}
-                            installed={installed}
-                            key={installed.path}
-                            onMove={(modids, groupId) => {
-                              moveModsToGroup(modsDirectory, modids, groupId);
-                              toast.success(t("mods.installed.moved", { count: modids.length }));
-                            }}
-                            onRemove={(mod) => removeMods.mutate([mod.path])}
-                            onSelectedChange={selectMod}
-                            onToggleEnabled={(mod, enabledNow) =>
-                              setModEnabled({
-                                enabled: enabledNow,
-                                modid: mod.modid,
-                                name: mod.name,
-                                version: mod.version,
-                              })
-                            }
-                            selected={selected.has(installed.modid.toLowerCase())}
-                          />
-                        ))}
-                      </div>
-                    ))}
-                </section>
-              );
-            })
-          )}
-        </div>
-      </ScrollArea>
-
-      {selected.size > 0 && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-3 z-10 flex justify-center">
-          <div className="bg-popover text-popover-foreground pointer-events-auto flex items-center gap-1 rounded-full border px-2 py-1.5 shadow-lg">
-            <span className="px-1.5 text-xs font-medium">
-              {t("mods.installed.selected", { count: selected.size })}
-            </span>
+    <DndContext
+      accessibility={{
+        announcements,
+        screenReaderInstructions: { draggable: t("mods.groups.a11yInstructions") },
+      }}
+      collisionDetection={closestCenter}
+      modifiers={[restrictToVerticalAxis]}
+      onDragCancel={() => setDraggingGroupId(null)}
+      onDragEnd={finishGroupDrag}
+      onDragStart={({ active }) => setDraggingGroupId(String(active.id))}
+      sensors={sensors}
+    >
+      <div className="relative flex min-h-0 flex-1 flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-muted-foreground text-xs">
+            {t("mods.installed.count", { count: mods.length })}
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
             {canToggleMods && (
               <>
                 <Button
-                  aria-label={t("mods.installed.enable")}
-                  disabled={applyState.isPending}
-                  onClick={() => applyEnabled(selectedMods, true)}
+                  aria-label={t("mods.groups.enableAll")}
+                  disabled={applyState.isPending || mods.length === 0}
+                  onClick={() => applyEnabled(mods, true)}
                   size="icon-sm"
-                  title={t("mods.installed.enable")}
-                  variant="ghost"
+                  title={t("mods.groups.enableAll")}
+                  variant="outline"
                 >
                   <Power />
                 </Button>
                 <Button
-                  aria-label={t("mods.installed.disable")}
-                  disabled={applyState.isPending}
-                  onClick={() => applyEnabled(selectedMods, false)}
+                  aria-label={t("mods.groups.disableAll")}
+                  disabled={applyState.isPending || mods.length === 0}
+                  onClick={() => applyEnabled(mods, false)}
                   size="icon-sm"
-                  title={t("mods.installed.disable")}
-                  variant="ghost"
+                  title={t("mods.groups.disableAll")}
+                  variant="outline"
                 >
                   <PowerOff />
                 </Button>
+                <Button onClick={() => setPresetsOpen(true)} size="sm" variant="outline">
+                  <Bookmark />
+                  {t("mods.presets.button")}
+                </Button>
               </>
             )}
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    aria-label={t("mods.installed.moveToGroup")}
-                    size="icon-sm"
-                    title={t("mods.installed.moveToGroup")}
-                    variant="ghost"
-                  />
-                }
-              >
-                <FolderInput />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="center" side="top">
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel>{t("mods.installed.moveToGroup")}</DropdownMenuLabel>
-                  <DropdownMenuItem className="text-nowrap" onClick={() => moveSelection(null)}>
-                    {t("mods.installed.ungrouped")}
-                  </DropdownMenuItem>
-                  {groups.length > 0 && <DropdownMenuSeparator />}
-                  {groups.map((group) => (
-                    <DropdownMenuItem
-                      className="text-nowrap"
-                      key={group.id}
-                      onClick={() => moveSelection(group.id)}
-                    >
-                      {group.name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {confirmBatchRemove ? (
-              <>
-                <span className="text-destructive px-1 text-[11px]">
-                  {t("mods.installed.removeConfirm", { count: selectedMods.length })}
-                </span>
-                <Button onClick={() => setConfirmBatchRemove(false)} size="sm" variant="ghost">
+            {creatingGroup ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  aria-label={t("mods.groups.namePlaceholder")}
+                  className="h-8 max-w-48"
+                  placeholder={t("mods.groups.namePlaceholder")}
+                  value={newGroupName}
+                  onChange={(event) => setNewGroupName(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") saveNewGroup();
+                    if (event.key === "Escape") setCreatingGroup(false);
+                  }}
+                />
+                <Button
+                  disabled={newGroupName.trim().length === 0}
+                  onClick={saveNewGroup}
+                  size="sm"
+                >
+                  {t("mods.groups.create")}
+                </Button>
+                <Button onClick={() => setCreatingGroup(false)} size="sm" variant="ghost">
                   {t("common.actions.cancel")}
                 </Button>
-                <Button onClick={removeSelected} size="sm" variant="destructive">
-                  <Trash2 />
-                  {t("mods.installed.remove")}
-                </Button>
-              </>
+              </div>
             ) : (
-              <Button
-                aria-label={t("mods.installed.remove")}
-                className="text-muted-foreground hover:text-destructive"
-                onClick={() => setConfirmBatchRemove(true)}
-                size="icon-sm"
-                title={t("mods.installed.remove")}
-                variant="ghost"
-              >
-                <Trash2 />
+              <Button onClick={() => setCreatingGroup(true)} size="sm" variant="outline">
+                <FolderPlus />
+                {t("mods.groups.new")}
               </Button>
             )}
-            <Button
-              aria-label={t("mods.installed.clearSelection")}
-              onClick={() => {
-                setConfirmBatchRemove(false);
-                setSelected(new Set());
-              }}
-              size="icon-sm"
-              title={t("mods.installed.clearSelection")}
-              variant="ghost"
-            >
-              <X />
-            </Button>
           </div>
         </div>
-      )}
 
-      <ModPresetsSheet
-        modsDirectory={modsDirectory}
-        open={presetsOpen}
-        onOpenChange={setPresetsOpen}
-      />
-    </div>
+        <ScrollArea scrollFade className="min-h-0 flex-1">
+          <SortableContext items={groupIds} strategy={verticalListSortingStrategy}>
+            <div className={cn("grid gap-3 pr-1", selected.size > 0 ? "pb-16" : "pb-1")}>
+              {mods.length === 0 ? (
+                <p className="text-muted-foreground border border-dashed p-6 text-center text-xs">
+                  {t("mods.installed.empty")}
+                </p>
+              ) : (
+                sections.map((section) => {
+                  const key = section.group?.id ?? "__ungrouped__";
+                  const isCollapsed = collapsed.has(key);
+                  const { total, enabled, selectedHere } = sectionState(section);
+
+                  const content = (handle: DragHandle | null) => (
+                    <>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {handle && (
+                          <Button
+                            {...handle.listeners}
+                            {...handle.attributes}
+                            ref={handle.ref}
+                            aria-label={t("mods.groups.dragHandle")}
+                            className="text-muted-foreground cursor-grab touch-none active:cursor-grabbing"
+                            size="icon-sm"
+                            title={t("mods.groups.dragHandle")}
+                            variant="ghost"
+                          >
+                            <GripVertical />
+                          </Button>
+                        )}
+                        <Button
+                          aria-label={
+                            isCollapsed ? t("mods.groups.expand") : t("mods.groups.collapse")
+                          }
+                          onClick={() =>
+                            setCollapsed((previous) => {
+                              const next = new Set(previous);
+                              if (next.has(key)) next.delete(key);
+                              else next.add(key);
+                              return next;
+                            })
+                          }
+                          size="icon-sm"
+                          variant="ghost"
+                        >
+                          {isCollapsed ? <ChevronRight /> : <ChevronDown />}
+                        </Button>
+                        <Checkbox
+                          aria-label={t("mods.installed.selectAll")}
+                          checked={total > 0 && selectedHere === total}
+                          disabled={total === 0}
+                          indeterminate={selectedHere > 0 && selectedHere < total}
+                          onCheckedChange={(checked) => selectSection(section, checked === true)}
+                        />
+                        {section.group && renamingId === section.group.id ? (
+                          <>
+                            <Input
+                              className="h-7 max-w-48"
+                              value={renameName}
+                              onChange={(event) => setRenameName(event.target.value)}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter" && section.group)
+                                  saveRename(section.group.id);
+                                if (event.key === "Escape") setRenamingId(null);
+                              }}
+                            />
+                            <Button
+                              onClick={() => section.group && saveRename(section.group.id)}
+                              size="sm"
+                              variant="outline"
+                            >
+                              {t("mods.groups.save")}
+                            </Button>
+                            <Button onClick={() => setRenamingId(null)} size="sm" variant="ghost">
+                              {t("common.actions.cancel")}
+                            </Button>
+                          </>
+                        ) : (
+                          <h3 className="text-sm font-medium">
+                            {section.group ? section.group.name : t("mods.installed.ungrouped")}
+                          </h3>
+                        )}
+                        <span className="text-muted-foreground text-[11px]">
+                          {t("mods.installed.enabledCount", { enabled, total })}
+                        </span>
+                        <div className="ms-auto flex items-center gap-1">
+                          {canToggleMods && (
+                            <>
+                              <Button
+                                aria-label={t("mods.groups.enableAll")}
+                                disabled={applyState.isPending || total === 0}
+                                onClick={() => applyEnabled(section.mods, true)}
+                                size="icon-sm"
+                                title={t("mods.groups.enableAll")}
+                                variant="ghost"
+                              >
+                                <Power />
+                              </Button>
+                              <Button
+                                aria-label={t("mods.groups.disableAll")}
+                                disabled={applyState.isPending || total === 0}
+                                onClick={() => applyEnabled(section.mods, false)}
+                                size="icon-sm"
+                                title={t("mods.groups.disableAll")}
+                                variant="ghost"
+                              >
+                                <PowerOff />
+                              </Button>
+                            </>
+                          )}
+                          {section.group && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger
+                                render={
+                                  <Button
+                                    aria-label={t("mods.groups.menu")}
+                                    size="icon-sm"
+                                    variant="ghost"
+                                  />
+                                }
+                              >
+                                <Ellipsis />
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  className="text-nowrap"
+                                  onClick={() => {
+                                    if (!section.group) return;
+                                    setRenamingId(section.group.id);
+                                    setRenameName(section.group.name);
+                                  }}
+                                >
+                                  <Pencil /> {t("mods.groups.rename")}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive text-nowrap"
+                                  onClick={() => setConfirmDeleteGroupId(section.group?.id ?? null)}
+                                >
+                                  <Trash2 /> {t("mods.groups.delete")}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </div>
+                        {section.group && confirmDeleteGroupId === section.group.id && (
+                          <div className="flex w-full items-center gap-2">
+                            <span className="text-destructive text-[11px]">
+                              {t("mods.groups.deleteConfirm")}
+                            </span>
+                            <Button
+                              onClick={() => setConfirmDeleteGroupId(null)}
+                              size="sm"
+                              variant="ghost"
+                            >
+                              {t("common.actions.cancel")}
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                if (!section.group) return;
+                                deleteModGroup(modsDirectory, section.group.id);
+                                toast.success(
+                                  t("mods.groups.deleted", { name: section.group.name }),
+                                );
+                                setConfirmDeleteGroupId(null);
+                              }}
+                              size="sm"
+                              variant="destructive"
+                            >
+                              {t("mods.groups.delete")}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                      {!isCollapsed &&
+                        (section.mods.length === 0 ? (
+                          <p className="text-muted-foreground px-1 text-[11px]">
+                            {t("mods.installed.emptyGroup")}
+                          </p>
+                        ) : (
+                          <div className="grid gap-1.5">
+                            {section.mods.map((installed) => (
+                              <InstalledModRow
+                                canToggleMods={canToggleMods}
+                                groups={groups}
+                                installed={installed}
+                                key={installed.path}
+                                onMove={(modids, groupId) => {
+                                  moveModsToGroup(modsDirectory, modids, groupId);
+                                  toast.success(
+                                    t("mods.installed.moved", { count: modids.length }),
+                                  );
+                                }}
+                                onRemove={(mod) => removeMods.mutate([mod.path])}
+                                onSelectedChange={selectMod}
+                                onToggleEnabled={(mod, enabledNow) =>
+                                  setModEnabled({
+                                    enabled: enabledNow,
+                                    modid: mod.modid,
+                                    name: mod.name,
+                                    version: mod.version,
+                                  })
+                                }
+                                selected={selected.has(installed.modid.toLowerCase())}
+                              />
+                            ))}
+                          </div>
+                        ))}
+                    </>
+                  );
+
+                  if (!section.group) {
+                    return (
+                      <section className="grid gap-1.5" key={key}>
+                        {content(null)}
+                      </section>
+                    );
+                  }
+
+                  return (
+                    <SortableGroup groupId={section.group.id} key={key}>
+                      {content}
+                    </SortableGroup>
+                  );
+                })
+              )}
+            </div>
+          </SortableContext>
+        </ScrollArea>
+
+        {selected.size > 0 && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-3 z-10 flex justify-center">
+            <div className="bg-popover text-popover-foreground pointer-events-auto flex items-center gap-1 rounded-full border px-2 py-1.5 shadow-lg">
+              <span className="px-1.5 text-xs font-medium">
+                {t("mods.installed.selected", { count: selected.size })}
+              </span>
+              {canToggleMods && (
+                <>
+                  <Button
+                    aria-label={t("mods.installed.enable")}
+                    disabled={applyState.isPending}
+                    onClick={() => applyEnabled(selectedMods, true)}
+                    size="icon-sm"
+                    title={t("mods.installed.enable")}
+                    variant="ghost"
+                  >
+                    <Power />
+                  </Button>
+                  <Button
+                    aria-label={t("mods.installed.disable")}
+                    disabled={applyState.isPending}
+                    onClick={() => applyEnabled(selectedMods, false)}
+                    size="icon-sm"
+                    title={t("mods.installed.disable")}
+                    variant="ghost"
+                  >
+                    <PowerOff />
+                  </Button>
+                </>
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      aria-label={t("mods.installed.moveToGroup")}
+                      size="icon-sm"
+                      title={t("mods.installed.moveToGroup")}
+                      variant="ghost"
+                    />
+                  }
+                >
+                  <FolderInput />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" side="top">
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>{t("mods.installed.moveToGroup")}</DropdownMenuLabel>
+                    <DropdownMenuItem className="text-nowrap" onClick={() => moveSelection(null)}>
+                      {t("mods.installed.ungrouped")}
+                    </DropdownMenuItem>
+                    {groups.length > 0 && <DropdownMenuSeparator />}
+                    {groups.map((group) => (
+                      <DropdownMenuItem
+                        className="text-nowrap"
+                        key={group.id}
+                        onClick={() => moveSelection(group.id)}
+                      >
+                        {group.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {confirmBatchRemove ? (
+                <>
+                  <span className="text-destructive px-1 text-[11px]">
+                    {t("mods.installed.removeConfirm", { count: selectedMods.length })}
+                  </span>
+                  <Button onClick={() => setConfirmBatchRemove(false)} size="sm" variant="ghost">
+                    {t("common.actions.cancel")}
+                  </Button>
+                  <Button onClick={removeSelected} size="sm" variant="destructive">
+                    <Trash2 />
+                    {t("mods.installed.remove")}
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  aria-label={t("mods.installed.remove")}
+                  className="text-muted-foreground hover:text-destructive"
+                  onClick={() => setConfirmBatchRemove(true)}
+                  size="icon-sm"
+                  title={t("mods.installed.remove")}
+                  variant="ghost"
+                >
+                  <Trash2 />
+                </Button>
+              )}
+              <Button
+                aria-label={t("mods.installed.clearSelection")}
+                onClick={() => {
+                  setConfirmBatchRemove(false);
+                  setSelected(new Set());
+                }}
+                size="icon-sm"
+                title={t("mods.installed.clearSelection")}
+                variant="ghost"
+              >
+                <X />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <ModPresetsSheet
+          modsDirectory={modsDirectory}
+          open={presetsOpen}
+          onOpenChange={setPresetsOpen}
+        />
+
+        <DragOverlay>
+          {draggingGroup && (
+            <div className="bg-popover text-popover-foreground flex items-center gap-2 border px-2.5 py-1.5 shadow-lg">
+              <GripVertical className="text-muted-foreground size-4" />
+              <span className="text-sm font-medium">{draggingGroup.name}</span>
+            </div>
+          )}
+        </DragOverlay>
+      </div>
+    </DndContext>
+  );
+}
+
+/** Grip props the sortable wrapper hands to a group header. */
+type DragHandle = {
+  attributes: DraggableAttributes;
+  listeners: DraggableSyntheticListeners;
+  ref: (element: HTMLElement | null) => void;
+};
+
+/**
+ * Registers one group section as a sortable item. The section markup renders
+ * through `children`, which receives the grip props for its header; the
+ * ungrouped section renders as a plain section without them.
+ */
+function SortableGroup({
+  children,
+  groupId,
+}: {
+  children: (handle: DragHandle) => ReactNode;
+  groupId: string;
+}) {
+  const { t } = useTranslation();
+  const {
+    attributes,
+    isDragging,
+    listeners,
+    setActivatorNodeRef,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: groupId, attributes: { roleDescription: t("mods.groups.a11yRole") } });
+
+  return (
+    <section
+      className={cn("grid gap-1.5", isDragging && "opacity-40")}
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+    >
+      {children({ attributes, listeners, ref: setActivatorNodeRef })}
+    </section>
   );
 }

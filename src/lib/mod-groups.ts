@@ -46,6 +46,21 @@ export function moveMods(
 }
 
 /**
+ * Moves the group `activeId` into the slot of `overId`, keeping every other
+ * group in its relative order. Unknown ids and no-op moves return the input
+ * array unchanged; nothing is mutated either way.
+ */
+export function reorderGroups(groups: ModGroup[], activeId: string, overId: string): ModGroup[] {
+  const from = groups.findIndex((group) => group.id === activeId);
+  const to = groups.findIndex((group) => group.id === overId);
+  if (from === -1 || to === -1 || from === to) return groups;
+  const next = [...groups];
+  const [moved] = next.splice(from, 1);
+  next.splice(to, 0, moved);
+  return next;
+}
+
+/**
  * Splits installed mods into their groups in group order, with the ungrouped
  * mods last. Empty groups are kept so they stay visible (and deletable).
  */

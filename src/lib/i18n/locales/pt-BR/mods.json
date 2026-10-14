@@ -321,7 +321,14 @@
     "menu": "Ações do grupo",
     "save": "Salvar",
     "expand": "Expandir grupo",
-    "collapse": "Recolher grupo"
+    "collapse": "Recolher grupo",
+    "dragHandle": "Arraste para reordenar o grupo",
+    "a11yRole": "grupo reordenável",
+    "a11yInstructions": "Para reordenar um grupo, pressione Espaço ou Enter na alça de arraste, mova-o com as setas e pressione Espaço ou Enter de novo para soltar.",
+    "a11yLifted": "Grupo {{name}} levantado.",
+    "a11yMoved": "O grupo {{name}} está agora na posição {{position}} de {{total}}.",
+    "a11yDropped": "Grupo {{name}} solto na posição {{position}} de {{total}}.",
+    "a11yCancelled": "Reordenação cancelada."
   },
   "actions": {
     "more": "Mais ações",
