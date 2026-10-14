@@ -321,7 +321,14 @@
     "menu": "Group actions",
     "save": "Save",
     "expand": "Expand group",
-    "collapse": "Collapse group"
+    "collapse": "Collapse group",
+    "dragHandle": "Drag to reorder group",
+    "a11yRole": "reorderable group",
+    "a11yInstructions": "To reorder a group, press Space or Enter on its drag handle, move it with the arrow keys, then press Space or Enter again to drop it.",
+    "a11yLifted": "Picked up group {{name}}.",
+    "a11yMoved": "Group {{name}} is now at position {{position}} of {{total}}.",
+    "a11yDropped": "Dropped group {{name}} at position {{position}} of {{total}}.",
+    "a11yCancelled": "Reordering cancelled."
   },
   "actions": {
     "more": "More actions",

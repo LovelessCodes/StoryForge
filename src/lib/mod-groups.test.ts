@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { OutputMod } from "@/lib/types";
 
-import { moveMods, sectionMods, type ModGroup } from "./mod-groups";
+import { moveMods, reorderGroups, sectionMods, type ModGroup } from "./mod-groups";
 
 function mod(modid: string, version = "1.0.0"): OutputMod {
   return {
@@ -53,6 +53,36 @@ describe("moveMods", () => {
   it("does not mutate its input", () => {
     moveMods(groups, ["smooth"], "g2");
     expect(groups[0].modids).toEqual(["smooth", "fastmap"]);
+  });
+});
+
+describe("reorderGroups", () => {
+  it("moves a group down into the target's slot", () => {
+    const next = reorderGroups(groups, "g1", "g2");
+    expect(next.map((group) => group.id)).toEqual(["g2", "g1"]);
+  });
+
+  it("moves a group up into the target's slot", () => {
+    const three = [...groups, { id: "g3", name: "Maps", modids: [] }];
+    const next = reorderGroups(three, "g3", "g1");
+    expect(next.map((group) => group.id)).toEqual(["g3", "g1", "g2"]);
+  });
+
+  it("keeps the group objects identical to the input", () => {
+    const next = reorderGroups(groups, "g2", "g1");
+    expect(next).toEqual([groups[1], groups[0]]);
+    expect(next[0]).toBe(groups[1]);
+  });
+
+  it("returns the input for no-op moves and unknown ids", () => {
+    expect(reorderGroups(groups, "g1", "g1")).toBe(groups);
+    expect(reorderGroups(groups, "ghost", "g1")).toBe(groups);
+    expect(reorderGroups(groups, "g1", "ghost")).toBe(groups);
+  });
+
+  it("does not mutate its input", () => {
+    reorderGroups(groups, "g1", "g2");
+    expect(groups.map((group) => group.id)).toEqual(["g1", "g2"]);
   });
 });
 

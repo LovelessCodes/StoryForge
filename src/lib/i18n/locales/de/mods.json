@@ -321,7 +321,14 @@
     "menu": "Gruppenaktionen",
     "save": "Speichern",
     "expand": "Gruppe ausklappen",
-    "collapse": "Gruppe einklappen"
+    "collapse": "Gruppe einklappen",
+    "dragHandle": "Zum Umsortieren der Gruppe ziehen",
+    "a11yRole": "umsortierbare Gruppe",
+    "a11yInstructions": "Um eine Gruppe umzusortieren, mit der Leertaste oder Eingabetaste den Ziehgriff aktivieren, die Gruppe mit den Pfeiltasten verschieben und zum Ablegen erneut die Leertaste oder Eingabetaste drücken.",
+    "a11yLifted": "Gruppe {{name}} aufgenommen.",
+    "a11yMoved": "Gruppe {{name}} ist jetzt an Position {{position}} von {{total}}.",
+    "a11yDropped": "Gruppe {{name}} an Position {{position}} von {{total}} abgelegt.",
+    "a11yCancelled": "Umsortieren abgebrochen."
   },
   "actions": {
     "more": "Weitere Aktionen",
