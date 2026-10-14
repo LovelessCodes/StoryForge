@@ -23,6 +23,7 @@ import { ModVersionPicker } from "./ModVersionPicker";
 /** Release picker shown before adding a mod to a profile / hosted server. */
 export function AddModSheet({
   destinationLabel,
+  initialVersion,
   mod,
   modsDirectory,
   onOpenChange,
@@ -33,6 +34,8 @@ export function AddModSheet({
   destinationLabel: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Release to preselect when opening from a deep link. */
+  initialVersion?: string;
 }) {
   const { t } = useTranslation();
   const { data: modInfo } = useQuery({
@@ -43,7 +46,11 @@ export function AddModSheet({
     refetchOnWindowFocus: false,
   });
   const [userSelectedVersion, setUserSelectedVersion] = useState<Release | null>(null);
-  const selectedVersion = userSelectedVersion ?? latestRelease(modInfo?.mod.releases) ?? null;
+  const selectedVersion =
+    userSelectedVersion ??
+    modInfo?.mod.releases.find((release) => release.modversion === initialVersion) ??
+    latestRelease(modInfo?.mod.releases) ??
+    null;
   const pathHash = hashPath(modsDirectory);
   const name = modInfo?.mod.name ?? mod.name;
 

@@ -9,8 +9,9 @@ import { useSettingsStore } from "@/stores/settings";
 /**
  * Routes deep links to the page that can act on them:
  *
- * - `storyforge://install?mod=<id>` (and the `sf:` forms) queues a mod id and
- *   opens the Mods page, where the add sheet opens for it.
+ * - `storyforge://install?mod=<id>` (and the `sf:` forms), as well as the
+ *   ModDB 1-click button's `vintagestorymodinstall://<id>@<version>`, queue a
+ *   mod id and open the Mods page, where the install sheet opens for it.
  * - `storyforge://install?pack=<slug>` (and the `sf:` forms) queues a modpack
  *   slug and opens the Modpacks page, where the detail sheet opens for it.
  *
@@ -19,6 +20,7 @@ import { useSettingsStore } from "@/stores/settings";
 export default function DeepLinkHandler() {
   const navigate = useNavigate();
   const setPendingDeepLinkMod = useSettingsStore((s) => s.setPendingDeepLinkMod);
+  const setPendingDeepLinkModVersion = useSettingsStore((s) => s.setPendingDeepLinkModVersion);
   const setPendingDeepLinkPack = useSettingsStore((s) => s.setPendingDeepLinkPack);
 
   useEffect(() => {
@@ -33,6 +35,7 @@ export default function DeepLinkHandler() {
         void navigate({ to: "/modpacks" });
       } else {
         setPendingDeepLinkMod(link.modid);
+        setPendingDeepLinkModVersion(link.version ?? null);
         void navigate({ to: "/mods" });
       }
     }
@@ -54,7 +57,7 @@ export default function DeepLinkHandler() {
       cancelled = true;
       unlisten?.();
     };
-  }, [navigate, setPendingDeepLinkMod, setPendingDeepLinkPack]);
+  }, [navigate, setPendingDeepLinkMod, setPendingDeepLinkModVersion, setPendingDeepLinkPack]);
 
   return null;
 }

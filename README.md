@@ -96,9 +96,12 @@ The core domain concept is the **profile**:
   skips them (unpin to see updates again).
 - **Modpacks** — browse/install community modpacks (optional cloud login via Better Auth),
   create and publish your own.
-- **Deep links** — `storyforge://install?mod=<id>` opens a ModDB mod in the app and
-  `storyforge://install?pack=<slug>` opens a cloud modpack's detail sheet, so links shared outside
-  the app land on the right install flow. `sf:` is accepted as an alias.
+- **Deep links & 1-click install** — `storyforge://install?mod=<id>` opens a ModDB mod in the app
+  (`&version=<release>` pins one), `storyforge://install?pack=<slug>` opens a cloud modpack's
+  detail sheet, and ModDB's **1-click install** button
+  (`vintagestorymodinstall://<id>@<release>`) opens the install sheet for that exact release.
+  By default the active profile is used; with **Settings → Behaviour → Always ask where to
+  install** the destination picker opens every time instead. `sf:` is accepted as an alias.
 - **Pack locks** — pin a profile's mods to exact versions and SHA-256 hashes (`storyforge.lock.json`
   beside `profile.json`), see drift at a glance, and run an explicit **Sync / repair** that downloads
   missing or mismatched mods through ModDB and verifies every file against the lock. Exports, share

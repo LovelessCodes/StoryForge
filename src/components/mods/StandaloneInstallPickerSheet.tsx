@@ -39,13 +39,22 @@ type Destination = {
 
 /** Standalone install flow (no active profile): pick a destination + release. */
 export function StandaloneInstallPickerSheet({
+  initialDestinationId,
+  initialVersion,
   mod,
   onOpenChange,
   open,
+  prompt,
 }: {
   mod: Mod;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Destination to preselect, e.g. the active profile from a deep link. */
+  initialDestinationId?: string | null;
+  /** Release to preselect when opening from a deep link. */
+  initialVersion?: string;
+  /** Opened by a 1-click link with "always ask" on: there may be a profile. */
+  prompt?: boolean;
 }) {
   const { t } = useTranslation();
   const { profiles } = useProfiles();
@@ -76,11 +85,23 @@ export function StandaloneInstallPickerSheet({
     [profiles, hostedInstances],
   );
 
-  const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null);
+  const [selectedDestinationId, setSelectedDestinationId] = useState<string | null>(
+    initialDestinationId ?? null,
+  );
   const [userSelectedVersion, setUserSelectedVersion] = useState<Release | null>(null);
-  const selectedVersion = userSelectedVersion ?? latestRelease(modInfo?.mod.releases) ?? null;
+  const selectedVersion =
+    userSelectedVersion ??
+    modInfo?.mod.releases.find((release) => release.modversion === initialVersion) ??
+    latestRelease(modInfo?.mod.releases) ??
+    null;
   const name = modInfo?.mod.name ?? mod.name;
   const { startModDownload } = useDownloadManager();
+
+  // The destination list can load after the first render (hosted servers),
+  // so the deep link's preselected id resolves here every render; the user
+  // can still choose another one before installing.
+  const selectedDestination =
+    destinations.find((destination) => destination.id === selectedDestinationId) ?? null;
 
   const { mutate: installMod, isPending } = useMutation({
     mutationFn: async ({ dest, release }: { dest: Destination; release: Release }) => {
@@ -132,7 +153,11 @@ export function StandaloneInstallPickerSheet({
               values={{ name }}
             />
           </SheetTitle>
-          <SheetDescription>{t("mods.standaloneInstall.description")}</SheetDescription>
+          <SheetDescription>
+            {prompt
+              ? t("mods.standaloneInstall.descriptionPrompt")
+              : t("mods.standaloneInstall.description")}
+          </SheetDescription>
         </SheetHeader>
         <ScrollArea scrollFade className="min-h-0 flex-1">
           <div className="grid gap-4 p-4">
@@ -143,9 +168,9 @@ export function StandaloneInstallPickerSheet({
               <Select
                 onValueChange={(value) => {
                   const dest = destinations.find((d) => d.id === value);
-                  setSelectedDestination(dest ?? null);
+                  setSelectedDestinationId(dest?.id ?? null);
                 }}
-                value={selectedDestination?.id ?? null}
+                value={selectedDestinationId}
               >
                 <SelectTrigger
                   className="w-full"

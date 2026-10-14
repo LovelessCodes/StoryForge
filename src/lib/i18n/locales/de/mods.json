@@ -135,6 +135,7 @@
   },
   "standaloneInstall": {
     "description": "Kein aktives Profil. Wähle, wo diese Mod installiert und welche Version verwendet werden soll.",
+    "descriptionPrompt": "Wähle, wohin diese Mod installiert und welche Version verwendet werden soll.",
     "destination": "Ziel",
     "destinationAria": "Installationsziel",
     "destinationPlaceholder": "Ziel auswählen…",
@@ -206,7 +207,8 @@
     "hint": "Das Entfernen einer Datei ist endgültig."
   },
   "deepLink": {
-    "failed": "{{modid}} konnte nicht über den Link geöffnet werden"
+    "failed": "{{modid}} konnte nicht über den Link geöffnet werden",
+    "versionUnavailable": "Release {{version}} von {{modid}} ist nicht mehr verfügbar. Die neueste Version ist vorausgewählt."
   },
   "toggle": {
     "enabled": "{{name}} aktiviert",

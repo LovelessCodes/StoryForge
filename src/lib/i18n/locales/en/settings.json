@@ -51,6 +51,8 @@
     "systemDotnetDescription": "Try your system's .NET runtime before downloading one.",
     "defaultModSort": "Default mod sort",
     "defaultModSortDescription": "Sort order used when the mod browser opens.",
+    "promptModInstallDestination": "Always ask where to install",
+    "promptModInstallDestinationDescription": "1-click install links open the destination picker instead of defaulting to the active profile.",
     "sort": {
       "comments": "Comments",
       "created": "Created",

@@ -5,4 +5,4 @@ Type=Application
 Icon=io.github.LovelessCodes.StoryForge
 Categories=Game;AdventureGame;
 Keywords=story;forge;game;vintage;
-MimeType=x-scheme-handler/storyforge;x-scheme-handler/sf;
+MimeType=x-scheme-handler/storyforge;x-scheme-handler/sf;x-scheme-handler/vintagestorymodinstall;

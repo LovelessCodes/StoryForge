@@ -51,6 +51,8 @@
     "systemDotnetDescription": "优先尝试系统中的 .NET 运行时，再考虑下载。",
     "defaultModSort": "默认模组排序",
     "defaultModSortDescription": "打开模组浏览器时使用的排序方式。",
+    "promptModInstallDestination": "始终询问安装位置",
+    "promptModInstallDestinationDescription": "一键安装链接将打开目标选择器，而不是默认使用当前配置档。",
     "sort": {
       "comments": "评论",
       "created": "创建时间",
