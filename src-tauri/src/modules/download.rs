@@ -1028,6 +1028,13 @@ fn make_output_path(base: &Path, entry_name: &str, prefix: &str) -> Result<PathB
         return Err("entry does not match prefix".into());
     };
 
+    // An entry naming the prefix folder itself (`app/`) strips to nothing: it
+    // is the extraction directory, so there is no path to join. Mirrors the
+    // tar path, which skips entries without a path after stripping.
+    if trimmed.is_empty() {
+        return Ok(base.to_path_buf());
+    }
+
     // Rejects zip-slip entries (absolute paths, `..` components).
     safe_join(base, trimmed).map_err(|e| e.message)
 }
@@ -1192,6 +1199,23 @@ mod tests {
         let base = PathBuf::from("/out");
         let path = make_output_path(&base, "docs/readme.txt", "docs/").unwrap();
         assert_eq!(path, PathBuf::from("/out/readme.txt"));
+    }
+
+    #[test]
+    fn prefix_root_entries_map_to_the_extract_dir() {
+        // Windows archives hold the game under `app/` and also carry an
+        // explicit entry for the `app/` folder itself. Stripping the prefix
+        // leaves nothing to join; it must resolve to the extraction directory
+        // instead of failing the download that just finished.
+        assert!(should_extract("app/", "app/"));
+        assert_eq!(
+            make_output_path(&PathBuf::from("/out"), "app/", "app/").unwrap(),
+            PathBuf::from("/out")
+        );
+        assert_eq!(
+            make_output_path(&PathBuf::from("/out"), "app/Vintagestory.exe", "app/").unwrap(),
+            PathBuf::from("/out/Vintagestory.exe")
+        );
     }
 
     #[test]
