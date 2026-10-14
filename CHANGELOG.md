@@ -8,6 +8,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.5] - 2026-10-14
+
+### Added
+
+- **Interface text size**: Settings → Appearance has a text-size preference (80–150%) that scales the document root, so every rem-based size — text, controls and icons — follows it. The saved value is applied before the first paint, the dropdown previews the change live, and the Monaco config editor scales its font with it.
+
+### Fixed
+
+- **Version downloads on Windows**: Windows archives carry an explicit entry for the `app/` folder itself. Stripping the `app/` prefix left an empty path, which the traversal guard rejected, so a finished download aborted with `path error: Path must not be empty` (a regression of the 2.0.0 extraction hardening). The entry now resolves to the extraction folder, mirroring the tar path, and the game still lands at `<version>/Vintagestory.exe`.
+
 ## [2.0.4] - 2026-10-13
 
 ### Fixed
