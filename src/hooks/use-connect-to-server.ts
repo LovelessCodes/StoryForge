@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 
 import { t } from "@/lib/i18n";
 import { toast } from "@/lib/notify";
+import { useAccountStore } from "@/stores/accounts";
 import { findProfileForServer, useProfiles } from "@/stores/profiles";
 import { useSettingsStore } from "@/stores/settings";
 
@@ -74,6 +75,9 @@ export const useConnectToServer = (
           use_system_dotnet: useSystemDotnet,
         },
       });
+      // The launch can adopt an account from the default profile; refresh the
+      // menu so it shows up right away.
+      void useAccountStore.getState().loadAccounts();
     },
     onError: (error) => {
       // play_game failed: no launch event will arrive, so drop the listeners.
@@ -139,6 +143,12 @@ export const useConnectToServer = (
         line?: string;
       }>(`launch-${variable.profileId}`, (event) => {
         const { status } = event.payload;
+        if (status === "session-invalid") {
+          toast.warning(t("auth.menu.sessionExpired"), {
+            id: `session-expired-${variable.profileId}`,
+            duration: 8000,
+          });
+        }
         if (status === "pending") {
           toast.loading(t("layout.launch.launching", { name: profile?.name ?? "" }), {
             id: `launch-game-${variable.profileId}`,
