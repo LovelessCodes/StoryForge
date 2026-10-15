@@ -179,7 +179,6 @@
     "readFailed": "Failed to read export file",
     "submit": "Import profile",
     "action": "Import…",
-    "importingBusy": "Importing…",
     "progressStarting": "Starting import…",
     "progressCopy": "Copying \"{{folder}}\" ({{index}} of {{total}})…",
     "progressMove": "Moving \"{{folder}}\" ({{index}} of {{total}})…",

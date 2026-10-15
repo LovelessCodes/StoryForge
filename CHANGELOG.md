@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Importing installations from the previous Story Forge no longer looks stuck**: the sheet gave no sign of life while a whole installation was copied, so a multi-gigabyte folder on a slow disk read as a hang and the only way out was killing the app. Every folder now reports its progress (name, position in the run, and a bar once its size is known), the import can be cancelled — copying stops within a few megabytes and the partial folder is removed — and each finished folder is recorded immediately, so a killed or cancelled run can be retried without importing what is already there. Staging folders left behind by an interrupted import are swept at startup.
+- **Launcher imports get the same progress and cancel**: importing instances, installations or modpacks from Yelloowstone, Waxlight, VS Launcher / RiftLauncher, MVL and GruntLauncher now names the folder being copied, shows a progress bar, and can be cancelled, with the partial folder removed. Finished items are recorded as they land, so a cancelled or killed import only has to import the rest.
 
 ## [2.0.7] - 2026-10-15
 

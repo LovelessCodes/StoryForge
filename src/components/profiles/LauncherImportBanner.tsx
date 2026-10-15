@@ -1,6 +1,5 @@
 import { useQueryClient, type QueryKey } from "@tanstack/react-query";
-import { invoke } from "@tauri-apps/api/core";
-import { Copy, FolderDown, FolderInput, X } from "lucide-react";
+import { Copy, FolderDown, FolderInput, Loader2, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -16,10 +15,13 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { errorMessage } from "@/lib/errors";
+import { useImportProgress } from "@/hooks/use-import-progress";
+import { errorInfo, errorMessage } from "@/lib/errors";
 import { toast } from "@/lib/notify";
 import type { ForeignInstallation, LegacyMigrationReport } from "@/lib/types";
 import { useProfilesStore } from "@/stores/profiles";
+
+import { ImportProgressBar } from "./ImportProgressBar";
 
 export interface LauncherImportSource {
   /** Display name, e.g. "VS Launcher". */
@@ -64,18 +66,17 @@ export function LauncherImportBanner({
   const { loadProfiles } = useProfilesStore();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<ImportMode>("move");
-  const [busy, setBusy] = useState(false);
   const [report, setReport] = useState<LegacyMigrationReport | null>(null);
+  const { run: runImport, progress, busy, cancelling, cancel } = useImportProgress();
 
   const pending = items.filter((item) => !item.already_imported);
 
   const modes = source.modes ?? (["move", "copy"] as const);
   const activeMode: ImportMode = modes.length === 1 ? modes[0] : mode;
 
-  async function runImport() {
-    setBusy(true);
+  async function importInstances() {
     try {
-      const result = await invoke<LegacyMigrationReport>(source.importCommand, {
+      const result = await runImport<LegacyMigrationReport>(source.importCommand, {
         paths: pending.map((item) => item.path),
         mode: activeMode,
       });
@@ -90,10 +91,16 @@ export function LauncherImportBanner({
         setOpen(false);
       }
     } catch (error) {
+      if (errorInfo(error).name === "cancelled") {
+        toast.info(t("profiles.import.cancelled"));
+        // Instances imported before the cancel are already recorded — refresh
+        // so the sheet only lists what is left.
+        await loadProfiles();
+        await queryClient.invalidateQueries({ queryKey: source.queryKey });
+        return;
+      }
       const message = errorMessage(error);
       toast.error(t("profiles.errors.importFailed"), { description: message });
-    } finally {
-      setBusy(false);
     }
   }
 
@@ -152,10 +159,10 @@ export function LauncherImportBanner({
                       if (next) setMode(next);
                     }}
                   >
-                    <ToggleGroupItem value="move">
+                    <ToggleGroupItem value="move" disabled={busy}>
                       <FolderInput /> {t("common.actions.move")}
                     </ToggleGroupItem>
-                    <ToggleGroupItem value="copy">
+                    <ToggleGroupItem value="copy" disabled={busy}>
                       <Copy /> {t("common.actions.copy")}
                     </ToggleGroupItem>
                   </ToggleGroup>
@@ -222,15 +229,21 @@ export function LauncherImportBanner({
           </ScrollArea>
 
           <SheetFooter className="border-t">
-            <Button
-              variant="accent-primary"
-              disabled={busy || pending.length === 0}
-              onClick={() => void runImport()}
-            >
-              {busy
-                ? t("profiles.import.importingBusy")
-                : t("profiles.import.submitCount", { count: pending.length })}
-            </Button>
+            {busy && <ImportProgressBar progress={progress} />}
+            {busy ? (
+              <Button variant="outline" onClick={cancel}>
+                {cancelling && <Loader2 className="animate-spin" />}
+                {t("common.actions.cancel")}
+              </Button>
+            ) : (
+              <Button
+                variant="accent-primary"
+                disabled={pending.length === 0}
+                onClick={() => void importInstances()}
+              >
+                {t("profiles.import.submitCount", { count: pending.length })}
+              </Button>
+            )}
           </SheetFooter>
         </SheetContent>
       </Sheet>
