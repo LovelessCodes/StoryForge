@@ -8,6 +8,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.7] - 2026-10-15
+
+### Added
+
+- **Account sessions are checked before a launch**: a selected account's stored session is validated against the auth server right before the game starts. Only a definite "expired" verdict keeps it out of `clientsettings.json` and warns in the launch toast; a check that could not run (offline, or an auth error) leaves the session unverified and usable — the same policy as the launcher-login import. With no account selected, one is adopted from the session the game itself stored — the selected default (game-defaults) profile first, then the profile being launched — and saved, so it appears in the account menu and later launches validate it.
+- **Pre-release game versions**: a **Show pre-release versions** setting in Settings → Behaviour adds release candidates to the game version pickers, and the newest build then becomes the default pick. A version a profile is already pinned to stays selectable in the profile dialog even while the setting is off.
+
+### Fixed
+
+- **Profile renames now take their data with them**: profile ids derive from the folder name, so a rename used to leave everything keyed to the old id behind. Backups move with the profile — merging into whatever the target name already holds, with clashing names suffixed — the shared-game-defaults source id is remapped so the defaults keep applying, path-keyed records (mod pins, presets, groups) move to the new folder, and stale mod-config and backup caches are dropped while the world list is refreshed. Renaming a profile whose game is running is refused.
+- **Stale mod scans after deleting or renaming a profile**: mod and update scans are cached per profile folder with `staleTime: Infinity`, so a deleted or renamed profile kept serving its old scan — including to a new profile that later reuses the folder. The cache is now dropped on delete, on rename, and when an external profile's folder is unregistered.
+- **Verifying an expired session**: the verify flow looked for `invalid_session` in the error message, but the reason travels in the error's name, so an expired session showed a generic verify failure and kept the dead account. It now reports "session expired" and removes the account.
+- **Read-only `clientsettings.json` no longer aborts a launch**: the file is made writable before the rewrite and kept readable afterwards, so a read-only copy is updated instead of failing the launch.
+
 ## [2.0.6] - 2026-10-15
 
 ### Added
