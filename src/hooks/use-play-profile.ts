@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 
 import { t } from "@/lib/i18n";
 import { toast } from "@/lib/notify";
+import { useAccountStore } from "@/stores/accounts";
 import { useProfiles } from "@/stores/profiles";
 import { useSettingsStore } from "@/stores/settings";
 
@@ -28,11 +29,14 @@ export const usePlayProfile = (
   // react-doctor-disable-next-line query-mutation-missing-invalidation
   return useMutation({
     ...props,
-    mutationFn: ({ id, save }) => {
+    mutationFn: async ({ id, save }) => {
       const { useSystemDotnet } = useSettingsStore.getState();
-      return invoke("play_game", {
+      await invoke("play_game", {
         options: { profile_id: id, save, use_system_dotnet: useSystemDotnet },
       });
+      // The launch can adopt an account from the default profile; refresh the
+      // menu so it shows up right away.
+      void useAccountStore.getState().loadAccounts();
     },
     onError: (error) => {
       toast.error(t("layout.launch.errorPlaying", { message: error.message }));
@@ -107,6 +111,12 @@ export const usePlayProfile = (
         line?: string;
       }>(`launch-${variable.id}`, (event) => {
         const { status } = event.payload;
+        if (status === "session-invalid") {
+          toast.warning(t("auth.menu.sessionExpired"), {
+            id: `session-expired-${variable.id}`,
+            duration: 8000,
+          });
+        }
         if (status === "pending") {
           toast.loading(t("layout.launch.launching", { name: profile?.name ?? "" }), {
             id: `launch-game-${variable.id}`,

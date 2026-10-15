@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useVerifyAuth } from "@/hooks/use-verify-auth";
+import { errorInfo } from "@/lib/errors";
 import { toast } from "@/lib/notify";
 import { useAccountStore } from "@/stores/accounts";
 
@@ -49,11 +50,13 @@ export default function AccountMenu() {
       { uid: selectedUser.uid, sessionkey: selectedUser.sessionkey },
       {
         onError: (error: Error) => {
-          if (error.message.includes("invalid_session")) {
+          // The UI error's name carries the reason; the message is prose.
+          const { name, message } = errorInfo(error);
+          if (name === "invalid_session") {
             toast.error(t("auth.menu.sessionExpired"));
             removeUser(selectedUser.uid);
           } else {
-            toast.error(t("auth.menu.verifyFailed", { message: error.message }));
+            toast.error(t("auth.menu.verifyFailed", { message }));
           }
         },
         onSuccess: () => toast.success(t("auth.menu.sessionValid")),

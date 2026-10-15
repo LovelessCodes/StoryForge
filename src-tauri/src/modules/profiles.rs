@@ -3,7 +3,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::{from_str, json, to_string_pretty, Value};
 use std::{
     collections::HashMap,
-    fs::{create_dir_all, read_dir, read_to_string, remove_dir_all, write, File},
+    fs::{
+        create_dir_all, metadata, read_dir, read_to_string, remove_dir_all, set_permissions, write,
+        File,
+    },
     io::Read,
     path::{Component, Path, PathBuf},
     process::Stdio,
@@ -13,7 +16,7 @@ use std::{
     },
     time::{Duration, Instant},
 };
-use tauri::{command, AppHandle, Emitter, Manager};
+use tauri::{command, AppHandle, Emitter, Manager, State};
 use tokio::io::AsyncBufReadExt;
 use walkdir::WalkDir;
 use zip::ZipArchive;
@@ -1131,8 +1134,205 @@ fn load_selected_account(app: &AppHandle) -> Option<SavedAccount> {
     account
 }
 
+/// Best-effort: make an existing `clientsettings.json` writable before a launch
+/// rewrites it. The game or a sync tool can leave the file read-only, which
+/// would otherwise abort the launch with a permission error.
+fn ensure_writable(path: &Path) {
+    let Ok(metadata) = metadata(path) else {
+        return;
+    };
+
+    #[cfg(windows)]
+    {
+        let mut permissions = metadata.permissions();
+        if permissions.readonly() {
+            permissions.set_readonly(false);
+            if let Err(error) = set_permissions(path, permissions) {
+                log_error!(
+                    "[play_game] could not clear read-only on {}: {error}",
+                    path.display()
+                );
+            }
+        }
+    }
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut permissions = metadata.permissions();
+        let mode = permissions.mode();
+        if mode & 0o200 == 0 {
+            permissions.set_mode(mode | 0o200);
+            if let Err(error) = set_permissions(path, permissions) {
+                log_error!(
+                    "[play_game] could not add owner-write on {}: {error}",
+                    path.display()
+                );
+            }
+        }
+    }
+
+    #[cfg(not(any(unix, windows)))]
+    let _ = metadata;
+}
+
+/// Best-effort: keep `clientsettings.json` readable for the game and for tools
+/// running outside the launcher's umask.
+fn set_shared_permissions(path: &Path) {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if let Err(error) = set_permissions(path, std::fs::Permissions::from_mode(0o644)) {
+            log_error!(
+                "[play_game] could not set permissions on {}: {error}",
+                path.display()
+            );
+        }
+    }
+    #[cfg(not(unix))]
+    let _ = path;
+}
+
+/// Both the user id and the session key are required to sign in; an account
+/// missing either cannot produce a usable session.
+fn account_has_credentials(account: &SavedAccount) -> bool {
+    let filled = |value: &Option<String>| value.as_deref().is_some_and(|v| !v.trim().is_empty());
+    filled(&account.uid) && filled(&account.sessionkey)
+}
+
+/// Whether the selected account's session is written into `clientsettings.json`.
+///
+/// Only a definite "expired" verdict — or an account without usable credentials
+/// — skips the write. A check that could not run (offline, HTTP error) leaves
+/// the session unverified, not invalid, and keeps it usable; the same policy as
+/// the launcher-login import.
+fn should_inject_account(has_credentials: bool, session_check: Option<bool>) -> bool {
+    has_credentials && session_check != Some(false)
+}
+
+/// Validates the selected account's stored session, when it has one.
+///
+/// `None` means the session is unverified (no account or credentials, or the
+/// check itself failed) and must not be treated as invalid.
+async fn check_session(client: &reqwest::Client, account: &Option<SavedAccount>) -> Option<bool> {
+    let account = account.as_ref()?;
+    if !account_has_credentials(account) {
+        return None;
+    }
+    let uid = account.uid.as_deref().unwrap_or_default();
+    let sessionkey = account.sessionkey.as_deref().unwrap_or_default();
+    let check = super::auth::session_is_valid(client, uid, sessionkey).await;
+    match check {
+        Some(valid) => log_info!("[play_game] session check: valid={valid}"),
+        None => log_info!("[play_game] session check: could not verify (offline or auth error)"),
+    }
+    check
+}
+
+/// Builds a launcher account from a `clientsettings.json` session bundle.
+/// Returns `None` unless the bundle carries both a user id and a session key.
+fn saved_account_from_session(settings: &Value) -> Option<SavedAccount> {
+    let strings = settings.get("stringSettings")?.as_object()?;
+    let text = |key: &str| {
+        strings
+            .get(key)
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_string()
+    };
+    let optional = |key: &str| {
+        let value = text(key);
+        (!value.is_empty()).then_some(value)
+    };
+    let uid = optional("playeruid");
+    let sessionkey = optional("sessionkey");
+    if uid.is_none() || sessionkey.is_none() {
+        return None;
+    }
+    Some(SavedAccount {
+        uid,
+        email: text("useremail"),
+        playername: optional("playername"),
+        sessionkey,
+        sessionsignature: optional("sessionsignature"),
+        selected: true,
+    })
+}
+
+/// Adopts the stored game session of the selected default profile — or, with no
+/// default chosen, of the profile being launched — as the launcher account when
+/// none is selected yet, so the launch can validate and reuse it.
+///
+/// The real sign-in usually happens inside the game: a fresh launcher install
+/// has no accounts.json even though the user has a live session on disk.
+fn prime_account_from_default_profile(
+    app: &AppHandle,
+    launched_profile_id: u64,
+) -> Option<SavedAccount> {
+    let data_dir = app.path().app_data_dir().ok()?;
+
+    // Never touch an existing list; only seed a missing or empty accounts.json.
+    let accounts_path = data_dir.join("accounts.json");
+    if let Ok(text) = read_to_string(&accounts_path) {
+        match from_str::<Vec<SavedAccount>>(&text) {
+            Ok(accounts) if !accounts.is_empty() => return None,
+            Ok(_) => {}
+            Err(error) => {
+                log_error!("[play_game] prime account: accounts.json is not readable: {error}");
+                return None;
+            }
+        }
+    }
+
+    let (_, source_profile_id, _) = game_defaults::launch_defaults(app);
+    let mut candidates: Vec<u64> = source_profile_id.into_iter().collect();
+    if !candidates.contains(&launched_profile_id) {
+        candidates.push(launched_profile_id);
+    }
+
+    for profile_id in candidates {
+        let Ok((dir, info)) = find_profile_by_id(app, profile_id) else {
+            continue;
+        };
+        let path = clientsettings_path(&dir);
+        let Ok(content) = read_to_string(&path) else {
+            continue;
+        };
+        let Ok(settings) = from_str::<Value>(&content) else {
+            log_error!(
+                "[play_game] prime account: failed to parse {}",
+                path.display()
+            );
+            continue;
+        };
+        let Some(account) = saved_account_from_session(&settings) else {
+            continue;
+        };
+        match super::auth::write_accounts(&data_dir, std::slice::from_ref(&account)) {
+            Ok(()) => {
+                log_info!(
+                    "[play_game] primed account from profile '{}' (uid={})",
+                    info.name,
+                    account.uid.as_deref().unwrap_or("<none>")
+                );
+                return Some(account);
+            }
+            Err(error) => {
+                log_error!("[play_game] prime account: write failed: {}", error.message);
+                return None;
+            }
+        }
+    }
+    None
+}
+
 #[command]
-pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Result<String, UiError> {
+pub async fn play_game(
+    app: AppHandle,
+    client: State<'_, Arc<reqwest::Client>>,
+    options: Option<PlayGameParams>,
+) -> Result<String, UiError> {
     let options = options.ok_or_else(|| UiError {
         name: "invalid_params".into(),
         message: "Invalid play game parameters.".into(),
@@ -1145,6 +1345,20 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
         profile.version,
         profile.start_params
     );
+
+    // A fresh install has no accounts.json even though the game itself may
+    // hold a live session on disk: adopt it so this launch can validate and
+    // reuse it, and so the account shows up in the account menu.
+    let account = match load_selected_account(&app) {
+        Some(account) => Some(account),
+        None => prime_account_from_default_profile(&app, options.profile_id),
+    };
+    let has_credentials = account.as_ref().is_some_and(account_has_credentials);
+    let session_check = check_session(&client, &account).await;
+    let inject_account = should_inject_account(has_credentials, session_check);
+    if account.is_some() && !inject_account {
+        log_info!("[play_game] account session not written this launch (expired or incomplete)");
+    }
 
     mark_profile_running(options.profile_id, true);
 
@@ -1167,8 +1381,16 @@ pub async fn play_game(app: AppHandle, options: Option<PlayGameParams>) -> Resul
     }
 
     let launched = async {
+        // Warn the UI before the (possibly slow) runtime setup: the saved
+        // session is dead, but the launch still goes ahead.
+        if session_check == Some(false) {
+            let _ = app.emit(
+                &format!("launch-{}", options.profile_id),
+                json!({ "status": "session-invalid", "profileId": options.profile_id }),
+            );
+        }
         let ctx = resolve_launch_context(&app, &pb, &profile, &options).await?;
-        prepare_clientsettings(&app, &pb, &profile, &options).await?;
+        prepare_clientsettings(&app, &pb, &profile, &account, inject_account).await?;
         let _ = app.emit(
             &format!("launch-{}", options.profile_id),
             json!({ "status": "pending", "profileId": options.profile_id }),
@@ -1296,14 +1518,16 @@ async fn find_game_executable(version_path: &Path) -> Result<PathBuf, UiError> {
     .map_err(|e| UiError::new("internal_error", format!("spawn blocking error: {e}")))?
 }
 
-/// Write or update clientsettings.json for the launch.
+/// Write or update clientsettings.json for the launch, merging in the selected
+/// account's session (unless the pre-launch check found it expired) and the
+/// shared game defaults.
 async fn prepare_clientsettings(
     app: &AppHandle,
     pb: &Path,
     profile: &ProfileInfo,
-    _options: &PlayGameParams,
+    account: &Option<SavedAccount>,
+    inject_account: bool,
 ) -> Result<(), UiError> {
-    let account = load_selected_account(app);
     // The shared game defaults are read here, on the main thread, because the
     // write below happens on a blocking task without an AppHandle. The source
     // profile's file is read live, so changes made there carry over; the source
@@ -1325,9 +1549,19 @@ async fn prepare_clientsettings(
         None
     };
     tokio::task::spawn_blocking({
+        let account = account.clone();
         let pb = pb.to_path_buf();
         let profile = profile.clone();
-        move || write_clientsettings(&pb, &profile, &account, &defaults, apply_game_defaults)
+        move || {
+            write_clientsettings(
+                &pb,
+                &profile,
+                &account,
+                inject_account,
+                &defaults,
+                apply_game_defaults,
+            )
+        }
     })
     .await
     .map_err(|e| UiError::new("internal_error", format!("spawn blocking error: {e}")))?
@@ -1337,6 +1571,7 @@ fn write_clientsettings(
     pb: &Path,
     profile: &ProfileInfo,
     account: &Option<SavedAccount>,
+    inject_account: bool,
     defaults: &Option<Value>,
     apply_game_defaults: bool,
 ) -> Result<(), UiError> {
@@ -1397,8 +1632,10 @@ fn write_clientsettings(
             log_info!("[play_game] created stringListSettings with modPaths");
         }
 
-        // If an account is selected, merge its credentials into stringSettings
-        if let Some(ref account) = account {
+        // Merge the selected account's credentials into stringSettings. An
+        // expired session is left out on purpose: writing it over a possibly
+        // newer in-game session would force the login screen for no reason.
+        if let (Some(account), true) = (account.as_ref(), inject_account) {
             log_info!(
                 "[play_game] merging account settings — playername={:?} uid={}",
                 account.playername,
@@ -1422,6 +1659,8 @@ fn write_clientsettings(
                 obj.insert("stringSettings".into(), account_settings);
                 log_info!("[play_game] inserted new stringSettings with account keys");
             }
+        } else if account.is_some() {
+            log_info!("[play_game] account session not written — expired or incomplete");
         } else {
             log_info!(
                 "[play_game] no selected account — writing modPaths only (no account injection)"
@@ -1452,6 +1691,7 @@ fn write_clientsettings(
         log_info!("[play_game] game defaults skipped — profile opted out");
     }
 
+    ensure_writable(&settings_path);
     write(&settings_path, to_string_pretty(&settings_json).unwrap()).map_err(|e| {
         log_error!("profiles: write_failed: {e}");
         UiError {
@@ -1459,6 +1699,7 @@ fn write_clientsettings(
             message: format!("Failed to write clientsettings.json: {e}"),
         }
     })?;
+    set_shared_permissions(&settings_path);
     log_info!("[play_game] clientsettings.json written successfully");
     Ok(())
 }
@@ -2152,5 +2393,73 @@ mod tests {
             None
         );
         assert_eq!(manifest_skip_reason(&entry(None, None)), None);
+    }
+
+    /// Only a definite "expired" verdict skips writing the session; an
+    /// unreachable check is unverified, not invalid.
+    #[test]
+    fn session_injection_needs_credentials_and_no_expired_verdict() {
+        assert!(should_inject_account(true, Some(true)));
+        assert!(should_inject_account(true, None));
+        assert!(!should_inject_account(true, Some(false)));
+        assert!(!should_inject_account(false, Some(true)));
+        assert!(!should_inject_account(false, None));
+    }
+
+    #[test]
+    fn account_credentials_require_uid_and_session_key() {
+        let account = |uid: Option<&str>, sessionkey: Option<&str>| SavedAccount {
+            uid: uid.map(str::to_string),
+            email: "player@example.com".into(),
+            playername: Some("Player".into()),
+            sessionkey: sessionkey.map(str::to_string),
+            sessionsignature: None,
+            selected: true,
+        };
+        assert!(account_has_credentials(&account(Some("uid"), Some("key"))));
+        assert!(!account_has_credentials(&account(Some("uid"), None)));
+        assert!(!account_has_credentials(&account(None, Some("key"))));
+        assert!(!account_has_credentials(&account(Some("  "), Some("key"))));
+        assert!(!account_has_credentials(&account(Some("uid"), Some(""))));
+    }
+
+    /// Priming reads the session bundle the game itself writes into
+    /// clientsettings.json; both the uid and the session key must be present.
+    #[test]
+    fn saved_account_from_session_reads_launcher_bundle() {
+        let settings = json!({
+            "stringSettings": {
+                "playeruid": "abc123",
+                "sessionkey": "key456",
+                "sessionsignature": "sig789",
+                "playername": "Player",
+                "useremail": "player@example.com",
+                "unrelated": "value"
+            }
+        });
+        let account = saved_account_from_session(&settings).unwrap();
+        assert_eq!(account.uid.as_deref(), Some("abc123"));
+        assert_eq!(account.sessionkey.as_deref(), Some("key456"));
+        assert_eq!(account.sessionsignature.as_deref(), Some("sig789"));
+        assert_eq!(account.playername.as_deref(), Some("Player"));
+        assert_eq!(account.email, "player@example.com");
+        assert!(account.selected);
+
+        // Missing session key or uid, empty values, no section: no account.
+        let without_key = json!({ "stringSettings": { "playeruid": "abc123" } });
+        assert!(saved_account_from_session(&without_key).is_none());
+        let without_uid = json!({ "stringSettings": { "sessionkey": "key456" } });
+        assert!(saved_account_from_session(&without_uid).is_none());
+        let empty = json!({ "stringSettings": { "playeruid": "", "sessionkey": "key456" } });
+        assert!(saved_account_from_session(&empty).is_none());
+        assert!(saved_account_from_session(&json!({})).is_none());
+
+        // Optional fields may be absent entirely.
+        let minimal =
+            json!({ "stringSettings": { "playeruid": "abc123", "sessionkey": "key456" } });
+        let account = saved_account_from_session(&minimal).unwrap();
+        assert_eq!(account.email, "");
+        assert_eq!(account.playername, None);
+        assert_eq!(account.sessionsignature, None);
     }
 }

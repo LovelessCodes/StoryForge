@@ -276,7 +276,7 @@ pub struct SavedAccount {
 /// The JSON goes to a temp file in the same directory first and is renamed over
 /// the target, so a crash mid-write leaves the previous file intact instead of
 /// a truncated one that every reader reports as "no accounts".
-fn write_accounts(data_dir: &Path, accounts: &[SavedAccount]) -> Result<(), UiError> {
+pub(crate) fn write_accounts(data_dir: &Path, accounts: &[SavedAccount]) -> Result<(), UiError> {
     let path = data_dir.join("accounts.json");
     let partial = data_dir.join("accounts.json.tmp");
     let json = serde_json::to_string_pretty(accounts).map_err(|e| {
