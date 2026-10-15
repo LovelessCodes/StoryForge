@@ -25,7 +25,9 @@ import { Switch } from "@/components/ui/switch";
 import { useAppFolder } from "@/hooks/use-app-folder";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
+import { modConfigsQueryKey } from "@/hooks/use-mod-configs";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
+import { profileBackupsQueryKey } from "@/hooks/use-profile-backups";
 import { errorMessage } from "@/lib/errors";
 import {
   baseGameVersion,
@@ -176,14 +178,25 @@ export default function ProfileDialog({
         const currentFolder = profile.path.split(/[/\\]/).filter(Boolean).pop();
         const desiredFolder = makeStringFolderSafe(trimmedName);
         if (!profile.external && currentFolder && desiredFolder !== currentFolder) {
-          const renamed = await invoke<{ path: string }>("rename_profile", {
+          const renamed = await invoke<{ id: number; path: string }>("rename_profile", {
             id: profile.id,
             name: trimmedName,
           });
-          // Mod scans are cached per folder: the old path must not leak into
-          // the renamed profile (or into a future profile reusing the folder).
+          // Everything keyed by the old folder has to follow the rename: the
+          // mod scans (cached per folder), the mod pins/presets/groups, the
+          // cached mod configs and backups (keyed by the name-derived id), the
+          // world list (worlds live inside the folder) and — when this profile
+          // is the shared-defaults source — the stored source id.
           queryClient.removeQueries({ queryKey: installedModsQueryKey(profile.path) });
           queryClient.removeQueries({ queryKey: modUpdatesQueryKey(profile.path) });
+          queryClient.removeQueries({ queryKey: modConfigsQueryKey(profile.id) });
+          queryClient.removeQueries({ queryKey: profileBackupsQueryKey(profile.id) });
+          void queryClient.invalidateQueries({ queryKey: ["saves"] });
+          const settings = useSettingsStore.getState();
+          settings.relocateProfileData(profile.path, renamed.path);
+          if (settings.gameDefaultsProfileId === profile.id) {
+            settings.setGameDefaultsProfileId(renamed.id);
+          }
           path = renamed.path;
         }
       }

@@ -32,6 +32,7 @@ use super::utils::{
     dir_name, dir_size_cached, format_size, generate_id, profiles_folder, profiles_subdir,
     require_managed_path, safe_file_name,
 };
+use crate::{log_error, log_info};
 
 /// Hidden folder (inside the profiles root) that holds soft-deleted profiles.
 pub const DELETED_DIR: &str = ".deleted";
@@ -281,6 +282,13 @@ fn rename_profile_blocking(
     id: u64,
     new_name: &str,
 ) -> Result<ProfileResult, UiError> {
+    if super::profiles::is_profile_running(id) {
+        return Err(UiError::new(
+            "profile_running",
+            "Stop the game before renaming this profile.",
+        ));
+    }
+
     let (source_dir, mut info) = find_profile_by_id(app, id)?;
     let root = profiles_dir(app)?;
     let folder = safe_file_name(new_name)?;
@@ -300,10 +308,22 @@ fn rename_profile_blocking(
                 format!("Failed to rename profile folder: {e}"),
             )
         })?;
+        log_info!("rename_profile: {:?} -> {:?}", source_dir, target_dir);
     }
 
     info.name = new_name.to_string();
     write_profile_json(&target_dir, &info)?;
+
+    // The id is derived from the folder name, so the rename changed it.
+    // Backups live under `backups/<id>`: without this move the rename would
+    // strand them, and a later profile reusing the folder would inherit them.
+    // The folder rename itself already succeeded, so a failure here is logged
+    // instead of failing the command.
+    let new_id = generate_id(&dir_name(&target_dir));
+    if let Err(error) = super::backups::relocate_profile_backups(app, id, new_id) {
+        log_error!("rename_profile: backups not moved: {}", error.message);
+    }
+
     profile_result_from_dir(&target_dir)
 }
 
@@ -477,6 +497,9 @@ fn restore_deleted_profile_blocking(
         .rsplit_once('-')
         .map(|(base, _)| base.to_string())
         .unwrap_or_else(|| archive_name.to_string());
+    // Restoring under a new name changes the name-derived id, so the backups
+    // follow the folder exactly like on rename.
+    let old_id = generate_id(&default_folder);
     let folder = match &new_name {
         Some(n) => safe_file_name(n)?,
         None => default_folder,
@@ -499,7 +522,34 @@ fn restore_deleted_profile_blocking(
         write_profile_json(&target_dir, &info)?;
     }
 
+    // The name-derived id moved with the folder; failure is logged, never
+    // fatal (the restore itself already succeeded).
+    let new_id = generate_id(&dir_name(&target_dir));
+    if let Err(error) = super::backups::relocate_profile_backups(app, old_id, new_id) {
+        log_error!(
+            "restore_deleted_profile: backups not moved: {}",
+            error.message
+        );
+    }
+
     profile_result_from_dir(&target_dir)
+}
+
+/// Drops a purged profile's backups.
+///
+/// Skips the removal when a live profile reuses the folder name: ids are
+/// derived from the name, so that profile's backups live in the same folder.
+fn remove_purged_backups(app: &AppHandle, archive_name: &str) {
+    let folder = archive_name
+        .rsplit_once('-')
+        .map(|(base, _)| base.to_string())
+        .unwrap_or_else(|| archive_name.to_string());
+    let id = generate_id(&folder);
+    if find_profile_by_id(app, id).is_err() {
+        if let Err(error) = super::backups::remove_profile_backups(app, id) {
+            log_error!("purge: backups not removed: {}", error.message);
+        }
+    }
 }
 
 /// Permanently deletes one soft-deleted profile.
@@ -514,6 +564,7 @@ pub async fn purge_deleted_profile(app: AppHandle, archive_name: String) -> Resu
                 UiError::new("remove_failed", format!("Failed to purge profile: {e}"))
             })?;
         }
+        remove_purged_backups(&handle, &archive_name);
         Ok::<(), UiError>(())
     })
     .await
@@ -537,6 +588,9 @@ pub async fn purge_deleted_profiles(app: AppHandle) -> Result<usize, UiError> {
             let dir = entry.path();
             if dir.is_dir() && remove_dir_all(&dir).is_ok() {
                 removed += 1;
+                if let Some(name) = dir.file_name() {
+                    remove_purged_backups(&handle, &name.to_string_lossy());
+                }
             }
         }
         Ok(removed)

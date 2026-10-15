@@ -7,6 +7,7 @@
 //! restoring.
 
 use std::collections::HashSet;
+use std::ffi::OsStr;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
@@ -108,6 +109,97 @@ fn unique_id(backups_dir: &Path, base: &str) -> String {
         suffix += 1;
     }
     id
+}
+
+/// Picks `dir/<name>`, or `dir/<stem>-<n><ext>` when the name is taken.
+fn unique_path(dir: &Path, name: &OsStr) -> PathBuf {
+    let candidate = dir.join(name);
+    if !candidate.exists() {
+        return candidate;
+    }
+    let path = Path::new(name);
+    let stem = path
+        .file_stem()
+        .map(|stem| stem.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let extension = path
+        .extension()
+        .map(|ext| ext.to_string_lossy().into_owned());
+    let mut suffix = 2;
+    loop {
+        let file_name = match &extension {
+            Some(extension) => format!("{stem}-{suffix}.{extension}"),
+            None => format!("{stem}-{suffix}"),
+        };
+        let candidate = dir.join(&file_name);
+        if !candidate.exists() {
+            return candidate;
+        }
+        suffix += 1;
+    }
+}
+
+/// Moves a renamed profile's backups to its new id.
+///
+/// Profile ids are derived from the folder name, so a rename changes the id
+/// and would strand the old folder's backups. The target can already hold
+/// backups when a folder name is reused after an earlier profile was deleted:
+/// entries are then merged, and clashes are suffixed, never overwritten.
+pub(crate) fn relocate_profile_backups(
+    app: &AppHandle,
+    old_id: u64,
+    new_id: u64,
+) -> Result<(), UiError> {
+    if old_id == new_id {
+        return Ok(());
+    }
+    let source = backups_root(app, old_id)?;
+    if !source.is_dir() {
+        return Ok(());
+    }
+    let target = backups_root(app, new_id)?;
+    if target.exists() {
+        merge_backups_dir(&source, &target)?;
+        // Fails (and is ignored) while any entry stayed behind.
+        let _ = fs::remove_dir(&source);
+        return Ok(());
+    }
+    if let Some(parent) = target.parent() {
+        fs::create_dir_all(parent).map_err(|e| {
+            UiError::new("io_error", format!("Failed to create backups folder: {e}"))
+        })?;
+    }
+    fs::rename(&source, &target)
+        .map_err(|e| UiError::new("io_error", format!("Failed to move backups folder: {e}")))
+}
+
+/// Moves every file from `source` into `target`, suffixing clashing names.
+fn merge_backups_dir(source: &Path, target: &Path) -> Result<(), UiError> {
+    fs::create_dir_all(target)
+        .map_err(|e| UiError::new("io_error", format!("Failed to create backups folder: {e}")))?;
+    let entries = fs::read_dir(source)
+        .map_err(|e| UiError::new("io_error", format!("Failed to read backups folder: {e}")))?;
+    for entry in entries {
+        let entry = entry
+            .map_err(|e| UiError::new("io_error", format!("Failed to read backups folder: {e}")))?;
+        if !entry.path().is_file() {
+            continue;
+        }
+        let destination = unique_path(target, &entry.file_name());
+        fs::rename(entry.path(), destination)
+            .map_err(|e| UiError::new("io_error", format!("Failed to move a backup file: {e}")))?;
+    }
+    Ok(())
+}
+
+/// Deletes a profile's backup folder (used when a deleted profile is purged).
+pub(crate) fn remove_profile_backups(app: &AppHandle, profile_id: u64) -> Result<(), UiError> {
+    let dir = backups_root(app, profile_id)?;
+    if dir.is_dir() {
+        fs::remove_dir_all(&dir)
+            .map_err(|e| UiError::new("io_error", format!("Failed to remove backups: {e}")))?;
+    }
+    Ok(())
 }
 
 /// Formats a UNIX timestamp (seconds) as `YYYY-MM-DD_HH-MM-SS` in UTC.
@@ -568,6 +660,58 @@ mod tests {
         assert!(!is_valid_backup_id("../evil"));
         assert!(!is_valid_backup_id("a/b"));
         assert!(!is_valid_backup_id(""));
+    }
+
+    #[test]
+    fn merging_backup_folders_keeps_clashes() {
+        let tmp = tempfile::tempdir().unwrap();
+        let source = tmp.path().join("source");
+        let target = tmp.path().join("target");
+        fs::create_dir_all(&source).unwrap();
+        fs::create_dir_all(&target).unwrap();
+        fs::write(source.join("2026-01-01_10-00-00.zip"), b"source copy").unwrap();
+        fs::write(source.join("only-in-source.zip"), b"moved").unwrap();
+        fs::write(target.join("2026-01-01_10-00-00.zip"), b"target copy").unwrap();
+
+        merge_backups_dir(&source, &target).unwrap();
+
+        assert_eq!(
+            fs::read_to_string(target.join("2026-01-01_10-00-00.zip")).unwrap(),
+            "target copy"
+        );
+        assert_eq!(
+            fs::read_to_string(target.join("2026-01-01_10-00-00-2.zip")).unwrap(),
+            "source copy"
+        );
+        assert_eq!(
+            fs::read_to_string(target.join("only-in-source.zip")).unwrap(),
+            "moved"
+        );
+        assert_eq!(fs::read_dir(&source).unwrap().count(), 0);
+    }
+
+    #[test]
+    fn unique_paths_suffix_before_the_extension() {
+        let tmp = tempfile::tempdir().unwrap();
+        fs::write(tmp.path().join("a.zip"), b"x").unwrap();
+        fs::write(tmp.path().join("a-2.zip"), b"x").unwrap();
+        assert_eq!(
+            unique_path(tmp.path(), OsStr::new("a.zip")),
+            tmp.path().join("a-3.zip")
+        );
+        assert_eq!(
+            unique_path(tmp.path(), OsStr::new("b.zip")),
+            tmp.path().join("b.zip")
+        );
+        assert_eq!(
+            unique_path(tmp.path(), OsStr::new("plain")),
+            tmp.path().join("plain")
+        );
+        fs::write(tmp.path().join("plain"), b"x").unwrap();
+        assert_eq!(
+            unique_path(tmp.path(), OsStr::new("plain")),
+            tmp.path().join("plain-2")
+        );
     }
 
     #[test]
