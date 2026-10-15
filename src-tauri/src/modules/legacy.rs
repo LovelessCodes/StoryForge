@@ -16,20 +16,25 @@
 //! `<app data>/installations`.
 
 use std::{
-    fs::{create_dir_all, read_dir, read_to_string, remove_dir_all, remove_file, rename, write},
+    fs::{
+        create_dir_all, read_dir, read_to_string, remove_dir_all, remove_file, rename, write, File,
+    },
+    io::{Read, Write},
     path::{Path, PathBuf},
-    time::{SystemTime, UNIX_EPOCH},
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use fs_extra::dir::{copy, CopyOptions};
 use serde::{Deserialize, Serialize};
-use tauri::{command, AppHandle, Manager};
+use tauri::{command, AppHandle, Emitter, EventId, Listener, Manager};
+use tokio_util::sync::CancellationToken;
+use walkdir::WalkDir;
 
 use super::errors::UiError;
 use super::paths::{MODS_DIR, PROFILE_JSON};
 use super::profiles::{write_profile_json, ProfileInfo};
 use super::utils::{
-    dir_name, dir_size_cached, format_size, profiles_folder, profiles_subdir, require_managed_path,
+    dir_size_cached, dir_size_cached_recent, format_size, profiles_folder, profiles_subdir,
+    require_managed_path, CleanupTarget, Throttle,
 };
 use crate::{log_error, log_info};
 
@@ -74,6 +79,393 @@ struct LegacyMigrationEntry {
 struct LegacyMigrationLog {
     #[serde(default)]
     migrations: Vec<LegacyMigrationEntry>,
+}
+
+/// One step of an import, streamed to the UI on the run's event.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct MigrationProgress {
+    /// `copy`, `move`, `convert` or `done`.
+    pub phase: &'static str,
+    /// Folder being imported (its name in the source folder).
+    pub folder: String,
+    /// 1-based position of the folder in this run.
+    pub index: usize,
+    /// How many folders this run imports.
+    pub count: usize,
+    /// Bytes copied for the current folder so far.
+    pub bytes: u64,
+    /// Known total size of the current folder, when the detection scan
+    /// measured it shortly before the import.
+    pub bytes_total: Option<u64>,
+}
+
+/// Progress and cancellation for one folder copy.
+pub(crate) trait CopyObserver {
+    /// True once the user asked the running import to stop.
+    fn cancelled(&self) -> bool {
+        false
+    }
+
+    /// Reports that `bytes` more content was copied.
+    fn advance(&mut self, bytes: u64) {
+        let _ = bytes;
+    }
+}
+
+/// A copy that only answers cancellation, for importers with no progress UI.
+pub(crate) struct SilentObserver;
+
+impl CopyObserver for SilentObserver {}
+
+pub(crate) fn cancelled_error() -> UiError {
+    UiError::new("cancelled", "Import cancelled")
+}
+
+/// Streams progress for one import run and answers cancellation.
+///
+/// Reporting sessions emit [`MigrationProgress`] on the run's Tauri event and
+/// cancel when the UI sends `<event>:cancel`; a run without an event name (or
+/// without a UI) gets a silent session. Import folders can take minutes on
+/// slow disks, so every copy reports which folder is being copied and how far
+/// along it is — an import that "does nothing" for that long reads as hung.
+pub(crate) struct ImportSession {
+    app: AppHandle,
+    event: Option<String>,
+    token: CancellationToken,
+    listener: Option<EventId>,
+    throttle: Throttle,
+    phase: &'static str,
+    folder: String,
+    index: usize,
+    count: usize,
+    bytes: u64,
+    bytes_total: Option<u64>,
+}
+
+impl ImportSession {
+    /// Session for a run importing `count` folders, reporting on `event`.
+    pub(crate) fn create(app: &AppHandle, event: Option<String>, count: usize) -> Self {
+        let token = CancellationToken::new();
+        let listener = event.as_ref().map(|name| {
+            let token = token.clone();
+            app.listen(format!("{name}:cancel"), move |_| token.cancel())
+        });
+        Self {
+            app: app.clone(),
+            event,
+            token,
+            listener,
+            throttle: Throttle::new(Duration::from_millis(100)),
+            phase: "copy",
+            folder: String::new(),
+            index: 0,
+            count,
+            bytes: 0,
+            bytes_total: None,
+        }
+    }
+
+    /// Starts the `index`-th (1-based) folder of this run, with `phase` naming
+    /// what is about to happen to it (`copy` or `move`).
+    pub(crate) fn begin_folder(
+        &mut self,
+        folder: &str,
+        source: &Path,
+        index: usize,
+        phase: &'static str,
+    ) {
+        self.phase = phase;
+        self.folder = folder.to_string();
+        self.index = index;
+        self.bytes = 0;
+        self.bytes_total = dir_size_cached_recent(source);
+        self.emit();
+    }
+
+    /// The folder is copied; the manifest conversion is next.
+    pub(crate) fn finish_folder(&mut self) {
+        self.phase = "convert";
+        self.emit();
+    }
+
+    /// The whole run is done.
+    pub(crate) fn finish(&mut self) {
+        self.phase = "done";
+        self.emit();
+    }
+
+    pub(crate) fn is_cancelled(&self) -> bool {
+        self.token.is_cancelled()
+    }
+
+    /// Fails when the user cancelled, so the caller can stop before the next
+    /// folder (or step) instead of running to completion.
+    pub(crate) fn ensure_running(&self) -> Result<(), UiError> {
+        if self.is_cancelled() {
+            Err(cancelled_error())
+        } else {
+            Ok(())
+        }
+    }
+
+    fn emit(&self) {
+        let Some(event) = self.event.as_ref() else {
+            return;
+        };
+        let _ = self.app.emit(
+            event,
+            MigrationProgress {
+                phase: self.phase,
+                folder: self.folder.clone(),
+                index: self.index,
+                count: self.count,
+                bytes: self.bytes,
+                bytes_total: self.bytes_total,
+            },
+        );
+    }
+}
+
+impl CopyObserver for ImportSession {
+    fn cancelled(&self) -> bool {
+        self.is_cancelled()
+    }
+
+    fn advance(&mut self, bytes: u64) {
+        self.bytes += bytes;
+        if self.throttle.ready() {
+            self.emit();
+        }
+    }
+}
+
+impl Drop for ImportSession {
+    fn drop(&mut self) {
+        if let Some(id) = self.listener.take() {
+            self.app.unlisten(id);
+        }
+    }
+}
+
+/// Deletes staging folders under `root`, returning how many were removed.
+///
+/// Only ever called at startup: a copy can leave its staging folder behind by
+/// being killed (crash or force-quit), and single-instance means nothing can be
+/// writing into one at that point. A partial copy is never reused, so removing
+/// it just reclaims the disk the killed run left behind.
+fn sweep_staging_dir(root: &Path) -> usize {
+    let Ok(entries) = read_dir(root) else {
+        return 0;
+    };
+    let mut removed = 0;
+    for entry in entries.flatten() {
+        if !entry.file_name().to_string_lossy().starts_with(".staging-") {
+            continue;
+        }
+        let path = entry.path();
+        if remove_dir_all(&path).is_ok() {
+            log_info!("legacy: removed import leftovers at {}", path.display());
+            removed += 1;
+        }
+    }
+    removed
+}
+
+/// Reclaims staging folders an interrupted import left in the profiles root.
+pub fn sweep_staging_leftovers(app: &AppHandle) {
+    let Ok(root) = profiles_folder(app.clone()) else {
+        return;
+    };
+    sweep_staging_dir(&root.join(profiles_subdir(app.clone())));
+}
+
+/// Copies one file in chunks, reporting every chunk to `observer`.
+///
+/// `std::fs::copy` copies a file in one call, so cancelling could not take
+/// effect until a multi-gigabyte save or archive was fully copied; the chunked
+/// loop stops at the next chunk instead.
+fn copy_file(source: &Path, target: &Path, observer: &mut dyn CopyObserver) -> Result<(), UiError> {
+    const CHUNK: usize = 4 * 1024 * 1024;
+
+    let mut input = File::open(source).map_err(|e| {
+        UiError::new(
+            "copy_failed",
+            format!("Failed to open {}: {e}", source.display()),
+        )
+    })?;
+    let mut output = File::create(target).map_err(|e| {
+        UiError::new(
+            "copy_failed",
+            format!("Failed to create {}: {e}", target.display()),
+        )
+    })?;
+    let mut buffer = vec![0u8; CHUNK];
+    loop {
+        if observer.cancelled() {
+            return Err(cancelled_error());
+        }
+        let read = input.read(&mut buffer).map_err(|e| {
+            UiError::new(
+                "copy_failed",
+                format!("Failed to read {}: {e}", source.display()),
+            )
+        })?;
+        if read == 0 {
+            break;
+        }
+        output.write_all(&buffer[..read]).map_err(|e| {
+            UiError::new(
+                "copy_failed",
+                format!("Failed to write {}: {e}", target.display()),
+            )
+        })?;
+        observer.advance(read as u64);
+    }
+
+    // Mirror std::fs::copy: the copy keeps the source's permissions.
+    if let Ok(metadata) = input.metadata() {
+        let _ = std::fs::set_permissions(target, metadata.permissions());
+    }
+    Ok(())
+}
+
+/// Copies the tree under `source` into `target`, reporting every file to
+/// `observer` and stopping when it is cancelled.
+///
+/// Symlinks are not followed (walkdir does not descend into them), so a
+/// self-referential junction cannot make the copy run forever; a linked file is
+/// copied as its content, a linked folder stays an empty folder.
+fn copy_tree(source: &Path, target: &Path, observer: &mut dyn CopyObserver) -> Result<(), UiError> {
+    create_dir_all(target).map_err(|e| {
+        UiError::new(
+            "copy_failed",
+            format!("Failed to create {}: {e}", target.display()),
+        )
+    })?;
+
+    for entry in WalkDir::new(source).follow_links(false) {
+        if observer.cancelled() {
+            return Err(cancelled_error());
+        }
+        let entry = entry.map_err(|e| {
+            UiError::new(
+                "copy_failed",
+                format!("Failed to read {}: {e}", source.display()),
+            )
+        })?;
+        let relative = entry.path().strip_prefix(source).map_err(|e| {
+            UiError::new(
+                "copy_failed",
+                format!("Failed to read {}: {e}", entry.path().display()),
+            )
+        })?;
+        if relative.as_os_str().is_empty() {
+            continue;
+        }
+        let destination = target.join(relative);
+        let file_type = entry.file_type();
+        if file_type.is_dir() {
+            create_dir_all(&destination).map_err(|e| {
+                UiError::new(
+                    "copy_failed",
+                    format!("Failed to create {}: {e}", destination.display()),
+                )
+            })?;
+        } else if entry.path().is_file() {
+            copy_file(entry.path(), &destination, observer)?;
+        } else if entry.path().is_dir() {
+            // A linked folder: keep the shape, but do not copy its content.
+            create_dir_all(&destination).map_err(|e| {
+                UiError::new(
+                    "copy_failed",
+                    format!("Failed to create {}: {e}", destination.display()),
+                )
+            })?;
+        }
+    }
+    Ok(())
+}
+
+fn staging_dir(root: &Path) -> PathBuf {
+    root.join(format!(".staging-{}", now_nanos()))
+}
+
+/// Copies `source` to a freshly chosen target folder via a hidden staging dir,
+/// so a collision or a partial copy can never touch an existing profile.
+///
+/// Progress is reported to `observer`, which can also cancel: a cancelled or
+/// failed copy leaves nothing behind, so the import can be retried.
+pub(crate) fn copy_profile_dir(
+    root: &Path,
+    source: &Path,
+    folder: &str,
+    observer: &mut dyn CopyObserver,
+) -> Result<PathBuf, UiError> {
+    let target = free_profile_dir(root, folder);
+    let staging = staging_dir(root);
+    let mut cleanup = CleanupTarget::defer(staging.clone());
+    create_dir_all(&staging).map_err(|e| {
+        UiError::new(
+            "create_dir_failed",
+            format!("Failed to create staging folder: {e}"),
+        )
+    })?;
+
+    copy_tree(source, &staging, observer)?;
+
+    rename(&staging, &target).map_err(|e| {
+        UiError::new(
+            "copy_failed",
+            format!("Failed to move {folder} into the profiles folder: {e}"),
+        )
+    })?;
+    cleanup.defuse();
+    Ok(target)
+}
+
+/// Moves `source` into the profiles root under a free name, reporting progress.
+///
+/// A same-volume rename is instant; across volumes the folder goes through the
+/// same staging path as [`copy_profile_dir`] and the source is removed only once
+/// the copy is in place, so cancelling never leaves a half-moved profile.
+pub(crate) fn move_profile_dir(
+    root: &Path,
+    source: &Path,
+    folder: &str,
+    observer: &mut dyn CopyObserver,
+) -> Result<PathBuf, UiError> {
+    let target = free_profile_dir(root, folder);
+    if rename(source, &target).is_ok() {
+        return Ok(target);
+    }
+
+    let staging = staging_dir(root);
+    let mut cleanup = CleanupTarget::defer(staging.clone());
+    create_dir_all(&staging).map_err(|e| {
+        UiError::new(
+            "create_dir_failed",
+            format!("Failed to create staging folder: {e}"),
+        )
+    })?;
+
+    copy_tree(source, &staging, observer)?;
+
+    rename(&staging, &target).map_err(|e| {
+        UiError::new(
+            "move_failed",
+            format!("Failed to move {folder} into the profiles folder: {e}"),
+        )
+    })?;
+    cleanup.defuse();
+
+    remove_dir_all(source).map_err(|e| {
+        UiError::new(
+            "remove_failed",
+            format!("Failed to remove {folder} after moving it: {e}"),
+        )
+    })?;
+    Ok(target)
 }
 
 fn app_data_dir(app: &AppHandle) -> Result<PathBuf, UiError> {
@@ -206,46 +598,6 @@ pub(crate) fn free_profile_dir(root: &Path, folder: &str) -> PathBuf {
     root.join(format!("{folder}-{}", now_nanos()))
 }
 
-/// Copies `source` to a freshly chosen target folder via a hidden staging dir,
-/// so a collision or a partial copy can never touch an existing profile.
-pub(crate) fn copy_profile_dir(
-    root: &Path,
-    source: &Path,
-    folder: &str,
-) -> Result<PathBuf, UiError> {
-    let target = free_profile_dir(root, folder);
-    let staging = root.join(format!(".staging-{}", now_nanos()));
-    create_dir_all(&staging).map_err(|e| {
-        UiError::new(
-            "create_dir_failed",
-            format!("Failed to create staging folder: {e}"),
-        )
-    })?;
-
-    let mut options = CopyOptions::new();
-    options.overwrite = false;
-    options.copy_inside = false;
-    let result = copy(source, &staging, &options);
-    if let Err(e) = result {
-        let _ = remove_dir_all(&staging);
-        return Err(UiError::new(
-            "copy_failed",
-            format!("Failed to copy {}: {e}", folder),
-        ));
-    }
-
-    let copied = staging.join(dir_name(source));
-    if !copied.is_dir() || rename(&copied, &target).is_err() {
-        let _ = remove_dir_all(&staging);
-        return Err(UiError::new(
-            "copy_failed",
-            format!("Failed to move {} into the profiles folder", folder),
-        ));
-    }
-    let _ = remove_dir_all(&staging);
-    Ok(target)
-}
-
 /// Lists installations from the previous app that can be imported.
 ///
 /// `root` restricts the scan to an explicitly chosen folder (for custom
@@ -335,12 +687,18 @@ fn detect_blocking(
 /// `mode` is `"move"` (relocate, the previous folder disappears) or `"copy"`
 /// (keep the previous folder usable, at the cost of extra disk space). Folder
 /// name collisions import under a suffixed name (e.g. `default-2`).
+///
+/// `emitevent` names the Tauri event that carries [`MigrationProgress`] for the
+/// run; sending `<emitevent>:cancel` stops it between files and cleans up the
+/// partial folder. Folders imported before a cancel stay imported (and
+/// recorded), so a retry only has to do the rest.
 #[command]
 pub async fn migrate_legacy_installations(
     app: AppHandle,
     folders: Vec<String>,
     mode: String,
     root: Option<String>,
+    emitevent: Option<String>,
 ) -> Result<LegacyMigrationReport, UiError> {
     if mode != "move" && mode != "copy" {
         return Err(UiError::new(
@@ -348,10 +706,13 @@ pub async fn migrate_legacy_installations(
             "Migration mode must be \"move\" or \"copy\"",
         ));
     }
+    let mut session = ImportSession::create(&app, emitevent, folders.len());
     let handle = app.clone();
-    tokio::task::spawn_blocking(move || migrate_blocking(&handle, folders, &mode, root.as_deref()))
-        .await
-        .map_err(|e| UiError::new("internal_error", format!("Migration failed: {e}")))?
+    tokio::task::spawn_blocking(move || {
+        migrate_blocking(&handle, folders, &mode, root.as_deref(), &mut session)
+    })
+    .await
+    .map_err(|e| UiError::new("internal_error", format!("Migration failed: {e}")))?
 }
 
 fn migrate_blocking(
@@ -359,6 +720,7 @@ fn migrate_blocking(
     folders: Vec<String>,
     mode: &str,
     root_override: Option<&str>,
+    session: &mut ImportSession,
 ) -> Result<LegacyMigrationReport, UiError> {
     let Some(old_root) = scan_root(app, root_override)? else {
         return Err(UiError::not_found(
@@ -379,56 +741,58 @@ fn migrate_blocking(
         skipped: Vec::new(),
     };
 
-    for folder in folders {
+    for (index, folder) in folders.iter().enumerate() {
+        session.ensure_running()?;
+
         // The folder names come from the UI but are still untrusted input.
         if folder.is_empty()
             || folder.starts_with('.')
             || folder.contains('/')
             || folder.contains('\\')
             || folder.contains("..")
-            || Path::new(&folder).file_name().and_then(|n| n.to_str()) != Some(folder.as_str())
+            || Path::new(folder).file_name().and_then(|n| n.to_str()) != Some(folder.as_str())
         {
             report.skipped.push(LegacyMigrationSkip {
-                name: folder,
+                name: folder.clone(),
                 reason: "invalid folder name".into(),
             });
             continue;
         }
 
-        let source = old_root.join(&folder);
+        let source = old_root.join(folder);
         if !source.is_dir() {
             report.skipped.push(LegacyMigrationSkip {
-                name: folder,
+                name: folder.clone(),
                 reason: "folder no longer exists".into(),
             });
             continue;
         }
 
-        let target = if mode == "move" {
-            let target = free_profile_dir(&profiles_root, &folder);
+        let phase = if mode == "move" { "move" } else { "copy" };
+        session.begin_folder(folder, &source, index + 1, phase);
+        let outcome = if mode == "move" {
+            let target = free_profile_dir(&profiles_root, folder);
             require_managed_path(app, &target, "profile")?;
-            if super::utils::move_folder(source.clone(), target.clone()).is_err()
-                || !target.is_dir()
-            {
+            move_profile_dir(&profiles_root, &source, folder, session)
+        } else {
+            copy_profile_dir(&profiles_root, &source, folder, session)
+        };
+
+        let target = match outcome {
+            Ok(target) => target,
+            Err(error) => {
+                // A cancel stops the run instead of being reported as a skip.
+                if session.cancelled() {
+                    return Err(cancelled_error());
+                }
                 report.skipped.push(LegacyMigrationSkip {
-                    name: folder,
-                    reason: "failed to move the folder".into(),
+                    name: folder.clone(),
+                    reason: error.message,
                 });
                 continue;
             }
-            target
-        } else {
-            match copy_profile_dir(&profiles_root, &source, &folder) {
-                Ok(target) => target,
-                Err(e) => {
-                    report.skipped.push(LegacyMigrationSkip {
-                        name: folder,
-                        reason: e.message,
-                    });
-                    continue;
-                }
-            }
         };
+        session.finish_folder();
 
         // Convert the manifest: the new app reads profile.json only.
         let manifest = target.join(LEGACY_MANIFEST);
@@ -458,7 +822,7 @@ fn migrate_blocking(
 
         if let Err(e) = write_profile_json(&target, &info) {
             report.skipped.push(LegacyMigrationSkip {
-                name: folder,
+                name: folder.clone(),
                 reason: format!("failed to write profile.json: {}", e.message),
             });
             continue;
@@ -470,17 +834,21 @@ fn migrate_blocking(
 
         log_info!("legacy: migrated {} ({})", info.name, mode);
         log.migrations.push(LegacyMigrationEntry {
-            source_folder: folder,
+            source_folder: folder.clone(),
             target_path: target.to_string_lossy().to_string(),
             name: info.name,
         });
         report.migrated += 1;
+        // Written per folder, not once at the end: an import killed halfway
+        // (force-quit, cancel, crash) must not make the folders it already
+        // imported look pending again — re-importing them would duplicate the
+        // data under a suffixed folder name.
+        if let Err(e) = write_migration_log(app, &log) {
+            log_error!("legacy: failed to record the migration log: {}", e.message);
+        }
     }
 
-    if report.migrated > 0 {
-        write_migration_log(app, &log)?;
-    }
-
+    session.finish();
     Ok(report)
 }
 
@@ -543,5 +911,169 @@ mod tests {
             std::env::temp_dir().join(format!("storyforge-legacy-missing-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&missing);
         assert!(legacy_root_from_settings(&missing, &[]).is_none());
+    }
+
+    /// Records copied bytes and can cancel once `cancel_after` was reached.
+    #[derive(Default)]
+    struct TestObserver {
+        bytes: u64,
+        cancel_after: Option<u64>,
+    }
+
+    impl CopyObserver for TestObserver {
+        fn cancelled(&self) -> bool {
+            self.cancel_after.is_some_and(|limit| self.bytes >= limit)
+        }
+
+        fn advance(&mut self, bytes: u64) {
+            self.bytes += bytes;
+        }
+    }
+
+    fn write_tree(root: &Path, files: &[(&str, usize)]) {
+        for (relative, size) in files {
+            let path = root.join(relative);
+            std::fs::create_dir_all(path.parent().expect("file has a parent"))
+                .expect("create folder");
+            std::fs::write(&path, vec![b'x'; *size]).expect("write file");
+        }
+    }
+
+    fn profiles_dir(name: &str) -> PathBuf {
+        let root = scratch(name).join("profiles");
+        std::fs::create_dir_all(&root).expect("create profiles folder");
+        root
+    }
+
+    fn staging_leftovers(root: &Path) -> Vec<PathBuf> {
+        read_dir(root)
+            .expect("read profiles folder")
+            .flatten()
+            .map(|entry| entry.path())
+            .filter(|path| {
+                path.file_name()
+                    .is_some_and(|name| name.to_string_lossy().starts_with(".staging-"))
+            })
+            .collect()
+    }
+
+    #[test]
+    fn copy_imports_the_tree_and_reports_its_bytes() {
+        let profiles = profiles_dir("copy-root");
+        let source = scratch("copy-source");
+        write_tree(
+            &source,
+            &[
+                ("Mods/mod.zip", 16),
+                ("Saves/save.sav", 8),
+                ("ModConfig/mod.cfg", 8),
+            ],
+        );
+
+        let mut observer = TestObserver::default();
+        let target = copy_profile_dir(&profiles, &source, "profile", &mut observer)
+            .expect("copy the folder");
+
+        assert_eq!(target, profiles.join("profile"));
+        assert_eq!(observer.bytes, 32);
+        assert!(target.join("Mods/mod.zip").is_file());
+        assert!(target.join("Saves/save.sav").is_file());
+        assert!(target.join("ModConfig/mod.cfg").is_file());
+        // The source stays usable and nothing is left staged.
+        assert!(source.join("Mods/mod.zip").is_file());
+        assert!(staging_leftovers(&profiles).is_empty());
+        let _ = std::fs::remove_dir_all(source);
+    }
+
+    #[test]
+    fn a_cancelled_copy_leaves_nothing_behind() {
+        let profiles = profiles_dir("cancel-root");
+        let source = scratch("cancel-source");
+        write_tree(&source, &[("Mods/first.zip", 16), ("Mods/second.zip", 16)]);
+
+        // Cancel once the first file is copied: the copy stops mid-run, with
+        // content already staged that must not be left behind.
+        let mut observer = TestObserver {
+            cancel_after: Some(16),
+            ..TestObserver::default()
+        };
+        let error = copy_profile_dir(&profiles, &source, "profile", &mut observer)
+            .expect_err("cancelled copy must fail");
+
+        assert_eq!(error.name, "cancelled");
+        assert_eq!(observer.bytes, 16);
+        assert!(!profiles.join("profile").exists());
+        assert!(staging_leftovers(&profiles).is_empty());
+        assert!(source.join("Mods/first.zip").is_file());
+        assert!(source.join("Mods/second.zip").is_file());
+        let _ = std::fs::remove_dir_all(source);
+    }
+
+    #[test]
+    fn a_move_relocates_the_folder_and_removes_the_source() {
+        let profiles = profiles_dir("move-root");
+        let source = scratch("move-source");
+        write_tree(&source, &[("Mods/mod.zip", 16)]);
+
+        let mut observer = TestObserver::default();
+        let target = move_profile_dir(&profiles, &source, "profile", &mut observer)
+            .expect("move the folder");
+
+        assert_eq!(target, profiles.join("profile"));
+        assert!(target.join("Mods/mod.zip").is_file());
+        assert!(!source.exists());
+        assert!(staging_leftovers(&profiles).is_empty());
+    }
+
+    #[test]
+    fn a_name_collision_imports_under_a_suffixed_name() {
+        let profiles = profiles_dir("collision-root");
+        let source = scratch("collision-source");
+        write_tree(&source, &[("Mods/mod.zip", 16)]);
+        std::fs::create_dir_all(profiles.join("profile")).expect("create existing profile");
+        std::fs::write(profiles.join("profile/keep.txt"), "keep").expect("write existing file");
+
+        let mut observer = TestObserver::default();
+        let target = copy_profile_dir(&profiles, &source, "profile", &mut observer)
+            .expect("copy the folder");
+
+        assert_eq!(target, profiles.join("profile-2"));
+        assert!(target.join("Mods/mod.zip").is_file());
+        assert!(profiles.join("profile/keep.txt").is_file());
+        let _ = std::fs::remove_dir_all(source);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_linked_folder_is_kept_but_not_copied() {
+        let profiles = profiles_dir("symlink-root");
+        let source = scratch("symlink-source");
+        write_tree(&source, &[("Mods/mod.zip", 16)]);
+        // A folder linking to itself must not make the copy run forever.
+        std::os::unix::fs::symlink(&source, source.join("loop")).expect("create symlink");
+
+        let mut observer = TestObserver::default();
+        let target = copy_profile_dir(&profiles, &source, "profile", &mut observer)
+            .expect("copy the folder");
+
+        assert!(target.join("Mods/mod.zip").is_file());
+        let loop_dir = target.join("loop");
+        assert!(loop_dir.is_dir());
+        assert_eq!(read_dir(&loop_dir).expect("read linked folder").count(), 0);
+        let _ = std::fs::remove_dir_all(source);
+    }
+
+    #[test]
+    fn the_staging_sweep_removes_leftovers_only() {
+        let profiles = profiles_dir("sweep-root");
+        std::fs::create_dir_all(profiles.join(".staging-1/Mods")).expect("create leftover");
+        std::fs::create_dir_all(profiles.join(".staging-2")).expect("create leftover");
+        std::fs::create_dir_all(profiles.join("profile")).expect("create profile");
+
+        assert_eq!(sweep_staging_dir(&profiles), 2);
+        assert!(!profiles.join(".staging-1").exists());
+        assert!(!profiles.join(".staging-2").exists());
+        assert!(profiles.join("profile").exists());
+        assert!(staging_leftovers(&profiles).is_empty());
     }
 }

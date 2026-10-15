@@ -29,7 +29,7 @@ use tauri::{command, AppHandle, Manager};
 
 use super::errors::UiError;
 use super::legacy::{
-    copy_profile_dir, free_profile_dir, LegacyMigrationReport, LegacyMigrationSkip,
+    copy_profile_dir, free_profile_dir, LegacyMigrationReport, LegacyMigrationSkip, SilentObserver,
 };
 use super::paths::{CLIENTSETTINGS_JSON, MODS_DIR, PROFILE_JSON, SAVES_DIR};
 use super::profiles::{
@@ -366,7 +366,7 @@ fn import_blocking(
             }
             target
         } else {
-            match copy_profile_dir(&profiles_root, &source, &folder) {
+            match copy_profile_dir(&profiles_root, &source, &folder, &mut SilentObserver) {
                 Ok(target) => target,
                 Err(e) => {
                     report.skipped.push(LegacyMigrationSkip {
