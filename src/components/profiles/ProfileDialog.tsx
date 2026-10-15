@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -23,7 +23,9 @@ import {
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { useAppFolder } from "@/hooks/use-app-folder";
+import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
+import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import { errorMessage } from "@/lib/errors";
 import {
   baseGameVersion,
@@ -58,6 +60,7 @@ export default function ProfileDialog({
 }: ProfileDialogProps) {
   const { t } = useTranslation();
   const isEdit = profile != null;
+  const queryClient = useQueryClient();
   const { data: gameVersions } = useQuery(gameVersionsQuery);
   const { data: installedVersionRecords } = useInstalledVersions();
   const installedVersions = useMemo(() => installedVersionRecords ?? [], [installedVersionRecords]);
@@ -169,6 +172,10 @@ export default function ProfileDialog({
             id: profile.id,
             name: trimmedName,
           });
+          // Mod scans are cached per folder: the old path must not leak into
+          // the renamed profile (or into a future profile reusing the folder).
+          queryClient.removeQueries({ queryKey: installedModsQueryKey(profile.path) });
+          queryClient.removeQueries({ queryKey: modUpdatesQueryKey(profile.path) });
           path = renamed.path;
         }
       }
