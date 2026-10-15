@@ -85,32 +85,19 @@ struct LegacyMigrationLog {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct MigrationProgress {
-    /// `copy`, `move`, `convert` or `done`.
     pub phase: &'static str,
-    /// Folder being imported (its name in the source folder).
     pub folder: String,
-    /// 1-based position of the folder in this run.
     pub index: usize,
-    /// How many folders this run imports.
     pub count: usize,
-    /// Bytes copied for the current folder so far.
     pub bytes: u64,
-    /// Known total size of the current folder, when the detection scan
-    /// measured it shortly before the import.
     pub bytes_total: Option<u64>,
 }
 
 /// Progress and cancellation for one folder copy.
 pub(crate) trait CopyObserver {
-    /// True once the user asked the running import to stop.
-    fn cancelled(&self) -> bool {
-        false
-    }
+    fn cancelled(&self) -> bool;
 
-    /// Reports that `bytes` more content was copied.
-    fn advance(&mut self, bytes: u64) {
-        let _ = bytes;
-    }
+    fn advance(&mut self, bytes: u64);
 }
 
 pub(crate) fn cancelled_error() -> UiError {
@@ -121,9 +108,7 @@ pub(crate) fn cancelled_error() -> UiError {
 ///
 /// Reporting sessions emit [`MigrationProgress`] on the run's Tauri event and
 /// cancel when the UI sends `<event>:cancel`; a run without an event name (or
-/// without a UI) gets a silent session. Import folders can take minutes on
-/// slow disks, so every copy reports which folder is being copied and how far
-/// along it is — an import that "does nothing" for that long reads as hung.
+/// without a UI) gets a silent session.
 pub(crate) struct ImportSession {
     app: AppHandle,
     event: Option<String>,
@@ -139,7 +124,6 @@ pub(crate) struct ImportSession {
 }
 
 impl ImportSession {
-    /// Session for a run importing `count` folders, reporting on `event`.
     pub(crate) fn create(app: &AppHandle, event: Option<String>, count: usize) -> Self {
         let token = CancellationToken::new();
         let listener = event.as_ref().map(|name| {
@@ -184,7 +168,6 @@ impl ImportSession {
         self.emit();
     }
 
-    /// The whole run is done.
     pub(crate) fn finish(&mut self) {
         self.phase = "done";
         self.emit();
@@ -194,8 +177,6 @@ impl ImportSession {
         self.token.is_cancelled()
     }
 
-    /// Fails when the user cancelled, so the caller can stop before the next
-    /// folder (or step) instead of running to completion.
     pub(crate) fn ensure_running(&self) -> Result<(), UiError> {
         if self.is_cancelled() {
             Err(cancelled_error())
@@ -528,9 +509,6 @@ fn legacy_root_from_settings(data: &Path, settings: &[String]) -> Option<PathBuf
 }
 
 /// Resolves the folder that held the previous app's installations.
-///
-/// Reads the legacy persisted settings for a custom parent/subdir; both the
-/// release and dev settings files are consulted (dev overrides release).
 fn legacy_root(app: &AppHandle) -> Result<Option<PathBuf>, UiError> {
     let data = app_data_dir(app)?;
     let store = data.join("store");
@@ -776,7 +754,6 @@ fn migrate_blocking(
         let target = match outcome {
             Ok(target) => target,
             Err(error) => {
-                // A cancel stops the run instead of being reported as a skip.
                 if session.cancelled() {
                     return Err(cancelled_error());
                 }
@@ -974,7 +951,6 @@ mod tests {
         assert!(target.join("Mods/mod.zip").is_file());
         assert!(target.join("Saves/save.sav").is_file());
         assert!(target.join("ModConfig/mod.cfg").is_file());
-        // The source stays usable and nothing is left staged.
         assert!(source.join("Mods/mod.zip").is_file());
         assert!(staging_leftovers(&profiles).is_empty());
         let _ = std::fs::remove_dir_all(source);

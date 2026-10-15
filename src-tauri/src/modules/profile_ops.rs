@@ -497,8 +497,6 @@ fn restore_deleted_profile_blocking(
         .rsplit_once('-')
         .map(|(base, _)| base.to_string())
         .unwrap_or_else(|| archive_name.to_string());
-    // Restoring under a new name changes the name-derived id, so the backups
-    // follow the folder exactly like on rename.
     let old_id = generate_id(&default_folder);
     let folder = match &new_name {
         Some(n) => safe_file_name(n)?,

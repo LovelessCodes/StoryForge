@@ -361,11 +361,6 @@ fn detect_blocking(app: &AppHandle) -> Result<Vec<MvlModpack>, UiError> {
 /// `mode` is `"move"` (relocate) or `"copy"` (keep MVL working). Only paths
 /// listed in the MVL config are accepted, and folder name collisions import
 /// under a suffixed name.
-///
-/// `emitevent` names the Tauri event that carries the import's progress for the
-/// run; sending `<emitevent>:cancel` stops it and cleans up the partial folder.
-/// Modpacks imported before a cancel stay imported (and recorded), so a retry
-/// only has to do the rest.
 #[command]
 pub async fn import_mvl_modpacks(
     app: AppHandle,
@@ -470,7 +465,6 @@ fn import_blocking(
             match move_profile_dir(&profiles_root, &source, &folder, session) {
                 Ok(target) => target,
                 Err(error) => {
-                    // A cancel stops the run instead of being reported as a skip.
                     if session.is_cancelled() {
                         return Err(cancelled_error());
                     }
@@ -520,8 +514,6 @@ fn import_blocking(
             name: info.name.clone(),
         });
         report.migrated += 1;
-        // Record each modpack as soon as it is imported, so a killed or
-        // cancelled run keeps what it imported and a retry only does the rest.
         if let Err(e) = write_migration_log(app, &log) {
             log_error!("mvl: failed to record the import log: {}", e.message);
         }

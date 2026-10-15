@@ -37,10 +37,6 @@ type MigrationMode = "move" | "copy";
  * are the same data as profiles, so migration is a move/copy plus a manifest
  * rename (see the Rust `legacy` module). Used by the detected-installs banner
  * and by the manual "locate a folder" flow.
- *
- * A folder can be many gigabytes, so the sheet names the folder being imported
- * and lets the user cancel: folders already imported stay imported, and a
- * cancelled copy leaves nothing behind, so the import can be retried.
  */
 export default function LegacyMigrationSheet({
   open,
@@ -76,8 +72,6 @@ export default function LegacyMigrationSheet({
     } catch (error) {
       if (errorInfo(error).name === "cancelled") {
         toast.info(t("profiles.import.cancelled"));
-        // Folders imported before the cancel are already recorded — refresh so
-        // the sheet only lists what is left.
         await onImported?.();
         return;
       }

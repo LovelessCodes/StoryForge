@@ -347,11 +347,6 @@ fn detect_blocking(app: &AppHandle) -> Result<Vec<VsLauncherInstallation>, UiErr
 /// `mode` is `"move"` (relocate) or `"copy"` (keep the other launcher working).
 /// Only paths listed in one of the family configs are accepted, and folder
 /// name collisions import under a suffixed name.
-///
-/// `emitevent` names the Tauri event that carries the import's progress for the
-/// run; sending `<emitevent>:cancel` stops it and cleans up the partial folder.
-/// Installations imported before a cancel stay imported (and recorded), so a
-/// retry only has to do the rest.
 #[command]
 pub async fn import_vs_launcher_installations(
     app: AppHandle,
@@ -455,7 +450,6 @@ fn import_blocking(
             match move_profile_dir(&profiles_root, &source, &folder, session) {
                 Ok(target) => target,
                 Err(error) => {
-                    // A cancel stops the run instead of being reported as a skip.
                     if session.is_cancelled() {
                         return Err(cancelled_error());
                     }
@@ -516,8 +510,6 @@ fn import_blocking(
             name: info.name.clone(),
         });
         report.migrated += 1;
-        // Record each installation as soon as it is imported, so a killed or
-        // cancelled run keeps what it imported and a retry only does the rest.
         if let Err(e) = write_migration_log(app, &log) {
             log_error!(
                 "vs_launcher: failed to record the import log: {}",

@@ -47,8 +47,7 @@ export function moveMods(
 
 /**
  * Moves the group `activeId` into the slot of `overId`, keeping every other
- * group in its relative order. Unknown ids and no-op moves return the input
- * array unchanged; nothing is mutated either way.
+ * group in its relative order.
  */
 export function reorderGroups(groups: ModGroup[], activeId: string, overId: string): ModGroup[] {
   const from = groups.findIndex((group) => group.id === activeId);

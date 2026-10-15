@@ -1,5 +1,4 @@
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { cn } from "cn";
 import insane from "insane";
 import { Send } from "lucide-react";
@@ -10,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSendCommand, useServerStatus } from "@/hooks/queries/server-hosting";
+import { useTauriEvent } from "@/hooks/use-tauri-event";
 import type { ServerLogsResponse } from "@/lib/server-hosting-types";
 
 type LogEntry = { timestamp: string; line: string };
@@ -44,26 +44,9 @@ export default function ServerConsole({ instanceId }: { instanceId: number }) {
       });
   }, [instanceId]);
 
-  useEffect(() => {
-    let unlisten: (() => void) | undefined;
-    let cancelled = false;
-    void (async () => {
-      const dispose = await listen<LogEntry>(`server-log:${instanceId}`, (event) => {
-        setLogLines((prev) => [...prev.slice(-1000), event.payload]);
-      });
-      // Unmounted before `listen` resolved: dispose here instead, otherwise
-      // the cleanup below would have seen `unlisten` still undefined.
-      if (cancelled) {
-        dispose();
-        return;
-      }
-      unlisten = dispose;
-    })();
-    return () => {
-      cancelled = true;
-      unlisten?.();
-    };
-  }, [instanceId]);
+  useTauriEvent<LogEntry>(`server-log:${instanceId}`, (entry) => {
+    setLogLines((prev) => [...prev.slice(-1000), entry]);
+  });
 
   useEffect(() => {
     if (viewportRef.current) {

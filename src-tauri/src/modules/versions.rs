@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::HashSet,
     fs::{read_dir, read_to_string, remove_dir_all, write},
-    path::{Component, Path, PathBuf},
+    path::{Path, PathBuf},
     sync::Arc,
 };
 use tauri::{command, AppHandle, Manager, State};
@@ -11,7 +11,7 @@ use crate::modules::utils::{dir_size_cached, format_size, move_folder};
 
 use super::errors::UiError;
 use super::utils::{
-    normalize_path, require_managed_path, require_safe_destination, safe_file_name,
+    join_subdir, normalize_path, require_managed_path, require_safe_destination, safe_file_name,
     versions_folder, versions_subdir,
 };
 use crate::{log_error, log_info};
@@ -23,8 +23,6 @@ use crate::{log_error, log_info};
 pub const OPTIMUM_SUFFIX: &str = "+optimum";
 pub const VULKANSTORY_SUFFIX: &str = "+vulkanstory";
 
-/// The base game version a version name carries: `1.22.7+optimum` and
-/// `1.22.7+vulkanstory` both resolve to `1.22.7`.
 pub fn base_game_version(version: &str) -> &str {
     version
         .strip_suffix(OPTIMUM_SUFFIX)
@@ -528,24 +526,6 @@ pub async fn fetch_versions(
     })?;
 
     Ok(json)
-}
-
-/// Joins a webview-supplied `subdir` onto `base`, refusing anything that could
-/// leave it: empty values, `..` components and absolute paths.
-fn join_subdir(base: &Path, subdir: &str, what: &str) -> Result<PathBuf, UiError> {
-    let stays_inside = !subdir.is_empty()
-        && Path::new(subdir)
-            .components()
-            .all(|component| matches!(component, Component::Normal(_)))
-        && normalize_path(&base.join(subdir)).starts_with(normalize_path(base));
-
-    if !stays_inside {
-        return Err(UiError::new(
-            "invalid_path",
-            format!("{what} must stay inside {}: {subdir}", base.display()),
-        ));
-    }
-    Ok(base.join(subdir))
 }
 
 #[command]

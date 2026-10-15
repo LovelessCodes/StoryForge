@@ -30,8 +30,8 @@ use super::mods;
 use super::packs::{self, PackLock};
 use super::paths::{self, clientsettings_path, mods_dir, profile_json_path};
 use super::utils::{
-    dir_name, dir_size, dir_size_cached, find_dir_by_id, format_size, generate_id, lock,
-    move_folder, normalize_path, parse_start_params, profiles_folder, profiles_subdir,
+    dir_name, dir_size, dir_size_cached, find_dir_by_id, format_size, generate_id, join_subdir,
+    lock, move_folder, normalize_path, parse_start_params, profiles_folder, profiles_subdir,
     require_managed_path, require_safe_destination, safe_join,
 };
 use crate::{log_debug, log_error, log_info};
@@ -2174,24 +2174,6 @@ pub fn reveal_in_file_explorer(app: AppHandle, path: String) -> Result<String, U
     super::reveal::reveal_in_file_manager(&app, &path)?;
 
     Ok(path.to_string_lossy().to_string())
-}
-
-/// Joins a webview-supplied `subdir` onto `base`, refusing anything that could
-/// leave it: empty values, `..` components and absolute paths.
-fn join_subdir(base: &Path, subdir: &str, what: &str) -> Result<PathBuf, UiError> {
-    let stays_inside = !subdir.is_empty()
-        && Path::new(subdir)
-            .components()
-            .all(|component| matches!(component, Component::Normal(_)))
-        && normalize_path(&base.join(subdir)).starts_with(normalize_path(base));
-
-    if !stays_inside {
-        return Err(UiError::new(
-            "invalid_path",
-            format!("{what} must stay inside {}: {subdir}", base.display()),
-        ));
-    }
-    Ok(base.join(subdir))
 }
 
 #[command]

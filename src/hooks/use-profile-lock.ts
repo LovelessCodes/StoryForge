@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
+import { useTauriRunEvents } from "@/hooks/use-tauri-run-events";
 import { errorMessage } from "@/lib/errors";
 import { t } from "@/lib/i18n";
 import { toast } from "@/lib/notify";
@@ -126,31 +126,19 @@ export function syncFailureMessage(reason: string): string {
 export function useApplyProfileLock(profileId: number, profilePath: string) {
   const queryClient = useQueryClient();
   const [progress, setProgress] = useState<LockSyncProgress | null>(null);
-  const unlistenRef = useRef<UnlistenFn | null>(null);
-
-  useEffect(
-    () => () => {
-      unlistenRef.current?.();
-      unlistenRef.current = null;
-    },
-    [],
-  );
+  const { subscribe, release } = useTauriRunEvents();
 
   const mutation = useMutation({
     mutationFn: async () => {
       const event = `profile-lock-${profileId}`;
-      unlistenRef.current?.();
-      unlistenRef.current = await listen<LockSyncProgress>(event, (payload) => {
-        setProgress(payload.payload);
-      });
+      await subscribe<LockSyncProgress>(event, setProgress);
       try {
         return await invoke<SyncReport>("apply_profile_lock", {
           id: profileId,
           emitevent: event,
         });
       } finally {
-        unlistenRef.current?.();
-        unlistenRef.current = null;
+        release();
       }
     },
     onMutate: () => {

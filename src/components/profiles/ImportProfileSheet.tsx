@@ -1,9 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { FileUp, Link2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 
@@ -25,6 +24,7 @@ import {
   installedVersionsQueryKey,
   useInstalledVersionNames,
 } from "@/hooks/use-installed-versions";
+import { useTauriRunEvents } from "@/hooks/use-tauri-run-events";
 import { errorMessage } from "@/lib/errors";
 import { buildProfilePath, makeStringFolderSafe } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
@@ -70,7 +70,7 @@ export default function ImportProfileSheet({ open, onOpenChange }: ImportProfile
   const [text, setText] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [progress, setProgress] = useState<ImportProgress | null>(null);
-  const listenRef = useRef<UnlistenFn | null>(null);
+  const { subscribe, release } = useTauriRunEvents();
 
   async function chooseFile() {
     const path = await openFileDialog({
@@ -127,20 +127,19 @@ export default function ImportProfileSheet({ open, onOpenChange }: ImportProfile
       }
 
       const emitevent = `import-profile-${Date.now()}`;
-      listenRef.current?.();
-      listenRef.current = await listen<{
+      await subscribe<{
         phase: string;
         current: number;
         total: number;
         modid: string;
         version: string;
-      }>(emitevent, (event) => {
-        if (event.payload.phase === "downloading") {
+      }>(emitevent, (payload) => {
+        if (payload.phase === "downloading") {
           setProgress({
-            current: event.payload.current,
-            modid: event.payload.modid,
-            total: event.payload.total,
-            version: event.payload.version,
+            current: payload.current,
+            modid: payload.modid,
+            total: payload.total,
+            version: payload.version,
           });
         }
       });
@@ -161,8 +160,7 @@ export default function ImportProfileSheet({ open, onOpenChange }: ImportProfile
         },
       });
 
-      listenRef.current?.();
-      listenRef.current = null;
+      release();
       setProgress(null);
       await loadProfiles();
       setActiveProfileId(result.id);
@@ -173,8 +171,7 @@ export default function ImportProfileSheet({ open, onOpenChange }: ImportProfile
       const message = errorMessage(error);
       toast.error(t("profiles.errors.importFailed"), { description: message });
     } finally {
-      listenRef.current?.();
-      listenRef.current = null;
+      release();
       setBusy(null);
       setProgress(null);
     }

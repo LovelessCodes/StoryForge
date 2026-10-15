@@ -40,11 +40,8 @@ export type Profile = {
   environmentVariables?: Record<string, string>;
   /** Linked to a game data folder outside the profiles root. */
   external: boolean;
-  /** Create a backup before the game launches. */
   backupOnPlay: boolean;
-  /** Keep at most this many backups (0 keeps them all). */
   backupLimit: number;
-  /** Skip the shared game defaults when this profile launches. */
   ignoreGameDefaults: boolean;
 };
 
