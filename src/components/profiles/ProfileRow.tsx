@@ -43,7 +43,9 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { notify } from "@/components/ui/toast";
+import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
+import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import { errorMessage } from "@/lib/errors";
 import { useDateLocale } from "@/lib/i18n/date-locale";
 import { toast } from "@/lib/notify";
@@ -118,6 +120,12 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
     }
   }
 
+  /** Mod and update scans are cached per profile folder — drop them once the folder is abandoned. */
+  function clearProfileModCaches(path: string) {
+    queryClient.removeQueries({ queryKey: installedModsQueryKey(path) });
+    queryClient.removeQueries({ queryKey: modUpdatesQueryKey(path) });
+  }
+
   async function doClone() {
     const name = cloneName.trim();
     if (name.length < 2) return;
@@ -145,6 +153,7 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
         // The folder belongs to the user's game installation — only stop
         // managing it, never touch the data.
         await invoke("unregister_external_profile", { path: profile.path });
+        clearProfileModCaches(profile.path);
         await loadProfiles();
         setDeleteOpen(false);
         return;
@@ -153,6 +162,7 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
         id: profile.id,
         activeId: activeProfileId,
       });
+      clearProfileModCaches(profile.path);
       await loadProfiles();
       void queryClient.invalidateQueries({ queryKey: ["deleted-profiles"] });
       setDeleteOpen(false);
