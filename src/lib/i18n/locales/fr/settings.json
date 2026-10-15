@@ -49,6 +49,8 @@
     "streamModeDescription": "Masquer les adresses des serveurs dans les listes de serveurs, par exemple pendant un stream.",
     "systemDotnet": "Utiliser le .NET du système",
     "systemDotnetDescription": "Essayer le runtime .NET de votre système avant d'en télécharger un.",
+    "showPreRelease": "Afficher les versions préliminaires",
+    "showPreReleaseDescription": "Inclure les versions candidates (RC) lors du choix d'une version du jeu.",
     "defaultModSort": "Tri par défaut des mods",
     "defaultModSortDescription": "Ordre de tri utilisé à l'ouverture du navigateur de mods.",
     "promptModInstallDestination": "Toujours demander où installer",

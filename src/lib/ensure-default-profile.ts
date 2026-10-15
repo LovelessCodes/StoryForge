@@ -3,13 +3,14 @@ import { appDataDir } from "@tauri-apps/api/path";
 
 import { buildProfilePath, compareSemverDesc, makeStringFolderSafe } from "@/lib/helpers";
 import { t } from "@/lib/i18n";
+import { pickDefaultVersion } from "@/lib/pre-release";
 import { useProfilesStore } from "@/stores/profiles";
 import { useSettingsStore } from "@/stores/settings";
 
-/** Newest version, preferring non-release-candidates. */
-function pickVersion(versions: string[]): string {
+/** Newest version from an already sorted list, following the pre-release setting. */
+function pickVersion(versions: string[], showPreRelease: boolean): string {
   const sorted = versions.filter(Boolean).toSorted(compareSemverDesc);
-  return sorted.find((version) => !version.includes("rc")) ?? sorted[0] ?? "";
+  return pickDefaultVersion(sorted, showPreRelease);
 }
 
 /**
@@ -26,15 +27,19 @@ export async function ensureDefaultProfile(): Promise<void> {
   if (useProfilesStore.getState().profiles.length > 0) return;
 
   let version = "";
+  const { showPreRelease } = useSettingsStore.getState();
   try {
     const installed = await invoke<{ name: string }[]>("get_installed_versions");
-    version = pickVersion(installed.map((entry) => entry.name));
+    version = pickVersion(
+      installed.map((entry) => entry.name),
+      showPreRelease,
+    );
   } catch {
     // Offline or scan failure — try the release list below.
   }
   if (!version) {
     try {
-      version = pickVersion(await invoke<string[]>("fetch_versions"));
+      version = pickVersion(await invoke<string[]>("fetch_versions"), showPreRelease);
     } catch {
       // No network either; fall through.
     }

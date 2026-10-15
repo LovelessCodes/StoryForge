@@ -49,6 +49,8 @@
     "streamModeDescription": "Serveradressen in Serverlisten ausblenden, zum Beispiel beim Streamen.",
     "systemDotnet": "System-.NET verwenden",
     "systemDotnetDescription": "Versuche zuerst die .NET-Runtime deines Systems, bevor eine heruntergeladen wird.",
+    "showPreRelease": "Vorabversionen anzeigen",
+    "showPreReleaseDescription": "Release-Candidates bei der Auswahl der Spielversion einblenden.",
     "defaultModSort": "Standard-Mod-Sortierung",
     "defaultModSortDescription": "Sortierreihenfolge beim Öffnen des Mod-Browsers.",
     "promptModInstallDestination": "Immer nach dem Installationsziel fragen",

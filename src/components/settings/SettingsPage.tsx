@@ -164,6 +164,8 @@ function BehaviourCard() {
   const { t } = useTranslation();
   const streamMode = useSettingsStore((s) => s.streamMode);
   const toggleStreamMode = useSettingsStore((s) => s.toggleStreamMode);
+  const showPreRelease = useSettingsStore((s) => s.showPreRelease);
+  const toggleShowPreRelease = useSettingsStore((s) => s.toggleShowPreRelease);
   const useSystemDotnet = useSettingsStore((s) => s.useSystemDotnet);
   const toggleUseSystemDotnet = useSettingsStore((s) => s.toggleUseSystemDotnet);
   const defaultModSortBy = useSettingsStore((s) => s.defaultModSortBy);
@@ -206,6 +208,17 @@ function BehaviourCard() {
             aria-label={t("settings.behaviour.systemDotnet")}
             checked={useSystemDotnet}
             onCheckedChange={() => toggleUseSystemDotnet()}
+          />
+        </SettingRow>
+
+        <SettingRow
+          description={t("settings.behaviour.showPreReleaseDescription")}
+          label={t("settings.behaviour.showPreRelease")}
+        >
+          <Switch
+            aria-label={t("settings.behaviour.showPreRelease")}
+            checked={showPreRelease}
+            onCheckedChange={() => toggleShowPreRelease()}
           />
         </SettingRow>
 

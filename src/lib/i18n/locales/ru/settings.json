@@ -49,6 +49,8 @@
     "streamModeDescription": "Скрывать адреса серверов в списках, например во время стрима.",
     "systemDotnet": "Использовать системный .NET",
     "systemDotnetDescription": "Сначала пробовать системную среду .NET, а потом скачивать её.",
+    "showPreRelease": "Показывать предварительные версии",
+    "showPreReleaseDescription": "Включать предварительные версии (RC) в выбор версии игры.",
     "defaultModSort": "Сортировка модов по умолчанию",
     "defaultModSortDescription": "Порядок сортировки при открытии браузера модов.",
     "promptModInstallDestination": "Всегда спрашивать, куда устанавливать",

@@ -27,8 +27,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useDownloadManager } from "@/hooks/use-download-manager";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { compareSemverDesc } from "@/lib/helpers";
+import { filterPreReleaseVersions } from "@/lib/pre-release";
 import { gameVersionsQuery } from "@/lib/queries";
 import { useDownloadStore } from "@/stores/downloads";
+import { useSettingsStore } from "@/stores/settings";
 
 export const MAC_WIKI_URL =
   "https://wiki.vintagestory.at/index.php?title=Installing_Vintage_Story_on_macOS";
@@ -45,6 +47,7 @@ export default function AddVersionSheet({ open, onOpenChange }: AddVersionSheetP
   const installedSet = useMemo(() => new Set(installedNames), [installedNames]);
   const entries = useDownloadStore((s) => s.entries);
   const { startDownload } = useDownloadManager();
+  const showPreRelease = useSettingsStore((s) => s.showPreRelease);
   const currentPlatform = platform();
 
   const [picked, setPicked] = useState<string | null>(null);
@@ -67,8 +70,12 @@ export default function AddVersionSheet({ open, onOpenChange }: AddVersionSheetP
   );
 
   const availableVersions = useMemo(
-    () => (gameVersions ?? []).toSorted(compareSemverDesc).filter((v) => !busyVersions.has(v)),
-    [gameVersions, busyVersions],
+    () =>
+      filterPreReleaseVersions(
+        (gameVersions ?? []).toSorted(compareSemverDesc).filter((v) => !busyVersions.has(v)),
+        showPreRelease,
+      ),
+    [gameVersions, busyVersions, showPreRelease],
   );
 
   const selectableVersions = useMemo(
@@ -76,9 +83,9 @@ export default function AddVersionSheet({ open, onOpenChange }: AddVersionSheetP
     [availableVersions, installedSet],
   );
 
-  // Newest non-rc first, then any newer build, mirroring the old dialog.
-  const defaultVersion =
-    selectableVersions.find((v) => !v.includes("rc")) ?? selectableVersions[0] ?? "";
+  // The list already hides pre-releases unless enabled, so the newest visible
+  // entry is the default pick.
+  const defaultVersion = selectableVersions[0] ?? "";
   const version = picked ?? defaultVersion;
 
   const macWarning =
