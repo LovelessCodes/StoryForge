@@ -8,6 +8,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.6] - 2026-10-15
+
+### Added
+
+- **Installing from the ModDB**: the mod database's **1-click install** button (`vintagestorymodinstall://<modid>@<release>`) now opens the install sheet for that exact release instead of doing nothing. The scheme is claimed by the installer on Windows and macOS, shipped in the Flatpak's desktop file, and registered at runtime on Linux and debug Windows builds when no other app already handles it. `storyforge://install?mod=<id>&version=<release>` pins a release the same way, and a release that has since disappeared is reported before the latest one is preselected.
+- **Always ask where to install**: a Behaviour setting that opens the destination picker for 1-click and deep-link installs — active profile preselected, hosted servers included — instead of installing straight into the active profile. Off by default.
+- **Reordering mod groups**: each group header on the Installed page carries a grip handle. Drag it to move the group — a compact ghost header follows the cursor while the source dims — or use the keyboard: space to pick up, the arrow keys to move, space to drop, escape to cancel. The order is stored per profile with the groups, also drives the "Move to group" menus, and every move is announced to screen readers.
+
 ## [2.0.5] - 2026-10-14
 
 ### Added
