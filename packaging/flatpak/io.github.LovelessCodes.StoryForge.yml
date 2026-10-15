@@ -71,7 +71,7 @@ modules:
     build-commands:
       # The metainfo ships with placeholders; bump the version and date here
       # together with the archive URLs and hashes below on every release.
-      - sed -i "s/FLATPAK_VERSION/2.0.7/g; s/FLATPAK_DATE/2026-10-15/g" io.github.LovelessCodes.StoryForge.metainfo.xml
+      - sed -i "s/FLATPAK_VERSION/2.0.8/g; s/FLATPAK_DATE/2026-10-15/g" io.github.LovelessCodes.StoryForge.metainfo.xml
       # The tracked desktop file points at the self-hosted layout; the Flathub
       # build installs the binary into /app/bin instead.
       - sed -i "s|Exec=/app/StoryForge/StoryForge|Exec=StoryForge|" io.github.LovelessCodes.StoryForge.desktop
@@ -84,15 +84,15 @@ modules:
       - install -Dm644 LICENSE ${FLATPAK_DEST}/share/licenses/${FLATPAK_ID}/StoryForge/LICENSE
     sources:
       - type: archive
-        url: https://github.com/LovelessCodes/StoryForge/archive/refs/tags/storyforge-v2.0.7.tar.gz
-        sha256: 1250b6951f82b18558ced01c8d3e501a08471171ae98b4fb05559ce419c42527
+        url: https://github.com/LovelessCodes/StoryForge/archive/refs/tags/storyforge-v2.0.8.tar.gz
+        sha256: 1337469bebecf862c686565d80c0466337be8438342675443c2fd085c3f2013e
         x-checker-data:
           type: json
           url: https://api.github.com/repos/LovelessCodes/StoryForge/releases/latest
           version-query: .tag_name | sub("storyforge-v"; "")
           url-query: '"https://github.com/LovelessCodes/StoryForge/archive/refs/tags/storyforge-v" + $version + ".tar.gz"'
       - type: archive
-        url: https://github.com/LovelessCodes/StoryForge/releases/download/storyforge-v2.0.7/node_modules-x64.tar.gz
+        url: https://github.com/LovelessCodes/StoryForge/releases/download/storyforge-v2.0.8/node_modules-x64.tar.gz
         sha256: 3e752458d2d83fa33bacba6e19b52ac46757dd458053c3ffbf83c033df130734
         only-arches:
           - x86_64
@@ -102,7 +102,7 @@ modules:
           version-query: .tag_name | sub("storyforge-v"; "")
           url-query: .assets[] | select(.name == "node_modules-x64.tar.gz") | .browser_download_url
       - type: archive
-        url: https://github.com/LovelessCodes/StoryForge/releases/download/storyforge-v2.0.7/node_modules-arm64.tar.gz
+        url: https://github.com/LovelessCodes/StoryForge/releases/download/storyforge-v2.0.8/node_modules-arm64.tar.gz
         sha256: 2f62b100c18f372536d93a4c26f1e066a9420c7100008b654684bf23e93c8ca0
         only-arches:
           - aarch64
