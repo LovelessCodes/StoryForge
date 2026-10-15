@@ -308,6 +308,22 @@ export type LegacyMigrationReport = {
   skipped: LegacyMigrationSkip[];
 };
 
+/** `convert` follows the copy of a folder; `done` ends the whole run. */
+export type LegacyMigrationPhase = "copy" | "move" | "convert" | "done";
+
+export type LegacyMigrationProgress = {
+  phase: LegacyMigrationPhase;
+  folder: string;
+  /** 1-based position of `folder` in this run. */
+  index: number;
+  /** How many folders this run imports in total. */
+  count: number;
+  /** Bytes copied for the current folder so far. */
+  bytes: number;
+  /** Known size of the current folder, when it could be measured cheaply. */
+  bytesTotal: number | null;
+};
+
 // ── Existing Vintage Story data (adoption) ──
 
 export type DetectedGameData = {

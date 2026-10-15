@@ -152,6 +152,18 @@ pub fn dir_size_cached(path: &Path) -> u64 {
     size
 }
 
+/// The cached size of `path` when it was measured recently, without walking.
+///
+/// Progress reporting needs a byte total that costs nothing extra: a detection
+/// scan measures every candidate right before an import, so its result is
+/// usually still here. `None` means "unknown", not "empty".
+pub fn dir_size_cached_recent(path: &Path) -> Option<u64> {
+    let cache = lock(&DIR_SIZE_CACHE);
+    cache
+        .get(path)
+        .and_then(|(at, size)| (at.elapsed() < DIR_SIZE_TTL).then_some(*size))
+}
+
 /// Extracts the file/directory name from a path as a `String`, lossily.
 pub fn dir_name(path: &Path) -> String {
     path.file_name()

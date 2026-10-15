@@ -350,6 +350,17 @@ pub fn run() {
             log_info!("Setup step 2 done: zustand plugin initialized");
             modules::logger::log_elapsed("Setup step 2 elapsed", t2);
 
+            // ── Step 2.1: Reclaim interrupted-import leftovers ──
+            // An import killed mid-copy leaves a hidden staging folder in the
+            // profiles root (tens of gigabytes for a big profile). Nothing can
+            // be writing into one now — the app enforces a single instance —
+            // so they are safe to remove on every start.
+            log_info!("Setup step 2.1: sweeping import staging leftovers...");
+            let t2_1 = std::time::Instant::now();
+            legacy::sweep_staging_leftovers(app_handle);
+            log_info!("Setup step 2.1 done: staging leftovers swept");
+            modules::logger::log_elapsed("Setup step 2.1 elapsed", t2_1);
+
             // ── Step 2.25: Store-file data migrations ──
             // Older releases kept installations and accounts in zustand
             // store files; write their file-based forms before anything

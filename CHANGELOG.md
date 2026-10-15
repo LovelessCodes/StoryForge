@@ -8,6 +8,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Importing installations from the previous Story Forge no longer looks stuck**: the sheet gave no sign of life while a whole installation was copied, so a multi-gigabyte folder on a slow disk read as a hang and the only way out was killing the app. Every folder now reports its progress (name, position in the run, and a bar once its size is known), the import can be cancelled — copying stops within a few megabytes and the partial folder is removed — and each finished folder is recorded immediately, so a killed or cancelled run can be retried without importing what is already there. Staging folders left behind by an interrupted import are swept at startup.
+
 ## [2.0.7] - 2026-10-15
 
 ### Added
