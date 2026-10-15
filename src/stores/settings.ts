@@ -6,6 +6,7 @@ import { create } from "zustand";
 import { logToFile } from "@/lib/logger";
 import { moveMods, reorderGroups, type ModGroup } from "@/lib/mod-groups";
 import type { SortBy } from "@/lib/mod-sort";
+import { relocateRecord } from "@/lib/profile-records";
 import { clampTextScale, TEXT_SCALE_DEFAULT } from "@/lib/text-scale";
 
 export type SetParentConfigProps = {
@@ -78,6 +79,8 @@ type SettingsStore = {
   /** Moves a group into the slot of another one, e.g. after a drag. */
   reorderModGroups: (path: string, activeId: string, overId: string) => void;
   moveModsToGroup: (path: string, modids: string[], groupId: string | null) => void;
+  /** Moves the path-keyed mod records to a renamed profile's new folder. */
+  relocateProfileData: (oldPath: string, newPath: string) => void;
   /** Favourite mod listings (lowercased modidstrs), shared across profiles. */
   favoriteMods: string[];
   toggleFavoriteMod: (modidstr: string) => void;
@@ -218,6 +221,12 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
         ...state.modGroups,
         [path]: moveMods(state.modGroups[path] ?? [], modids, groupId),
       },
+    })),
+  relocateProfileData: (oldPath, newPath) =>
+    set((state) => ({
+      pinnedMods: relocateRecord(state.pinnedMods, oldPath, newPath),
+      modPresets: relocateRecord(state.modPresets, oldPath, newPath),
+      modGroups: relocateRecord(state.modGroups, oldPath, newPath),
     })),
   modPresets: {},
   saveModPreset: (path, preset) =>
