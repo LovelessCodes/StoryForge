@@ -239,6 +239,24 @@ pub fn safe_join<P: AsRef<Path>>(base: P, candidate: &str) -> Result<PathBuf, Ui
     Ok(joined)
 }
 
+/// Joins a webview-supplied `subdir` onto `base`, refusing anything that could
+/// leave it: empty values, `..` components and absolute paths.
+pub fn join_subdir(base: &Path, subdir: &str, what: &str) -> Result<PathBuf, UiError> {
+    let stays_inside = !subdir.is_empty()
+        && Path::new(subdir)
+            .components()
+            .all(|component| matches!(component, Component::Normal(_)))
+        && normalize_path(&base.join(subdir)).starts_with(normalize_path(base));
+
+    if !stays_inside {
+        return Err(UiError::new(
+            "invalid_path",
+            format!("{what} must stay inside {}: {subdir}", base.display()),
+        ));
+    }
+    Ok(base.join(subdir))
+}
+
 /// Reduces an untrusted file name to a single safe path component.
 pub fn safe_file_name(name: &str) -> Result<String, UiError> {
     match Path::new(name).file_name().and_then(|n| n.to_str()) {

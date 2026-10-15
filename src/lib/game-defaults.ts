@@ -6,6 +6,5 @@ export type GameDefaultsPreview = {
   sourceProfile: string;
   keyBindings: number;
   settings: number;
-  /** The source opted in and actually carries a session value. */
   includesAccount: boolean;
 };

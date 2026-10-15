@@ -4,7 +4,6 @@ import type { OutputMod } from "./types";
 export type ModpackManifestMod = {
   modid: string;
   version: string;
-  /** Display name of the copy the pack was exported from; never an identifier. */
   name?: string;
 };
 

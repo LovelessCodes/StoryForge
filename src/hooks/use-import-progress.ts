@@ -7,11 +7,9 @@ import type { ImportProgress } from "@/lib/types";
 /**
  * Runs one import command and streams its progress.
  *
- * An installation can be many gigabytes, and copying it without feedback used
- * to look like the import had hung; callers therefore get the folder being
- * imported on every step. Cancelling sends `<event>:cancel`, and the Rust side
- * stops the copy within a chunk and removes the partial folder — folders
- * already imported stay imported, so a retry only has to do the rest.
+ * Cancelling sends `<event>:cancel`, and the Rust side stops the copy within a
+ * chunk and removes the partial folder — folders already imported stay
+ * imported, so a retry only has to do the rest.
  */
 export function useImportProgress() {
   const [progress, setProgress] = useState<ImportProgress | null>(null);

@@ -8,10 +8,9 @@
 /**
  * Moves one path-keyed record to a new key.
  *
- * Returns the same record when the old path has nothing (nothing to move) or
- * the path did not change. A rename target cannot exist as a profile, so any
- * record already under `newPath` belongs to an abandoned folder and is
- * replaced by the live profile's data.
+ * A rename target cannot exist as a profile, so any record already under
+ * `newPath` belongs to an abandoned folder and is replaced by the live
+ * profile's data.
  */
 export function relocateRecord<T>(
   record: Record<string, T>,

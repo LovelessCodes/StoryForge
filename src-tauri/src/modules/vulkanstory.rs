@@ -61,10 +61,8 @@ use super::utils::{
     is_safe_relative_path, lock, parse_loopback_origin, require_managed_path, sha256_file,
     versions_folder, versions_subdir, CleanupTarget,
 };
+use super::versions::VULKANSTORY_SUFFIX;
 use crate::{log_error, log_info};
-
-/// Suffix that marks a managed version as a VulkanStory build of its base version.
-pub const VULKANSTORY_SUFFIX: &str = "+vulkanstory";
 
 /// Folder this integration keeps its own state in, inside the game folder.
 const VULKANSTORY_STATE_FOLDER: &str = ".vulkanstory";
@@ -101,12 +99,10 @@ const MANIFEST_TTL: Duration = Duration::from_secs(30 * 60);
 
 // ── Version naming ──────────────────────────────────────────────────────────
 
-/// Whether a version name is a VulkanStory build.
 pub fn is_vulkanstory_version(version: &str) -> bool {
     version.ends_with(VULKANSTORY_SUFFIX)
 }
 
-/// The name a VulkanStory build of `base` is registered under.
 pub fn vulkanstory_version_name(base: &str) -> String {
     format!("{base}{VULKANSTORY_SUFFIX}")
 }

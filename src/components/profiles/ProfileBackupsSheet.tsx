@@ -1,9 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { format, formatDistanceToNow } from "date-fns";
 import { Archive, Loader2, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -25,6 +24,7 @@ import {
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { profileBackupsQueryKey, useProfileBackups } from "@/hooks/use-profile-backups";
+import { useTauriEvent } from "@/hooks/use-tauri-event";
 import { errorMessage } from "@/lib/errors";
 import { useDateLocale } from "@/lib/i18n/date-locale";
 import { toast } from "@/lib/notify";
@@ -92,31 +92,17 @@ export default function ProfileBackupsSheet({
   const backupLimit = trackedLimit === profile.backupLimit ? limitDraft : profile.backupLimit;
 
   // Progress for this sheet's own jobs; the launch flow listens separately.
-  useEffect(() => {
-    if (!open) return undefined;
-    let unlisten: (() => void) | null = null;
-    let cancelled = false;
-    void listen<BackupEvent>(`backup-${profile.id}`, (event) => {
-      const { phase, current, total } = event.payload;
+  useTauriEvent<BackupEvent>(
+    `backup-${profile.id}`,
+    ({ phase, current, total }) => {
       if (phase === "backing-up" || phase === "restoring") {
         setProgress({ phase, current: current ?? 0, total: total ?? 0 });
       } else {
         setProgress(null);
       }
-    }).then((dispose) => {
-      // Unmounted before `listen` resolved: dispose here instead, otherwise
-      // the cleanup below would have seen `unlisten` still null.
-      if (cancelled) {
-        dispose();
-        return;
-      }
-      unlisten = dispose;
-    });
-    return () => {
-      cancelled = true;
-      unlisten?.();
-    };
-  }, [open, profile.id]);
+    },
+    open,
+  );
 
   const percent =
     progress && progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;

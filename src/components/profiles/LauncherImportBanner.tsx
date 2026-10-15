@@ -93,8 +93,6 @@ export function LauncherImportBanner({
     } catch (error) {
       if (errorInfo(error).name === "cancelled") {
         toast.info(t("profiles.import.cancelled"));
-        // Instances imported before the cancel are already recorded — refresh
-        // so the sheet only lists what is left.
         await loadProfiles();
         await queryClient.invalidateQueries({ queryKey: source.queryKey });
         return;

@@ -315,13 +315,9 @@ export type ImportPhase = "copy" | "move" | "convert" | "done";
 export type ImportProgress = {
   phase: ImportPhase;
   folder: string;
-  /** 1-based position of `folder` in this run. */
   index: number;
-  /** How many folders this run imports in total. */
   count: number;
-  /** Bytes copied for the current folder so far. */
   bytes: number;
-  /** Known size of the current folder, when it could be measured cheaply. */
   bytesTotal: number | null;
 };
 
@@ -342,9 +338,7 @@ export type LinkableVersion = {
   name: string;
   path: string;
   source: string;
-  /** A version with this name already exists in the versions folder. */
   installed: boolean;
-  /** Already linked to this exact path. */
   linked: boolean;
 };
 
@@ -372,7 +366,6 @@ export type ForeignInstallation = {
   size_display: string;
   has_saves: boolean;
   last_time_played: number | null;
-  /** Points at the game's own default data folder. */
   is_default_game_data: boolean;
   already_imported: boolean;
 };

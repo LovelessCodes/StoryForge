@@ -12,8 +12,7 @@ interface ImportProgressBarProps {
  * Names the folder an import is working on and shows how far it has got.
  *
  * The bar is indeterminate until the folder's size is known (the detection scan
- * measures it, so it usually is); it is never a precise ETA, just proof that a
- * multi-gigabyte copy is moving.
+ * measures it, so it usually is).
  */
 export function ImportProgressBar({ progress }: ImportProgressBarProps) {
   const { t } = useTranslation();

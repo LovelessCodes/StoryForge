@@ -13,7 +13,6 @@ export type ConflictMod = {
 
 export type ModConflict = {
   kind: "asset" | "patch";
-  /** The asset path, or the patched JSON file for a patch conflict. */
   path: string;
   /** Overlapping JSON pointers, for patch conflicts. */
   detail: string | null;
@@ -22,7 +21,6 @@ export type ModConflict = {
 
 export type ConflictReport = {
   conflicts: ModConflict[];
-  /** Installed mods that took part in the scan. */
   scanned: number;
   truncated: boolean;
 };

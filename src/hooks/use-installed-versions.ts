@@ -10,15 +10,10 @@ export type InstalledVersion = {
   name: string;
   size_bytes: number;
   size_display: string;
-  /** Full path of the version folder (managed or linked). */
   path: string;
-  /** Linked from outside the versions folder instead of downloaded here. */
   external: boolean;
-  /** Where a linked version came from ("VS Launcher", "MVL", …). */
   source: string | null;
-  /** Optimum version this folder is patched with, when it is an Optimum build. */
   optimum_version: string | null;
-  /** VulkanStory version this folder is carrying, when it is a VulkanStory build. */
   vulkanstory_version: string | null;
 };
 
