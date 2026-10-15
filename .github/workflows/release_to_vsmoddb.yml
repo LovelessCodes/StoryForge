@@ -1,0 +1,56 @@
+name: "Release to VS ModDB"
+
+on:
+  # Fired when a release draft created by the publish workflow is published by
+  # hand, plus manual runs from the Actions tab.
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to post (e.g. storyforge-v2.0.7)"
+        required: true
+
+# Posts every published release to the VS ModDB webhook stored in the
+# VSMODDB_WEBHOOK repository secret, which hands the release off to the
+# ModDB publishing pipeline.
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    name: Post release to webhook
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Post release to VS ModDB
+        env:
+          VSMODDB_WEBHOOK: ${{ secrets.VSMODDB_WEBHOOK }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "$VSMODDB_WEBHOOK" ]; then
+            echo "VSMODDB_WEBHOOK is not set; skipping the notification."
+            exit 0
+          fi
+
+          # Read the release back from the API so manual dispatch posts the
+          # same payload shape as the release event.
+          payload=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq '{
+            event: "release.published",
+            repository: env.GITHUB_REPOSITORY,
+            tag_name,
+            name,
+            body,
+            html_url,
+            prerelease,
+            published_at,
+            assets: [.assets[] | { name, size, browser_download_url }]
+          }')
+
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Content-Type: application/json" \
+            --data "$payload" \
+            "$VSMODDB_WEBHOOK"
