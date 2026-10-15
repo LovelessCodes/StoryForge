@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Sheet,
@@ -15,14 +14,12 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { useLegacyMigration, type LegacyMigrationMode } from "@/hooks/use-legacy-migration";
+import { useImportProgress } from "@/hooks/use-import-progress";
 import { errorInfo, errorMessage } from "@/lib/errors";
 import { toast } from "@/lib/notify";
-import type {
-  LegacyInstallation,
-  LegacyMigrationProgress,
-  LegacyMigrationReport,
-} from "@/lib/types";
+import type { LegacyInstallation, LegacyMigrationReport } from "@/lib/types";
+
+import { ImportProgressBar } from "./ImportProgressBar";
 
 interface LegacyMigrationSheetProps {
   open: boolean;
@@ -32,6 +29,8 @@ interface LegacyMigrationSheetProps {
   root: string | null;
   onImported?: () => Promise<void> | void;
 }
+
+type MigrationMode = "move" | "copy";
 
 /**
  * Sheet that imports installations from the previous Story Forge. The folders
@@ -51,41 +50,20 @@ export default function LegacyMigrationSheet({
   onImported,
 }: LegacyMigrationSheetProps) {
   const { t } = useTranslation();
-  const [mode, setMode] = useState<LegacyMigrationMode>("move");
+  const [mode, setMode] = useState<MigrationMode>("move");
   const [report, setReport] = useState<LegacyMigrationReport | null>(null);
-  const { migrate: runImport, progress, busy, cancelling, cancel } = useLegacyMigration();
+  const { run: runImport, progress, busy, cancelling, cancel } = useImportProgress();
 
   const pending = installations.filter((item) => !item.already_migrated);
-
-  // The folder size is only byte-accurate when the detection scan measured it
-  // recently; without a total the bar stays indeterminate.
-  const percent =
-    progress && progress.bytesTotal
-      ? Math.min(100, Math.round((progress.bytes / progress.bytesTotal) * 100))
-      : null;
-
-  function phaseLabel(state: LegacyMigrationProgress) {
-    const values = { folder: state.folder, index: state.index, total: state.count };
-    switch (state.phase) {
-      case "copy":
-        return t("profiles.import.progressCopy", values);
-      case "move":
-        return t("profiles.import.progressMove", values);
-      case "convert":
-        return t("profiles.import.progressConvert", values);
-      default:
-        return t("profiles.import.progressDone");
-    }
-  }
 
   async function migrate() {
     setReport(null);
     try {
-      const result = await runImport(
-        pending.map((item) => item.folder),
+      const result = await runImport<LegacyMigrationReport>("migrate_legacy_installations", {
+        folders: pending.map((item) => item.folder),
         mode,
         root,
-      );
+      });
       setReport(result);
       await onImported?.();
       if (result.skipped.length > 0) {
@@ -132,7 +110,7 @@ export default function LegacyMigrationSheet({
                 size="sm"
                 value={[mode]}
                 onValueChange={(value) => {
-                  const next = value[0] as LegacyMigrationMode | undefined;
+                  const next = value[0] as MigrationMode | undefined;
                   if (next) setMode(next);
                 }}
               >
@@ -192,14 +170,7 @@ export default function LegacyMigrationSheet({
         </ScrollArea>
 
         <SheetFooter className="border-t">
-          {busy && (
-            <div className="grid gap-2">
-              <p className="text-xs">
-                {progress ? phaseLabel(progress) : t("profiles.import.progressStarting")}
-              </p>
-              <Progress value={percent} />
-            </div>
-          )}
+          {busy && <ImportProgressBar progress={progress} />}
           {busy ? (
             <Button variant="outline" onClick={cancel}>
               {cancelling && <Loader2 className="animate-spin" />}

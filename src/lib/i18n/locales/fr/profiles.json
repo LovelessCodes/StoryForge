@@ -179,7 +179,6 @@
     "readFailed": "Échec de la lecture du fichier d'export",
     "submit": "Importer le profil",
     "action": "Importer…",
-    "importingBusy": "Importation…",
     "progressStarting": "Démarrage de l'importation…",
     "progressCopy": "Copie de « {{folder}} » ({{index}} sur {{total}})…",
     "progressMove": "Déplacement de « {{folder}} » ({{index}} sur {{total}})…",

@@ -30,7 +30,8 @@ use tauri::{command, AppHandle, Manager};
 
 use super::errors::UiError;
 use super::legacy::{
-    copy_profile_dir, free_profile_dir, LegacyMigrationReport, LegacyMigrationSkip, SilentObserver,
+    cancelled_error, copy_profile_dir, free_profile_dir, move_profile_dir, ImportSession,
+    LegacyMigrationReport, LegacyMigrationSkip,
 };
 use super::paths::{MODS_DIR, PROFILE_JSON};
 use super::profiles::{
@@ -40,7 +41,7 @@ use super::utils::{
     dir_name, dir_size_cached, format_size, normalize_path, profiles_folder, profiles_subdir,
     require_managed_path,
 };
-use crate::log_info;
+use crate::{log_error, log_info};
 
 /// Folder MVL uses inside Godot's user dir (`use_custom_user_dir`).
 const MVL_DIR: &str = "MVL";
@@ -360,11 +361,17 @@ fn detect_blocking(app: &AppHandle) -> Result<Vec<MvlModpack>, UiError> {
 /// `mode` is `"move"` (relocate) or `"copy"` (keep MVL working). Only paths
 /// listed in the MVL config are accepted, and folder name collisions import
 /// under a suffixed name.
+///
+/// `emitevent` names the Tauri event that carries the import's progress for the
+/// run; sending `<emitevent>:cancel` stops it and cleans up the partial folder.
+/// Modpacks imported before a cancel stay imported (and recorded), so a retry
+/// only has to do the rest.
 #[command]
 pub async fn import_mvl_modpacks(
     app: AppHandle,
     paths: Vec<String>,
     mode: String,
+    emitevent: Option<String>,
 ) -> Result<LegacyMigrationReport, UiError> {
     if mode != "move" && mode != "copy" {
         return Err(UiError::new(
@@ -372,8 +379,9 @@ pub async fn import_mvl_modpacks(
             "Import mode must be \"move\" or \"copy\"",
         ));
     }
+    let mut session = ImportSession::create(&app, emitevent, paths.len());
     let handle = app.clone();
-    tokio::task::spawn_blocking(move || import_blocking(&handle, paths, &mode))
+    tokio::task::spawn_blocking(move || import_blocking(&handle, paths, &mode, &mut session))
         .await
         .map_err(|e| UiError::new("internal_error", format!("Import failed: {e}")))?
 }
@@ -382,6 +390,7 @@ fn import_blocking(
     app: &AppHandle,
     requested: Vec<String>,
     mode: &str,
+    session: &mut ImportSession,
 ) -> Result<LegacyMigrationReport, UiError> {
     let Some((config_path, config)) = read_config()? else {
         return Err(UiError::not_found("MVL config not found"));
@@ -403,7 +412,9 @@ fn import_blocking(
         skipped: Vec::new(),
     };
 
-    for requested_path in requested {
+    for (index, requested_path) in requested.into_iter().enumerate() {
+        session.ensure_running()?;
+
         let requested_normalized = normalize_path(Path::new(&requested_path));
         let Some(source) = listed
             .iter()
@@ -450,31 +461,42 @@ fn import_blocking(
             continue;
         }
 
+        let phase = if mode == "move" { "move" } else { "copy" };
+        session.begin_folder(&folder, &source, index + 1, phase);
+
         let target = if mode == "move" {
             let target = free_profile_dir(&profiles_root, &folder);
             require_managed_path(app, &target, "profile")?;
-            if super::utils::move_folder(source.clone(), target.clone()).is_err()
-                || !target.is_dir()
-            {
-                report.skipped.push(LegacyMigrationSkip {
-                    name,
-                    reason: "failed to move the folder".into(),
-                });
-                continue;
-            }
-            target
-        } else {
-            match copy_profile_dir(&profiles_root, &source, &folder, &mut SilentObserver) {
+            match move_profile_dir(&profiles_root, &source, &folder, session) {
                 Ok(target) => target,
-                Err(e) => {
+                Err(error) => {
+                    // A cancel stops the run instead of being reported as a skip.
+                    if session.is_cancelled() {
+                        return Err(cancelled_error());
+                    }
                     report.skipped.push(LegacyMigrationSkip {
                         name,
-                        reason: e.message,
+                        reason: error.message,
+                    });
+                    continue;
+                }
+            }
+        } else {
+            match copy_profile_dir(&profiles_root, &source, &folder, session) {
+                Ok(target) => target,
+                Err(error) => {
+                    if session.is_cancelled() {
+                        return Err(cancelled_error());
+                    }
+                    report.skipped.push(LegacyMigrationSkip {
+                        name,
+                        reason: error.message,
                     });
                     continue;
                 }
             }
         };
+        session.finish_folder();
 
         let mut info = read_profile_json(&target).unwrap_or_else(|_| ProfileInfo {
             name: name.clone(),
@@ -498,11 +520,14 @@ fn import_blocking(
             name: info.name.clone(),
         });
         report.migrated += 1;
+        // Record each modpack as soon as it is imported, so a killed or
+        // cancelled run keeps what it imported and a retry only does the rest.
+        if let Err(e) = write_migration_log(app, &log) {
+            log_error!("mvl: failed to record the import log: {}", e.message);
+        }
     }
 
-    if report.migrated > 0 {
-        write_migration_log(app, &log)?;
-    }
+    session.finish();
 
     Ok(report)
 }

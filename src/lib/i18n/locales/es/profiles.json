@@ -179,7 +179,6 @@
     "readFailed": "No se pudo leer el archivo exportado",
     "submit": "Importar perfil",
     "action": "Importar…",
-    "importingBusy": "Importando…",
     "progressStarting": "Iniciando la importación…",
     "progressCopy": "Copiando \"{{folder}}\" ({{index}} de {{total}})…",
     "progressMove": "Moviendo \"{{folder}}\" ({{index}} de {{total}})…",

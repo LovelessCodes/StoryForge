@@ -309,10 +309,11 @@ export type LegacyMigrationReport = {
 };
 
 /** `convert` follows the copy of a folder; `done` ends the whole run. */
-export type LegacyMigrationPhase = "copy" | "move" | "convert" | "done";
+export type ImportPhase = "copy" | "move" | "convert" | "done";
 
-export type LegacyMigrationProgress = {
-  phase: LegacyMigrationPhase;
+/** Progress of one import run, from the previous Story Forge or a launcher. */
+export type ImportProgress = {
+  phase: ImportPhase;
   folder: string;
   /** 1-based position of `folder` in this run. */
   index: number;

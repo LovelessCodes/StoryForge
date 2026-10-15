@@ -29,15 +29,16 @@ use tauri::{command, AppHandle, Manager};
 
 use super::errors::UiError;
 use super::legacy::{
-    copy_profile_dir, free_profile_dir, LegacyMigrationReport, LegacyMigrationSkip, SilentObserver,
+    cancelled_error, copy_profile_dir, free_profile_dir, move_profile_dir, ImportSession,
+    LegacyMigrationReport, LegacyMigrationSkip,
 };
 use super::paths::{CLIENTSETTINGS_JSON, MODS_DIR, PROFILE_JSON, SAVES_DIR};
 use super::profiles::{
     is_external_profile_dir, read_profile_json, write_profile_json, ProfileInfo,
 };
 use super::utils::{
-    dir_name, dir_size_cached, format_size, move_folder, normalize_path, profiles_folder,
-    profiles_subdir, require_managed_path,
+    dir_name, dir_size_cached, format_size, normalize_path, profiles_folder, profiles_subdir,
+    require_managed_path,
 };
 use crate::{log_error, log_info};
 
@@ -269,11 +270,17 @@ fn detect_blocking(app: &AppHandle) -> Result<Vec<YelloowstoneInstance>, UiError
 /// Imports Yelloowstone instances into the profiles folder.
 ///
 /// `mode` is `"move"` (relocate) or `"copy"` (keep the other launcher working).
+///
+/// `emitevent` names the Tauri event that carries the import's progress for the
+/// run; sending `<emitevent>:cancel` stops it and cleans up the partial folder.
+/// Instances imported before a cancel stay imported (and recorded), so a retry
+/// only has to do the rest.
 #[command]
 pub async fn import_yelloowstone_instances(
     app: AppHandle,
     paths: Vec<String>,
     mode: String,
+    emitevent: Option<String>,
 ) -> Result<LegacyMigrationReport, UiError> {
     if mode != "move" && mode != "copy" {
         return Err(UiError::new(
@@ -281,8 +288,9 @@ pub async fn import_yelloowstone_instances(
             "Import mode must be \"move\" or \"copy\"",
         ));
     }
+    let mut session = ImportSession::create(&app, emitevent, paths.len());
     let handle = app.clone();
-    tokio::task::spawn_blocking(move || import_blocking(&handle, paths, &mode))
+    tokio::task::spawn_blocking(move || import_blocking(&handle, paths, &mode, &mut session))
         .await
         .map_err(|e| UiError::new("internal_error", format!("Import failed: {e}")))?
 }
@@ -291,6 +299,7 @@ fn import_blocking(
     app: &AppHandle,
     requested: Vec<String>,
     mode: &str,
+    session: &mut ImportSession,
 ) -> Result<LegacyMigrationReport, UiError> {
     let instances = read_instances();
     if instances.is_empty() {
@@ -311,7 +320,9 @@ fn import_blocking(
         skipped: Vec::new(),
     };
 
-    for requested_path in requested {
+    for (index, requested_path) in requested.into_iter().enumerate() {
+        session.ensure_running()?;
+
         let requested_normalized = normalize_path(Path::new(&requested_path));
         let Some(instance) = instances.iter().find(|instance| {
             normalize_path(Path::new(instance.data_path.trim())) == requested_normalized
@@ -354,29 +365,42 @@ fn import_blocking(
             continue;
         }
 
+        let phase = if mode == "move" { "move" } else { "copy" };
+        session.begin_folder(&folder, &source, index + 1, phase);
+
         let target = if mode == "move" {
             let target = free_profile_dir(&profiles_root, &folder);
             require_managed_path(app, &target, "profile")?;
-            if move_folder(source.clone(), target.clone()).is_err() || !target.is_dir() {
-                report.skipped.push(LegacyMigrationSkip {
-                    name: instance.name.clone(),
-                    reason: "failed to move the folder".into(),
-                });
-                continue;
-            }
-            target
-        } else {
-            match copy_profile_dir(&profiles_root, &source, &folder, &mut SilentObserver) {
+            match move_profile_dir(&profiles_root, &source, &folder, session) {
                 Ok(target) => target,
-                Err(e) => {
+                Err(error) => {
+                    // A cancel stops the run instead of being reported as a skip.
+                    if session.is_cancelled() {
+                        return Err(cancelled_error());
+                    }
                     report.skipped.push(LegacyMigrationSkip {
                         name: instance.name.clone(),
-                        reason: e.message,
+                        reason: error.message,
+                    });
+                    continue;
+                }
+            }
+        } else {
+            match copy_profile_dir(&profiles_root, &source, &folder, session) {
+                Ok(target) => target,
+                Err(error) => {
+                    if session.is_cancelled() {
+                        return Err(cancelled_error());
+                    }
+                    report.skipped.push(LegacyMigrationSkip {
+                        name: instance.name.clone(),
+                        reason: error.message,
                     });
                     continue;
                 }
             }
         };
+        session.finish_folder();
 
         let mut info = read_profile_json(&target).unwrap_or_else(|_| ProfileInfo {
             name: instance.name.clone(),
@@ -403,11 +427,17 @@ fn import_blocking(
             name: info.name.clone(),
         });
         report.migrated += 1;
+        // Record each instance as soon as it is imported, so a killed or
+        // cancelled run keeps what it imported and a retry only does the rest.
+        if let Err(e) = write_migration_log(app, &log) {
+            log_error!(
+                "yelloowstone: failed to record the import log: {}",
+                e.message
+            );
+        }
     }
 
-    if report.migrated > 0 {
-        write_migration_log(app, &log)?;
-    }
+    session.finish();
 
     Ok(report)
 }

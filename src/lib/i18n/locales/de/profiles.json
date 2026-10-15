@@ -179,7 +179,6 @@
     "readFailed": "Exportdatei konnte nicht gelesen werden",
     "submit": "Profil importieren",
     "action": "Importieren…",
-    "importingBusy": "Wird importiert…",
     "progressStarting": "Import wird gestartet…",
     "progressCopy": "„{{folder}}“ wird kopiert ({{index}} von {{total}})…",
     "progressMove": "„{{folder}}“ wird verschoben ({{index}} von {{total}})…",

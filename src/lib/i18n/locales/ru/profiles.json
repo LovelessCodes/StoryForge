@@ -183,7 +183,6 @@
     "readFailed": "Не удалось прочитать файл экспорта",
     "submit": "Импортировать профиль",
     "action": "Импорт…",
-    "importingBusy": "Импорт…",
     "progressStarting": "Запуск импорта…",
     "progressCopy": "Копирование «{{folder}}» ({{index}} из {{total}})…",
     "progressMove": "Перемещение «{{folder}}» ({{index}} из {{total}})…",

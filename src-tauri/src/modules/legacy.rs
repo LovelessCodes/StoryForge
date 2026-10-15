@@ -113,11 +113,6 @@ pub(crate) trait CopyObserver {
     }
 }
 
-/// A copy that only answers cancellation, for importers with no progress UI.
-pub(crate) struct SilentObserver;
-
-impl CopyObserver for SilentObserver {}
-
 pub(crate) fn cancelled_error() -> UiError {
     UiError::new("cancelled", "Import cancelled")
 }
