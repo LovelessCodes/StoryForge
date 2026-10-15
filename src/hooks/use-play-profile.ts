@@ -1,9 +1,7 @@
-import type { UseMutationOptions } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, type UseMutationOptions } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { useEffect, useRef } from "react";
 
+import { useTauriRunEvents } from "@/hooks/use-tauri-run-events";
 import { t } from "@/lib/i18n";
 import { toast } from "@/lib/notify";
 import { useAccountStore } from "@/stores/accounts";
@@ -13,18 +11,8 @@ import { useSettingsStore } from "@/stores/settings";
 export const usePlayProfile = (
   props?: UseMutationOptions<void, Error, { id: number; save?: string }>,
 ) => {
-  const unlistens = useRef<UnlistenFn[]>([]);
+  const { subscribe, release } = useTauriRunEvents();
   const { profiles, updateLastPlayed, updatePlaytime } = useProfiles();
-
-  // Detach on unmount; otherwise every play leaks three listeners for the
-  // lifetime of the app.
-  useEffect(
-    () => () => {
-      for (const unlisten of unlistens.current) unlisten();
-      unlistens.current = [];
-    },
-    [],
-  );
   // launch/game-quit events update the profile store; no query cache
   // react-doctor-disable-next-line query-mutation-missing-invalidation
   return useMutation({
@@ -44,16 +32,14 @@ export const usePlayProfile = (
     onMutate: async (variable) => {
       // Drop listeners from the previous play so repeated plays don't stack
       // duplicate toasts and playtime updates.
-      for (const unlisten of unlistens.current) unlisten();
-      unlistens.current = [];
+      release();
 
       const profile = profiles.find((inst) => inst.id === variable.id);
 
       // Listen for dotnet download progress
-      const unlistenDotnet = await listen<{ phase: string; percent: number }>(
+      await subscribe<{ phase: string; percent: number }>(
         `dotnet-download-${variable.id}`,
-        (event) => {
-          const { phase, percent } = event.payload;
+        ({ phase, percent }) => {
           if (phase === "downloading") {
             toast.loading(t("layout.launch.downloadingDotnet", { percent: percent.toFixed(0) }), {
               id: `dotnet-download-${variable.id}`,
@@ -68,27 +54,24 @@ export const usePlayProfile = (
         },
       );
 
-      unlistens.current.push(unlistenDotnet);
-
       // Listen for game quit to track playtime
-      const unlistenQuit = await listen<{
+      await subscribe<{
         profileId: number;
         elapsedSeconds: number;
         lastPlayed: number;
         totalTimePlayed: number;
-      }>(`game-quit-${variable.id}`, (event) => {
-        updatePlaytime(variable.id, event.payload.totalTimePlayed, event.payload.lastPlayed);
+      }>(`game-quit-${variable.id}`, (payload) => {
+        updatePlaytime(variable.id, payload.totalTimePlayed, payload.lastPlayed);
       });
-      unlistens.current.push(unlistenQuit);
 
       // Backups run before the launch: surface their progress in the same toast.
-      const unlistenBackup = await listen<{
+      await subscribe<{
         phase: string;
         current?: number;
         total?: number;
         message?: string;
-      }>(`backup-${variable.id}`, (event) => {
-        const { phase, current, total } = event.payload;
+      }>(`backup-${variable.id}`, (payload) => {
+        const { phase, current, total } = payload;
         if (phase === "backing-up") {
           const percent = total && total > 0 ? Math.round(((current ?? 0) / total) * 100) : 0;
           toast.loading(t("layout.launch.backingUp", { name: profile?.name ?? "", percent }), {
@@ -97,20 +80,19 @@ export const usePlayProfile = (
         }
         if (phase === "error") {
           toast.error(t("layout.launch.backupFailed"), {
-            description: event.payload.message,
+            description: payload.message,
             id: `backup-error-${variable.id}`,
           });
         }
       });
-      unlistens.current.push(unlistenBackup);
 
-      const unlistenLaunch = await listen<{
+      await subscribe<{
         status: string;
         reason?: string;
         version?: string;
         line?: string;
-      }>(`launch-${variable.id}`, (event) => {
-        const { status } = event.payload;
+      }>(`launch-${variable.id}`, (payload) => {
+        const { status } = payload;
         if (status === "session-invalid") {
           toast.warning(t("auth.menu.sessionExpired"), {
             id: `session-expired-${variable.id}`,
@@ -131,19 +113,18 @@ export const usePlayProfile = (
                 })
               : t("layout.launch.launched", { name: profile?.name ?? "" }),
             {
-              description: event.payload.version ? `Version: ${event.payload.version}` : undefined,
+              description: payload.version ? `Version: ${payload.version}` : undefined,
               id: `launch-game-${variable.id}`,
             },
           );
           updateLastPlayed(variable.id);
         }
         if (status === "error") {
-          toast.error(t("layout.launch.errorLaunching", { reason: event.payload.reason }), {
+          toast.error(t("layout.launch.errorLaunching", { reason: payload.reason }), {
             id: `launch-game-${variable.id}`,
           });
         }
       });
-      unlistens.current.push(unlistenLaunch);
     },
   });
 };

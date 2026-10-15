@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { emit } from "@tauri-apps/api/event";
+import { useCallback, useState } from "react";
 
+import { useTauriRunEvents } from "@/hooks/use-tauri-run-events";
 import { t } from "@/lib/i18n";
 import { toast } from "@/lib/notify";
 
@@ -91,25 +92,12 @@ export function vulkanStoryErrorMessage(error: InstallVulkanStoryError): string 
 export function useInstallVulkanStory() {
   const queryClient = useQueryClient();
   const [progress, setProgress] = useState<VulkanStoryProgress | null>(null);
-  const unlistenRef = useRef<UnlistenFn | null>(null);
-  const eventRef = useRef<string | null>(null);
-
-  useEffect(
-    () => () => {
-      unlistenRef.current?.();
-      unlistenRef.current = null;
-    },
-    [],
-  );
+  const { subscribe, release, eventRef } = useTauriRunEvents();
 
   const mutation = useMutation({
     mutationFn: async ({ baseVersion }: { baseVersion: string }) => {
       const event = vulkanStoryEventName(baseVersion);
-      eventRef.current = event;
-      unlistenRef.current?.();
-      unlistenRef.current = await listen<VulkanStoryProgress>(event, (payload) => {
-        setProgress(payload.payload);
-      });
+      await subscribe<VulkanStoryProgress>(event, setProgress);
       try {
         return await invoke<{ version: string; vulkanstoryVersion: string }>(
           "install_vulkanstory",
@@ -119,9 +107,7 @@ export function useInstallVulkanStory() {
           },
         );
       } finally {
-        unlistenRef.current?.();
-        unlistenRef.current = null;
-        eventRef.current = null;
+        release();
       }
     },
     onMutate: () => {
@@ -150,7 +136,7 @@ export function useInstallVulkanStory() {
 
   const cancel = useCallback(() => {
     if (eventRef.current) void emit(`${eventRef.current}:cancel`);
-  }, []);
+  }, [eventRef]);
 
   return { ...mutation, progress, cancel };
 }

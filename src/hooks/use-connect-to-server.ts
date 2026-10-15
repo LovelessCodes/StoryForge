@@ -1,8 +1,7 @@
 import { type UseMutationOptions, useMutation } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { useEffect, useRef } from "react";
 
+import { useTauriRunEvents } from "@/hooks/use-tauri-run-events";
 import { t } from "@/lib/i18n";
 import { toast } from "@/lib/notify";
 import { useAccountStore } from "@/stores/accounts";
@@ -42,16 +41,7 @@ export const useConnectToServer = (
       }
     },
   });
-  const unlistens = useRef<UnlistenFn[]>([]);
-
-  // Detach on unmount; launch/dotnet errors previously left them attached.
-  useEffect(
-    () => () => {
-      for (const unlisten of unlistens.current) unlisten();
-      unlistens.current = [];
-    },
-    [],
-  );
+  const { subscribe, release } = useTauriRunEvents();
 
   // the flow composes the probe, the server store and play_game; no query cache
   // react-doctor-disable-next-line query-mutation-missing-invalidation
@@ -81,23 +71,19 @@ export const useConnectToServer = (
     },
     onError: (error) => {
       // play_game failed: no launch event will arrive, so drop the listeners.
-      for (const unlisten of unlistens.current) unlisten();
-      unlistens.current = [];
+      release();
       toast.error(t("layout.launch.errorConnecting", { message: error.message }));
     },
     onMutate: async (variable) => {
-      for (const unlisten of unlistens.current) {
-        unlisten();
-      }
-      unlistens.current = [];
+      release();
 
       const profile = findProfileForServer(profiles, variable.profileId);
 
       // Listen for dotnet download progress
-      const unlistenDotnet = await listen<{ phase: string; percent: number }>(
+      const stopDotnet = await subscribe<{ phase: string; percent: number }>(
         `dotnet-download-${variable.profileId}`,
-        (event) => {
-          const { phase, percent } = event.payload;
+        (payload) => {
+          const { phase, percent } = payload;
           if (phase === "downloading") {
             toast.loading(t("layout.launch.downloadingDotnet", { percent: percent.toFixed(0) }), {
               id: `dotnet-download-${variable.profileId}`,
@@ -111,16 +97,15 @@ export const useConnectToServer = (
           }
         },
       );
-      unlistens.current.push(unlistenDotnet);
 
       // Backups run before the launch: surface their progress in the same toast.
-      const unlistenBackup = await listen<{
+      await subscribe<{
         phase: string;
         current?: number;
         total?: number;
         message?: string;
-      }>(`backup-${variable.profileId}`, (event) => {
-        const { phase, current, total } = event.payload;
+      }>(`backup-${variable.profileId}`, (payload) => {
+        const { phase, current, total } = payload;
         if (phase === "backing-up") {
           const percent = total && total > 0 ? Math.round(((current ?? 0) / total) * 100) : 0;
           toast.loading(t("layout.launch.backingUp", { name: profile?.name ?? "", percent }), {
@@ -129,20 +114,19 @@ export const useConnectToServer = (
         }
         if (phase === "error") {
           toast.error(t("layout.launch.backupFailed"), {
-            description: event.payload.message,
+            description: payload.message,
             id: `backup-error-${variable.profileId}`,
           });
         }
       });
-      unlistens.current.push(unlistenBackup);
 
-      const unlistenLaunch = await listen<{
+      const stopLaunch = await subscribe<{
         status: string;
         reason?: string;
         version?: string;
         line?: string;
-      }>(`launch-${variable.profileId}`, (event) => {
-        const { status } = event.payload;
+      }>(`launch-${variable.profileId}`, (payload) => {
+        const { status } = payload;
         if (status === "session-invalid") {
           toast.warning(t("auth.menu.sessionExpired"), {
             id: `session-expired-${variable.profileId}`,
@@ -161,26 +145,22 @@ export const useConnectToServer = (
               server: variable.name,
             }),
             {
-              description: event.payload.version ? `Version: ${event.payload.version}` : undefined,
+              description: payload.version ? `Version: ${payload.version}` : undefined,
               id: `launch-game-${variable.profileId}`,
             },
           );
           updateLastPlayed(variable.profileId);
         }
         if (status === "error") {
-          toast.error(t("layout.launch.errorLaunching", { reason: event.payload.reason }), {
+          toast.error(t("layout.launch.errorLaunching", { reason: payload.reason }), {
             id: `launch-game-${variable.profileId}`,
           });
         }
         if (status === "success" || status === "error") {
-          unlistenDotnet();
-          unlistenLaunch();
-          unlistens.current = unlistens.current.filter(
-            (fn) => fn !== unlistenDotnet && fn !== unlistenLaunch,
-          );
+          stopDotnet();
+          stopLaunch();
         }
       });
-      unlistens.current.push(unlistenLaunch);
     },
   });
 };

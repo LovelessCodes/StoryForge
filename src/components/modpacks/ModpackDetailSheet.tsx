@@ -1,8 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { Boxes, CheckIcon, Download, Pencil, Plus, Trash2, XIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -22,6 +21,7 @@ import { useAuthSession } from "@/hooks/use-auth-session";
 import { useDownloadVersion } from "@/hooks/use-download-version";
 import { resolveInstalledVersionName, useInstalledVersions } from "@/hooks/use-installed-versions";
 import type { ModpackItem } from "@/hooks/use-modpacks";
+import { useTauriRunEvents } from "@/hooks/use-tauri-run-events";
 import { authClient } from "@/lib/auth";
 import type { ModpackManifestMod } from "@/lib/auth/plugins/modpacks";
 import { errorMessage } from "@/lib/errors";
@@ -77,25 +77,15 @@ export default function ModpackDetailSheet({
   const [installName, setInstallName] = useState("");
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
-  const listenRef = useRef<UnlistenFn | null>(null);
+  const { subscribe, release } = useTauriRunEvents();
 
   // null = not editing, "new" = adding a version, otherwise the version id being edited.
   const [editingVersionId, setEditingVersionId] = useState<string | null>(null);
   const [deleteVersionId, setDeleteVersionId] = useState<string | null>(null);
   const [expandedModsVersionId, setExpandedModsVersionId] = useState<string | null>(null);
 
-  // Stop listening for import progress when the sheet unmounts.
-  useEffect(
-    () => () => {
-      listenRef.current?.();
-      listenRef.current = null;
-    },
-    [],
-  );
-
   const cancelInstall = () => {
-    listenRef.current?.();
-    listenRef.current = null;
+    release();
     setInstallingVersionId(null);
     setInstallName("");
     setImporting(false);
@@ -176,13 +166,13 @@ export default function ModpackDetailSheet({
 
       // Tauri event names only allow alphanumerics, -, /, : and _ — no dots.
       const emitevent = `import-modpack-${modpack.slug.replace(/\./g, "-")}-${version.version.replace(/\./g, "-")}`;
-      listenRef.current = await listen<ImportProgress & { phase: string }>(emitevent, (event) => {
-        if (event.payload.phase === "downloading") {
+      await subscribe<ImportProgress & { phase: string }>(emitevent, (payload) => {
+        if (payload.phase === "downloading") {
           setImportProgress({
-            current: event.payload.current,
-            modid: event.payload.modid,
-            total: event.payload.total,
-            version: event.payload.version,
+            current: payload.current,
+            modid: payload.modid,
+            total: payload.total,
+            version: payload.version,
           });
         }
       });
@@ -204,8 +194,7 @@ export default function ModpackDetailSheet({
         },
       });
 
-      listenRef.current?.();
-      listenRef.current = null;
+      release();
 
       // Bump the download counter server-side.
       void authClient.downloadModpackVersion(modpack.slug, version.version);
@@ -217,8 +206,7 @@ export default function ModpackDetailSheet({
       onOpenChange(false);
       void navigate({ to: "/profiles" });
     } catch (error) {
-      listenRef.current?.();
-      listenRef.current = null;
+      release();
       setImporting(false);
       setImportProgress(null);
       const message = errorMessage(error);
