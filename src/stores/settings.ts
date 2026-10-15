@@ -118,6 +118,9 @@ type SettingsStore = {
   setVersionsParent: (path: string | null, config?: SetParentConfigProps) => Promise<void>;
   streamMode: boolean;
   toggleStreamMode: () => void;
+  /** List release-candidate game versions in the version pickers. */
+  showPreRelease: boolean;
+  toggleShowPreRelease: () => void;
   useSystemDotnet: boolean;
   toggleUseSystemDotnet: () => void;
 };
@@ -337,6 +340,8 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
     set(() => ({ versionsParent: path }));
   },
   streamMode: false,
+  showPreRelease: false,
+  toggleShowPreRelease: () => set((state) => ({ showPreRelease: !state.showPreRelease })),
   toggleUseSystemDotnet: () => set((state) => ({ useSystemDotnet: !state.useSystemDotnet })),
   toggleStreamMode: () => set((state) => ({ streamMode: !state.streamMode })),
   useSystemDotnet: true,

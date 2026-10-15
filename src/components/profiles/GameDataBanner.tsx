@@ -27,6 +27,7 @@ import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { errorMessage } from "@/lib/errors";
 import { compareSemverDesc } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
+import { pickDefaultVersion } from "@/lib/pre-release";
 import { gameVersionsQuery } from "@/lib/queries";
 import { useProfilesStore } from "@/stores/profiles";
 import { useSettingsStore } from "@/stores/settings";
@@ -43,6 +44,7 @@ export default function GameDataBanner() {
   const dismissed = useSettingsStore((s) => s.gameDataDismissed);
   const dismiss = useSettingsStore((s) => s.dismissGameData);
   const setActiveProfileId = useSettingsStore((s) => s.setActiveProfileId);
+  const showPreRelease = useSettingsStore((s) => s.showPreRelease);
   const { loadProfiles } = useProfilesStore();
   const { data: gameVersions } = useQuery(gameVersionsQuery);
   const installedNames = useInstalledVersionNames();
@@ -62,7 +64,7 @@ export default function GameDataBanner() {
     const versions = (gameVersions ?? []).toSorted(compareSemverDesc);
     setSelectedPath(first?.path ?? "");
     setName("Vintage Story");
-    setVersion(versions.find((entry) => !entry.includes("rc")) ?? versions[0] ?? "");
+    setVersion(pickDefaultVersion(versions, showPreRelease));
     setOpen(true);
   }
 

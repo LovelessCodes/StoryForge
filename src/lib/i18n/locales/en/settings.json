@@ -49,6 +49,8 @@
     "streamModeDescription": "Hide server addresses in server lists, for example while streaming.",
     "systemDotnet": "Use system .NET",
     "systemDotnetDescription": "Try your system's .NET runtime before downloading one.",
+    "showPreRelease": "Show pre-release versions",
+    "showPreReleaseDescription": "Include release candidates in the game version pickers.",
     "defaultModSort": "Default mod sort",
     "defaultModSortDescription": "Sort order used when the mod browser opens.",
     "promptModInstallDestination": "Always ask where to install",

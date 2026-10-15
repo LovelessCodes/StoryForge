@@ -49,6 +49,8 @@
     "streamModeDescription": "在服务器列表中隐藏服务器地址，例如直播时使用。",
     "systemDotnet": "使用系统 .NET",
     "systemDotnetDescription": "优先尝试系统中的 .NET 运行时，再考虑下载。",
+    "showPreRelease": "显示预发布版本",
+    "showPreReleaseDescription": "选择游戏版本时列出候选版本（RC）。",
     "defaultModSort": "默认模组排序",
     "defaultModSortDescription": "打开模组浏览器时使用的排序方式。",
     "promptModInstallDestination": "始终询问安装位置",

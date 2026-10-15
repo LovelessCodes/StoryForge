@@ -34,6 +34,7 @@ import {
   makeStringFolderSafe,
 } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
+import { isPreReleaseVersion, pickDefaultVersion } from "@/lib/pre-release";
 import { gameVersionsQuery } from "@/lib/queries";
 import { useProfilesStore, type Profile } from "@/stores/profiles";
 import { useSettingsStore } from "@/stores/settings";
@@ -65,13 +66,18 @@ export default function ProfileDialog({
     () => new Set(installedVersions.map((installed) => installed.name)),
     [installedVersions],
   );
+  const showPreRelease = useSettingsStore((s) => s.showPreRelease);
 
   // The picker lists every published version plus any installed build the
   // catalog does not carry — most importantly Optimum and VulkanStory builds,
   // which are their own version folders (`1.22.7+optimum`, `1.22.7+vulkanstory`)
   // but the same game version.
   const versionItems = useMemo(() => {
-    const remote = (gameVersions ?? []).toSorted(compareSemverDesc);
+    const remote = (gameVersions ?? [])
+      .toSorted(compareSemverDesc)
+      // Installed pre-releases stay listed: a profile pinned to an rc must
+      // keep its version selectable even when the setting hides them.
+      .filter((v) => showPreRelease || !isPreReleaseVersion(v) || installedSet.has(v));
     const extras = installedVersions.filter((installed) => !remote.includes(installed.name));
     const items = [
       ...remote.map((v) => ({
@@ -98,14 +104,16 @@ export default function ProfileDialog({
       if (byBase !== 0) return byBase;
       return a.value.localeCompare(b.value);
     });
-  }, [gameVersions, installedVersions, installedSet, t]);
+  }, [gameVersions, installedVersions, installedSet, showPreRelease, t]);
   const { appFolder } = useAppFolder();
   const { profilesParent, profilesSubdir } = useSettingsStore();
   const { profiles, loadProfiles, addProfile } = useProfilesStore();
   const setActiveProfileId = useSettingsStore((s) => s.setActiveProfileId);
 
-  const defaultVersion =
-    gameVersions?.toSorted(compareSemverDesc).filter((v) => !v.includes("rc"))[0] ?? "";
+  const defaultVersion = pickDefaultVersion(
+    gameVersions?.toSorted(compareSemverDesc) ?? [],
+    showPreRelease,
+  );
 
   const [name, setName] = useState(profile?.name ?? "");
   const [version, setVersion] = useState(profile?.version || defaultVersion);
