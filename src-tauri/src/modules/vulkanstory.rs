@@ -39,27 +39,27 @@
 use std::{
     collections::BTreeMap,
     fs::{self, File},
-    io::{Read, Write},
+    io::Read,
     path::Path,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc, Mutex, OnceLock,
-    },
+    sync::{atomic::AtomicBool, Arc, Mutex, OnceLock},
     time::{Duration, Instant},
 };
 
-use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use sha2::{Digest, Sha256};
-use tauri::{command, AppHandle, Emitter, EventId, Listener, Manager, State};
+use tauri::{command, AppHandle, State};
 use tokio_util::sync::CancellationToken;
-use walkdir::WalkDir;
 
+use super::client_fork::{
+    self, app_data_dir, cached_archive_is_valid, copy_base, download_archive, finish_install,
+    install_cancellation, is_cancelled, read_version_from_record, require_ready_base,
+    ArchiveDownload, CachedManifest, ForkEmitter, ForkPlatform, ForkProgress, ForkStatus,
+    InstallGuard, ManifestFailure, MAX_MANIFEST_BYTES,
+};
 use super::errors::UiError;
 use super::utils::{
-    is_safe_relative_path, lock, parse_loopback_origin, require_managed_path, sha256_file,
-    versions_folder, versions_subdir, CleanupTarget,
+    is_safe_relative_path, require_managed_path, sha256_file, versions_folder, versions_subdir,
+    CleanupTarget,
 };
 use super::versions::VULKANSTORY_SUFFIX;
 use crate::{log_error, log_info};
@@ -83,9 +83,10 @@ const TEST_RID_VAR: &str = "STORYFORGE_VULKANSTORY_RID";
 const KNOWN_RIDS: [&str; 2] = ["win-x64", "linux-x64"];
 
 /// Hard ceilings, mirroring the bounds the upstream installers enforce. They
-/// exist so a hostile or corrupt document cannot make a pass unbounded.
+/// exist so a hostile or corrupt document cannot make a pass unbounded. The
+/// manifest ceiling itself is shared by both client forks
+/// ([`client_fork::MAX_MANIFEST_BYTES`]).
 const MAX_ARCHIVE_BYTES: u64 = 2 * 1024 * 1024 * 1024;
-const MAX_MANIFEST_BYTES: u64 = 256 * 1024;
 const MAX_PACKAGE_BYTES: u64 = 1024 * 1024;
 const MAX_CENTRAL_DIRECTORY_BYTES: u64 = 16 * 1024 * 1024;
 const MAX_PACKAGE_FILES: usize = 10_000;
@@ -93,9 +94,6 @@ const MAX_PACKAGE_FILES: usize = 10_000;
 /// window is doubled so a writer that emits both a zip64 locator and a long
 /// comment still falls inside it.
 const EOCD_WINDOW: u64 = 128 * 1024;
-
-/// Session cache for the latest release; the UI can force a refresh.
-const MANIFEST_TTL: Duration = Duration::from_secs(30 * 60);
 
 // ── Version naming ──────────────────────────────────────────────────────────
 
@@ -126,19 +124,25 @@ struct InstallRecord {
 /// foreign, the same way an `+optimum` folder without the patch's completion
 /// record is.
 pub(crate) fn read_vulkanstory_version(dir: &Path) -> Option<String> {
-    let path = dir
-        .join(VULKANSTORY_STATE_FOLDER)
-        .join(VULKANSTORY_INSTALL_RECORD);
-    let text = fs::read_to_string(path).ok()?;
-    let value: Value = serde_json::from_str(&text).ok()?;
-    value
-        .get("vulkanstoryVersion")
-        .and_then(Value::as_str)
-        .filter(|version| !version.is_empty())
-        .map(str::to_string)
+    read_version_from_record(
+        dir,
+        VULKANSTORY_STATE_FOLDER,
+        VULKANSTORY_INSTALL_RECORD,
+        "vulkanstoryVersion",
+    )
 }
 
 // ── Platform / origin ───────────────────────────────────────────────────────
+
+/// VulkanStory's platform and loopback test-hook configuration.
+const PLATFORM: ForkPlatform = ForkPlatform {
+    tag: "vulkanstory",
+    display: "VulkanStory",
+    origin_var: TEST_ORIGIN_VAR,
+    rid_var: TEST_RID_VAR,
+    host_rids: &[("windows", "win-x64")],
+    test_rids: &["win-x64"],
+};
 
 /// The runtime identifier VulkanStory publishes a package for on this host.
 ///
@@ -148,42 +152,19 @@ pub(crate) fn read_vulkanstory_version(dir: &Path) -> Option<String> {
 /// macOS and every non-x64 architecture have no package at all. Offering one
 /// anyway would hand the player a payload that cannot run.
 pub fn host_rid() -> Option<&'static str> {
-    if std::env::consts::ARCH != "x86_64" {
-        return None;
-    }
-    match std::env::consts::OS {
-        "windows" => Some("win-x64"),
-        _ => None,
-    }
+    PLATFORM.host_rid()
 }
 
 /// A loopback test origin, when one was configured for development.
 fn test_origin() -> Option<String> {
-    let raw = std::env::var(TEST_ORIGIN_VAR).ok()?;
-    match parse_loopback_origin(&raw) {
-        Some(origin) => {
-            log_info!("[vulkanstory] using loopback test origin {origin}");
-            Some(origin)
-        }
-        None => {
-            log_error!("[vulkanstory] {TEST_ORIGIN_VAR} is not a loopback origin; ignoring it");
-            None
-        }
-    }
+    PLATFORM.test_origin()
 }
 
 /// The effective rid: the host's, unless a loopback test origin explicitly
 /// overrides it so the flow can be exercised on a machine VulkanStory has no
 /// payload for. The override only exists beside the test origin.
 fn effective_rid() -> Option<String> {
-    if test_origin().is_some() {
-        if let Ok(rid) = std::env::var(TEST_RID_VAR) {
-            if rid == "win-x64" {
-                return Some(rid);
-            }
-        }
-    }
-    host_rid().map(str::to_string)
+    PLATFORM.effective_rid()
 }
 
 fn release_origin() -> String {
@@ -665,25 +646,6 @@ struct VulkanStoryManifest {
     game_version: String,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ManifestFailure {
-    UnsupportedSystem,
-    NotPublished,
-    Unreachable,
-    Unreadable,
-}
-
-impl ManifestFailure {
-    fn reason(self) -> &'static str {
-        match self {
-            ManifestFailure::UnsupportedSystem => "unsupported-system",
-            ManifestFailure::NotPublished => "not-published",
-            ManifestFailure::Unreachable => "unreachable",
-            ManifestFailure::Unreadable => "unreadable",
-        }
-    }
-}
-
 /// The release tag from a `/releases/latest` redirect location.
 fn parse_tag_from_location(location: &str) -> Option<String> {
     let (_, rest) = location.rsplit_once("/releases/tag/")?;
@@ -798,37 +760,24 @@ async fn fetch_manifest(client: &reqwest::Client) -> Result<VulkanStoryManifest,
     })
 }
 
-#[derive(Clone)]
-struct CachedManifest {
-    manifest: VulkanStoryManifest,
-    fetched_at: Instant,
-}
+static MANIFEST_CACHE: OnceLock<Mutex<Option<CachedManifest<VulkanStoryManifest>>>> =
+    OnceLock::new();
 
-static MANIFEST_CACHE: OnceLock<Mutex<Option<CachedManifest>>> = OnceLock::new();
-
-fn manifest_cache() -> &'static Mutex<Option<CachedManifest>> {
+fn manifest_cache() -> &'static Mutex<Option<CachedManifest<VulkanStoryManifest>>> {
     MANIFEST_CACHE.get_or_init(|| Mutex::new(None))
 }
 
 /// The cached manifest, or a fresh one. `refresh` forces the network read the
 /// UI asks for when the install sheet opens.
+///
+/// VulkanStory caches the fetched manifest here, after its fetch answered, the
+/// way this module always did; the shared read-through is asked to do that
+/// (`true`).
 async fn manifest_for_session(
     client: &reqwest::Client,
     refresh: bool,
 ) -> Result<VulkanStoryManifest, ManifestFailure> {
-    if !refresh {
-        if let Some(cached) = lock(manifest_cache()).as_ref() {
-            if cached.fetched_at.elapsed() < MANIFEST_TTL {
-                return Ok(cached.manifest.clone());
-            }
-        }
-    }
-    let manifest = fetch_manifest(client).await?;
-    *lock(manifest_cache()) = Some(CachedManifest {
-        manifest: manifest.clone(),
-        fetched_at: Instant::now(),
-    });
-    Ok(manifest)
+    client_fork::manifest_for_session(manifest_cache(), refresh, true, fetch_manifest(client)).await
 }
 
 // ── Status command ──────────────────────────────────────────────────────────
@@ -843,17 +792,8 @@ pub struct VulkanStoryManifestInfo {
     pub archive_size: u64,
 }
 
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct VulkanStoryStatus {
-    /// This host has a VulkanStory package platform.
-    pub platform_supported: bool,
-    pub rid: Option<String>,
-    /// `unsupported-system` | `not-published` | `unreachable` | `unreadable`,
-    /// when no manifest is available.
-    pub reason: Option<String>,
-    pub manifest: Option<VulkanStoryManifestInfo>,
-}
+/// The status of the VulkanStory feature on this host.
+pub type VulkanStoryStatus = ForkStatus<VulkanStoryManifestInfo>;
 
 #[command]
 pub async fn get_vulkanstory_status(
@@ -902,193 +842,17 @@ pub async fn get_vulkanstory_status(
 
 // ── Progress emitter ────────────────────────────────────────────────────────
 
-#[derive(Clone, Serialize)]
-struct VulkanStoryProgress {
-    phase: &'static str,
-    progress: u8,
-    message: Option<String>,
-}
+/// Progress payload sent on the install event.
+pub type VulkanStoryProgress = ForkProgress;
 
-#[derive(Clone)]
-struct VulkanStoryEmitter {
-    app: AppHandle,
-    event: String,
-}
-
-impl VulkanStoryEmitter {
-    fn emit(&self, phase: &'static str, progress: u8, message: Option<String>) {
-        let _ = self.app.emit(
-            &self.event,
-            VulkanStoryProgress {
-                phase,
-                progress,
-                message,
-            },
-        );
-    }
-}
+/// Emits [`VulkanStoryProgress`] on the install event.
+pub type VulkanStoryEmitter = ForkEmitter;
 
 fn cancelled_error() -> UiError {
-    UiError::new("cancelled", "VulkanStory install cancelled")
-}
-
-fn is_cancelled(token: &CancellationToken) -> bool {
-    token.is_cancelled()
-}
-
-// ── Download ────────────────────────────────────────────────────────────────
-
-/// Streams `url` to `dest`, checks the length and the SHA-256, and leaves no
-/// partial file behind on failure or cancellation.
-async fn download_archive(
-    client: &reqwest::Client,
-    url: &str,
-    dest: &Path,
-    expected_size: u64,
-    expected_sha256: &str,
-    token: &CancellationToken,
-    on_progress: impl Fn(u64, u64),
-) -> Result<(), UiError> {
-    let response = client
-        .get(url)
-        .send()
-        .await
-        .map_err(|error| UiError::new("request_error", format!("Request error: {error}")))?;
-    if !response.status().is_success() {
-        return Err(UiError::new(
-            "http_error",
-            format!("HTTP error: {}", response.status()),
-        ));
-    }
-    let total = response.content_length().unwrap_or(expected_size).max(1);
-    if response
-        .content_length()
-        .is_some_and(|length| length != expected_size)
-    {
-        return Err(UiError::new(
-            "download_error",
-            "VulkanStory package archive has the wrong size",
-        ));
-    }
-
-    let part = dest.with_extension("part");
-    let mut file = File::create(&part)
-        .map_err(|error| UiError::io(format!("Failed to create {}: {error}", part.display())))?;
-    let mut hasher = Sha256::new();
-    let mut written = 0u64;
-
-    let mut stream = response.bytes_stream();
-    while let Some(chunk) = stream.next().await {
-        if is_cancelled(token) {
-            drop(file);
-            let _ = fs::remove_file(&part);
-            return Err(cancelled_error());
-        }
-        let chunk = chunk.map_err(|error| {
-            let _ = fs::remove_file(&part);
-            UiError::new("request_error", format!("Read error: {error}"))
-        })?;
-        file.write_all(&chunk).map_err(|error| {
-            let _ = fs::remove_file(&part);
-            UiError::io(format!("Failed to write {}: {error}", part.display()))
-        })?;
-        hasher.update(&chunk);
-        written += chunk.len() as u64;
-        if written > MAX_ARCHIVE_BYTES {
-            let _ = fs::remove_file(&part);
-            return Err(UiError::new(
-                "download_error",
-                "VulkanStory package archive is unexpectedly large",
-            ));
-        }
-        on_progress(written, total);
-    }
-    drop(file);
-
-    let digest = format!("{:x}", hasher.finalize());
-    if written != expected_size || digest != expected_sha256 {
-        let _ = fs::remove_file(&part);
-        return Err(UiError::new(
-            "download_error",
-            "VulkanStory package archive failed its hash check",
-        ));
-    }
-    // Windows `rename` refuses an existing destination, and a retry after a
-    // corrupted download is exactly that case.
-    let _ = fs::remove_file(dest);
-    fs::rename(&part, dest)
-        .map_err(|error| UiError::io(format!("Failed to finalize {}: {error}", dest.display())))?;
-    Ok(())
+    client_fork::cancelled_error("VulkanStory")
 }
 
 // ── Copy / extract / verify ─────────────────────────────────────────────────
-
-/// Copies a game version folder so the base stays vanilla and the package has
-/// a folder of its own. Emits throttled progress; cancels between files.
-fn copy_tree(
-    source: &Path,
-    target: &Path,
-    emitter: Option<&VulkanStoryEmitter>,
-    token: &CancellationToken,
-) -> Result<(), UiError> {
-    let mut total_bytes = 0u64;
-    for entry in WalkDir::new(source).follow_links(false) {
-        let entry = entry
-            .map_err(|error| UiError::io(format!("Failed to walk version folder: {error}")))?;
-        if entry.file_type().is_file() || entry.path().is_file() {
-            total_bytes += fs::metadata(entry.path()).map(|m| m.len()).unwrap_or(0);
-        }
-    }
-    let total_bytes = total_bytes.max(1);
-
-    fs::create_dir_all(target)
-        .map_err(|error| UiError::io(format!("Failed to create {}: {error}", target.display())))?;
-
-    let mut copied = 0u64;
-    let mut last_emit = Instant::now();
-    for entry in WalkDir::new(source).follow_links(false).min_depth(1) {
-        if is_cancelled(token) {
-            return Err(cancelled_error());
-        }
-        let entry = entry
-            .map_err(|error| UiError::io(format!("Failed to walk version folder: {error}")))?;
-        let destination = target.join(
-            entry
-                .path()
-                .strip_prefix(source)
-                .map_err(|_| UiError::io("Failed to map version folder path"))?,
-        );
-        if entry.file_type().is_dir() || entry.path().is_dir() {
-            fs::create_dir_all(&destination).map_err(|error| {
-                UiError::io(format!(
-                    "Failed to create {}: {error}",
-                    destination.display()
-                ))
-            })?;
-            continue;
-        }
-        if entry.file_type().is_file() || entry.path().is_file() {
-            // A symlinked file is copied as its target, the same way the base
-            // install behaves when launched.
-            fs::copy(entry.path(), &destination).map_err(|error| {
-                UiError::io(format!(
-                    "Failed to copy {} to {}: {error}",
-                    entry.path().display(),
-                    destination.display()
-                ))
-            })?;
-            copied += entry.metadata().map(|m| m.len()).unwrap_or(0);
-            if last_emit.elapsed() >= Duration::from_millis(100) {
-                let percent = 35 + ((copied as f64 / total_bytes as f64) * 15.0) as u64;
-                if let Some(emitter) = emitter {
-                    emitter.emit("copy", percent.min(50) as u8, None);
-                }
-                last_emit = Instant::now();
-            }
-        }
-    }
-    Ok(())
-}
 
 /// Extracts a release package into `target`.
 ///
@@ -1299,26 +1063,7 @@ pub struct VulkanStoryInstallResult {
     pub vulkanstory_version: String,
 }
 
-struct ListenerGuard {
-    app: AppHandle,
-    id: EventId,
-}
-
-impl Drop for ListenerGuard {
-    fn drop(&mut self) {
-        self.app.unlisten(self.id);
-    }
-}
-
 static INSTALL_ACTIVE: AtomicBool = AtomicBool::new(false);
-
-struct InstallGuard;
-
-impl Drop for InstallGuard {
-    fn drop(&mut self) {
-        INSTALL_ACTIVE.store(false, Ordering::SeqCst);
-    }
-}
 
 /// Installs or updates VulkanStory for `base_version`.
 ///
@@ -1333,28 +1078,15 @@ pub async fn install_vulkanstory(
     base_version: String,
     emitevent: String,
 ) -> Result<VulkanStoryInstallResult, UiError> {
-    if INSTALL_ACTIVE.swap(true, Ordering::SeqCst) {
-        return Err(UiError::new(
+    let _install_guard = InstallGuard::acquire(&INSTALL_ACTIVE).ok_or_else(|| {
+        UiError::new(
             "vulkanstory_busy",
             "Another VulkanStory install is already running",
-        ));
-    }
-    let _install_guard = InstallGuard;
+        )
+    })?;
     let client: &reqwest::Client = &client;
 
-    let emitter = VulkanStoryEmitter {
-        app: app.clone(),
-        event: emitevent.clone(),
-    };
-    let token = CancellationToken::new();
-    let cancel_listener = app.listen(format!("{emitevent}:cancel"), {
-        let token = token.clone();
-        move |_| token.cancel()
-    });
-    let _listener_guard = ListenerGuard {
-        app: app.clone(),
-        id: cancel_listener,
-    };
+    let (emitter, token, _listener_guard) = install_cancellation(&app, &emitevent);
 
     log_info!("[vulkanstory] install requested for base {base_version}");
     emitter.emit("manifest", 0, None);
@@ -1388,26 +1120,9 @@ pub async fn install_vulkanstory(
     // The base may be managed or linked; the VulkanStory build always lands in
     // the managed versions folder so it is scanned and removable like any
     // version.
-    let base_dir = super::versions::resolve_version_dir(&app, &base_version)?;
-    if !base_dir.is_dir() {
-        return Err(UiError::not_found(format!(
-            "Version folder not found: {}",
-            base_dir.display()
-        )));
-    }
-    if super::versions::is_incomplete(&base_dir) {
-        return Err(UiError::new(
-            "vulkanstory_incomplete_version",
-            "The base version is still downloading",
-        ));
-    }
+    let base_dir = require_ready_base(&app, &base_version, "vulkanstory_incomplete_version")?;
 
-    let app_data = app.path().app_data_dir().map_err(|error| {
-        UiError::new(
-            "path_error",
-            format!("Failed to resolve app data dir: {error}"),
-        )
-    })?;
+    let app_data = app_data_dir(&app)?;
     let target_name = vulkanstory_version_name(&base_version);
     let target_dir = versions_folder(app.clone())?
         .join(versions_subdir(app.clone()))
@@ -1437,12 +1152,7 @@ pub async fn install_vulkanstory(
     fs::create_dir_all(&downloads_dir)
         .map_err(|error| UiError::io(format!("Failed to create package cache: {error}")))?;
     let archive_path = downloads_dir.join(&manifest.filename);
-    let archive_ok = fs::metadata(&archive_path)
-        .map(|metadata| metadata.len() == manifest.size)
-        .unwrap_or(false)
-        && sha256_file(&archive_path)
-            .map(|digest| digest == manifest.sha256)
-            .unwrap_or(false);
+    let archive_ok = cached_archive_is_valid(&archive_path, manifest.size, &manifest.sha256);
     if !archive_ok {
         let url = archive_url(&manifest.tag, &manifest.filename);
         log_info!("[vulkanstory] downloading {url}");
@@ -1451,10 +1161,15 @@ pub async fn install_vulkanstory(
         let size = manifest.size;
         download_archive(
             client,
-            &url,
-            &archive_path,
-            manifest.size,
-            &manifest.sha256,
+            &ArchiveDownload {
+                url: &url,
+                dest: &archive_path,
+                expected_size: manifest.size,
+                expected_sha256: &manifest.sha256,
+                max_bytes: MAX_ARCHIVE_BYTES,
+                product: "VulkanStory",
+                archive: "package archive",
+            },
             &token,
             move |written, _total| {
                 let progress = 5 + ((written as f64 / size as f64) * 25.0) as u64;
@@ -1489,20 +1204,15 @@ pub async fn install_vulkanstory(
         && target_dir
             .join(LOADER_INI_PATH.replace('/', std::path::MAIN_SEPARATOR_STR))
             .is_file();
-    if !updating {
-        emitter.emit("copy", 35, None);
-        log_info!(
-            "[vulkanstory] copying {} to {}",
-            base_dir.display(),
-            target_dir.display()
-        );
-        if let Err(error) = copy_tree(&base_dir, &target_dir, Some(&emitter), &token) {
-            if error.name == "cancelled" {
-                emitter.emit("cancelled", 0, None);
-            }
-            return Err(error);
-        }
-    }
+    copy_base(
+        updating,
+        &base_dir,
+        &target_dir,
+        &emitter,
+        &token,
+        (35, 50),
+        &PLATFORM,
+    )?;
 
     emitter.emit("extract", 55, None);
     if let Err(error) = extract_package(
@@ -1554,15 +1264,13 @@ pub async fn install_vulkanstory(
     fs::write(state_dir.join(VULKANSTORY_INSTALL_RECORD), record_text)
         .map_err(|error| UiError::io(format!("Failed to write install state: {error}")))?;
 
-    if let Some(cleanup) = cleanup.as_mut() {
-        cleanup.defuse();
-    }
-    emitter.emit("done", 100, None);
-    log_info!(
-        "[vulkanstory] installed {} ({}) at {}",
-        manifest.version,
-        target_name,
-        target_dir.display()
+    finish_install(
+        &mut cleanup,
+        &emitter,
+        &PLATFORM,
+        &manifest.version,
+        &target_name,
+        &target_dir,
     );
     Ok(VulkanStoryInstallResult {
         version: target_name,
@@ -1575,6 +1283,8 @@ pub async fn install_vulkanstory(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::Value;
+    use std::io::Write;
 
     fn sha_of(bytes: &[u8]) -> String {
         format!("{:x}", Sha256::digest(bytes))

@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod backups;
 pub mod cairn;
+pub mod client_fork;
 pub mod conflicts;
 pub mod dotnet;
 pub mod download;
