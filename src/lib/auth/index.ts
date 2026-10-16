@@ -6,7 +6,7 @@ import { modpacksPlugin } from "./plugins/modpacks";
 const BEARER_TOKEN_KEY = "sf_bearer_token";
 
 export const authClient = createAuthClient({
-  baseURL: "https://vsapi.betterjs.dev",
+  baseURL: "https://api.getstoryforge.app",
   plugins: [modpacksPlugin(), usernameClient()],
   sessionOptions: {
     refetchOnWindowFocus: false,
