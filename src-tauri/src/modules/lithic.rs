@@ -20,23 +20,21 @@
 
 use std::{
     collections::{BTreeMap, HashSet},
-    fs::{create_dir_all, read_dir, read_to_string, remove_dir_all, rename, write},
+    fs::{read_dir, read_to_string},
     path::{Path, PathBuf},
 };
 
-use serde::{Deserialize, Serialize};
-use tauri::{command, AppHandle, Manager};
+use serde::Deserialize;
+use tauri::{command, AppHandle};
 
 use super::errors::UiError;
-use super::legacy::{free_profile_dir, LegacyMigrationReport, LegacyMigrationSkip};
-use super::paths::{MODS_DIR, PROFILE_JSON, SAVES_DIR};
-use super::profiles::{
-    is_external_profile_dir, read_profile_json, write_profile_json, ProfileInfo,
+use super::importer::{
+    count_mod_zips, detect_all, has_saves, is_already_imported, is_default_game_data, run_import,
+    size_fields, DetectedInstance, ImportReport, ImportSource, LogWrite, MigrationLog, Placement,
 };
-use super::utils::{
-    copy_dir_contents, dir_name, dir_size_cached, format_size, normalize_path, now_nanos,
-    profiles_folder, profiles_subdir, safe_file_name,
-};
+use super::paths::MODS_DIR;
+use super::profiles::ProfileInfo;
+use super::utils::{copy_dir_contents, dir_name, dir_size_cached, safe_file_name};
 use crate::{log_error, log_info};
 
 const DATA_DIR_ENV: &str = "LITHIC_DATA_DIR";
@@ -54,7 +52,7 @@ const GAME_DIR: &str = "game";
 const INSTALLS_FILE: &str = "installs.toml";
 const MIGRATION_LOG_FILE: &str = "lithic-migration.json";
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 struct LithicInstanceFile {
     #[serde(default)]
     name: String,
@@ -73,50 +71,18 @@ struct LithicInstanceFile {
     stats: LithicStats,
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 #[serde(default)]
 struct LithicLaunch {
     args: Vec<String>,
     env: BTreeMap<String, String>,
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 #[serde(default)]
 struct LithicStats {
     last_played_at: Option<i64>,
     play_time_ms: i64,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct LithicInstance {
-    pub id: String,
-    pub name: String,
-    pub version: String,
-    /// The instance folder (import copies its data folder).
-    pub path: String,
-    pub source: String,
-    pub mod_count: usize,
-    pub size_bytes: u64,
-    pub size_display: String,
-    pub has_saves: bool,
-    pub last_time_played: Option<u64>,
-    /// The instance plays the game's own default data folder (a copy leaves
-    /// the stock launcher's data untouched).
-    pub is_default_game_data: bool,
-    pub already_imported: bool,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct LithicMigrationEntry {
-    source_path: String,
-    target_path: String,
-    name: String,
-}
-
-#[derive(Debug, Default, Serialize, Deserialize)]
-struct LithicMigrationLog {
-    #[serde(default)]
-    migrations: Vec<LithicMigrationEntry>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -155,6 +121,7 @@ fn resolve_path(instance_dir: &Path, path: &Path) -> PathBuf {
     }
 }
 
+#[derive(Debug, Clone)]
 struct LithicRow {
     file: LithicInstanceFile,
     dir: PathBuf,
@@ -219,218 +186,136 @@ fn read_instances(root: &Path) -> Vec<LithicRow> {
     rows
 }
 
-fn count_zips(dir: &Path) -> usize {
-    read_dir(dir)
-        .map(|entries| {
-            entries
-                .filter_map(|entry| entry.ok())
-                .filter(|entry| {
-                    entry.path().is_file()
-                        && entry
-                            .path()
-                            .extension()
-                            .map(|ext| ext.eq_ignore_ascii_case("zip"))
-                            .unwrap_or(false)
-                })
-                .count()
-        })
-        .unwrap_or(0)
-}
-
-fn migration_log_path(app: &AppHandle) -> Result<PathBuf, UiError> {
-    app.path()
-        .app_data_dir()
-        .map(|dir| dir.join(MIGRATION_LOG_FILE))
-        .map_err(|e| UiError {
-            name: "path_error".into(),
-            message: format!("Failed to resolve app data dir: {e}"),
-        })
-}
-
-fn read_migration_log(app: &AppHandle) -> LithicMigrationLog {
-    migration_log_path(app)
-        .ok()
-        .and_then(|path| read_to_string(path).ok())
-        .and_then(|content| serde_json::from_str(&content).ok())
-        .unwrap_or_default()
-}
-
-fn write_migration_log(app: &AppHandle, log: &LithicMigrationLog) -> Result<(), UiError> {
-    let path = migration_log_path(app)?;
-    let content = serde_json::to_string_pretty(log)
-        .map_err(|e| UiError::new("serialize_failed", format!("Failed to serialize log: {e}")))?;
-    write(&path, content).map_err(|e| {
-        UiError::new(
-            "write_failed",
-            format!("Failed to write migration log: {e}"),
-        )
-    })
-}
-
-/// Lists Lithic instances that can be imported.
-#[command]
-pub async fn detect_lithic_instances(app: AppHandle) -> Result<Vec<LithicInstance>, UiError> {
-    let handle = app.clone();
-    tokio::task::spawn_blocking(move || detect_blocking(&handle))
-        .await
-        .map_err(|e| UiError::new("internal_error", format!("Lithic scan failed: {e}")))?
-}
-
-fn detect_blocking(app: &AppHandle) -> Result<Vec<LithicInstance>, UiError> {
-    let Some(root) = data_root() else {
-        return Ok(Vec::new());
-    };
-    let instances = read_instances(&root);
-    if instances.is_empty() {
-        return Ok(Vec::new());
+/// Copies the instance's data folder (and an external mods folder plus the
+/// disabled mods) into the profile folder the importer stages, so a partial
+/// copy never looks like a finished profile.
+fn copy_instance(row: &LithicRow, profile_dir: &Path) -> Result<(), UiError> {
+    let data_dir = row.data_dir();
+    if data_dir.is_dir() {
+        copy_dir_contents(&data_dir, profile_dir).map_err(|e| UiError::new("copy_failed", e))?;
     }
-    log_info!(
-        "lithic: reading {} ({} instances)",
-        root.display(),
-        instances.len()
-    );
 
-    let log = read_migration_log(app);
-    let profiles_root = profiles_folder(app.clone())?.join(profiles_subdir(app.clone()));
-    let game_data_candidates = super::game_data::default_data_candidates();
-    let mut results = Vec::new();
+    // An extra mod folder outside the data directory (`--addModPath`)
+    // would not be covered by the data copy.
+    let mods_dir = row.mods_dir();
+    if mods_dir.is_dir() && mods_dir != data_dir && !mods_dir.starts_with(&data_dir) {
+        copy_dir_contents(&mods_dir, &profile_dir.join(MODS_DIR))
+            .map_err(|e| UiError::new("copy_failed", e))?;
+    }
 
-    for row in instances {
-        let path = row.dir.clone();
-        if normalize_path(&path).starts_with(normalize_path(&profiles_root))
-            || is_external_profile_dir(app, &path)
-        {
-            continue;
+    // Mods switched off in Lithic stay off, parked outside `Mods/`.
+    let disabled_dir = row.disabled_mods_dir();
+    if disabled_dir.is_dir() {
+        copy_dir_contents(&disabled_dir, &profile_dir.join(PROFILE_DISABLED_DIR))
+            .map_err(|e| UiError::new("copy_failed", e))?;
+    }
+    Ok(())
+}
+
+/// What Lithic contributes to the shared import driver.
+struct LithicSource;
+
+impl ImportSource for LithicSource {
+    type Item = LithicRow;
+
+    fn log_file(&self) -> &'static str {
+        MIGRATION_LOG_FILE
+    }
+
+    fn label(&self) -> &'static str {
+        "lithic"
+    }
+
+    fn found_noun(&self) -> &'static str {
+        "instance(s)"
+    }
+
+    fn scan(&self, _app: &AppHandle) -> Result<Option<Vec<Self::Item>>, UiError> {
+        let Some(root) = data_root() else {
+            return Ok(None);
+        };
+        let instances = read_instances(&root);
+        if instances.is_empty() {
+            return Ok(Some(instances));
         }
+        log_info!(
+            "lithic: reading {} ({} instances)",
+            root.display(),
+            instances.len()
+        );
+        Ok(Some(instances))
+    }
 
-        let already_imported = log.migrations.iter().any(|entry| {
-            normalize_path(Path::new(&entry.source_path)) == normalize_path(&path)
-                && Path::new(&entry.target_path).join(PROFILE_JSON).is_file()
-        });
+    fn missing_source_error(&self) -> UiError {
+        UiError::not_found("Lithic data folder not found")
+    }
 
+    fn not_listed_reason(&self) -> &'static str {
+        "not listed in Lithic's instances folder"
+    }
+
+    fn missing_folder_reason(&self) -> &'static str {
+        "instance folder no longer exists"
+    }
+
+    fn describe(&self, row: &LithicRow, log: &MigrationLog) -> DetectedInstance {
+        let path = row.dir.clone();
         let data_dir = row.data_dir();
         let mods_dir = row.mods_dir();
-        let mut size_bytes = dir_size_cached(&data_dir);
+        let mut bytes = dir_size_cached(&data_dir);
         if mods_dir != data_dir && !mods_dir.starts_with(&data_dir) {
-            size_bytes += dir_size_cached(&mods_dir);
+            bytes += dir_size_cached(&mods_dir);
         }
-        let is_default_game_data = game_data_candidates
-            .iter()
-            .any(|candidate| normalize_path(candidate) == normalize_path(&data_dir));
-
-        results.push(LithicInstance {
+        let (size_bytes, size_display) = size_fields(bytes);
+        DetectedInstance {
             id: dir_name(&path),
             name: row.name(),
             version: row.file.game_version.clone().unwrap_or_default(),
             path: path.to_string_lossy().to_string(),
             source: "Lithic".into(),
-            mod_count: count_zips(&mods_dir),
+            mod_count: count_mod_zips(&mods_dir),
             size_bytes,
-            size_display: format_size(size_bytes),
-            has_saves: data_dir.join(SAVES_DIR).is_dir(),
+            size_display,
+            has_saves: has_saves(&data_dir),
             last_time_played: row
                 .file
                 .stats
                 .last_played_at
                 .filter(|value| *value > 0)
                 .map(|value| value as u64),
-            is_default_game_data,
-            already_imported,
-        });
+            is_default_game_data: is_default_game_data(&data_dir),
+            already_imported: is_already_imported(log, &path),
+        }
     }
 
-    log_info!("lithic: found {} instance(s)", results.len());
-    Ok(results)
-}
+    fn source_path(&self, row: &LithicRow) -> PathBuf {
+        row.dir.clone()
+    }
 
-/// Imports Lithic instances into the profiles folder (copy only).
-#[command]
-pub async fn import_lithic_instances(
-    app: AppHandle,
-    paths: Vec<String>,
-) -> Result<LegacyMigrationReport, UiError> {
-    let handle = app.clone();
-    tokio::task::spawn_blocking(move || import_blocking(&handle, paths))
-        .await
-        .map_err(|e| UiError::new("internal_error", format!("Import failed: {e}")))?
-}
+    fn display_name(&self, row: &LithicRow) -> String {
+        row.name()
+    }
 
-fn import_blocking(
-    app: &AppHandle,
-    requested: Vec<String>,
-) -> Result<LegacyMigrationReport, UiError> {
-    let Some(root) = data_root() else {
-        return Err(UiError::not_found("Lithic data folder not found"));
-    };
-    let instances = read_instances(&root);
-
-    let profiles_root = profiles_folder(app.clone())?.join(profiles_subdir(app.clone()));
-    create_dir_all(&profiles_root).map_err(|e| {
-        UiError::new(
-            "create_dir_failed",
-            format!("Failed to create profiles folder: {e}"),
-        )
-    })?;
-
-    let mut log = read_migration_log(app);
-    let mut report = LegacyMigrationReport {
-        migrated: 0,
-        skipped: Vec::new(),
-    };
-
-    for requested_path in requested {
-        let requested_normalized = normalize_path(Path::new(&requested_path));
-        let Some(row) = instances
-            .iter()
-            .find(|row| normalize_path(&row.dir) == requested_normalized)
-        else {
-            report.skipped.push(LegacyMigrationSkip {
-                name: requested_path,
-                reason: "not listed in Lithic's instances folder".into(),
-            });
-            continue;
-        };
-
-        let source = row.dir.clone();
-        if !source.is_dir() {
-            report.skipped.push(LegacyMigrationSkip {
-                name: row.name(),
-                reason: "instance folder no longer exists".into(),
-            });
-            continue;
-        }
-        if normalize_path(&source).starts_with(normalize_path(&profiles_root)) {
-            report.skipped.push(LegacyMigrationSkip {
-                name: row.name(),
-                reason: "already inside the profiles folder".into(),
-            });
-            continue;
-        }
-        if is_external_profile_dir(app, &source) {
-            report.skipped.push(LegacyMigrationSkip {
-                name: row.name(),
-                reason: "already linked as a profile".into(),
-            });
-            continue;
-        }
-
-        let folder = match safe_file_name(&row.name()) {
+    fn target_folder(&self, row: &LithicRow) -> String {
+        match safe_file_name(&row.name()) {
             Ok(folder) if !folder.is_empty() => folder,
-            _ => dir_name(&source),
-        };
-        let target = free_profile_dir(&profiles_root, &folder);
-        if let Err(reason) = copy_instance(&profiles_root, row, &target) {
-            report.skipped.push(LegacyMigrationSkip {
-                name: row.name(),
-                reason,
-            });
-            continue;
+            _ => dir_name(&row.dir),
         }
+    }
 
-        let mut info = read_profile_json(&target).unwrap_or_else(|_| ProfileInfo {
-            name: row.name(),
-            ..Default::default()
-        });
+    fn placement(&self) -> Placement {
+        Placement::Selective
+    }
+
+    fn stage(&self, _app: &AppHandle, row: &LithicRow, profile_dir: &Path) -> Result<(), UiError> {
+        copy_instance(row, profile_dir)
+    }
+
+    fn staged_noun(&self) -> &'static str {
+        "instance"
+    }
+
+    fn apply_profile(&self, row: &LithicRow, info: &mut ProfileInfo) {
         info.name = row.name();
         info.version = row.file.game_version.clone().unwrap_or_default();
         if !row.file.launch.args.is_empty() {
@@ -450,67 +335,29 @@ fn import_blocking(
             .filter(|value| *value > 0)
             .map(|value| (value / 1000) as u64);
         info.total_time_played = (row.file.stats.play_time_ms.max(0) / 1000) as u64;
-
-        if let Err(e) = write_profile_json(&target, &info) {
-            report.skipped.push(LegacyMigrationSkip {
-                name: row.name(),
-                reason: format!("failed to write profile.json: {}", e.message),
-            });
-            continue;
-        }
-
-        log_info!("lithic: imported {} (copy)", info.name);
-        log.migrations.push(LithicMigrationEntry {
-            source_path: source.to_string_lossy().to_string(),
-            target_path: target.to_string_lossy().to_string(),
-            name: info.name.clone(),
-        });
-        report.migrated += 1;
     }
 
-    if report.migrated > 0 {
-        write_migration_log(app, &log)?;
+    fn log_write(&self) -> LogWrite {
+        LogWrite::AtEnd
     }
-
-    Ok(report)
 }
 
-/// Copies the instance's data folder (and an external mods folder plus the
-/// disabled mods) into a fresh profile, staging inside the profiles root so a
-/// partial copy never looks like a finished profile.
-fn copy_instance(profiles_root: &Path, row: &LithicRow, target: &Path) -> Result<(), String> {
-    let staging = profiles_root.join(format!(".staging-{}", now_nanos()));
-    create_dir_all(&staging).map_err(|e| format!("failed to create staging folder: {e}"))?;
+/// Lists Lithic instances that can be imported.
+#[command]
+pub async fn detect_lithic_instances(app: AppHandle) -> Result<Vec<DetectedInstance>, UiError> {
+    let handle = app.clone();
+    tokio::task::spawn_blocking(move || detect_all(&handle, &LithicSource))
+        .await
+        .map_err(|e| UiError::new("internal_error", format!("Lithic scan failed: {e}")))?
+}
 
-    let result = (|| -> Result<(), String> {
-        let staged_profile = staging.join("profile");
-        create_dir_all(&staged_profile)
-            .map_err(|e| format!("failed to create the profile folder: {e}"))?;
-
-        let data_dir = row.data_dir();
-        if data_dir.is_dir() {
-            copy_dir_contents(&data_dir, &staged_profile)?;
-        }
-
-        // An extra mod folder outside the data directory (`--addModPath`)
-        // would not be covered by the data copy.
-        let mods_dir = row.mods_dir();
-        if mods_dir.is_dir() && mods_dir != data_dir && !mods_dir.starts_with(&data_dir) {
-            copy_dir_contents(&mods_dir, &staged_profile.join(MODS_DIR))?;
-        }
-
-        // Mods switched off in Lithic stay off, parked outside `Mods/`.
-        let disabled_dir = row.disabled_mods_dir();
-        if disabled_dir.is_dir() {
-            copy_dir_contents(&disabled_dir, &staged_profile.join(PROFILE_DISABLED_DIR))?;
-        }
-
-        rename(&staged_profile, target)
-            .map_err(|e| format!("failed to move the copied instance into place: {e}"))
-    })();
-
-    let _ = remove_dir_all(&staging);
-    result
+/// Imports Lithic instances into the profiles folder (copy only).
+#[command]
+pub async fn import_lithic_instances(
+    app: AppHandle,
+    paths: Vec<String>,
+) -> Result<ImportReport, UiError> {
+    run_import(app, LithicSource, paths, None, None).await
 }
 
 /// Game builds registered by Lithic (`<data>/game/installs.toml`), ready to
@@ -540,7 +387,7 @@ pub(crate) fn detected_game_versions() -> Vec<super::versions::DetectedVersion> 
             let path = install.path;
             if name.is_empty()
                 || !super::versions::looks_like_game_dir(&path)
-                || !seen.insert(normalize_path(&path))
+                || !seen.insert(super::utils::normalize_path(&path))
             {
                 return None;
             }
@@ -655,7 +502,7 @@ mod tests {
         let rows = read_instances(&root);
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].name(), "Redwood");
-        assert_eq!(count_zips(&rows[0].mods_dir()), 1);
+        assert_eq!(count_mod_zips(&rows[0].mods_dir()), 1);
         assert!(rows[0].disabled_mods_dir().is_dir());
     }
 }

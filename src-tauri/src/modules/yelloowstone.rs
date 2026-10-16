@@ -19,27 +19,22 @@
 //! shape without a parse error.
 
 use std::{
-    fs::{create_dir_all, read_dir, read_to_string, write},
+    fs::{read_dir, read_to_string},
     path::{Path, PathBuf},
     time::UNIX_EPOCH,
 };
 
-use serde::{Deserialize, Serialize};
-use tauri::{command, AppHandle, Manager};
+use serde::Deserialize;
+use tauri::{command, AppHandle};
 
 use super::errors::UiError;
-use super::legacy::{
-    cancelled_error, copy_profile_dir, free_profile_dir, move_profile_dir, ImportSession,
-    LegacyMigrationReport, LegacyMigrationSkip,
+use super::importer::{
+    count_mod_zips, detect_all, has_saves, is_already_imported, is_default_game_data, run_import,
+    size_fields, DetectedInstance, ImportReport, ImportSource, LogWrite, MigrationLog, Placement,
 };
-use super::paths::{CLIENTSETTINGS_JSON, MODS_DIR, PROFILE_JSON, SAVES_DIR};
-use super::profiles::{
-    is_external_profile_dir, read_profile_json, write_profile_json, ProfileInfo,
-};
-use super::utils::{
-    dir_name, dir_size_cached, format_size, normalize_path, profiles_folder, profiles_subdir,
-    require_managed_path,
-};
+use super::paths::{CLIENTSETTINGS_JSON, MODS_DIR};
+use super::profiles::ProfileInfo;
+use super::utils::{dir_size_cached, normalize_path};
 use crate::{log_error, log_info};
 
 /// Yelloowstone hardcodes this folder on every platform.
@@ -51,7 +46,7 @@ const VERSION_PREFIX: &str = "version-";
 const VERSION_SUFFIX: &str = ".txt";
 const MIGRATION_LOG_FILE: &str = "yelloowstone-migration.json";
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct YelloowstoneInstanceFile {
     #[serde(default)]
@@ -62,37 +57,6 @@ struct YelloowstoneInstanceFile {
     /// The game data folder (the profile-shaped part).
     #[serde(default)]
     data_path: String,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct YelloowstoneInstance {
-    pub id: String,
-    pub name: String,
-    pub version: String,
-    /// The data folder (import moves or copies it).
-    pub path: String,
-    pub source: String,
-    pub mod_count: usize,
-    pub size_bytes: u64,
-    pub size_display: String,
-    pub has_saves: bool,
-    pub last_time_played: Option<u64>,
-    /// The data folder is the game's own default data folder.
-    pub is_default_game_data: bool,
-    pub already_imported: bool,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct YelloowstoneMigrationEntry {
-    source_path: String,
-    target_path: String,
-    name: String,
-}
-
-#[derive(Debug, Default, Serialize, Deserialize)]
-struct YelloowstoneMigrationLog {
-    #[serde(default)]
-    migrations: Vec<YelloowstoneMigrationEntry>,
 }
 
 fn config_path() -> Option<PathBuf> {
@@ -150,121 +114,114 @@ fn last_open_millis(data_path: &Path) -> Option<u64> {
         .map(|duration| duration.as_millis() as u64)
 }
 
-fn count_zips(dir: &Path) -> usize {
-    read_dir(dir)
-        .map(|entries| {
-            entries
-                .filter_map(|entry| entry.ok())
-                .filter(|entry| {
-                    entry.path().is_file()
-                        && entry
-                            .path()
-                            .extension()
-                            .map(|ext| ext.eq_ignore_ascii_case("zip"))
-                            .unwrap_or(false)
-                })
-                .count()
-        })
-        .unwrap_or(0)
-}
+/// What Yelloowstone contributes to the shared import driver.
+struct YelloowstoneSource;
 
-fn migration_log_path(app: &AppHandle) -> Result<PathBuf, UiError> {
-    app.path()
-        .app_data_dir()
-        .map(|dir| dir.join(MIGRATION_LOG_FILE))
-        .map_err(|e| UiError {
-            name: "path_error".into(),
-            message: format!("Failed to resolve app data dir: {e}"),
-        })
-}
+impl ImportSource for YelloowstoneSource {
+    type Item = YelloowstoneInstanceFile;
 
-fn read_migration_log(app: &AppHandle) -> YelloowstoneMigrationLog {
-    migration_log_path(app)
-        .ok()
-        .and_then(|path| read_to_string(path).ok())
-        .and_then(|content| serde_json::from_str(&content).ok())
-        .unwrap_or_default()
-}
+    fn log_file(&self) -> &'static str {
+        MIGRATION_LOG_FILE
+    }
 
-fn write_migration_log(app: &AppHandle, log: &YelloowstoneMigrationLog) -> Result<(), UiError> {
-    let path = migration_log_path(app)?;
-    let content = serde_json::to_string_pretty(log)
-        .map_err(|e| UiError::new("serialize_failed", format!("Failed to serialize log: {e}")))?;
-    write(&path, content).map_err(|e| {
-        UiError::new(
-            "write_failed",
-            format!("Failed to write migration log: {e}"),
-        )
-    })
+    fn label(&self) -> &'static str {
+        "yelloowstone"
+    }
+
+    fn found_noun(&self) -> &'static str {
+        "instance(s)"
+    }
+
+    fn scan(&self, _app: &AppHandle) -> Result<Option<Vec<Self::Item>>, UiError> {
+        let instances = read_instances();
+        if instances.is_empty() {
+            return Ok(None);
+        }
+        log_info!(
+            "yelloowstone: reading {} ({} instances)",
+            config_path()
+                .map(|path| path.display().to_string())
+                .unwrap_or_default(),
+            instances.len()
+        );
+        Ok(Some(instances))
+    }
+
+    fn missing_source_error(&self) -> UiError {
+        UiError::not_found("Yelloowstone config not found")
+    }
+
+    fn not_listed_reason(&self) -> &'static str {
+        "not listed in Yelloowstone's config"
+    }
+
+    fn missing_folder_reason(&self) -> &'static str {
+        "folder no longer exists"
+    }
+
+    fn detectable(&self, item: &YelloowstoneInstanceFile) -> bool {
+        !item.name.trim().is_empty() && PathBuf::from(item.data_path.trim()).is_dir()
+    }
+
+    fn describe(&self, item: &YelloowstoneInstanceFile, log: &MigrationLog) -> DetectedInstance {
+        let data_path = PathBuf::from(item.data_path.trim());
+        let bytes = dir_size_cached(&data_path);
+        let (size_bytes, size_display) = size_fields(bytes);
+        DetectedInstance {
+            id: data_path.to_string_lossy().to_string(),
+            name: item.name.clone(),
+            version: version_of(Path::new(item.runtime_path.trim())).unwrap_or_default(),
+            path: data_path.to_string_lossy().to_string(),
+            source: "Yelloowstone".into(),
+            mod_count: count_mod_zips(&data_path.join(MODS_DIR)),
+            size_bytes,
+            size_display,
+            has_saves: has_saves(&data_path),
+            last_time_played: last_open_millis(&data_path),
+            is_default_game_data: is_default_game_data(&data_path),
+            already_imported: is_already_imported(log, &data_path),
+        }
+    }
+
+    fn source_path(&self, item: &YelloowstoneInstanceFile) -> PathBuf {
+        PathBuf::from(item.data_path.trim())
+    }
+
+    fn display_name(&self, item: &YelloowstoneInstanceFile) -> String {
+        item.name.clone()
+    }
+
+    fn validates_folder_name(&self) -> bool {
+        true
+    }
+
+    fn placement(&self) -> Placement {
+        Placement::WholeDir
+    }
+
+    fn apply_profile(&self, item: &YelloowstoneInstanceFile, info: &mut ProfileInfo) {
+        if !item.name.trim().is_empty() {
+            info.name = item.name.clone();
+        }
+        info.version = version_of(Path::new(item.runtime_path.trim())).unwrap_or_default();
+        info.last_played =
+            last_open_millis(&PathBuf::from(item.data_path.trim())).map(|millis| millis / 1000);
+    }
+
+    fn log_write(&self) -> LogWrite {
+        LogWrite::PerFolder
+    }
 }
 
 /// Lists Yelloowstone instances that can be imported.
 #[command]
 pub async fn detect_yelloowstone_instances(
     app: AppHandle,
-) -> Result<Vec<YelloowstoneInstance>, UiError> {
+) -> Result<Vec<DetectedInstance>, UiError> {
     let handle = app.clone();
-    tokio::task::spawn_blocking(move || detect_blocking(&handle))
+    tokio::task::spawn_blocking(move || detect_all(&handle, &YelloowstoneSource))
         .await
         .map_err(|e| UiError::new("internal_error", format!("Yelloowstone scan failed: {e}")))?
-}
-
-fn detect_blocking(app: &AppHandle) -> Result<Vec<YelloowstoneInstance>, UiError> {
-    let instances = read_instances();
-    if instances.is_empty() {
-        return Ok(Vec::new());
-    }
-    log_info!(
-        "yelloowstone: reading {} ({} instances)",
-        config_path()
-            .map(|path| path.display().to_string())
-            .unwrap_or_default(),
-        instances.len()
-    );
-
-    let log = read_migration_log(app);
-    let profiles_root = profiles_folder(app.clone())?.join(profiles_subdir(app.clone()));
-    let game_data_candidates = super::game_data::default_data_candidates();
-    let mut results = Vec::new();
-
-    for instance in instances {
-        let data_path = PathBuf::from(instance.data_path.trim());
-        if instance.name.trim().is_empty() || !data_path.is_dir() {
-            continue;
-        }
-        if normalize_path(&data_path).starts_with(normalize_path(&profiles_root))
-            || is_external_profile_dir(app, &data_path)
-        {
-            continue;
-        }
-
-        let already_imported = log.migrations.iter().any(|entry| {
-            normalize_path(Path::new(&entry.source_path)) == normalize_path(&data_path)
-                && Path::new(&entry.target_path).join(PROFILE_JSON).is_file()
-        });
-        let is_default_game_data = game_data_candidates
-            .iter()
-            .any(|candidate| normalize_path(candidate) == normalize_path(&data_path));
-
-        let size_bytes = dir_size_cached(&data_path);
-        results.push(YelloowstoneInstance {
-            id: data_path.to_string_lossy().to_string(),
-            name: instance.name.clone(),
-            version: version_of(Path::new(instance.runtime_path.trim())).unwrap_or_default(),
-            path: data_path.to_string_lossy().to_string(),
-            source: "Yelloowstone".into(),
-            mod_count: count_zips(&data_path.join(MODS_DIR)),
-            size_bytes,
-            size_display: format_size(size_bytes),
-            has_saves: data_path.join(SAVES_DIR).is_dir(),
-            last_time_played: last_open_millis(&data_path),
-            is_default_game_data,
-            already_imported,
-        });
-    }
-
-    log_info!("yelloowstone: found {} instance(s)", results.len());
-    Ok(results)
 }
 
 /// Imports Yelloowstone instances into the profiles folder.
@@ -276,162 +233,8 @@ pub async fn import_yelloowstone_instances(
     paths: Vec<String>,
     mode: String,
     emitevent: Option<String>,
-) -> Result<LegacyMigrationReport, UiError> {
-    if mode != "move" && mode != "copy" {
-        return Err(UiError::new(
-            "invalid_mode",
-            "Import mode must be \"move\" or \"copy\"",
-        ));
-    }
-    let mut session = ImportSession::create(&app, emitevent, paths.len());
-    let handle = app.clone();
-    tokio::task::spawn_blocking(move || import_blocking(&handle, paths, &mode, &mut session))
-        .await
-        .map_err(|e| UiError::new("internal_error", format!("Import failed: {e}")))?
-}
-
-fn import_blocking(
-    app: &AppHandle,
-    requested: Vec<String>,
-    mode: &str,
-    session: &mut ImportSession,
-) -> Result<LegacyMigrationReport, UiError> {
-    let instances = read_instances();
-    if instances.is_empty() {
-        return Err(UiError::not_found("Yelloowstone config not found"));
-    }
-
-    let profiles_root = profiles_folder(app.clone())?.join(profiles_subdir(app.clone()));
-    create_dir_all(&profiles_root).map_err(|e| {
-        UiError::new(
-            "create_dir_failed",
-            format!("Failed to create profiles folder: {e}"),
-        )
-    })?;
-
-    let mut log = read_migration_log(app);
-    let mut report = LegacyMigrationReport {
-        migrated: 0,
-        skipped: Vec::new(),
-    };
-
-    for (index, requested_path) in requested.into_iter().enumerate() {
-        session.ensure_running()?;
-
-        let requested_normalized = normalize_path(Path::new(&requested_path));
-        let Some(instance) = instances.iter().find(|instance| {
-            normalize_path(Path::new(instance.data_path.trim())) == requested_normalized
-        }) else {
-            report.skipped.push(LegacyMigrationSkip {
-                name: requested_path,
-                reason: "not listed in Yelloowstone's config".into(),
-            });
-            continue;
-        };
-
-        let source = PathBuf::from(instance.data_path.trim());
-        if !source.is_dir() {
-            report.skipped.push(LegacyMigrationSkip {
-                name: instance.name.clone(),
-                reason: "folder no longer exists".into(),
-            });
-            continue;
-        }
-        let folder = dir_name(&source);
-        if folder.is_empty() || folder.starts_with('.') {
-            report.skipped.push(LegacyMigrationSkip {
-                name: instance.name.clone(),
-                reason: "invalid folder name".into(),
-            });
-            continue;
-        }
-        if normalize_path(&source).starts_with(normalize_path(&profiles_root)) {
-            report.skipped.push(LegacyMigrationSkip {
-                name: instance.name.clone(),
-                reason: "already inside the profiles folder".into(),
-            });
-            continue;
-        }
-        if is_external_profile_dir(app, &source) {
-            report.skipped.push(LegacyMigrationSkip {
-                name: instance.name.clone(),
-                reason: "already linked as a profile".into(),
-            });
-            continue;
-        }
-
-        let phase = if mode == "move" { "move" } else { "copy" };
-        session.begin_folder(&folder, &source, index + 1, phase);
-
-        let target = if mode == "move" {
-            let target = free_profile_dir(&profiles_root, &folder);
-            require_managed_path(app, &target, "profile")?;
-            match move_profile_dir(&profiles_root, &source, &folder, session) {
-                Ok(target) => target,
-                Err(error) => {
-                    if session.is_cancelled() {
-                        return Err(cancelled_error());
-                    }
-                    report.skipped.push(LegacyMigrationSkip {
-                        name: instance.name.clone(),
-                        reason: error.message,
-                    });
-                    continue;
-                }
-            }
-        } else {
-            match copy_profile_dir(&profiles_root, &source, &folder, session) {
-                Ok(target) => target,
-                Err(error) => {
-                    if session.is_cancelled() {
-                        return Err(cancelled_error());
-                    }
-                    report.skipped.push(LegacyMigrationSkip {
-                        name: instance.name.clone(),
-                        reason: error.message,
-                    });
-                    continue;
-                }
-            }
-        };
-        session.finish_folder();
-
-        let mut info = read_profile_json(&target).unwrap_or_else(|_| ProfileInfo {
-            name: instance.name.clone(),
-            ..Default::default()
-        });
-        if !instance.name.trim().is_empty() {
-            info.name = instance.name.clone();
-        }
-        info.version = version_of(Path::new(instance.runtime_path.trim())).unwrap_or_default();
-        info.last_played = last_open_millis(&source).map(|millis| millis / 1000);
-
-        if let Err(e) = write_profile_json(&target, &info) {
-            report.skipped.push(LegacyMigrationSkip {
-                name: instance.name.clone(),
-                reason: format!("failed to write profile.json: {}", e.message),
-            });
-            continue;
-        }
-
-        log_info!("yelloowstone: imported {} ({})", info.name, mode);
-        log.migrations.push(YelloowstoneMigrationEntry {
-            source_path: source.to_string_lossy().to_string(),
-            target_path: target.to_string_lossy().to_string(),
-            name: info.name.clone(),
-        });
-        report.migrated += 1;
-        if let Err(e) = write_migration_log(app, &log) {
-            log_error!(
-                "yelloowstone: failed to record the import log: {}",
-                e.message
-            );
-        }
-    }
-
-    session.finish();
-
-    Ok(report)
+) -> Result<ImportReport, UiError> {
+    run_import(app, YelloowstoneSource, paths, Some(mode), emitevent).await
 }
 
 /// Game installs named by Yelloowstone's instances, ready to be linked.

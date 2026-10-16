@@ -8,6 +8,7 @@ pub mod errors;
 pub mod game_data;
 pub mod game_defaults;
 pub mod gruntlauncher;
+pub mod importer;
 pub mod launcher_logins;
 pub mod legacy;
 pub mod lithic;

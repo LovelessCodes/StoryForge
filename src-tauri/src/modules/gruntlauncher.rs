@@ -17,26 +17,21 @@
 //! local install paths named by instances can be linked in place.
 
 use std::{
-    fs::{create_dir_all, read_dir, read_to_string, write},
+    fs::{read_dir, read_to_string},
     path::{Path, PathBuf},
 };
 
-use serde::{Deserialize, Serialize};
-use tauri::{command, AppHandle, Manager};
+use serde::Deserialize;
+use tauri::{command, AppHandle};
 
 use super::errors::UiError;
-use super::legacy::{
-    cancelled_error, copy_profile_dir, free_profile_dir, move_profile_dir, ImportSession,
-    LegacyMigrationReport, LegacyMigrationSkip,
+use super::importer::{
+    count_mod_zips, detect_all, has_saves, is_already_imported, run_import, size_fields,
+    DetectedInstance, ImportReport, ImportSource, LogWrite, MigrationLog, Placement,
 };
-use super::paths::{MODS_DIR, PROFILE_JSON, SAVES_DIR};
-use super::profiles::{
-    is_external_profile_dir, read_profile_json, write_profile_json, ProfileInfo,
-};
-use super::utils::{
-    dir_name, dir_size_cached, format_size, normalize_path, profiles_folder, profiles_subdir,
-    require_managed_path,
-};
+use super::paths::MODS_DIR;
+use super::profiles::ProfileInfo;
+use super::utils::{dir_size_cached, normalize_path};
 use crate::{log_error, log_info};
 
 const CONFIG_FILE: &str = "config.toml";
@@ -53,7 +48,7 @@ struct GruntConfig {
     installations_folder: Option<PathBuf>,
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 struct GruntInstanceFile {
     #[serde(default)]
     id: String,
@@ -63,7 +58,7 @@ struct GruntInstanceFile {
     version: GruntVersion,
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 struct GruntVersion {
     #[serde(default)]
     version: String,
@@ -71,37 +66,6 @@ struct GruntVersion {
     /// entry; only the local path is of interest for linking.
     #[serde(default)]
     source: Option<toml::Value>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct GruntLauncherInstance {
-    pub id: String,
-    pub name: String,
-    pub version: String,
-    /// The instance folder (import moves or copies the whole folder).
-    pub path: String,
-    pub source: String,
-    pub mod_count: usize,
-    pub size_bytes: u64,
-    pub size_display: String,
-    pub has_saves: bool,
-    pub last_time_played: Option<u64>,
-    /// Always false: instances live inside GruntLauncher's own folder.
-    pub is_default_game_data: bool,
-    pub already_imported: bool,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct GruntMigrationEntry {
-    source_path: String,
-    target_path: String,
-    name: String,
-}
-
-#[derive(Debug, Default, Serialize, Deserialize)]
-struct GruntMigrationLog {
-    #[serde(default)]
-    migrations: Vec<GruntMigrationEntry>,
 }
 
 /// The `ProjectDirs` config root for `com.renarin.gruntlauncher`.
@@ -204,6 +168,7 @@ fn local_version_path(source: &Option<toml::Value>) -> Option<PathBuf> {
     (!path.as_os_str().is_empty()).then_some(path)
 }
 
+#[derive(Debug, Clone)]
 struct GruntInstanceRow {
     file: GruntInstanceFile,
     dir: PathBuf,
@@ -236,115 +201,121 @@ fn read_instances(instances_root: &Path) -> Vec<GruntInstanceRow> {
     rows
 }
 
-fn count_zips(dir: &Path) -> usize {
-    read_dir(dir)
-        .map(|entries| {
-            entries
-                .filter_map(|entry| entry.ok())
-                .filter(|entry| {
-                    entry.path().is_file()
-                        && entry
-                            .path()
-                            .extension()
-                            .map(|ext| ext.eq_ignore_ascii_case("zip"))
-                            .unwrap_or(false)
-                })
-                .count()
-        })
-        .unwrap_or(0)
-}
+/// What GruntLauncher contributes to the shared import driver.
+struct GruntLauncherSource;
 
-fn migration_log_path(app: &AppHandle) -> Result<PathBuf, UiError> {
-    app.path()
-        .app_data_dir()
-        .map(|dir| dir.join(MIGRATION_LOG_FILE))
-        .map_err(|e| UiError {
-            name: "path_error".into(),
-            message: format!("Failed to resolve app data dir: {e}"),
-        })
-}
+impl ImportSource for GruntLauncherSource {
+    type Item = GruntInstanceRow;
 
-fn read_migration_log(app: &AppHandle) -> GruntMigrationLog {
-    migration_log_path(app)
-        .ok()
-        .and_then(|path| read_to_string(path).ok())
-        .and_then(|content| serde_json::from_str(&content).ok())
-        .unwrap_or_default()
-}
+    fn log_file(&self) -> &'static str {
+        MIGRATION_LOG_FILE
+    }
 
-fn write_migration_log(app: &AppHandle, log: &GruntMigrationLog) -> Result<(), UiError> {
-    let path = migration_log_path(app)?;
-    let content = serde_json::to_string_pretty(log)
-        .map_err(|e| UiError::new("serialize_failed", format!("Failed to serialize log: {e}")))?;
-    write(&path, content).map_err(|e| {
-        UiError::new(
-            "write_failed",
-            format!("Failed to write migration log: {e}"),
-        )
-    })
+    fn label(&self) -> &'static str {
+        "gruntlauncher"
+    }
+
+    fn found_noun(&self) -> &'static str {
+        "instance(s)"
+    }
+
+    fn scan(&self, _app: &AppHandle) -> Result<Option<Vec<Self::Item>>, UiError> {
+        let Some(paths) = resolve_paths(read_config().as_ref()) else {
+            return Ok(None);
+        };
+        let instances = read_instances(&paths.instances);
+        if instances.is_empty() {
+            return Ok(Some(instances));
+        }
+        log_info!(
+            "gruntlauncher: reading {} ({} instances)",
+            paths.instances.display(),
+            instances.len()
+        );
+        Ok(Some(instances))
+    }
+
+    fn missing_source_error(&self) -> UiError {
+        UiError::not_found("GruntLauncher data folder not found")
+    }
+
+    fn not_listed_reason(&self) -> &'static str {
+        "not listed in GruntLauncher's instances folder"
+    }
+
+    fn missing_folder_reason(&self) -> &'static str {
+        "instance folder no longer exists"
+    }
+
+    fn describe(&self, row: &GruntInstanceRow, log: &MigrationLog) -> DetectedInstance {
+        let path = row.dir.clone();
+        let bytes = dir_size_cached(&path);
+        let (size_bytes, size_display) = size_fields(bytes);
+        DetectedInstance {
+            id: row.file.id.clone(),
+            name: row.file.name.clone(),
+            version: row.file.version.version.clone(),
+            path: path.to_string_lossy().to_string(),
+            source: "GruntLauncher".into(),
+            mod_count: count_mod_zips(&path.join(MODS_DIR)),
+            size_bytes,
+            size_display,
+            has_saves: has_saves(&path),
+            last_time_played: None,
+            is_default_game_data: false,
+            already_imported: is_already_imported(log, &path),
+        }
+    }
+
+    fn source_path(&self, row: &GruntInstanceRow) -> PathBuf {
+        row.dir.clone()
+    }
+
+    fn display_name(&self, row: &GruntInstanceRow) -> String {
+        row.file.name.clone()
+    }
+
+    fn validates_folder_name(&self) -> bool {
+        true
+    }
+
+    fn placement(&self) -> Placement {
+        Placement::WholeDir
+    }
+
+    fn apply_profile(&self, row: &GruntInstanceRow, info: &mut ProfileInfo) {
+        if !row.file.name.trim().is_empty() {
+            info.name = row.file.name.clone();
+        }
+        info.version = row.file.version.version.clone();
+    }
+
+    fn post_place(
+        &self,
+        _app: &AppHandle,
+        _row: &GruntInstanceRow,
+        target: &Path,
+    ) -> Result<(), UiError> {
+        // GruntLauncher's own files are not part of a Story Forge profile.
+        let _ = std::fs::remove_file(target.join(INSTANCE_FILE));
+        let _ = std::fs::remove_dir_all(target.join(LOGOS_DIR));
+        Ok(())
+    }
+
+    fn log_write(&self) -> LogWrite {
+        LogWrite::PerFolder
+    }
 }
 
 /// Lists GruntLauncher instances that can be imported.
 #[command]
 pub async fn detect_gruntlauncher_instances(
     app: AppHandle,
-) -> Result<Vec<GruntLauncherInstance>, UiError> {
+) -> Result<Vec<DetectedInstance>, UiError> {
     let handle = app.clone();
-    tokio::task::spawn_blocking(move || detect_blocking(&handle))
+    tokio::task::spawn_blocking(move || detect_all(&handle, &GruntLauncherSource))
         .await
         .map_err(|e| UiError::new("internal_error", format!("GruntLauncher scan failed: {e}")))?
-}
-
-fn detect_blocking(app: &AppHandle) -> Result<Vec<GruntLauncherInstance>, UiError> {
-    let Some(paths) = resolve_paths(read_config().as_ref()) else {
-        return Ok(Vec::new());
-    };
-    let instances = read_instances(&paths.instances);
-    if instances.is_empty() {
-        return Ok(Vec::new());
-    }
-    log_info!(
-        "gruntlauncher: reading {} ({} instances)",
-        paths.instances.display(),
-        instances.len()
-    );
-
-    let log = read_migration_log(app);
-    let profiles_root = profiles_folder(app.clone())?.join(profiles_subdir(app.clone()));
-    let mut results = Vec::new();
-
-    for row in instances {
-        let path = row.dir.clone();
-        if normalize_path(&path).starts_with(normalize_path(&profiles_root))
-            || is_external_profile_dir(app, &path)
-        {
-            continue;
-        }
-
-        let already_imported = log.migrations.iter().any(|entry| {
-            normalize_path(Path::new(&entry.source_path)) == normalize_path(&path)
-                && Path::new(&entry.target_path).join(PROFILE_JSON).is_file()
-        });
-
-        let size_bytes = dir_size_cached(&path);
-        results.push(GruntLauncherInstance {
-            id: row.file.id.clone(),
-            name: row.file.name.clone(),
-            version: row.file.version.version.clone(),
-            path: path.to_string_lossy().to_string(),
-            source: "GruntLauncher".into(),
-            mod_count: count_zips(&path.join(MODS_DIR)),
-            size_bytes,
-            size_display: format_size(size_bytes),
-            has_saves: path.join(SAVES_DIR).is_dir(),
-            last_time_played: None,
-            is_default_game_data: false,
-            already_imported,
-        });
-    }
-
-    log_info!("gruntlauncher: found {} instance(s)", results.len());
-    Ok(results)
 }
 
 /// Imports GruntLauncher instances into the profiles folder.
@@ -356,166 +327,8 @@ pub async fn import_gruntlauncher_instances(
     paths: Vec<String>,
     mode: String,
     emitevent: Option<String>,
-) -> Result<LegacyMigrationReport, UiError> {
-    if mode != "move" && mode != "copy" {
-        return Err(UiError::new(
-            "invalid_mode",
-            "Import mode must be \"move\" or \"copy\"",
-        ));
-    }
-    let mut session = ImportSession::create(&app, emitevent, paths.len());
-    let handle = app.clone();
-    tokio::task::spawn_blocking(move || import_blocking(&handle, paths, &mode, &mut session))
-        .await
-        .map_err(|e| UiError::new("internal_error", format!("Import failed: {e}")))?
-}
-
-fn import_blocking(
-    app: &AppHandle,
-    requested: Vec<String>,
-    mode: &str,
-    session: &mut ImportSession,
-) -> Result<LegacyMigrationReport, UiError> {
-    let Some(paths) = resolve_paths(read_config().as_ref()) else {
-        return Err(UiError::not_found("GruntLauncher data folder not found"));
-    };
-    let instances = read_instances(&paths.instances);
-
-    let profiles_root = profiles_folder(app.clone())?.join(profiles_subdir(app.clone()));
-    create_dir_all(&profiles_root).map_err(|e| {
-        UiError::new(
-            "create_dir_failed",
-            format!("Failed to create profiles folder: {e}"),
-        )
-    })?;
-
-    let mut log = read_migration_log(app);
-    let mut report = LegacyMigrationReport {
-        migrated: 0,
-        skipped: Vec::new(),
-    };
-
-    for (index, requested_path) in requested.into_iter().enumerate() {
-        session.ensure_running()?;
-
-        let requested_normalized = normalize_path(Path::new(&requested_path));
-        let Some(row) = instances
-            .iter()
-            .find(|row| normalize_path(&row.dir) == requested_normalized)
-        else {
-            report.skipped.push(LegacyMigrationSkip {
-                name: requested_path,
-                reason: "not listed in GruntLauncher's instances folder".into(),
-            });
-            continue;
-        };
-
-        let source = row.dir.clone();
-        if !source.is_dir() {
-            report.skipped.push(LegacyMigrationSkip {
-                name: row.file.name.clone(),
-                reason: "instance folder no longer exists".into(),
-            });
-            continue;
-        }
-        let folder = dir_name(&source);
-        if folder.is_empty() || folder.starts_with('.') {
-            report.skipped.push(LegacyMigrationSkip {
-                name: row.file.name.clone(),
-                reason: "invalid folder name".into(),
-            });
-            continue;
-        }
-        if normalize_path(&source).starts_with(normalize_path(&profiles_root)) {
-            report.skipped.push(LegacyMigrationSkip {
-                name: row.file.name.clone(),
-                reason: "already inside the profiles folder".into(),
-            });
-            continue;
-        }
-        if is_external_profile_dir(app, &source) {
-            report.skipped.push(LegacyMigrationSkip {
-                name: row.file.name.clone(),
-                reason: "already linked as a profile".into(),
-            });
-            continue;
-        }
-
-        let phase = if mode == "move" { "move" } else { "copy" };
-        session.begin_folder(&folder, &source, index + 1, phase);
-
-        let target = if mode == "move" {
-            let target = free_profile_dir(&profiles_root, &folder);
-            require_managed_path(app, &target, "profile")?;
-            match move_profile_dir(&profiles_root, &source, &folder, session) {
-                Ok(target) => target,
-                Err(error) => {
-                    if session.is_cancelled() {
-                        return Err(cancelled_error());
-                    }
-                    report.skipped.push(LegacyMigrationSkip {
-                        name: row.file.name.clone(),
-                        reason: error.message,
-                    });
-                    continue;
-                }
-            }
-        } else {
-            match copy_profile_dir(&profiles_root, &source, &folder, session) {
-                Ok(target) => target,
-                Err(error) => {
-                    if session.is_cancelled() {
-                        return Err(cancelled_error());
-                    }
-                    report.skipped.push(LegacyMigrationSkip {
-                        name: row.file.name.clone(),
-                        reason: error.message,
-                    });
-                    continue;
-                }
-            }
-        };
-        session.finish_folder();
-
-        // GruntLauncher's own files are not part of a Story Forge profile.
-        let _ = std::fs::remove_file(target.join(INSTANCE_FILE));
-        let _ = std::fs::remove_dir_all(target.join(LOGOS_DIR));
-
-        let mut info = read_profile_json(&target).unwrap_or_else(|_| ProfileInfo {
-            name: row.file.name.clone(),
-            ..Default::default()
-        });
-        if !row.file.name.trim().is_empty() {
-            info.name = row.file.name.clone();
-        }
-        info.version = row.file.version.version.clone();
-
-        if let Err(e) = write_profile_json(&target, &info) {
-            report.skipped.push(LegacyMigrationSkip {
-                name: row.file.name.clone(),
-                reason: format!("failed to write profile.json: {}", e.message),
-            });
-            continue;
-        }
-
-        log_info!("gruntlauncher: imported {} ({})", info.name, mode);
-        log.migrations.push(GruntMigrationEntry {
-            source_path: source.to_string_lossy().to_string(),
-            target_path: target.to_string_lossy().to_string(),
-            name: info.name.clone(),
-        });
-        report.migrated += 1;
-        if let Err(e) = write_migration_log(app, &log) {
-            log_error!(
-                "gruntlauncher: failed to record the import log: {}",
-                e.message
-            );
-        }
-    }
-
-    session.finish();
-
-    Ok(report)
+) -> Result<ImportReport, UiError> {
+    run_import(app, GruntLauncherSource, paths, Some(mode), emitevent).await
 }
 
 /// Game builds installed by GruntLauncher: the version folders under
@@ -655,6 +468,6 @@ mod tests {
         let rows = read_instances(&root);
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].file.name, "Redwood");
-        assert_eq!(count_zips(&rows[0].dir.join(MODS_DIR)), 1);
+        assert_eq!(count_mod_zips(&rows[0].dir.join(MODS_DIR)), 1);
     }
 }
