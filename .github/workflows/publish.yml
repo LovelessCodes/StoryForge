@@ -71,7 +71,8 @@ jobs:
             libjavascriptcoregtk-4.1-dev \
             libappindicator3-dev \
             librsvg2-dev \
-            patchelf
+            patchelf \
+            lld
 
       - name: install dependencies (linux arm only)
         if: matrix.platform == 'ubuntu-22.04-arm'
@@ -84,6 +85,7 @@ jobs:
           librsvg2-dev \
           patchelf \
           pkg-config \
+          lld \
           xdg-utils
 
       - name: Override tauri-cli with custom AppImage format (Linux)
@@ -92,6 +94,14 @@ jobs:
 
       - name: install frontend dependencies
         run: bun install
+
+      # Zed-style Linux size pass: link the release binary with LLD and
+      # enable safe ICF; -addrsig emits address-significance tables so only
+      # functions whose address is never observed get folded.
+      - name: Configure Linux linker (lld, safe ICF)
+        if: matrix.platform == 'ubuntu-22.04' || matrix.platform == 'ubuntu-22.04-arm'
+        run: |
+          echo 'RUSTFLAGS=-C link-arg=-fuse-ld=lld -C link-arg=-Wl,--icf=safe -C llvm-args=-addrsig' >> "$GITHUB_ENV"
 
       - uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5
         env:
