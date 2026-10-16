@@ -1,6 +1,6 @@
 pub mod modules;
 use modules::{
-    auth, backups, cairn, conflicts, download, game_data, game_defaults, gruntlauncher,
+    auth, backups, cairn, conflicts, download, game_data, game_defaults, gruntlauncher, importer,
     launcher_logins, legacy, lithic, maps, modpack_io, mods, mvl, news, optimum, packs,
     profile_ops, profiles, rustory, saves, screenshots, server_hosting, servers, sniffer, versions,
     vs_launcher, vulkanstory, waxlight, yelloowstone,
@@ -357,7 +357,7 @@ pub fn run() {
             // so they are safe to remove on every start.
             log_info!("Setup step 2.1: sweeping import staging leftovers...");
             let t2_1 = std::time::Instant::now();
-            legacy::sweep_staging_leftovers(app_handle);
+            importer::sweep_staging_leftovers(app_handle);
             log_info!("Setup step 2.1 done: staging leftovers swept");
             modules::logger::log_elapsed("Setup step 2.1 elapsed", t2_1);
 
