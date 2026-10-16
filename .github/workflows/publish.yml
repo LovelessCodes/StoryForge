@@ -107,3 +107,17 @@ jobs:
           tauriScript: ${{ (matrix.platform == 'ubuntu-22.04') && 'cargo tauri' || '' }}
           prerelease: ${{ contains(github.ref_name, '-rc.') }}
           args: ${{ matrix.args }}
+
+      # Keep a size history visible per platform: shrinking the bundles is
+      # only verifiable when every release reports what they weigh.
+      - name: Report bundle sizes
+        shell: bash
+        env:
+          MATRIX_ARGS: ${{ matrix.args }}
+        run: |
+          {
+            echo "### Bundle sizes — $RUNNER_OS $MATRIX_ARGS"
+            echo '```'
+            find src-tauri/target -path '*/bundle/*' -type f -size +1M -exec du -h {} + | sort -h
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
