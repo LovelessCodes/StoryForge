@@ -18,10 +18,18 @@ codegen-units = 256
 [profile.release]
 codegen-units = 16
 lto = "thin"
-opt-level = "s"
+# The app crate is what ships, so it is the one thing optimized for
+# size here.
+opt-level = "z"
 panic = "abort"
 strip = true
 debug = false
+
+# Dependencies keep the optimization level they had before this change:
+# hashing, zip/inflate, image decoding and HTTP run in them, so
+# size-optimizing dependencies would only cost runtime speed.
+[profile.release.package."*"]
+opt-level = "s"
 
 [lib]
 # The `_lib` suffix may seem redundant but it is necessary
