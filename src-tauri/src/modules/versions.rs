@@ -504,7 +504,7 @@ pub async fn fetch_versions(
     client: State<'_, Arc<reqwest::Client>>,
 ) -> Result<Vec<String>, UiError> {
     let res = client
-        .get("https://vsapi.betterjs.dev/versions")
+        .get("https://api.getstoryforge.app/versions")
         .send()
         .await
         .map_err(|e| {

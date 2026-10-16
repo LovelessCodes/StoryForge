@@ -1056,7 +1056,7 @@ pub async fn get_download_link(
     }
 
     let url = format!(
-        "https://vsapi.betterjs.dev/download/{}/{}/",
+        "https://api.getstoryforge.app/download/{}/{}/",
         version, platform
     );
     let res = client

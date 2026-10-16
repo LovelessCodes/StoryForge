@@ -263,7 +263,7 @@ export const modpacksPlugin = () => {
           key: string;
           sha256: string;
           size: number;
-        }>(`https://vsapi.betterjs.dev/api/modpacks/${slug}/versions/upload`, {
+        }>(`https://api.getstoryforge.app/api/modpacks/${slug}/versions/upload`, {
           method: "POST",
           body: formData,
           ...fetchOptions,
