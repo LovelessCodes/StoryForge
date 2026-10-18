@@ -12,7 +12,9 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@/components/ui/combobox";
+import { authorKey, blockedAuthorSet } from "@/lib/mod-blocklist";
 import type { Mod } from "@/lib/types";
+import { useSettingsStore } from "@/stores/settings";
 
 import { modsQuery } from "./use-mods-data";
 
@@ -39,14 +41,20 @@ export function ModAuthorFilter({
   const mods = queryClient.getQueryData<Mod[]>(
     modsQuery({ search: searchText, versions: selectedGameVersions }).queryKey,
   );
+  // Blocked authors are hidden from the results, so they are hidden from the
+  // suggestions too.
+  const blockedAuthors = useSettingsStore((s) => s.blockedAuthors);
+  const blockedSet = useMemo(() => blockedAuthorSet(blockedAuthors), [blockedAuthors]);
 
   const authorCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const mod of mods ?? []) {
-      if (mod.author) counts.set(mod.author, (counts.get(mod.author) ?? 0) + 1);
+      if (mod.author && !blockedSet.has(authorKey(mod.author))) {
+        counts.set(mod.author, (counts.get(mod.author) ?? 0) + 1);
+      }
     }
     return counts;
-  }, [mods]);
+  }, [mods, blockedSet]);
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();

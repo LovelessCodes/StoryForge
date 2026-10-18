@@ -72,6 +72,26 @@
     "empty": "No authors found.",
     "placeholder": "Filter author…"
   },
+  "blocked": {
+    "add": "Block an author",
+    "addPlaceholder": "Author name…",
+    "alreadyBlocked": "{{author}} is already blocked.",
+    "block": "Block",
+    "blockAuthor": "Block author {{author}}",
+    "blockedToast": "Blocked {{author}} — their mods are hidden from the browser.",
+    "button": "Blocked authors",
+    "clearedToast": "Blocked authors cleared.",
+    "description": "Mods by these authors are hidden from the browse results. Blocking never touches installed mods.",
+    "empty": "No blocked authors yet. Right-click a mod's row to block its author.",
+    "hidden_one": "{{count}} mod hidden by the author blocklist",
+    "hidden_other": "{{count}} mods hidden by the author blocklist",
+    "manage": "Manage blocked authors",
+    "title": "Blocked authors",
+    "unblock": "Unblock {{author}}",
+    "unblockAll": "Unblock all",
+    "unblockedToast": "Unblocked {{author}} — their mods show up again.",
+    "undo": "Undo"
+  },
   "list": {
     "empty": "No mods found. Try adjusting your search or filters."
   },

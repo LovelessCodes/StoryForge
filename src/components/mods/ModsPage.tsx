@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { UserX } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -12,6 +13,7 @@ import type { Mod, ModInfo, OutputMod } from "@/lib/types";
 import { useSettingsStore } from "@/stores/settings";
 
 import { AddModSheet } from "./AddModSheet";
+import { BlockedAuthorsSheet } from "./BlockedAuthorsSheet";
 import BrokenModsBanner from "./BrokenModsBanner";
 import { InstalledModsView } from "./InstalledModsView";
 import MissingDependenciesBanner from "./MissingDependenciesBanner";
@@ -82,6 +84,7 @@ export default function ModsPage({
   const [view, setView] = useState<"browse" | "installed">("browse");
   const [sheet, setSheet] = useState<SheetRequest | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [blockedOpen, setBlockedOpen] = useState(false);
 
   const openSheet = (request: SheetRequest) => {
     setSheet(request);
@@ -179,7 +182,19 @@ export default function ModsPage({
               modsDirectory={profilePath}
               modTags={data.modTags}
               modUpdates={data.modUpdates}
+              onManageBlocked={() => setBlockedOpen(true)}
             />
+            {data.hiddenByBlockCount > 0 && (
+              <button
+                className="text-muted-foreground hover:text-foreground flex w-fit shrink-0 cursor-pointer items-center gap-1.5 text-xs"
+                onClick={() => setBlockedOpen(true)}
+                title={t("mods.blocked.manage")}
+                type="button"
+              >
+                <UserX className="size-3.5" />
+                {t("mods.blocked.hidden", { count: data.hiddenByBlockCount })}
+              </button>
+            )}
             {profilePath && (
               <MissingDependenciesBanner
                 destinationLabel={destinationLabel}
@@ -266,6 +281,8 @@ export default function ModsPage({
           prompt={sheet.prompt}
         />
       )}
+
+      <BlockedAuthorsSheet open={blockedOpen} onOpenChange={setBlockedOpen} />
     </TooltipProvider>
   );
 }

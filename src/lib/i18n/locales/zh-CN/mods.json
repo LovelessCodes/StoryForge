@@ -70,6 +70,25 @@
     "empty": "未找到作者。",
     "placeholder": "筛选作者…"
   },
+  "blocked": {
+    "add": "屏蔽作者",
+    "addPlaceholder": "作者名称…",
+    "alreadyBlocked": "{{author}} 已被屏蔽。",
+    "block": "屏蔽",
+    "blockAuthor": "屏蔽作者 {{author}}",
+    "blockedToast": "已屏蔽 {{author}}——其模组不会出现在浏览结果中。",
+    "button": "已屏蔽的作者",
+    "clearedToast": "已清空屏蔽的作者。",
+    "description": "这些作者的模组不会出现在浏览结果中。屏蔽不会影响已安装的模组。",
+    "empty": "还没有屏蔽任何作者。右键点击模组行即可屏蔽其作者。",
+    "hidden_other": "{{count}} 个模组因作者屏蔽列表而隐藏",
+    "manage": "管理已屏蔽的作者",
+    "title": "已屏蔽的作者",
+    "unblock": "取消屏蔽 {{author}}",
+    "unblockAll": "全部取消屏蔽",
+    "unblockedToast": "已取消屏蔽 {{author}}——其模组重新显示。",
+    "undo": "撤销"
+  },
   "list": {
     "empty": "未找到模组。请尝试调整搜索或筛选条件。"
   },

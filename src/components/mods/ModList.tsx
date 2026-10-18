@@ -6,6 +6,7 @@ import type { ModUpdatesResponse } from "@/hooks/use-mod-updates";
 import type { Mod, ModTag, OutputMod } from "@/lib/types";
 
 import { ModItem } from "./ModItem";
+import { ModItemContextMenu } from "./ModItemContextMenu";
 
 export function ModList({
   canToggleMods,
@@ -55,23 +56,25 @@ export function ModList({
         </div>
       }
       renderItem={(mod) => (
-        <ModItem
-          canToggleMods={canToggleMods}
-          destinationLabel={destinationLabel}
-          installedMods={installedMods}
-          mod={mod}
-          modsDirectory={modsDirectory}
-          modUpdates={modUpdates}
-          onAdd={onAdd}
-          onAuthorClick={onAuthorClick}
-          onRemove={onRemove}
-          onStandaloneInstall={onStandaloneInstall}
-          onTagClick={onTagClick}
-          onUpdate={onUpdate}
-          selectedTagNames={selectedTagNames}
-          tagByName={tagByName}
-          tagColorMap={tagColorMap}
-        />
+        <ModItemContextMenu mod={mod}>
+          <ModItem
+            canToggleMods={canToggleMods}
+            destinationLabel={destinationLabel}
+            installedMods={installedMods}
+            mod={mod}
+            modsDirectory={modsDirectory}
+            modUpdates={modUpdates}
+            onAdd={onAdd}
+            onAuthorClick={onAuthorClick}
+            onRemove={onRemove}
+            onStandaloneInstall={onStandaloneInstall}
+            onTagClick={onTagClick}
+            onUpdate={onUpdate}
+            selectedTagNames={selectedTagNames}
+            tagByName={tagByName}
+            tagColorMap={tagColorMap}
+          />
+        </ModItemContextMenu>
       )}
     />
   );
