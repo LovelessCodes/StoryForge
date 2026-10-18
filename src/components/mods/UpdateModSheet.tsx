@@ -20,7 +20,7 @@ import { hashPath } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
 import type { Mod, ModInfo, OutputMod, Release } from "@/lib/types";
 
-import { ModVersionPicker } from "./ModVersionPicker";
+import { ModVersionSection } from "./ModVersionPicker";
 
 /**
  * Upgrade/downgrade picker for an installed mod: the old file is removed from
@@ -135,21 +135,11 @@ export function UpdateModSheet({
           </SheetDescription>
         </SheetHeader>
         <ScrollArea scrollFade className="min-h-0 flex-1">
-          <div className="grid gap-4 p-4">
-            <div className="grid gap-1.5">
-              <p className="text-muted-foreground text-[10px] font-medium tracking-widest uppercase">
-                {t("common.fields.version")}
-              </p>
-              <ModVersionPicker
-                onSelect={setUserSelectedVersion}
-                releases={modInfo?.mod.releases}
-                selected={selectedVersion}
-              />
-            </div>
-            {!modInfo && (
-              <p className="text-muted-foreground text-xs">{t("mods.loadingReleases")}</p>
-            )}
-          </div>
+          <ModVersionSection
+            modInfo={modInfo}
+            onSelect={setUserSelectedVersion}
+            selected={selectedVersion}
+          />
         </ScrollArea>
         <SheetFooter className="border-t">
           <Button

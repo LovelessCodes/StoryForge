@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-import type { Release } from "@/lib/types";
+import type { ModInfo, Release } from "@/lib/types";
 
 /** One release row: version, game tag(s) and download count. */
 export function ModReleaseItem({ release }: { release: Release }) {
@@ -85,6 +85,34 @@ export function ModVersionPicker({
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Version field with release picker and loading hint, shared by the add/update sheets. */
+export function ModVersionSection({
+  modInfo,
+  onSelect,
+  selected,
+}: {
+  modInfo: ModInfo | undefined;
+  selected: Release | null;
+  onSelect: (release: Release | null) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="grid gap-4 p-4">
+      <div className="grid gap-1.5">
+        <p className="text-muted-foreground text-[10px] font-medium tracking-widest uppercase">
+          {t("common.fields.version")}
+        </p>
+        <ModVersionPicker
+          onSelect={onSelect}
+          releases={modInfo?.mod.releases}
+          selected={selected}
+        />
+      </div>
+      {!modInfo && <p className="text-muted-foreground text-xs">{t("mods.loadingReleases")}</p>}
     </div>
   );
 }
