@@ -1,14 +1,12 @@
-import { lazy, Suspense, useState } from "react";
+import { Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { MonacoEditor } from "@/components/common/MonacoEditor";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useServerConfig, useWriteServerConfig } from "@/hooks/queries/server-hosting";
-import "@/lib/monaco";
 import { errorMessage } from "@/lib/errors";
 import { toast } from "@/lib/notify";
-
-const Editor = lazy(() => import("@monaco-editor/react"));
 
 export default function ServerConfigEditor({ instanceId }: { instanceId: number }) {
   const { t } = useTranslation();
@@ -84,7 +82,7 @@ export default function ServerConfigEditor({ instanceId }: { instanceId: number 
       </div>
       <div className="h-[520px] border">
         <Suspense fallback={<Skeleton className="h-full" />}>
-          <Editor
+          <MonacoEditor
             height="100%"
             language="json"
             loading={<Skeleton className="h-full" />}

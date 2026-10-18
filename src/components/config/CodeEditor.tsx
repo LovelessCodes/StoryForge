@@ -1,13 +1,11 @@
-import { lazy, Suspense, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { MonacoEditor } from "@/components/common/MonacoEditor";
 import { Button } from "@/components/ui/button";
-import "@/lib/monaco";
 import { scalePixels } from "@/lib/text-scale";
 import type { JSONValue } from "@/lib/types";
 import { useSettingsStore } from "@/stores/settings";
-
-const Editor = lazy(() => import("@monaco-editor/react"));
 
 type SaveParams = { file: string; newCode: string };
 
@@ -36,7 +34,7 @@ export default function CodeEditor({
       <Suspense
         fallback={<p className="text-muted-foreground p-4 text-xs">{t("config.code.loading")}</p>}
       >
-        <Editor
+        <MonacoEditor
           height="100%"
           language="json"
           onChange={(value) => setEditableCode(value ?? "")}
