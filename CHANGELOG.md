@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Smaller downloads**: the release build now optimizes the app crate for size while dependency optimization stays as before, shrinking the app binary and installers.
 - **The Story Forge API moved to `api.getstoryforge.app`**: sign-in, modpack publishing and game version downloads now use `https://api.getstoryforge.app` instead of `https://vsapi.betterjs.dev`. The old `vsapi.betterjs.dev` domain is decommissioned in 14 days, on 2026-10-30; older builds that still point at it will stop working then.
+- **Much smaller AppImage**: the unused GStreamer media framework is no longer bundled into the AppImage, cutting a large chunk off the download.
 
 ## [2.0.8] - 2026-10-15
 
