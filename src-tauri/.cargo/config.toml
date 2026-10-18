@@ -4,9 +4,4 @@
 # symbol tables add a leading underscore, hence `__R`), which lets the
 # linker stop exporting exactly those symbols.
 [target.'cfg(target_os = "macos")']
-rustflags = [
-  "-C",
-  "symbol-mangling-version=v0",
-  "-C",
-  "link-arg=-Wl,-unexported_symbol,__R*",
-]
+rustflags = ["-C", "symbol-mangling-version=v0", "-C", "link-arg=-Wl,-unexported_symbol,__R*"]
