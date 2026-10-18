@@ -17,32 +17,11 @@ import { errorMessage } from "@/lib/errors";
 import { isMac, isWindows, modifierLabel } from "@/lib/helpers";
 import { useDownloadStore } from "@/stores/downloads";
 
-export default function Titlebar() {
+/** App update button; runs the download-and-install flow without leaving the titlebar. */
+function TitlebarUpdateButton() {
   const { t } = useTranslation();
-  const runCommand = useRunCommand();
   const { data: update } = useUpdater();
-  const entries = useDownloadStore((s) => s.entries);
   const [installing, setInstalling] = useState(false);
-  const [downloadsOpen, setDownloadsOpen] = useState(false);
-
-  const list = Object.values(entries);
-  const active = list.filter((e) => e.status === "downloading" || e.status === "extracting");
-  const paused = list.some((e) => e.status === "paused");
-  const waiting = list.some((e) => e.status === "pending");
-  const pendingCount = list.filter((e) => e.status !== "done").length;
-  const percent =
-    active.length > 0 ? Math.max(0, Math.min(100, Math.round(active[0].percent ?? 0))) : null;
-
-  const downloadIcon =
-    active.length > 0 ? (
-      <Loader2 className="animate-spin" />
-    ) : paused ? (
-      <Pause />
-    ) : waiting ? (
-      <Clock />
-    ) : (
-      <Download />
-    );
 
   async function installUpdate() {
     if (!update || installing) return;
@@ -91,7 +70,9 @@ export default function Titlebar() {
     }
   }
 
-  const updateButton = update ? (
+  if (!update) return null;
+
+  return (
     <Button
       variant="outline-accent-primary"
       size="xs"
@@ -102,7 +83,105 @@ export default function Titlebar() {
       {installing ? <Loader2 className="animate-spin" /> : <RotateCcw />}
       {t("layout.titlebar.update", { version: update.version })}
     </Button>
-  ) : null;
+  );
+}
+
+/** Live progress for running downloads and the button that opens the Downloads sheet. */
+function TitlebarDownloads({ onOpenChange }: { onOpenChange: (open: boolean) => void }) {
+  const { t } = useTranslation();
+  const entries = useDownloadStore((s) => s.entries);
+
+  const list = Object.values(entries);
+  const active = list.filter((e) => e.status === "downloading" || e.status === "extracting");
+  const paused = list.some((e) => e.status === "paused");
+  const waiting = list.some((e) => e.status === "pending");
+  const pendingCount = list.filter((e) => e.status !== "done").length;
+  const percent =
+    active.length > 0 ? Math.max(0, Math.min(100, Math.round(active[0].percent ?? 0))) : null;
+
+  const downloadIcon =
+    active.length > 0 ? (
+      <Loader2 className="animate-spin" />
+    ) : paused ? (
+      <Pause />
+    ) : waiting ? (
+      <Clock />
+    ) : (
+      <Download />
+    );
+
+  return (
+    <>
+      {active.length > 0 && percent !== null && (
+        <Progress
+          value={percent}
+          aria-label={t("layout.titlebar.downloadProgress", { percent })}
+          title={t("layout.titlebar.downloadProgress", { percent })}
+          className="[&_[data-slot=progress-indicator]]:bg-accent-primary mr-1 w-24 [&_[data-slot=progress-track]]:h-1.5"
+        />
+      )}
+      <Button
+        variant={paused ? "outline-warning" : "outline"}
+        size="xs"
+        className="text-muted-foreground gap-2"
+        onClick={() => onOpenChange(true)}
+        title={t("layout.titlebar.downloads")}
+      >
+        {downloadIcon}
+        <span className="hidden sm:inline">{t("layout.titlebar.downloads")}</span>
+        {pendingCount > 0 && (
+          <Badge variant="secondary" className="h-4 px-1.5 text-[10px] tabular-nums">
+            {pendingCount}
+          </Badge>
+        )}
+      </Button>
+    </>
+  );
+}
+
+/** Windows-only window controls (minimize, maximize, close). */
+function TitlebarWindowControls() {
+  const { t } = useTranslation();
+
+  if (!isWindows) return null;
+
+  return (
+    <>
+      <Button
+        aria-label={t("layout.titlebar.minimize")}
+        className="text-muted-foreground hover:text-warning"
+        onClick={() => void getCurrentWindow().minimize()}
+        size="icon-sm"
+        variant="ghost"
+      >
+        <Minus />
+      </Button>
+      <Button
+        aria-label={t("layout.titlebar.maximize")}
+        className="text-muted-foreground hover:text-success"
+        onClick={() => void getCurrentWindow().toggleMaximize()}
+        size="icon-sm"
+        variant="ghost"
+      >
+        <Square />
+      </Button>
+      <Button
+        aria-label={t("layout.titlebar.close")}
+        className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+        onClick={() => void getCurrentWindow().close()}
+        size="icon-sm"
+        variant="ghost"
+      >
+        <X />
+      </Button>
+    </>
+  );
+}
+
+export default function Titlebar() {
+  const { t } = useTranslation();
+  const runCommand = useRunCommand();
+  const [downloadsOpen, setDownloadsOpen] = useState(false);
 
   return (
     <div
@@ -120,32 +199,10 @@ export default function Titlebar() {
       <span className="text-muted-foreground hidden truncate text-[10px] font-medium tracking-widest whitespace-nowrap uppercase sm:inline">
         Story Forge
       </span>
-      {updateButton}
+      <TitlebarUpdateButton />
 
       <div className="ms-auto flex items-center gap-1">
-        {active.length > 0 && percent !== null && (
-          <Progress
-            value={percent}
-            aria-label={t("layout.titlebar.downloadProgress", { percent })}
-            title={t("layout.titlebar.downloadProgress", { percent })}
-            className="[&_[data-slot=progress-indicator]]:bg-accent-primary mr-1 w-24 [&_[data-slot=progress-track]]:h-1.5"
-          />
-        )}
-        <Button
-          variant={paused ? "outline-warning" : "outline"}
-          size="xs"
-          className="text-muted-foreground gap-2"
-          onClick={() => setDownloadsOpen(true)}
-          title={t("layout.titlebar.downloads")}
-        >
-          {downloadIcon}
-          <span className="hidden sm:inline">{t("layout.titlebar.downloads")}</span>
-          {pendingCount > 0 && (
-            <Badge variant="secondary" className="h-4 px-1.5 text-[10px] tabular-nums">
-              {pendingCount}
-            </Badge>
-          )}
-        </Button>
+        <TitlebarDownloads onOpenChange={setDownloadsOpen} />
         <Button
           variant="outline"
           size="xs"
@@ -160,37 +217,7 @@ export default function Titlebar() {
           </kbd>
         </Button>
         <ThemeToggle />
-        {isWindows && (
-          <>
-            <Button
-              aria-label={t("layout.titlebar.minimize")}
-              className="text-muted-foreground hover:text-warning"
-              onClick={() => void getCurrentWindow().minimize()}
-              size="icon-sm"
-              variant="ghost"
-            >
-              <Minus />
-            </Button>
-            <Button
-              aria-label={t("layout.titlebar.maximize")}
-              className="text-muted-foreground hover:text-success"
-              onClick={() => void getCurrentWindow().toggleMaximize()}
-              size="icon-sm"
-              variant="ghost"
-            >
-              <Square />
-            </Button>
-            <Button
-              aria-label={t("layout.titlebar.close")}
-              className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-              onClick={() => void getCurrentWindow().close()}
-              size="icon-sm"
-              variant="ghost"
-            >
-              <X />
-            </Button>
-          </>
-        )}
+        <TitlebarWindowControls />
       </div>
 
       <DownloadsSheet open={downloadsOpen} onOpenChange={setDownloadsOpen} />

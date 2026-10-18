@@ -55,74 +55,104 @@ function useDownloadStillInstalled(entry: DownloadEntry): boolean {
   return mods.data.mods.some((mod) => mod.path === entry.savedPath);
 }
 
-function DownloadRow({ entry }: { entry: DownloadEntry }) {
+/** Row title: label, destination detail and status badge. */
+function DownloadRowHeader({ entry }: { entry: DownloadEntry }) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex items-center gap-2">
+      <span className="truncate text-xs font-medium">{entry.label}</span>
+      {entry.detail && (
+        <span className="text-muted-foreground truncate text-[11px]">→ {entry.detail}</span>
+      )}
+      <Badge variant="secondary" className="ml-auto h-4 shrink-0 px-1.5 text-[10px]">
+        {t(statusKey[entry.status])}
+      </Badge>
+    </div>
+  );
+}
+
+/** Progress bar plus the speed and error line of an unfinished download. */
+function DownloadRowProgress({ entry }: { entry: DownloadEntry }) {
+  return (
+    <>
+      <Progress value={entry.percent ?? 0} />
+      <div className="text-muted-foreground flex items-center gap-3 text-[11px] tabular-nums">
+        <span>{entry.percent !== null ? `${entry.percent.toFixed(0)}%` : "…"}</span>
+        {entry.speedBps !== null && <span>{(entry.speedBps / 1024 / 1024).toFixed(1)} MB/s</span>}
+        {entry.error && <span className="text-destructive truncate">{entry.error}</span>}
+      </div>
+    </>
+  );
+}
+
+/**
+ * Action bar: the primary control the entry's status allows (pause, resume,
+ * retry or undo), the removal hint and the dismiss button.
+ */
+function DownloadRowActions({
+  canUndo,
+  entry,
+  stillInstalled,
+}: {
+  canUndo: boolean;
+  entry: DownloadEntry;
+  stillInstalled: boolean;
+}) {
   const { t } = useTranslation();
   const { pause, resume, cancel, retry, undo } = useDownloadManager();
+
+  return (
+    <div className="flex items-center gap-2">
+      {(entry.status === "downloading" || entry.status === "pending") && (
+        <Button variant="outline" size="xs" onClick={() => pause(entry.token)}>
+          <Pause /> {t("common.actions.pause")}
+        </Button>
+      )}
+      {entry.status === "paused" && (
+        <Button variant="outline" size="xs" onClick={() => resume(entry.token)}>
+          <Loader2 /> {t("common.actions.resume")}
+        </Button>
+      )}
+      {entry.status === "error" && (
+        <Button variant="outline" size="xs" onClick={() => retry(entry.token)}>
+          <RotateCcw /> {t("common.actions.retry")}
+        </Button>
+      )}
+      {canUndo && (
+        <Button variant="outline" size="xs" onClick={() => undo(entry.token)}>
+          <Undo2 /> {t("common.actions.undo")}
+        </Button>
+      )}
+      {entry.status === "done" && !stillInstalled && (
+        <span className="text-muted-foreground text-[11px]">
+          {entry.kind === "version" ? t("downloads.versionRemoved") : t("downloads.modRemoved")}
+        </span>
+      )}
+      <Button
+        variant="ghost"
+        size="xs"
+        className="text-muted-foreground ml-auto"
+        onClick={() => cancel(entry.token)}
+      >
+        <X />{" "}
+        {entry.status === "done" || entry.status === "error"
+          ? t("common.actions.dismiss")
+          : t("common.actions.cancel")}
+      </Button>
+    </div>
+  );
+}
+
+function DownloadRow({ entry }: { entry: DownloadEntry }) {
   const stillInstalled = useDownloadStillInstalled(entry);
   const canUndo =
     entry.status === "done" && stillInstalled && (entry.kind === "version" || !!entry.savedPath);
 
   return (
     <li className="grid gap-2 p-3">
-      <div className="flex items-center gap-2">
-        <span className="truncate text-xs font-medium">{entry.label}</span>
-        {entry.detail && (
-          <span className="text-muted-foreground truncate text-[11px]">→ {entry.detail}</span>
-        )}
-        <Badge variant="secondary" className="ml-auto h-4 shrink-0 px-1.5 text-[10px]">
-          {t(statusKey[entry.status])}
-        </Badge>
-      </div>
-      {entry.status !== "done" && (
-        <>
-          <Progress value={entry.percent ?? 0} />
-          <div className="text-muted-foreground flex items-center gap-3 text-[11px] tabular-nums">
-            <span>{entry.percent !== null ? `${entry.percent.toFixed(0)}%` : "…"}</span>
-            {entry.speedBps !== null && (
-              <span>{(entry.speedBps / 1024 / 1024).toFixed(1)} MB/s</span>
-            )}
-            {entry.error && <span className="text-destructive truncate">{entry.error}</span>}
-          </div>
-        </>
-      )}
-      <div className="flex items-center gap-2">
-        {(entry.status === "downloading" || entry.status === "pending") && (
-          <Button variant="outline" size="xs" onClick={() => pause(entry.token)}>
-            <Pause /> {t("common.actions.pause")}
-          </Button>
-        )}
-        {entry.status === "paused" && (
-          <Button variant="outline" size="xs" onClick={() => resume(entry.token)}>
-            <Loader2 /> {t("common.actions.resume")}
-          </Button>
-        )}
-        {entry.status === "error" && (
-          <Button variant="outline" size="xs" onClick={() => retry(entry.token)}>
-            <RotateCcw /> {t("common.actions.retry")}
-          </Button>
-        )}
-        {canUndo && (
-          <Button variant="outline" size="xs" onClick={() => undo(entry.token)}>
-            <Undo2 /> {t("common.actions.undo")}
-          </Button>
-        )}
-        {entry.status === "done" && !stillInstalled && (
-          <span className="text-muted-foreground text-[11px]">
-            {entry.kind === "version" ? t("downloads.versionRemoved") : t("downloads.modRemoved")}
-          </span>
-        )}
-        <Button
-          variant="ghost"
-          size="xs"
-          className="text-muted-foreground ml-auto"
-          onClick={() => cancel(entry.token)}
-        >
-          <X />{" "}
-          {entry.status === "done" || entry.status === "error"
-            ? t("common.actions.dismiss")
-            : t("common.actions.cancel")}
-        </Button>
-      </div>
+      <DownloadRowHeader entry={entry} />
+      {entry.status !== "done" && <DownloadRowProgress entry={entry} />}
+      <DownloadRowActions canUndo={canUndo} entry={entry} stillInstalled={stillInstalled} />
     </li>
   );
 }
