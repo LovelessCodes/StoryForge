@@ -29,8 +29,175 @@ import { compareSemverDesc } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
 import { pickDefaultVersion } from "@/lib/pre-release";
 import { gameVersionsQuery } from "@/lib/queries";
+import type { DetectedGameData } from "@/lib/types";
 import { useProfilesStore } from "@/stores/profiles";
 import { useSettingsStore } from "@/stores/settings";
+
+/** Banner offering the data folders the game itself would use. */
+function GameDataFoundBanner({
+  onDismiss,
+  onUse,
+  pending,
+}: {
+  onDismiss: () => void;
+  onUse: () => void;
+  pending: DetectedGameData[];
+}) {
+  const { t } = useTranslation();
+  if (pending.length === 0) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-3 border border-[var(--color-info)]/30 bg-[var(--color-info)]/5 p-3">
+      <Gamepad2 className="size-4 shrink-0 text-[var(--color-info)]" />
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-medium">{t("profiles.gameData.foundTitle")}</p>
+        <p className="text-muted-foreground truncate text-[11px]">
+          {pending.length > 1
+            ? t("profiles.gameData.foundDescriptionMore", {
+                path: pending[0].path,
+                more: pending.length - 1,
+              })
+            : t("profiles.gameData.foundDescription", { path: pending[0].path })}
+        </p>
+      </div>
+      <Button size="sm" variant="accent-primary" onClick={onUse}>
+        {t("profiles.gameData.use")}
+      </Button>
+      <Button
+        aria-label={t("common.actions.dismiss")}
+        size="icon-sm"
+        variant="ghost"
+        onClick={onDismiss}
+      >
+        <X />
+      </Button>
+    </div>
+  );
+}
+
+/** Folder picker shown when more than one unregistered data folder was found. */
+function GameDataFolderSelect({
+  items,
+  onValueChange,
+  value,
+}: {
+  items: DetectedGameData[];
+  onValueChange: (value: string) => void;
+  value: string;
+}) {
+  const { t } = useTranslation();
+  if (items.length <= 1) return null;
+  return (
+    <div className="grid gap-1.5">
+      <span className="text-xs font-medium">{t("common.fields.folder")}</span>
+      <Select
+        items={items.map((item) => ({ label: item.path, value: item.path }))}
+        value={value}
+        onValueChange={(next) => next && onValueChange(next)}
+      >
+        <SelectTrigger className="w-full" aria-label={t("profiles.gameData.folderAria")}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {items.map((item) => (
+            <SelectItem key={item.path} value={item.path}>
+              {item.path}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+/** Size/mod/world summary of the folder picked in the sheet. */
+function GameDataSelectedSummary({ selected }: { selected: DetectedGameData | undefined }) {
+  const { t } = useTranslation();
+  if (!selected) return null;
+  return (
+    <p className="bg-muted text-muted-foreground border p-2 text-[11px]">
+      <span className="text-foreground font-medium">{selected.size_display}</span> ·{" "}
+      {t("profiles.modCount", { count: selected.mod_count })} ·{" "}
+      {selected.has_saves ? t("profiles.hasWorlds") : t("profiles.noWorlds")}
+    </p>
+  );
+}
+
+/** Game version picker for the adopted data folder. */
+function GameDataVersionSelect({
+  installedSet,
+  onValueChange,
+  value,
+  versions,
+}: {
+  installedSet: Set<string>;
+  onValueChange: (value: string) => void;
+  value: string;
+  versions: string[];
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="grid gap-1.5">
+      <span className="text-xs font-medium">{t("profiles.fields.gameVersion")}</span>
+      <Select
+        items={versions.map((entry) => ({
+          label: installedSet.has(entry)
+            ? t("profiles.fields.installedVersion", { version: entry })
+            : entry,
+          value: entry,
+        }))}
+        value={value}
+        onValueChange={(next) => next && onValueChange(next)}
+      >
+        <SelectTrigger className="w-full" aria-label={t("profiles.fields.gameVersion")}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {versions.map((entry) => (
+            <SelectItem key={entry} value={entry}>
+              {entry}
+              {installedSet.has(entry) && (
+                <span className="text-muted-foreground ml-2 text-xs">
+                  {t("profiles.fields.installed")}
+                </span>
+              )}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <p className="text-muted-foreground text-[11px]">{t("profiles.gameData.versionHint")}</p>
+    </div>
+  );
+}
+
+/** Submit button of the adopt sheet; disabled until the form is valid. */
+function GameDataSubmitButton({
+  busy,
+  name,
+  onAdopt,
+  selectedPath,
+  version,
+}: {
+  busy: boolean;
+  name: string;
+  onAdopt: () => void;
+  selectedPath: string;
+  version: string;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Button
+      variant="accent-primary"
+      disabled={busy || !selectedPath || !version || name.trim().length < 2}
+      onClick={onAdopt}
+    >
+      {busy
+        ? t("profiles.gameData.linking")
+        : t("profiles.gameData.useAs", {
+            name: name.trim() || t("profiles.gameData.defaultName"),
+          })}
+    </Button>
+  );
+}
 
 /**
  * Banner that offers to use an existing Vintage Story installation's data
@@ -58,10 +225,10 @@ export default function GameDataBanner() {
 
   const pending = (detected ?? []).filter((item) => !item.registered);
   const selected = (detected ?? []).find((item) => item.path === selectedPath);
+  const versions = (gameVersions ?? []).toSorted(compareSemverDesc);
 
   function openSheet() {
     const first = pending[0];
-    const versions = (gameVersions ?? []).toSorted(compareSemverDesc);
     setSelectedPath(first?.path ?? "");
     setName("Vintage Story");
     setVersion(pickDefaultVersion(versions, showPreRelease));
@@ -91,32 +258,8 @@ export default function GameDataBanner() {
 
   return (
     <>
-      {!dismissed && pending.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3 border border-[var(--color-info)]/30 bg-[var(--color-info)]/5 p-3">
-          <Gamepad2 className="size-4 shrink-0 text-[var(--color-info)]" />
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium">{t("profiles.gameData.foundTitle")}</p>
-            <p className="text-muted-foreground truncate text-[11px]">
-              {pending.length > 1
-                ? t("profiles.gameData.foundDescriptionMore", {
-                    path: pending[0].path,
-                    more: pending.length - 1,
-                  })
-                : t("profiles.gameData.foundDescription", { path: pending[0].path })}
-            </p>
-          </div>
-          <Button size="sm" variant="accent-primary" onClick={openSheet}>
-            {t("profiles.gameData.use")}
-          </Button>
-          <Button
-            aria-label={t("common.actions.dismiss")}
-            size="icon-sm"
-            variant="ghost"
-            onClick={dismiss}
-          >
-            <X />
-          </Button>
-        </div>
+      {!dismissed && (
+        <GameDataFoundBanner pending={pending} onDismiss={dismiss} onUse={openSheet} />
       )}
 
       <Sheet open={open} onOpenChange={(next) => !busy && setOpen(next)}>
@@ -128,38 +271,13 @@ export default function GameDataBanner() {
 
           <ScrollArea scrollFade className="min-h-0 flex-1">
             <div className="grid gap-4 p-4">
-              {pending.length > 1 && (
-                <div className="grid gap-1.5">
-                  <span className="text-xs font-medium">{t("common.fields.folder")}</span>
-                  <Select
-                    items={pending.map((item) => ({ label: item.path, value: item.path }))}
-                    value={selectedPath}
-                    onValueChange={(value) => value && setSelectedPath(value)}
-                  >
-                    <SelectTrigger
-                      className="w-full"
-                      aria-label={t("profiles.gameData.folderAria")}
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {pending.map((item) => (
-                        <SelectItem key={item.path} value={item.path}>
-                          {item.path}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+              <GameDataFolderSelect
+                items={pending}
+                value={selectedPath}
+                onValueChange={setSelectedPath}
+              />
 
-              {selected && (
-                <p className="bg-muted text-muted-foreground border p-2 text-[11px]">
-                  <span className="text-foreground font-medium">{selected.size_display}</span> ·{" "}
-                  {t("profiles.modCount", { count: selected.mod_count })} ·{" "}
-                  {selected.has_saves ? t("profiles.hasWorlds") : t("profiles.noWorlds")}
-                </p>
-              )}
+              <GameDataSelectedSummary selected={selected} />
 
               <div className="grid gap-1.5">
                 <label className="text-xs font-medium" htmlFor="game-data-name">
@@ -172,53 +290,23 @@ export default function GameDataBanner() {
                 />
               </div>
 
-              <div className="grid gap-1.5">
-                <span className="text-xs font-medium">{t("profiles.fields.gameVersion")}</span>
-                <Select
-                  items={(gameVersions ?? []).toSorted(compareSemverDesc).map((entry) => ({
-                    label: installedSet.has(entry)
-                      ? t("profiles.fields.installedVersion", { version: entry })
-                      : entry,
-                    value: entry,
-                  }))}
-                  value={version}
-                  onValueChange={(value) => value && setVersion(value)}
-                >
-                  <SelectTrigger className="w-full" aria-label={t("profiles.fields.gameVersion")}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(gameVersions ?? []).toSorted(compareSemverDesc).map((entry) => (
-                      <SelectItem key={entry} value={entry}>
-                        {entry}
-                        {installedSet.has(entry) && (
-                          <span className="text-muted-foreground ml-2 text-xs">
-                            {t("profiles.fields.installed")}
-                          </span>
-                        )}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-muted-foreground text-[11px]">
-                  {t("profiles.gameData.versionHint")}
-                </p>
-              </div>
+              <GameDataVersionSelect
+                installedSet={installedSet}
+                value={version}
+                versions={versions}
+                onValueChange={setVersion}
+              />
             </div>
           </ScrollArea>
 
           <SheetFooter className="border-t">
-            <Button
-              variant="accent-primary"
-              disabled={busy || !selectedPath || !version || name.trim().length < 2}
-              onClick={() => void adopt()}
-            >
-              {busy
-                ? t("profiles.gameData.linking")
-                : t("profiles.gameData.useAs", {
-                    name: name.trim() || t("profiles.gameData.defaultName"),
-                  })}
-            </Button>
+            <GameDataSubmitButton
+              busy={busy}
+              name={name}
+              selectedPath={selectedPath}
+              version={version}
+              onAdopt={() => void adopt()}
+            />
           </SheetFooter>
         </SheetContent>
       </Sheet>

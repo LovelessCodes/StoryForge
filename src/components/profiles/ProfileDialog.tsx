@@ -56,6 +56,134 @@ interface ProfileDialogProps {
   profile?: Profile | null;
 }
 
+/** Profile name field. */
+function ProfileNameField({
+  name,
+  onNameChange,
+}: {
+  name: string;
+  onNameChange: (name: string) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="grid gap-1.5">
+      <label className="text-xs font-medium" htmlFor="profile-name">
+        {t("common.fields.name")}
+      </label>
+      <Input
+        id="profile-name"
+        placeholder={t("profiles.dialog.namePlaceholder")}
+        value={name}
+        onChange={(event) => onNameChange(event.target.value)}
+      />
+    </div>
+  );
+}
+
+/** Game version picker with an installed marker and a not-installed hint. */
+function ProfileVersionField({
+  installedSet,
+  items,
+  onValueChange,
+  value,
+}: {
+  installedSet: Set<string>;
+  items: { label: string; value: string }[];
+  onValueChange: (value: string) => void;
+  value: string;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="grid gap-1.5">
+      <span className="text-xs font-medium">{t("profiles.fields.gameVersion")}</span>
+      <Select items={items} value={value} onValueChange={(next) => next && onValueChange(next)}>
+        <SelectTrigger className="w-full" aria-label={t("profiles.fields.gameVersion")}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {items.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
+              {installedSet.has(item.value) &&
+                !isOptimumVersion(item.value) &&
+                !isVulkanStoryVersion(item.value) && (
+                  <span className="text-muted-foreground ml-2 text-xs">
+                    {t("profiles.fields.installed")}
+                  </span>
+                )}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {value && !installedSet.has(value) && (
+        <p className="text-muted-foreground text-[11px]">
+          {t("profiles.dialog.versionNotInstalled", { version: value })}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Label + hint on the left, switch on the right. */
+function ProfileSwitchRow({
+  checked,
+  hint,
+  label,
+  onCheckedChange,
+}: {
+  checked: boolean;
+  hint: string;
+  label: string;
+  onCheckedChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <div className="grid gap-0.5">
+        <span className="text-xs font-medium">{label}</span>
+        <span className="text-muted-foreground text-[11px]">{hint}</span>
+      </div>
+      <Switch checked={checked} onCheckedChange={onCheckedChange} />
+    </div>
+  );
+}
+
+/** Launch parameters and environment variables. */
+function ProfileAdvancedFields({
+  envEntries,
+  onEnvEntriesChange,
+  onStartParamsChange,
+  startParams,
+}: {
+  envEntries: EnvVarEntry[];
+  onEnvEntriesChange: (entries: EnvVarEntry[]) => void;
+  onStartParamsChange: (startParams: string) => void;
+  startParams: string;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <div className="grid gap-1.5">
+        <label className="text-xs font-medium" htmlFor="profile-start-params">
+          {t("profiles.dialog.launchParameters")}{" "}
+          <span className="text-muted-foreground">({t("profiles.dialog.optional")})</span>
+        </label>
+        <Input
+          id="profile-start-params"
+          className="font-mono"
+          placeholder={t("profiles.dialog.startParamsPlaceholder")}
+          value={startParams}
+          onChange={(event) => onStartParamsChange(event.target.value)}
+        />
+      </div>
+
+      <div className="grid gap-1.5">
+        <span className="text-xs font-medium">{t("profiles.dialog.environmentVariables")}</span>
+        <EnvVarsEditor entries={envEntries} onChange={onEnvEntriesChange} />
+      </div>
+    </>
+  );
+}
+
 export default function ProfileDialog({
   open,
   onOpenChange,
@@ -84,7 +212,8 @@ export default function ProfileDialog({
       // Installed pre-releases stay listed: a profile pinned to an rc must
       // keep its version selectable even when the setting hides them.
       .filter((v) => showPreRelease || !isPreReleaseVersion(v) || installedSet.has(v));
-    const extras = installedVersions.filter((installed) => !remote.includes(installed.name));
+    const remoteSet = new Set(remote);
+    const extras = installedVersions.filter((installed) => !remoteSet.has(installed.name));
     const items = [
       ...remote.map((v) => ({
         label: installedSet.has(v) ? t("profiles.fields.installedVersion", { version: v }) : v,
@@ -129,7 +258,7 @@ export default function ProfileDialog({
   const [ignoreGameDefaults, setIgnoreGameDefaults] = useState(
     profile?.ignoreGameDefaults ?? false,
   );
-  const [envEntries, setEnvEntries] = useState<EnvVarEntry[]>(
+  const [envEntries, setEnvEntries] = useState<EnvVarEntry[]>(() =>
     mapToEnvEntries(profile?.environmentVariables),
   );
   const [busy, setBusy] = useState<string | null>(null);
@@ -278,97 +407,40 @@ export default function ProfileDialog({
 
         <ScrollArea scrollFade className="min-h-0 flex-1">
           <div className="grid gap-4 p-4">
-            <div className="grid gap-1.5">
-              <label className="text-xs font-medium" htmlFor="profile-name">
-                {t("common.fields.name")}
-              </label>
-              <Input
-                id="profile-name"
-                placeholder={t("profiles.dialog.namePlaceholder")}
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </div>
+            <ProfileNameField name={name} onNameChange={setName} />
 
-            <div className="grid gap-1.5">
-              <span className="text-xs font-medium">{t("profiles.fields.gameVersion")}</span>
-              <Select
-                items={versionItems}
-                value={version}
-                onValueChange={(value) => value && setVersion(value)}
-              >
-                <SelectTrigger className="w-full" aria-label={t("profiles.fields.gameVersion")}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {versionItems.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                      {installedSet.has(item.value) &&
-                        !isOptimumVersion(item.value) &&
-                        !isVulkanStoryVersion(item.value) && (
-                          <span className="text-muted-foreground ml-2 text-xs">
-                            {t("profiles.fields.installed")}
-                          </span>
-                        )}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {version && !installedSet.has(version) && (
-                <p className="text-muted-foreground text-[11px]">
-                  {t("profiles.dialog.versionNotInstalled", { version })}
-                </p>
-              )}
-            </div>
+            <ProfileVersionField
+              installedSet={installedSet}
+              items={versionItems}
+              value={version}
+              onValueChange={setVersion}
+            />
 
             <div className="grid gap-1.5">
               <span className="text-xs font-medium">{t("profiles.dialog.icon")}</span>
               <ProfileIconPicker value={icon} onChange={setIcon} />
             </div>
 
-            <div className="flex items-center justify-between gap-4">
-              <div className="grid gap-0.5">
-                <span className="text-xs font-medium">{t("profiles.dialog.favorite")}</span>
-                <span className="text-muted-foreground text-[11px]">
-                  {t("profiles.dialog.favoriteHint")}
-                </span>
-              </div>
-              <Switch checked={favorite} onCheckedChange={setFavorite} />
-            </div>
+            <ProfileSwitchRow
+              checked={favorite}
+              hint={t("profiles.dialog.favoriteHint")}
+              label={t("profiles.dialog.favorite")}
+              onCheckedChange={setFavorite}
+            />
 
-            <div className="flex items-center justify-between gap-4">
-              <div className="grid gap-0.5">
-                <span className="text-xs font-medium">
-                  {t("profiles.dialog.ignoreGameDefaults")}
-                </span>
-                <span className="text-muted-foreground text-[11px]">
-                  {t("profiles.dialog.ignoreGameDefaultsHint")}
-                </span>
-              </div>
-              <Switch checked={ignoreGameDefaults} onCheckedChange={setIgnoreGameDefaults} />
-            </div>
+            <ProfileSwitchRow
+              checked={ignoreGameDefaults}
+              hint={t("profiles.dialog.ignoreGameDefaultsHint")}
+              label={t("profiles.dialog.ignoreGameDefaults")}
+              onCheckedChange={setIgnoreGameDefaults}
+            />
 
-            <div className="grid gap-1.5">
-              <label className="text-xs font-medium" htmlFor="profile-start-params">
-                {t("profiles.dialog.launchParameters")}{" "}
-                <span className="text-muted-foreground">({t("profiles.dialog.optional")})</span>
-              </label>
-              <Input
-                id="profile-start-params"
-                className="font-mono"
-                placeholder={t("profiles.dialog.startParamsPlaceholder")}
-                value={startParams}
-                onChange={(event) => setStartParams(event.target.value)}
-              />
-            </div>
-
-            <div className="grid gap-1.5">
-              <span className="text-xs font-medium">
-                {t("profiles.dialog.environmentVariables")}
-              </span>
-              <EnvVarsEditor entries={envEntries} onChange={setEnvEntries} />
-            </div>
+            <ProfileAdvancedFields
+              envEntries={envEntries}
+              startParams={startParams}
+              onEnvEntriesChange={setEnvEntries}
+              onStartParamsChange={setStartParams}
+            />
 
             {isEdit && (
               <div className="grid gap-1.5">

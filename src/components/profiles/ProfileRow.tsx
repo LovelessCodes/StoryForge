@@ -64,9 +64,181 @@ interface ProfileRowProps {
   onEdit: (profile: Profile) => void;
 }
 
-export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProps) {
+/** Profile icon cell: the stored icon image, or a placeholder when unset. */
+function ProfileRowIcon({ icon }: { icon: string | null }) {
+  return (
+    <div className="bg-muted/50 flex size-10 shrink-0 items-center justify-center border">
+      {icon ? (
+        <img alt="" className="size-8 object-contain" src={`${PROFILE_ICON_BASE}/${icon}`} />
+      ) : (
+        <IdCard className="text-muted-foreground size-5" />
+      )}
+    </div>
+  );
+}
+
+/** Profile name plus the active, favorite, modpack and external-data badges. */
+function ProfileRowTitle({ isActive, profile }: { isActive: boolean; profile: Profile }) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <span className="truncate text-sm font-medium">{profile.name}</span>
+      {isActive && (
+        <Badge className="border-accent-primary/40 bg-accent-primary/10 text-accent-primary h-4 px-1.5 text-[10px]">
+          {t("profiles.row.active")}
+        </Badge>
+      )}
+      {profile.favorite && (
+        <Star className="size-3 shrink-0 fill-[var(--color-accent-amber)] text-[var(--color-accent-amber)]" />
+      )}
+      {profile.modpackSlug && (
+        <Badge variant="outline" className="h-4 px-1.5 text-[10px]">
+          {profile.modpackSlug} v{profile.modpackVersion}
+        </Badge>
+      )}
+      {profile.external && (
+        <Badge
+          variant="outline"
+          className="h-4 border-[var(--color-info)]/40 px-1.5 text-[10px] text-[var(--color-info)]"
+        >
+          {t("profiles.row.existingData")}
+        </Badge>
+      )}
+    </div>
+  );
+}
+
+/** Version, size and last-played line, plus the not-installed hint. */
+function ProfileRowMeta({
+  profile,
+  versionInstalled,
+}: {
+  profile: Profile;
+  versionInstalled: boolean;
+}) {
   const { t } = useTranslation();
   const dateLocale = useDateLocale();
+  const meta: string[] = [`v${profile.version}`, profile.sizeDisplay];
+  meta.push(
+    profile.lastTimePlayed > 0
+      ? t("profiles.row.played", {
+          time: formatDistanceToNow(new Date(profile.lastTimePlayed), {
+            addSuffix: true,
+            locale: dateLocale,
+          }),
+        })
+      : t("profiles.row.neverPlayed"),
+  );
+  return (
+    <div className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px]">
+      {meta.map((item) => (
+        <span key={item}>{item}</span>
+      ))}
+      {!versionInstalled && (
+        <span className="text-[var(--color-warning)]">{t("profiles.row.notInstalled")}</span>
+      )}
+    </div>
+  );
+}
+
+/** Clone-name sheet for duplicating a profile. */
+function ProfileCloneSheet({
+  busy,
+  name,
+  onClone,
+  onNameChange,
+  onOpenChange,
+  open,
+  profile,
+}: {
+  busy: boolean;
+  name: string;
+  onClone: () => void;
+  onNameChange: (name: string) => void;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  profile: Profile;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Sheet open={open} onOpenChange={(next) => !busy && onOpenChange(next)}>
+      <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-sm">
+        <SheetHeader className="border-b">
+          <SheetTitle>{t("profiles.clone.title", { name: profile.name })}</SheetTitle>
+          <SheetDescription>{t("profiles.clone.description")}</SheetDescription>
+        </SheetHeader>
+        <div className="grid gap-1.5 p-4">
+          <label className="text-xs font-medium" htmlFor="clone-name">
+            {t("profiles.clone.newName")}
+          </label>
+          <Input
+            id="clone-name"
+            value={name}
+            onChange={(event) => onNameChange(event.target.value)}
+          />
+        </div>
+        <SheetFooter className="border-t">
+          <Button
+            variant="accent-primary"
+            disabled={busy || name.trim().length < 2}
+            onClick={onClone}
+          >
+            {busy ? t("profiles.clone.busy") : t("profiles.clone.submit")}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+/** Confirmation sheet for deleting (or unregistering) a profile. */
+function ProfileDeleteSheet({
+  busy,
+  onDelete,
+  onOpenChange,
+  open,
+  profile,
+}: {
+  busy: boolean;
+  onDelete: () => void;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  profile: Profile;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Sheet open={open} onOpenChange={(next) => !busy && onOpenChange(next)}>
+      <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-sm">
+        <SheetHeader className="border-b">
+          <SheetTitle>
+            {profile.external
+              ? t("profiles.delete.removeTitle", { name: profile.name })
+              : t("profiles.delete.deleteTitle", { name: profile.name })}
+          </SheetTitle>
+          <SheetDescription>
+            {profile.external
+              ? t("profiles.delete.externalDescription")
+              : t("profiles.delete.folderDescription")}
+          </SheetDescription>
+        </SheetHeader>
+        <SheetFooter className="border-t">
+          <Button variant="destructive" disabled={busy} onClick={onDelete}>
+            {busy
+              ? profile.external
+                ? t("profiles.delete.removing")
+                : t("profiles.delete.deleting")
+              : profile.external
+                ? t("profiles.delete.removeAction")
+                : t("profiles.delete.moveToTrash")}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const installedNames = useInstalledVersionNames();
@@ -80,7 +252,7 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
   const [packOpen, setPackOpen] = useState(false);
   const [screenshotsOpen, setScreenshotsOpen] = useState(false);
   const [cloneOpen, setCloneOpen] = useState(false);
-  const [cloneName, setCloneName] = useState(
+  const [cloneName, setCloneName] = useState(() =>
     t("profiles.clone.defaultName", { name: profile.name }),
   );
   const [cloneBusy, setCloneBusy] = useState(false);
@@ -200,65 +372,13 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
     }
   }
 
-  const meta: string[] = [`v${profile.version}`, profile.sizeDisplay];
-  meta.push(
-    profile.lastTimePlayed > 0
-      ? t("profiles.row.played", {
-          time: formatDistanceToNow(new Date(profile.lastTimePlayed), {
-            addSuffix: true,
-            locale: dateLocale,
-          }),
-        })
-      : t("profiles.row.neverPlayed"),
-  );
-
   return (
     <div className="bg-card hover:bg-muted/40 flex items-center gap-3 p-3 transition-colors">
-      <div className="bg-muted/50 flex size-10 shrink-0 items-center justify-center border">
-        {profile.icon ? (
-          <img
-            alt=""
-            className="size-8 object-contain"
-            src={`${PROFILE_ICON_BASE}/${profile.icon}`}
-          />
-        ) : (
-          <IdCard className="text-muted-foreground size-5" />
-        )}
-      </div>
+      <ProfileRowIcon icon={profile.icon} />
 
       <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="truncate text-sm font-medium">{profile.name}</span>
-          {isActive && (
-            <Badge className="border-accent-primary/40 bg-accent-primary/10 text-accent-primary h-4 px-1.5 text-[10px]">
-              {t("profiles.row.active")}
-            </Badge>
-          )}
-          {profile.favorite && (
-            <Star className="size-3 shrink-0 fill-[var(--color-accent-amber)] text-[var(--color-accent-amber)]" />
-          )}
-          {profile.modpackSlug && (
-            <Badge variant="outline" className="h-4 px-1.5 text-[10px]">
-              {profile.modpackSlug} v{profile.modpackVersion}
-            </Badge>
-          )}
-          {profile.external && (
-            <Badge
-              variant="outline"
-              className="h-4 border-[var(--color-info)]/40 px-1.5 text-[10px] text-[var(--color-info)]"
-            >
-              {t("profiles.row.existingData")}
-            </Badge>
-          )}
-        </div>
-        <div className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px]">
-          {meta.map((item) => (
-            <span key={item}>{item}</span>
-          ))}
-          {!versionInstalled && (
-            <span className="text-[var(--color-warning)]">{t("profiles.row.notInstalled")}</span>
-          )}
-        </div>
+        <ProfileRowTitle isActive={isActive} profile={profile} />
+        <ProfileRowMeta profile={profile} versionInstalled={versionInstalled} />
       </div>
 
       {!isActive && (
@@ -356,61 +476,23 @@ export default function ProfileRow({ profile, isActive, onEdit }: ProfileRowProp
 
       <ProfilePackSheet profile={profile} open={packOpen} onOpenChange={setPackOpen} />
 
-      <Sheet open={cloneOpen} onOpenChange={(next) => !cloneBusy && setCloneOpen(next)}>
-        <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-sm">
-          <SheetHeader className="border-b">
-            <SheetTitle>{t("profiles.clone.title", { name: profile.name })}</SheetTitle>
-            <SheetDescription>{t("profiles.clone.description")}</SheetDescription>
-          </SheetHeader>
-          <div className="grid gap-1.5 p-4">
-            <label className="text-xs font-medium" htmlFor="clone-name">
-              {t("profiles.clone.newName")}
-            </label>
-            <Input
-              id="clone-name"
-              value={cloneName}
-              onChange={(event) => setCloneName(event.target.value)}
-            />
-          </div>
-          <SheetFooter className="border-t">
-            <Button
-              variant="accent-primary"
-              disabled={cloneBusy || cloneName.trim().length < 2}
-              onClick={() => void doClone()}
-            >
-              {cloneBusy ? t("profiles.clone.busy") : t("profiles.clone.submit")}
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+      <ProfileCloneSheet
+        busy={cloneBusy}
+        name={cloneName}
+        open={cloneOpen}
+        profile={profile}
+        onClone={() => void doClone()}
+        onNameChange={setCloneName}
+        onOpenChange={setCloneOpen}
+      />
 
-      <Sheet open={deleteOpen} onOpenChange={(next) => !deleteBusy && setDeleteOpen(next)}>
-        <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-sm">
-          <SheetHeader className="border-b">
-            <SheetTitle>
-              {profile.external
-                ? t("profiles.delete.removeTitle", { name: profile.name })
-                : t("profiles.delete.deleteTitle", { name: profile.name })}
-            </SheetTitle>
-            <SheetDescription>
-              {profile.external
-                ? t("profiles.delete.externalDescription")
-                : t("profiles.delete.folderDescription")}
-            </SheetDescription>
-          </SheetHeader>
-          <SheetFooter className="border-t">
-            <Button variant="destructive" disabled={deleteBusy} onClick={() => void doDelete()}>
-              {deleteBusy
-                ? profile.external
-                  ? t("profiles.delete.removing")
-                  : t("profiles.delete.deleting")
-                : profile.external
-                  ? t("profiles.delete.removeAction")
-                  : t("profiles.delete.moveToTrash")}
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+      <ProfileDeleteSheet
+        busy={deleteBusy}
+        open={deleteOpen}
+        profile={profile}
+        onDelete={() => void doDelete()}
+        onOpenChange={setDeleteOpen}
+      />
     </div>
   );
 }
