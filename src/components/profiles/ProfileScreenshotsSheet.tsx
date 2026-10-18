@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { Camera, FolderOpen, Loader2, X } from "lucide-react";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -85,10 +85,10 @@ function ScreenshotThumb({ shot, onOpen }: { shot: ScreenshotInfo; onOpen: () =>
         type="button"
       >
         {image.data ? (
-          <img
+          <ScreenshotImage
             alt={shot.name}
+            bytes={image.data}
             className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
-            src={image.data}
           />
         ) : (
           <span className="text-muted-foreground grid h-full place-items-center text-[11px]">
@@ -101,6 +101,31 @@ function ScreenshotThumb({ shot, onOpen }: { shot: ScreenshotInfo; onOpen: () =>
       </span>
     </div>
   );
+}
+
+/**
+ * Renders PNG bytes as an `<img>`. The object URL is created and revoked in the
+ * same layout effect, so the browser sets it before paint and the Blob is freed
+ * when the bytes change or the element unmounts.
+ */
+function ScreenshotImage({
+  alt,
+  bytes,
+  className,
+}: {
+  alt: string;
+  bytes: ArrayBuffer;
+  className?: string;
+}) {
+  const ref = useRef<HTMLImageElement>(null);
+
+  useLayoutEffect(() => {
+    const objectUrl = URL.createObjectURL(new Blob([bytes], { type: "image/png" }));
+    if (ref.current) ref.current.src = objectUrl;
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [bytes]);
+
+  return <img ref={ref} alt={alt} className={className} />;
 }
 
 function FullScreenshot({ shot, onClose }: { shot: ScreenshotInfo; onClose: () => void }) {
@@ -133,7 +158,11 @@ function FullScreenshot({ shot, onClose }: { shot: ScreenshotInfo; onClose: () =
       </div>
       <div className="flex min-h-0 flex-1 items-center justify-center p-3">
         {image.data ? (
-          <img alt={shot.name} className="max-h-full max-w-full object-contain" src={image.data} />
+          <ScreenshotImage
+            alt={shot.name}
+            bytes={image.data}
+            className="max-h-full max-w-full object-contain"
+          />
         ) : (
           <Loader2 className="text-muted-foreground animate-spin" />
         )}
