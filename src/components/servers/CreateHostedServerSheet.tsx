@@ -29,7 +29,7 @@ import { errorMessage } from "@/lib/errors";
 import { compareSemverDesc } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
 import { gameVersionsQuery } from "@/lib/queries";
-import { useAccountStore } from "@/stores/accounts";
+import { useAccountStore, type User } from "@/stores/accounts";
 
 interface CreateHostedServerSheetProps {
   open: boolean;
@@ -156,196 +156,42 @@ export default function CreateHostedServerSheet({
 
         <ScrollArea scrollFade className="min-h-0 flex-1">
           <div className="grid gap-4 p-4">
-            <div className="grid gap-1.5">
-              <label className="text-xs font-medium" htmlFor="hosted-name">
-                {t("common.fields.name")}
-              </label>
-              <Input
-                id="hosted-name"
-                placeholder={t("servers.create.namePlaceholder")}
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </div>
+            <HostedServerDetailsFields
+              allVersions={allVersions}
+              installedVersionsSet={installedVersionsSet}
+              name={name}
+              selectedVersion={selectedVersion}
+              setName={setName}
+              setVersion={setVersion}
+            />
 
-            <div className="grid gap-1.5">
-              <span className="text-xs font-medium">{t("common.fields.version")}</span>
-              <Select
-                items={allVersions.map((v) => ({
-                  label: installedVersionsSet.has(v)
-                    ? t("servers.create.installedOption", { version: v })
-                    : t("servers.create.notInstalledOption", { version: v }),
-                  value: v,
-                }))}
-                value={selectedVersion}
-                onValueChange={(value) => value && setVersion(value)}
-              >
-                <SelectTrigger className="w-full" aria-label={t("servers.create.gameVersionAria")}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {allVersions.map((v) => (
-                    <SelectItem key={v} value={v}>
-                      {v}
-                      <span className="text-muted-foreground ml-2 text-xs">
-                        {installedVersionsSet.has(v)
-                          ? t("servers.create.installed")
-                          : t("servers.create.notInstalled")}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <HostedServerNetworkFields
+              bindIp={bindIp}
+              dataDir={dataDir}
+              port={port}
+              setBindIp={setBindIp}
+              setDataDir={setDataDir}
+              setPort={setPort}
+              setStartParams={setStartParams}
+              startParams={startParams}
+            />
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-1.5">
-                <label className="text-xs font-medium" htmlFor="hosted-port">
-                  {t("common.fields.port")}
-                </label>
-                <Input
-                  id="hosted-port"
-                  inputMode="numeric"
-                  value={port}
-                  onChange={(event) => setPort(event.target.value)}
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <label className="text-xs font-medium" htmlFor="hosted-bind-ip">
-                  {t("servers.create.bindIp")}
-                </label>
-                <Input
-                  id="hosted-bind-ip"
-                  value={bindIp}
-                  onChange={(event) => setBindIp(event.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-1.5">
-              <label className="text-xs font-medium" htmlFor="hosted-data-dir">
-                {t("servers.create.dataDirectory")}
-              </label>
-              <Input
-                id="hosted-data-dir"
-                placeholder={t("servers.create.dataDirectoryPlaceholder")}
-                value={dataDir}
-                onChange={(event) => setDataDir(event.target.value)}
-              />
-            </div>
-
-            <div className="grid gap-1.5">
-              <label className="text-xs font-medium" htmlFor="hosted-start-params">
-                {t("servers.create.startParams")}{" "}
-                <span className="text-muted-foreground">({t("common.states.optional")})</span>
-              </label>
-              <Input
-                id="hosted-start-params"
-                className="font-mono"
-                placeholder={t("servers.create.startParamsPlaceholder")}
-                value={startParams}
-                onChange={(event) => setStartParams(event.target.value)}
-              />
-            </div>
-
-            <p className="text-muted-foreground border-t pt-4 text-[10px] font-medium tracking-widest uppercase">
-              {t("servers.create.securityHeading")}
-            </p>
-
-            <div className="grid gap-1.5">
-              <label className="text-xs font-medium" htmlFor="hosted-password">
-                {t("common.fields.password")}{" "}
-                <span className="text-muted-foreground">({t("common.states.optional")})</span>
-              </label>
-              <Input
-                id="hosted-password"
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between gap-4">
-              <div className="grid gap-0.5">
-                <span className="text-xs font-medium">{t("servers.create.enableWhitelist")}</span>
-                <span className="text-muted-foreground text-[11px]">
-                  {t("servers.create.whitelistHint")}
-                </span>
-              </div>
-              <Switch checked={whitelistEnabled} onCheckedChange={setWhitelistEnabled} />
-            </div>
-
-            {whitelistEnabled && (
-              <>
-                <div className="grid gap-1.5">
-                  <span className="text-xs font-medium">
-                    {t("servers.create.defaultWhitelistPlayer")}
-                  </span>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder={t("servers.create.accountNamePlaceholder")}
-                      value={lookupInput}
-                      onChange={(event) => setLookupInput(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") void handleNameLookup();
-                      }}
-                    />
-                    <Button
-                      disabled={!lookupInput.trim() || lookingUp}
-                      size="sm"
-                      type="button"
-                      variant="outline"
-                      onClick={() => void handleNameLookup()}
-                    >
-                      {lookingUp ? <Loader2 className="animate-spin" /> : <Search />}
-                      {t("servers.create.lookup")}
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="grid gap-1.5">
-                    <label className="text-xs font-medium" htmlFor="hosted-whitelist-uid">
-                      {t("servers.create.playerUid")}
-                    </label>
-                    <Input
-                      id="hosted-whitelist-uid"
-                      placeholder={t("servers.create.playerUid")}
-                      value={defaultWhitelistUid}
-                      onBlur={() => void handleUidLookup(defaultWhitelistUid)}
-                      onChange={(event) => setDefaultWhitelistUid(event.target.value)}
-                    />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <label className="text-xs font-medium" htmlFor="hosted-whitelist-name">
-                      {t("servers.create.playerName")}
-                    </label>
-                    <Input
-                      id="hosted-whitelist-name"
-                      placeholder={t("servers.create.playerName")}
-                      value={defaultWhitelistName}
-                      onChange={(event) => setDefaultWhitelistName(event.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <Button
-                  className="justify-self-start"
-                  disabled={!selectedUser?.uid || !selectedUser.playername}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    if (selectedUser?.uid && selectedUser?.playername) {
-                      setDefaultWhitelistUid(selectedUser.uid);
-                      setDefaultWhitelistName(selectedUser.playername);
-                    }
-                  }}
-                >
-                  {t("servers.create.addMe")}
-                </Button>
-              </>
-            )}
+            <HostedServerSecurityFields
+              defaultWhitelistName={defaultWhitelistName}
+              defaultWhitelistUid={defaultWhitelistUid}
+              lookingUp={lookingUp}
+              lookupInput={lookupInput}
+              onLookupName={() => void handleNameLookup()}
+              onLookupUid={(uid) => void handleUidLookup(uid)}
+              password={password}
+              selectedUser={selectedUser}
+              setDefaultWhitelistName={setDefaultWhitelistName}
+              setDefaultWhitelistUid={setDefaultWhitelistUid}
+              setLookupInput={setLookupInput}
+              setPassword={setPassword}
+              setWhitelistEnabled={setWhitelistEnabled}
+              whitelistEnabled={whitelistEnabled}
+            />
 
             {error && <p className="text-destructive text-xs">{error}</p>}
           </div>
@@ -368,5 +214,286 @@ export default function CreateHostedServerSheet({
         </SheetFooter>
       </SheetContent>
     </Sheet>
+  );
+}
+
+/** Server name and game version fields. */
+function HostedServerDetailsFields({
+  allVersions,
+  installedVersionsSet,
+  name,
+  selectedVersion,
+  setName,
+  setVersion,
+}: {
+  allVersions: string[];
+  installedVersionsSet: Set<string>;
+  name: string;
+  selectedVersion: string;
+  setName: (value: string) => void;
+  setVersion: (value: string) => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <>
+      <div className="grid gap-1.5">
+        <label className="text-xs font-medium" htmlFor="hosted-name">
+          {t("common.fields.name")}
+        </label>
+        <Input
+          id="hosted-name"
+          placeholder={t("servers.create.namePlaceholder")}
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
+      </div>
+
+      <div className="grid gap-1.5">
+        <span className="text-xs font-medium">{t("common.fields.version")}</span>
+        <Select
+          items={allVersions.map((v) => ({
+            label: installedVersionsSet.has(v)
+              ? t("servers.create.installedOption", { version: v })
+              : t("servers.create.notInstalledOption", { version: v }),
+            value: v,
+          }))}
+          value={selectedVersion}
+          onValueChange={(value) => value && setVersion(value)}
+        >
+          <SelectTrigger className="w-full" aria-label={t("servers.create.gameVersionAria")}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {allVersions.map((v) => (
+              <SelectItem key={v} value={v}>
+                {v}
+                <span className="text-muted-foreground ml-2 text-xs">
+                  {installedVersionsSet.has(v)
+                    ? t("servers.create.installed")
+                    : t("servers.create.notInstalled")}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </>
+  );
+}
+
+/** Port, bind address, data directory and start parameters. */
+function HostedServerNetworkFields({
+  bindIp,
+  dataDir,
+  port,
+  setBindIp,
+  setDataDir,
+  setPort,
+  setStartParams,
+  startParams,
+}: {
+  bindIp: string;
+  dataDir: string;
+  port: string;
+  setBindIp: (value: string) => void;
+  setDataDir: (value: string) => void;
+  setPort: (value: string) => void;
+  setStartParams: (value: string) => void;
+  startParams: string;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-1.5">
+          <label className="text-xs font-medium" htmlFor="hosted-port">
+            {t("common.fields.port")}
+          </label>
+          <Input
+            id="hosted-port"
+            inputMode="numeric"
+            value={port}
+            onChange={(event) => setPort(event.target.value)}
+          />
+        </div>
+        <div className="grid gap-1.5">
+          <label className="text-xs font-medium" htmlFor="hosted-bind-ip">
+            {t("servers.create.bindIp")}
+          </label>
+          <Input
+            id="hosted-bind-ip"
+            value={bindIp}
+            onChange={(event) => setBindIp(event.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-1.5">
+        <label className="text-xs font-medium" htmlFor="hosted-data-dir">
+          {t("servers.create.dataDirectory")}
+        </label>
+        <Input
+          id="hosted-data-dir"
+          placeholder={t("servers.create.dataDirectoryPlaceholder")}
+          value={dataDir}
+          onChange={(event) => setDataDir(event.target.value)}
+        />
+      </div>
+
+      <div className="grid gap-1.5">
+        <label className="text-xs font-medium" htmlFor="hosted-start-params">
+          {t("servers.create.startParams")}{" "}
+          <span className="text-muted-foreground">({t("common.states.optional")})</span>
+        </label>
+        <Input
+          id="hosted-start-params"
+          className="font-mono"
+          placeholder={t("servers.create.startParamsPlaceholder")}
+          value={startParams}
+          onChange={(event) => setStartParams(event.target.value)}
+        />
+      </div>
+    </>
+  );
+}
+
+/** Password plus the whitelist toggle and default whitelist player fields. */
+function HostedServerSecurityFields({
+  defaultWhitelistName,
+  defaultWhitelistUid,
+  lookingUp,
+  lookupInput,
+  onLookupName,
+  onLookupUid,
+  password,
+  selectedUser,
+  setDefaultWhitelistName,
+  setDefaultWhitelistUid,
+  setLookupInput,
+  setPassword,
+  setWhitelistEnabled,
+  whitelistEnabled,
+}: {
+  defaultWhitelistName: string;
+  defaultWhitelistUid: string;
+  lookingUp: boolean;
+  lookupInput: string;
+  onLookupName: () => void;
+  onLookupUid: (uid: string) => void;
+  password: string;
+  selectedUser: User | null;
+  setDefaultWhitelistName: (value: string) => void;
+  setDefaultWhitelistUid: (value: string) => void;
+  setLookupInput: (value: string) => void;
+  setPassword: (value: string) => void;
+  setWhitelistEnabled: (value: boolean) => void;
+  whitelistEnabled: boolean;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <>
+      <p className="text-muted-foreground border-t pt-4 text-[10px] font-medium tracking-widest uppercase">
+        {t("servers.create.securityHeading")}
+      </p>
+
+      <div className="grid gap-1.5">
+        <label className="text-xs font-medium" htmlFor="hosted-password">
+          {t("common.fields.password")}{" "}
+          <span className="text-muted-foreground">({t("common.states.optional")})</span>
+        </label>
+        <Input
+          id="hosted-password"
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+      </div>
+
+      <div className="flex items-center justify-between gap-4">
+        <div className="grid gap-0.5">
+          <span className="text-xs font-medium">{t("servers.create.enableWhitelist")}</span>
+          <span className="text-muted-foreground text-[11px]">
+            {t("servers.create.whitelistHint")}
+          </span>
+        </div>
+        <Switch checked={whitelistEnabled} onCheckedChange={setWhitelistEnabled} />
+      </div>
+
+      {whitelistEnabled && (
+        <>
+          <div className="grid gap-1.5">
+            <span className="text-xs font-medium">
+              {t("servers.create.defaultWhitelistPlayer")}
+            </span>
+            <div className="flex gap-2">
+              <Input
+                placeholder={t("servers.create.accountNamePlaceholder")}
+                value={lookupInput}
+                onChange={(event) => setLookupInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.nativeEvent.isComposing) return;
+                  if (event.key === "Enter") onLookupName();
+                }}
+              />
+              <Button
+                disabled={!lookupInput.trim() || lookingUp}
+                size="sm"
+                type="button"
+                variant="outline"
+                onClick={onLookupName}
+              >
+                {lookingUp ? <Loader2 className="animate-spin" /> : <Search />}
+                {t("servers.create.lookup")}
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5">
+              <label className="text-xs font-medium" htmlFor="hosted-whitelist-uid">
+                {t("servers.create.playerUid")}
+              </label>
+              <Input
+                id="hosted-whitelist-uid"
+                placeholder={t("servers.create.playerUid")}
+                value={defaultWhitelistUid}
+                onBlur={() => onLookupUid(defaultWhitelistUid)}
+                onChange={(event) => setDefaultWhitelistUid(event.target.value)}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <label className="text-xs font-medium" htmlFor="hosted-whitelist-name">
+                {t("servers.create.playerName")}
+              </label>
+              <Input
+                id="hosted-whitelist-name"
+                placeholder={t("servers.create.playerName")}
+                value={defaultWhitelistName}
+                onChange={(event) => setDefaultWhitelistName(event.target.value)}
+              />
+            </div>
+          </div>
+
+          <Button
+            className="justify-self-start"
+            disabled={!selectedUser?.uid || !selectedUser.playername}
+            size="sm"
+            type="button"
+            variant="outline"
+            onClick={() => {
+              if (selectedUser?.uid && selectedUser?.playername) {
+                setDefaultWhitelistUid(selectedUser.uid);
+                setDefaultWhitelistName(selectedUser.playername);
+              }
+            }}
+          >
+            {t("servers.create.addMe")}
+          </Button>
+        </>
+      )}
+    </>
   );
 }
