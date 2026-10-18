@@ -1,7 +1,7 @@
 pub mod modules;
 use modules::{
     auth, backups, cairn, conflicts, download, game_data, game_defaults, gruntlauncher, importer,
-    launcher_logins, legacy, lithic, maps, modpack_io, mods, mvl, news, optimum, packs,
+    launch, launcher_logins, legacy, lithic, maps, modpack_io, mods, mvl, news, optimum, packs,
     profile_ops, profiles, rustory, saves, screenshots, server_hosting, servers, sniffer, versions,
     vs_launcher, vulkanstory, waxlight, yelloowstone,
 };
@@ -467,8 +467,8 @@ pub fn run() {
             profiles::save_profile,
             profiles::set_profile_game_defaults,
             profiles::import_profile,
-            profiles::play_game,
-            profiles::initialize_game,
+            launch::play_game,
+            launch::initialize_game,
             profiles::reveal_in_file_explorer,
             profiles::move_profiles_folder,
             profiles::remove_all_profiles,
