@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { OTPInput, type SlotProps } from "input-otp";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,8 @@ export default function AddAccountSheet({
   const { addUser, users } = useAccountStore();
   const [email, setEmail] = useState(initialEmail ?? "");
   const [password, setPassword] = useState("");
-  const [preloginToken, setPreloginToken] = useState("");
+  // Imperative scratch data for the next sign-in attempt; never rendered.
+  const preloginToken = useRef("");
   const [totpCode, setTotpCode] = useState("");
   const [challenge, setChallenge] = useState<"credentials" | "totp">("credentials");
   const [busy, setBusy] = useState(false);
@@ -55,7 +56,7 @@ export default function AddAccountSheet({
       const data = await invoke<SignInResponse>("login", {
         email,
         password,
-        prelogintoken: preloginToken,
+        prelogintoken: preloginToken.current,
         totpcode: totpCode,
       });
       addUser({
@@ -71,7 +72,7 @@ export default function AddAccountSheet({
       if (prelogintoken) {
         // Two-factor account: show (or keep) the code challenge. Every attempt
         // gets a fresh pre-login token.
-        setPreloginToken(prelogintoken);
+        preloginToken.current = prelogintoken;
         setChallenge("totp");
         setTotpCode("");
         if (message.includes("wrongtotpcode")) {

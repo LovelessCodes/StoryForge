@@ -114,6 +114,7 @@ export default function EditWorldSheet({
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 onKeyDown={(event) => {
+                  if (event.nativeEvent.isComposing) return;
                   if (event.key === "Enter") {
                     event.preventDefault();
                     submit();
