@@ -42,6 +42,17 @@ export type ExistingVersion = {
   changelog?: string | null;
 };
 
+/** Initial field values; the parent remounts the form per version. */
+function formDefaults(existingVersion?: ExistingVersion) {
+  return {
+    changelog: existingVersion?.changelog ?? "",
+    gameVersion: existingVersion?.gameVersion ?? "",
+    modConfigsUrl: existingVersion?.modConfigsUrl ?? "",
+    modsString: existingVersion?.modsString ?? "",
+    version: existingVersion?.version ?? "",
+  };
+}
+
 interface ModpackVersionFormProps {
   modpackSlug: string;
   /** Existing version to edit; omit to create a new one. */
@@ -62,11 +73,12 @@ export default function ModpackVersionForm({
   const { t } = useTranslation();
   const isNew = existingVersion == null;
 
-  const [version, setVersion] = useState(existingVersion?.version ?? "");
-  const [gameVersion, setGameVersion] = useState(existingVersion?.gameVersion ?? "");
-  const [modsString, setModsString] = useState(existingVersion?.modsString ?? "");
-  const [modConfigsUrl, setModConfigsUrl] = useState(existingVersion?.modConfigsUrl ?? "");
-  const [changelog, setChangelog] = useState(existingVersion?.changelog ?? "");
+  const defaults = formDefaults(existingVersion);
+  const [version, setVersion] = useState(defaults.version);
+  const [gameVersion, setGameVersion] = useState(defaults.gameVersion);
+  const [modsString, setModsString] = useState(defaults.modsString);
+  const [modConfigsUrl, setModConfigsUrl] = useState(defaults.modConfigsUrl);
+  const [changelog, setChangelog] = useState(defaults.changelog);
   const [pickedProfileId, setPickedProfileId] = useState<number | null>(null);
   const [uploadModConfig, setUploadModConfig] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});

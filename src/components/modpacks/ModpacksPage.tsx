@@ -1,56 +1,31 @@
-import { Link } from "@tanstack/react-router";
-import {
-  ArrowDownNarrowWide,
-  ArrowUpNarrowWide,
-  CloudOff,
-  PackageOpen,
-  Plus,
-  Search,
-} from "lucide-react";
+import { PackageOpen } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Trans, useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 
 import { GridSkeleton } from "@/components/common/LoadingSkeleton";
-import { Button } from "@/components/ui/button";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { useModpacks, type ModpackItem } from "@/hooks/use-modpacks";
 import { toast } from "@/lib/notify";
-import { useModpacksFilters, type ModpacksFilters } from "@/stores/modpacksFilters";
+import { useModpacksFilters } from "@/stores/modpacksFilters";
 import { useSettingsStore } from "@/stores/settings";
 
 import DeleteModpackSheet from "./DeleteModpackSheet";
 import ModpackCard from "./ModpackCard";
 import ModpackDetailSheet from "./ModpackDetailSheet";
 import ModpackFormSheet from "./ModpackFormSheet";
+import ModpacksFilterBar from "./ModpacksFilterBar";
+import ModpacksPageHeader from "./ModpacksPageHeader";
+
+/** The open detail sheet, derived from live query data. */
+function findModpackById(modpacks: ModpackItem[], id: string | null): ModpackItem | null {
+  return id ? (modpacks.find((modpack) => modpack.id === id) ?? null) : null;
+}
 
 export default function ModpacksPage() {
   const { t } = useTranslation();
-  const sortOptions: { label: string; value: ModpacksFilters["sortBy"] }[] = [
-    { label: t("modpacks.sort.created"), value: "created" },
-    { label: t("modpacks.sort.downloads"), value: "downloads" },
-    { label: t("modpacks.sort.name"), value: "name" },
-    { label: t("modpacks.sort.lastUpdated"), value: "updated" },
-  ];
-  const {
-    searchText,
-    setSearchText,
-    sortBy,
-    setSortBy,
-    orderDirection,
-    setOrderDirection,
-    owner,
-    setOwner,
-  } = useModpacksFilters();
+  const { searchText, setSearchText, owner, setOwner } = useModpacksFilters();
 
-  const { user, isLoading: sessionLoading } = useAuthSession();
+  const { user } = useAuthSession();
   const { data, isPending } = useModpacks();
 
   const [formOpen, setFormOpen] = useState(false);
@@ -96,9 +71,7 @@ export default function ModpacksPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingDeepLinkPack, isPending, searchText, owner]);
   // Derive the open detail from the live query data so version edits show up immediately.
-  const detailModpack = detailId
-    ? (modpacks.find((modpack) => modpack.id === detailId) ?? null)
-    : null;
+  const detailModpack = findModpackById(modpacks, detailId);
 
   const openCreate = () => {
     setEditingModpack(null);
@@ -114,91 +87,10 @@ export default function ModpacksPage() {
 
   return (
     <div className="grid gap-6">
-      <div className="flex items-center justify-between gap-3">
-        {!sessionLoading && !user ? (
-          <div className="text-muted-foreground flex items-center gap-2 text-xs">
-            <CloudOff className="size-4 shrink-0" />
-            <p>
-              <Trans
-                i18nKey="modpacks.page.guest"
-                components={{
-                  signIn: (
-                    <Link
-                      className="hover:text-foreground underline underline-offset-2"
-                      to="/auth"
-                    />
-                  ),
-                }}
-              />
-            </p>
-          </div>
-        ) : (
-          <span />
-        )}
-        {user && (
-          <Button size="sm" variant="accent-primary" onClick={openCreate}>
-            <Plus /> {t("modpacks.page.newModpack")}
-          </Button>
-        )}
-      </div>
+      <ModpacksPageHeader onCreate={openCreate} />
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2">
-        <InputGroup className="w-full sm:w-64">
-          <InputGroupInput
-            aria-label={t("modpacks.page.searchAria")}
-            placeholder={t("modpacks.page.searchPlaceholder")}
-            value={searchText}
-            onChange={(event) => setSearchText(event.target.value)}
-          />
-          <InputGroupAddon align="inline-end">
-            <Search className="size-4" />
-          </InputGroupAddon>
-        </InputGroup>
-
-        <Select
-          items={sortOptions}
-          value={sortBy}
-          onValueChange={(value) => {
-            if (value) setSortBy(value);
-          }}
-        >
-          <SelectTrigger aria-label={t("modpacks.page.sortByAria")} className="w-36">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent align="start" alignItemWithTrigger={false}>
-            {sortOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Button
-          aria-label={t("modpacks.page.toggleSortAria")}
-          size="icon-sm"
-          title={
-            orderDirection === "desc" ? t("modpacks.page.sortDesc") : t("modpacks.page.sortAsc")
-          }
-          variant="outline"
-          onClick={() => setOrderDirection(orderDirection === "desc" ? "asc" : "desc")}
-        >
-          {orderDirection === "desc" ? <ArrowDownNarrowWide /> : <ArrowUpNarrowWide />}
-        </Button>
-
-        <InputGroup className="w-full sm:w-52">
-          <InputGroupInput
-            aria-label={t("modpacks.page.filterOwnerAria")}
-            placeholder={t("modpacks.page.filterOwnerPlaceholder")}
-            value={owner}
-            onChange={(event) => setOwner(event.target.value)}
-          />
-          <InputGroupAddon align="inline-end">
-            <Search className="size-4" />
-          </InputGroupAddon>
-        </InputGroup>
-      </div>
+      <ModpacksFilterBar />
 
       {/* Results */}
       {isPending ? (
