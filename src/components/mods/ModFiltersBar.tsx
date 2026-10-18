@@ -6,6 +6,7 @@ import {
   SlidersHorizontal,
   Star,
   Tags,
+  UserX,
 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -34,6 +35,7 @@ import {
 import { compareSemverDesc, stripped } from "@/lib/helpers";
 import { sortOptions, type SortBy } from "@/lib/mod-sort";
 import type { ModTag } from "@/lib/types";
+import { useSettingsStore } from "@/stores/settings";
 
 import { InstallModMenu } from "./InstallModMenu";
 import { ModAuthorFilter } from "./ModAuthorFilter";
@@ -59,6 +61,7 @@ export function ModFiltersBar({
   modTags,
   modUpdates,
   modsDirectory,
+  onManageBlocked,
 }: {
   filters: ModFiltersState;
   gameVersion: string;
@@ -69,11 +72,13 @@ export function ModFiltersBar({
   modsDirectory: string | undefined;
   destinationLabel: string;
   modCount: number;
+  onManageBlocked: () => void;
 }) {
   const { t } = useTranslation();
   const versionAnchor = useRef<HTMLDivElement | null>(null);
   const tagAnchor = useRef<HTMLDivElement | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const blockedCount = useSettingsStore((s) => s.blockedAuthors.length);
   const {
     author,
     category,
@@ -213,6 +218,16 @@ export function ModFiltersBar({
         variant={favoritesOnly ? "outline-amber" : "outline"}
       >
         <Star className={favoritesOnly ? "fill-current" : undefined} />
+      </Button>
+
+      <Button
+        aria-label={t("mods.blocked.button")}
+        onClick={onManageBlocked}
+        size="icon-sm"
+        title={t("mods.blocked.button")}
+        variant={blockedCount > 0 ? "outline-amber" : "outline"}
+      >
+        <UserX />
       </Button>
 
       <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>

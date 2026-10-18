@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useInstalledMods } from "@/hooks/use-installed-mods";
 import { useModUpdates } from "@/hooks/use-mod-updates";
 import { stripped } from "@/lib/helpers";
+import { blockedAuthorSet, excludeBlockedAuthors } from "@/lib/mod-blocklist";
 import { findMissingDependencies } from "@/lib/mod-dependencies";
 import { updateCheckParams } from "@/lib/mod-pins";
 import { relevanceRank, type SortBy } from "@/lib/mod-sort";
@@ -153,6 +154,8 @@ export function useModsData({
   );
   const favoriteMods = useSettingsStore((s) => s.favoriteMods);
   const favoriteSet = useMemo(() => new Set(favoriteMods), [favoriteMods]);
+  const blockedAuthors = useSettingsStore((s) => s.blockedAuthors);
+  const blockedSet = useMemo(() => blockedAuthorSet(blockedAuthors), [blockedAuthors]);
   // Pinned mods are left out of the update check entirely, so they never show
   // an update badge and "Update All" skips them.
   const updateParams = useMemo(
@@ -181,9 +184,16 @@ export function useModsData({
   // ── Computed data for ModList ──
   const installedModIdSet = useMemo(() => new Set(instMods?.mods.map((m) => m.modid)), [instMods]);
 
+  // Mods by blocked authors never reach the browser; the number kept out is
+  // shown so an empty result is not mistaken for a search miss.
+  const unblockedMods = useMemo(
+    () => (mods ? excludeBlockedAuthors(mods, blockedSet) : []),
+    [mods, blockedSet],
+  );
+  const hiddenByBlockCount = (mods?.length ?? 0) - unblockedMods.length;
+
   const modsList = useMemo(() => {
-    if (!mods) return [];
-    return mods
+    return unblockedMods
       .filter((mod) => {
         if (
           selectedModTags.length > 0 &&
@@ -257,7 +267,7 @@ export function useModsData({
         return orderDirection === "descending" ? 0 : -1;
       });
   }, [
-    mods,
+    unblockedMods,
     selectedModTags,
     author,
     category,
@@ -308,6 +318,7 @@ export function useModsData({
   return {
     duplicateMods,
     gameVersions,
+    hiddenByBlockCount,
     instMods,
     missingDependencies,
     modErrors,

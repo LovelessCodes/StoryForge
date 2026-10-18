@@ -4,6 +4,7 @@ import { createTauriStore } from "@tauri-store/zustand";
 import { create } from "zustand";
 
 import { logToFile } from "@/lib/logger";
+import { toggleBlockedAuthor } from "@/lib/mod-blocklist";
 import { moveMods, reorderGroups, type ModGroup } from "@/lib/mod-groups";
 import type { SortBy } from "@/lib/mod-sort";
 import { relocateRecord } from "@/lib/profile-records";
@@ -84,6 +85,13 @@ type SettingsStore = {
   /** Favourite mod listings (lowercased modidstrs), shared across profiles. */
   favoriteMods: string[];
   toggleFavoriteMod: (modidstr: string) => void;
+  /**
+   * Authors whose mods are hidden from the browser, matched
+   * case-insensitively. Shared across profiles, like the favourites.
+   */
+  blockedAuthors: string[];
+  toggleBlockedAuthor: (author: string) => void;
+  clearBlockedAuthors: () => void;
   defaultModSortBy: SortBy;
   setDefaultModSortBy: (sortBy: SortBy) => void;
   /**
@@ -273,6 +281,10 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
           : [...state.favoriteMods, id],
       };
     }),
+  blockedAuthors: [],
+  toggleBlockedAuthor: (author) =>
+    set((state) => ({ blockedAuthors: toggleBlockedAuthor(state.blockedAuthors, author) })),
+  clearBlockedAuthors: () => set(() => ({ blockedAuthors: [] })),
   defaultModSortBy: "trending",
   setDefaultModSortBy: (sortBy) => set(() => ({ defaultModSortBy: sortBy })),
   promptModInstallDestination: false,

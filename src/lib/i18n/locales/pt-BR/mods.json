@@ -72,6 +72,26 @@
     "empty": "Nenhum autor encontrado.",
     "placeholder": "Filtrar autor…"
   },
+  "blocked": {
+    "add": "Bloquear um autor",
+    "addPlaceholder": "Nome do autor…",
+    "alreadyBlocked": "{{author}} já está bloqueado.",
+    "block": "Bloquear",
+    "blockAuthor": "Bloquear o autor {{author}}",
+    "blockedToast": "{{author}} bloqueado — os mods dele ficam ocultos no navegador.",
+    "button": "Autores bloqueados",
+    "clearedToast": "Autores bloqueados limpos.",
+    "description": "Os mods destes autores ficam ocultos nos resultados do navegador. Bloquear não afeta os mods instalados.",
+    "empty": "Nenhum autor bloqueado ainda. Clique com o botão direito em um mod para bloquear o autor.",
+    "hidden_one": "{{count}} mod oculto pela lista de autores bloqueados",
+    "hidden_other": "{{count}} mods ocultos pela lista de autores bloqueados",
+    "manage": "Gerenciar autores bloqueados",
+    "title": "Autores bloqueados",
+    "unblock": "Desbloquear {{author}}",
+    "unblockAll": "Desbloquear todos",
+    "unblockedToast": "{{author}} desbloqueado — os mods dele voltam a aparecer.",
+    "undo": "Desfazer"
+  },
   "list": {
     "empty": "Nenhum mod encontrado. Tente ajustar sua busca ou filtros."
   },
