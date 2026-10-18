@@ -29,30 +29,30 @@
 use std::{
     collections::HashMap,
     fs::{self, File},
-    io::Write,
     path::{Component, Path, PathBuf},
     process::Stdio,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc, Mutex, OnceLock,
-    },
+    sync::{atomic::AtomicBool, Arc, Mutex, OnceLock},
     time::{Duration, Instant},
 };
 
-use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sha2::{Digest, Sha256};
-use tauri::{command, AppHandle, Emitter, EventId, Listener, Manager, State};
+use tauri::{command, AppHandle, State};
 use tauri_plugin_zustand::ManagerExt;
 use tokio::io::{AsyncBufReadExt, BufReader as TokioBufReader};
 use tokio_util::sync::CancellationToken;
 use walkdir::WalkDir;
 
+use super::client_fork::{
+    self, app_data_dir, cached_archive_is_valid, copy_base, download_archive, finish_install,
+    install_cancellation, is_cancelled, read_version_from_record, require_ready_base,
+    ArchiveDownload, CachedManifest, ForkEmitter, ForkPlatform, ForkProgress, ForkStatus,
+    InstallGuard, ManifestFailure, MAX_MANIFEST_BYTES,
+};
 use super::errors::UiError;
 use super::utils::{
-    is_safe_relative_path, lock, parse_loopback_origin, require_managed_path, sha256_file,
-    versions_folder, versions_subdir, CleanupTarget,
+    is_safe_relative_path, lock, require_managed_path, sha256_file, versions_folder,
+    versions_subdir, CleanupTarget,
 };
 use super::versions::OPTIMUM_SUFFIX;
 use crate::{log_debug, log_error, log_info};
@@ -66,8 +66,8 @@ const OPTIMUM_VERSION_FILE: &str = "version";
 
 /// Hard ceilings, mirroring what the overlay manifest parser in RiftLauncher
 /// refuses. They exist so a hostile or corrupt document cannot make the
-/// verification pass unbounded.
-const MAX_MANIFEST_BYTES: u64 = 256 * 1024;
+/// verification pass unbounded. The manifest ceiling itself is shared by both
+/// client forks ([`client_fork::MAX_MANIFEST_BYTES`]).
 const MAX_ARCHIVE_BYTES: u64 = 512 * 1024 * 1024;
 const MAX_OVERLAY_FILES: usize = 10_000;
 const MAX_LINE_LENGTH: usize = 64 * 1024;
@@ -77,8 +77,6 @@ const MAX_LINE_LENGTH: usize = 64 * 1024;
 const PATCH_TIMEOUT: Duration = Duration::from_secs(20 * 60);
 const SIGKILL_GRACE: Duration = Duration::from_secs(30);
 const PROBE_TIMEOUT: Duration = Duration::from_secs(10);
-/// Session cache for the latest manifest; the UI can force a refresh.
-const MANIFEST_TTL: Duration = Duration::from_secs(30 * 60);
 
 /// The `net10.0` channel the overlay's CLI needs. Optimum's runtimeconfig asks
 /// for `Microsoft.NETCore.App 10.0.0`; the game's own channel mapping reaches
@@ -104,15 +102,13 @@ pub fn optimum_version_name(base: &str) -> String {
 /// file is the overlay's marker, kept as a fallback for a folder whose manifest
 /// did not survive.
 pub(crate) fn read_optimum_version(dir: &Path) -> Option<String> {
-    let manifest = dir.join(OPTIMUM_STATE_FOLDER).join(OPTIMUM_PATCH_MANIFEST);
-    if let Ok(text) = fs::read_to_string(&manifest) {
-        if let Ok(value) = serde_json::from_str::<Value>(&text) {
-            if let Some(version) = value.get("optimumVersion").and_then(Value::as_str) {
-                if !version.is_empty() {
-                    return Some(version.to_string());
-                }
-            }
-        }
+    if let Some(version) = read_version_from_record(
+        dir,
+        OPTIMUM_STATE_FOLDER,
+        OPTIMUM_PATCH_MANIFEST,
+        "optimumVersion",
+    ) {
+        return Some(version);
     }
     let marker = dir.join(OPTIMUM_STATE_FOLDER).join(OPTIMUM_VERSION_FILE);
     fs::read_to_string(marker)
@@ -123,49 +119,35 @@ pub(crate) fn read_optimum_version(dir: &Path) -> Option<String> {
 
 // ── Platform / origin ───────────────────────────────────────────────────────
 
+/// Optimum's platform and loopback test-hook configuration.
+const PLATFORM: ForkPlatform = ForkPlatform {
+    tag: "optimum",
+    display: "Optimum",
+    origin_var: "STORYFORGE_OPTIMUM_ORIGIN",
+    rid_var: "STORYFORGE_OPTIMUM_RID",
+    host_rids: &[("linux", "linux-x64"), ("windows", "win-x64")],
+    test_rids: &["linux-x64", "win-x64"],
+};
+
 /// The runtime identifier Optimum publishes an overlay for on this host.
 ///
 /// macOS and every non-x64 architecture are deliberately absent: an overlay is
 /// a per-platform payload, and offering one for a platform it was not built for
 /// hands the player a patch that cannot run.
 pub fn host_rid() -> Option<&'static str> {
-    if std::env::consts::ARCH != "x86_64" {
-        return None;
-    }
-    match std::env::consts::OS {
-        "linux" => Some("linux-x64"),
-        "windows" => Some("win-x64"),
-        _ => None,
-    }
+    PLATFORM.host_rid()
 }
 
 /// A loopback test origin, when one was configured for development.
 fn test_origin() -> Option<String> {
-    let raw = std::env::var("STORYFORGE_OPTIMUM_ORIGIN").ok()?;
-    match parse_loopback_origin(&raw) {
-        Some(origin) => {
-            log_info!("[optimum] using loopback test origin {origin}");
-            Some(origin)
-        }
-        None => {
-            log_error!("[optimum] STORYFORGE_OPTIMUM_ORIGIN is not a loopback origin; ignoring it");
-            None
-        }
-    }
+    PLATFORM.test_origin()
 }
 
 /// The effective rid: the host's, unless a loopback test origin explicitly
 /// overrides it so the flow can be exercised on a machine Optimum has no
 /// payload for. The override only exists beside the test origin.
 fn effective_rid() -> Option<String> {
-    if test_origin().is_some() {
-        if let Ok(rid) = std::env::var("STORYFORGE_OPTIMUM_RID") {
-            if rid == "linux-x64" || rid == "win-x64" {
-                return Some(rid);
-            }
-        }
-    }
-    host_rid().map(str::to_string)
+    PLATFORM.effective_rid()
 }
 
 fn manifest_url(rid: &str) -> String {
@@ -367,34 +349,9 @@ fn parse_manifest(text: &str) -> Option<OptimumManifest> {
     })
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ManifestFailure {
-    UnsupportedSystem,
-    NotPublished,
-    Unreachable,
-    Unreadable,
-}
+static MANIFEST_CACHE: OnceLock<Mutex<Option<CachedManifest<OptimumManifest>>>> = OnceLock::new();
 
-impl ManifestFailure {
-    fn reason(self) -> &'static str {
-        match self {
-            ManifestFailure::UnsupportedSystem => "unsupported-system",
-            ManifestFailure::NotPublished => "not-published",
-            ManifestFailure::Unreachable => "unreachable",
-            ManifestFailure::Unreadable => "unreadable",
-        }
-    }
-}
-
-#[derive(Clone)]
-struct CachedManifest {
-    manifest: OptimumManifest,
-    fetched_at: Instant,
-}
-
-static MANIFEST_CACHE: OnceLock<Mutex<Option<CachedManifest>>> = OnceLock::new();
-
-fn manifest_cache() -> &'static Mutex<Option<CachedManifest>> {
+fn manifest_cache() -> &'static Mutex<Option<CachedManifest<OptimumManifest>>> {
     MANIFEST_CACHE.get_or_init(|| Mutex::new(None))
 }
 
@@ -446,18 +403,15 @@ async fn fetch_manifest(client: &reqwest::Client) -> Result<OptimumManifest, Man
 
 /// The cached manifest, or a fresh one. `refresh` forces the network read the
 /// UI asks for when the install sheet opens.
+///
+/// Optimum caches the parsed manifest inside [`fetch_manifest`], so the shared
+/// read-through is asked not to cache the fresh value itself.
 async fn manifest_for_session(
     client: &reqwest::Client,
     refresh: bool,
 ) -> Result<OptimumManifest, ManifestFailure> {
-    if !refresh {
-        if let Some(cached) = lock(manifest_cache()).as_ref() {
-            if cached.fetched_at.elapsed() < MANIFEST_TTL {
-                return Ok(cached.manifest.clone());
-            }
-        }
-    }
-    fetch_manifest(client).await
+    client_fork::manifest_for_session(manifest_cache(), refresh, false, fetch_manifest(client))
+        .await
 }
 
 // ── Status command ──────────────────────────────────────────────────────────
@@ -471,17 +425,8 @@ pub struct OptimumManifestInfo {
     pub archive_size: u64,
 }
 
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct OptimumStatus {
-    /// This host has an Optimum overlay platform.
-    pub platform_supported: bool,
-    pub rid: Option<String>,
-    /// `unsupported-system` | `not-published` | `unreachable` | `unreadable`,
-    /// when no manifest is available.
-    pub reason: Option<String>,
-    pub manifest: Option<OptimumManifestInfo>,
-}
+/// The status of the Optimum feature on this host.
+pub type OptimumStatus = ForkStatus<OptimumManifestInfo>;
 
 #[command]
 pub async fn get_optimum_status(
@@ -529,123 +474,14 @@ pub async fn get_optimum_status(
 
 // ── Progress emitter ────────────────────────────────────────────────────────
 
-#[derive(Clone, Serialize)]
-struct OptimumProgress {
-    phase: &'static str,
-    progress: u8,
-    message: Option<String>,
-}
+/// Progress payload sent on the install event.
+pub type OptimumProgress = ForkProgress;
 
-#[derive(Clone)]
-struct OptimumEmitter {
-    app: AppHandle,
-    event: String,
-}
-
-impl OptimumEmitter {
-    fn emit(&self, phase: &'static str, progress: u8, message: Option<String>) {
-        let _ = self.app.emit(
-            &self.event,
-            OptimumProgress {
-                phase,
-                progress,
-                message,
-            },
-        );
-    }
-}
+/// Emits [`OptimumProgress`] on the install event.
+pub type OptimumEmitter = ForkEmitter;
 
 fn cancelled_error() -> UiError {
-    UiError::new("cancelled", "Optimum install cancelled")
-}
-
-fn is_cancelled(token: &CancellationToken) -> bool {
-    token.is_cancelled()
-}
-
-// ── Download ────────────────────────────────────────────────────────────────
-
-/// Streams `url` to `dest`, checks the length and the SHA-256, and leaves no
-/// partial file behind on failure or cancellation.
-async fn download_archive(
-    client: &reqwest::Client,
-    url: &str,
-    dest: &Path,
-    expected_size: u64,
-    expected_sha256: &str,
-    token: &CancellationToken,
-    on_progress: impl Fn(u64, u64),
-) -> Result<(), UiError> {
-    let response = client
-        .get(url)
-        .send()
-        .await
-        .map_err(|error| UiError::new("request_error", format!("Request error: {error}")))?;
-    if !response.status().is_success() {
-        return Err(UiError::new(
-            "http_error",
-            format!("HTTP error: {}", response.status()),
-        ));
-    }
-    let total = response.content_length().unwrap_or(expected_size).max(1);
-    if response
-        .content_length()
-        .is_some_and(|length| length != expected_size)
-    {
-        return Err(UiError::new(
-            "download_error",
-            "Optimum overlay archive has the wrong size",
-        ));
-    }
-
-    let part = dest.with_extension("part");
-    let mut file = File::create(&part)
-        .map_err(|error| UiError::io(format!("Failed to create {}: {error}", part.display())))?;
-    let mut hasher = Sha256::new();
-    let mut written = 0u64;
-
-    let mut stream = response.bytes_stream();
-    while let Some(chunk) = stream.next().await {
-        if is_cancelled(token) {
-            drop(file);
-            let _ = fs::remove_file(&part);
-            return Err(cancelled_error());
-        }
-        let chunk = chunk.map_err(|error| {
-            let _ = fs::remove_file(&part);
-            UiError::new("request_error", format!("Read error: {error}"))
-        })?;
-        file.write_all(&chunk).map_err(|error| {
-            let _ = fs::remove_file(&part);
-            UiError::io(format!("Failed to write {}: {error}", part.display()))
-        })?;
-        hasher.update(&chunk);
-        written += chunk.len() as u64;
-        if written > MAX_ARCHIVE_BYTES {
-            let _ = fs::remove_file(&part);
-            return Err(UiError::new(
-                "download_error",
-                "Optimum overlay archive is unexpectedly large",
-            ));
-        }
-        on_progress(written, total);
-    }
-    drop(file);
-
-    let digest = format!("{:x}", hasher.finalize());
-    if written != expected_size || digest != expected_sha256 {
-        let _ = fs::remove_file(&part);
-        return Err(UiError::new(
-            "download_error",
-            "Optimum overlay archive failed its hash check",
-        ));
-    }
-    // Windows `rename` refuses an existing destination, and a retry after a
-    // corrupted download is exactly that case.
-    let _ = fs::remove_file(dest);
-    fs::rename(&part, dest)
-        .map_err(|error| UiError::io(format!("Failed to finalize {}: {error}", dest.display())))?;
-    Ok(())
+    client_fork::cancelled_error("Optimum")
 }
 
 // ── Extraction / verification ───────────────────────────────────────────────
@@ -1221,73 +1057,6 @@ async fn probe_cli(cli: &Path, cwd: &Path, dotnet_root: &Path) -> bool {
     )
 }
 
-// ── Copy ────────────────────────────────────────────────────────────────────
-
-/// Copies a game version folder so the base stays vanilla and the patch has a
-/// folder of its own. Emits throttled progress; cancels between files.
-fn copy_tree(
-    source: &Path,
-    target: &Path,
-    emitter: &OptimumEmitter,
-    token: &CancellationToken,
-) -> Result<(), UiError> {
-    let mut total_bytes = 0u64;
-    for entry in WalkDir::new(source).follow_links(false) {
-        let entry = entry
-            .map_err(|error| UiError::io(format!("Failed to walk version folder: {error}")))?;
-        if entry.file_type().is_file() || entry.path().is_file() {
-            total_bytes += fs::metadata(entry.path()).map(|m| m.len()).unwrap_or(0);
-        }
-    }
-    let total_bytes = total_bytes.max(1);
-
-    fs::create_dir_all(target)
-        .map_err(|error| UiError::io(format!("Failed to create {}: {error}", target.display())))?;
-
-    let mut copied = 0u64;
-    let mut last_emit = Instant::now();
-    for entry in WalkDir::new(source).follow_links(false).min_depth(1) {
-        if is_cancelled(token) {
-            return Err(cancelled_error());
-        }
-        let entry = entry
-            .map_err(|error| UiError::io(format!("Failed to walk version folder: {error}")))?;
-        let destination = target.join(
-            entry
-                .path()
-                .strip_prefix(source)
-                .map_err(|_| UiError::io("Failed to map version folder path"))?,
-        );
-        if entry.file_type().is_dir() || entry.path().is_dir() {
-            fs::create_dir_all(&destination).map_err(|error| {
-                UiError::io(format!(
-                    "Failed to create {}: {error}",
-                    destination.display()
-                ))
-            })?;
-            continue;
-        }
-        if entry.file_type().is_file() || entry.path().is_file() {
-            // A symlinked file is copied as its target, the same way the base
-            // install behaves when launched.
-            fs::copy(entry.path(), &destination).map_err(|error| {
-                UiError::io(format!(
-                    "Failed to copy {} to {}: {error}",
-                    entry.path().display(),
-                    destination.display()
-                ))
-            })?;
-            copied += entry.metadata().map(|m| m.len()).unwrap_or(0);
-            if last_emit.elapsed() >= Duration::from_millis(100) {
-                let percent = 50 + ((copied as f64 / total_bytes as f64) * 20.0) as u64;
-                emitter.emit("copy", percent.min(70) as u8, None);
-                last_emit = Instant::now();
-            }
-        }
-    }
-    Ok(())
-}
-
 // ── Install ─────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize)]
@@ -1297,26 +1066,7 @@ pub struct OptimumInstallResult {
     pub optimum_version: String,
 }
 
-struct ListenerGuard {
-    app: AppHandle,
-    id: EventId,
-}
-
-impl Drop for ListenerGuard {
-    fn drop(&mut self) {
-        self.app.unlisten(self.id);
-    }
-}
-
 static INSTALL_ACTIVE: AtomicBool = AtomicBool::new(false);
-
-struct InstallGuard;
-
-impl Drop for InstallGuard {
-    fn drop(&mut self) {
-        INSTALL_ACTIVE.store(false, Ordering::SeqCst);
-    }
-}
 
 /// Installs or updates Optimum for `base_version`.
 ///
@@ -1332,28 +1082,12 @@ pub async fn install_optimum(
     base_version: String,
     emitevent: String,
 ) -> Result<OptimumInstallResult, UiError> {
-    if INSTALL_ACTIVE.swap(true, Ordering::SeqCst) {
-        return Err(UiError::new(
-            "optimum_busy",
-            "Another Optimum install is already running",
-        ));
-    }
-    let _install_guard = InstallGuard;
+    let _install_guard = InstallGuard::acquire(&INSTALL_ACTIVE).ok_or_else(|| {
+        UiError::new("optimum_busy", "Another Optimum install is already running")
+    })?;
     let client: &reqwest::Client = &client;
 
-    let emitter = OptimumEmitter {
-        app: app.clone(),
-        event: emitevent.clone(),
-    };
-    let token = CancellationToken::new();
-    let cancel_listener = app.listen(format!("{emitevent}:cancel"), {
-        let token = token.clone();
-        move |_| token.cancel()
-    });
-    let _listener_guard = ListenerGuard {
-        app: app.clone(),
-        id: cancel_listener,
-    };
+    let (emitter, token, _listener_guard) = install_cancellation(&app, &emitevent);
 
     log_info!("[optimum] install requested for base {base_version}");
     emitter.emit("manifest", 0, None);
@@ -1387,26 +1121,9 @@ pub async fn install_optimum(
 
     // The base may be managed or linked; the Optimum build always lands in the
     // managed versions folder so it is scanned and removable like any version.
-    let base_dir = super::versions::resolve_version_dir(&app, &base_version)?;
-    if !base_dir.is_dir() {
-        return Err(UiError::not_found(format!(
-            "Version folder not found: {}",
-            base_dir.display()
-        )));
-    }
-    if super::versions::is_incomplete(&base_dir) {
-        return Err(UiError::new(
-            "optimum_incomplete_version",
-            "The base version is still downloading",
-        ));
-    }
+    let base_dir = require_ready_base(&app, &base_version, "optimum_incomplete_version")?;
 
-    let app_data = app.path().app_data_dir().map_err(|error| {
-        UiError::new(
-            "path_error",
-            format!("Failed to resolve app data dir: {error}"),
-        )
-    })?;
+    let app_data = app_data_dir(&app)?;
     let target_name = optimum_version_name(&base_version);
     let target_dir = versions_folder(app.clone())?
         .join(versions_subdir(app.clone()))
@@ -1451,12 +1168,11 @@ pub async fn install_optimum(
         fs::create_dir_all(&downloads_dir)
             .map_err(|error| UiError::io(format!("Failed to create overlay cache: {error}")))?;
         let archive_path = downloads_dir.join(&manifest.archive.filename);
-        let archive_ok = fs::metadata(&archive_path)
-            .map(|metadata| metadata.len() == manifest.archive.size)
-            .unwrap_or(false)
-            && sha256_file(&archive_path)
-                .map(|digest| digest == manifest.archive.sha256)
-                .unwrap_or(false);
+        let archive_ok = cached_archive_is_valid(
+            &archive_path,
+            manifest.archive.size,
+            &manifest.archive.sha256,
+        );
         if !archive_ok {
             let url = archive_url(&manifest.optimum_version, &manifest.archive.filename);
             log_info!("[optimum] downloading {url}");
@@ -1465,10 +1181,15 @@ pub async fn install_optimum(
             let size = manifest.archive.size;
             download_archive(
                 client,
-                &url,
-                &archive_path,
-                manifest.archive.size,
-                &manifest.archive.sha256,
+                &ArchiveDownload {
+                    url: &url,
+                    dest: &archive_path,
+                    expected_size: manifest.archive.size,
+                    expected_sha256: &manifest.archive.sha256,
+                    max_bytes: MAX_ARCHIVE_BYTES,
+                    product: "Optimum",
+                    archive: "overlay archive",
+                },
                 &token,
                 move |written, _total| {
                     let progress = 5 + ((written as f64 / size as f64) * 25.0) as u64;
@@ -1539,20 +1260,15 @@ pub async fn install_optimum(
         return Err(cancelled_error());
     }
 
-    if !updating {
-        emitter.emit("copy", 50, None);
-        log_info!(
-            "[optimum] copying {} to {}",
-            base_dir.display(),
-            target_dir.display()
-        );
-        if let Err(error) = copy_tree(&base_dir, &target_dir, &emitter, &token) {
-            if error.name == "cancelled" {
-                emitter.emit("cancelled", 0, None);
-            }
-            return Err(error);
-        }
-    }
+    copy_base(
+        updating,
+        &base_dir,
+        &target_dir,
+        &emitter,
+        &token,
+        (50, 70),
+        &PLATFORM,
+    )?;
 
     emitter.emit("patch", 70, None);
     let args = vec![
@@ -1584,15 +1300,13 @@ pub async fn install_optimum(
     emitter.emit("verify", 97, None);
     verify_patched_output(&target_dir, &manifest)?;
 
-    if let Some(cleanup) = cleanup.as_mut() {
-        cleanup.defuse();
-    }
-    emitter.emit("done", 100, None);
-    log_info!(
-        "[optimum] installed {} ({}) at {}",
-        manifest.optimum_version,
-        target_name,
-        target_dir.display()
+    finish_install(
+        &mut cleanup,
+        &emitter,
+        &PLATFORM,
+        &manifest.optimum_version,
+        &target_name,
+        &target_dir,
     );
     Ok(OptimumInstallResult {
         version: target_name,
@@ -1605,6 +1319,7 @@ pub async fn install_optimum(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use sha2::{Digest, Sha256};
     use std::io::Write;
 
     fn manifest_json(rid: &str, files: &[(&str, &str, u64)]) -> String {
@@ -1918,10 +1633,15 @@ mod tests {
         let archive_path = dir.path().join(&manifest.archive.filename);
         download_archive(
             &client,
-            &archive_url(&manifest.optimum_version, &manifest.archive.filename),
-            &archive_path,
-            manifest.archive.size,
-            &manifest.archive.sha256,
+            &ArchiveDownload {
+                url: &archive_url(&manifest.optimum_version, &manifest.archive.filename),
+                dest: &archive_path,
+                expected_size: manifest.archive.size,
+                expected_sha256: &manifest.archive.sha256,
+                max_bytes: MAX_ARCHIVE_BYTES,
+                product: "Optimum",
+                archive: "overlay archive",
+            },
             &CancellationToken::new(),
             |_, _| {},
         )
