@@ -19,23 +19,21 @@
 //! the game builds in place so they can be linked.
 
 use std::{
-    fs::{create_dir_all, read_dir, read_to_string, remove_dir_all, rename, write},
+    fs::{read_dir, read_to_string},
     path::{Path, PathBuf},
 };
 
-use serde::{Deserialize, Serialize};
-use tauri::{command, AppHandle, Manager};
+use serde::Deserialize;
+use tauri::{command, AppHandle};
 
 use super::errors::UiError;
-use super::legacy::{free_profile_dir, LegacyMigrationReport, LegacyMigrationSkip};
-use super::paths::{MODS_DIR, PROFILE_JSON, SAVES_DIR};
-use super::profiles::{
-    is_external_profile_dir, read_profile_json, write_profile_json, ProfileInfo,
+use super::importer::{
+    count_mod_zips, detect_all, has_saves, is_already_imported, run_import, size_fields,
+    DetectedInstance, ImportReport, ImportSource, LogWrite, MigrationLog, Placement,
 };
-use super::utils::{
-    copy_dir_contents, dir_size_cached, format_size, normalize_path, now_nanos, profiles_folder,
-    profiles_subdir, safe_file_name,
-};
+use super::paths::MODS_DIR;
+use super::profiles::ProfileInfo;
+use super::utils::{copy_dir_contents, dir_name, dir_size_cached, safe_file_name};
 use crate::{log_error, log_info};
 
 /// Tauri identifier Rustory writes its config and data under.
@@ -57,7 +55,7 @@ struct RustoryConfig {
     vs_versions_path: String,
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct RustoryInstanceFile {
     #[serde(default)]
@@ -76,37 +74,6 @@ struct RustoryInstanceFile {
     last_time_played: i64,
     #[serde(default)]
     total_time_played: i64,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct RustoryInstance {
-    pub id: String,
-    pub name: String,
-    pub version: String,
-    /// The instance folder (import copies its `Data/`).
-    pub path: String,
-    pub source: String,
-    pub mod_count: usize,
-    pub size_bytes: u64,
-    pub size_display: String,
-    pub has_saves: bool,
-    pub last_time_played: Option<u64>,
-    /// Always false: Rustory keeps each instance's data inside its folder.
-    pub is_default_game_data: bool,
-    pub already_imported: bool,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct RustoryMigrationEntry {
-    source_path: String,
-    target_path: String,
-    name: String,
-}
-
-#[derive(Debug, Default, Serialize, Deserialize)]
-struct RustoryMigrationLog {
-    #[serde(default)]
-    migrations: Vec<RustoryMigrationEntry>,
 }
 
 /// `<appConfigDir>/config.json`.
@@ -169,6 +136,7 @@ fn resolve_paths(config: Option<&RustoryConfig>) -> Option<RustoryPaths> {
     })
 }
 
+#[derive(Debug, Clone)]
 struct RustoryInstanceRow {
     file: RustoryInstanceFile,
     dir: PathBuf,
@@ -207,24 +175,6 @@ fn data_dir_of(instance_dir: &Path) -> PathBuf {
     instance_dir.join(DATA_DIR)
 }
 
-fn count_zips(dir: &Path) -> usize {
-    read_dir(dir)
-        .map(|entries| {
-            entries
-                .filter_map(|entry| entry.ok())
-                .filter(|entry| {
-                    entry.path().is_file()
-                        && entry
-                            .path()
-                            .extension()
-                            .map(|ext| ext.eq_ignore_ascii_case("zip"))
-                            .unwrap_or(false)
-                })
-                .count()
-        })
-        .unwrap_or(0)
-}
-
 /// Rustory's env vars are a `KEY=value` list (like VS Launcher's); split on
 /// commas and newlines to tolerate either style.
 fn parse_env_vars(raw: &str) -> std::collections::HashMap<String, String> {
@@ -240,187 +190,112 @@ fn parse_env_vars(raw: &str) -> std::collections::HashMap<String, String> {
         .collect()
 }
 
-fn migration_log_path(app: &AppHandle) -> Result<PathBuf, UiError> {
-    app.path()
-        .app_data_dir()
-        .map(|dir| dir.join(MIGRATION_LOG_FILE))
-        .map_err(|e| UiError {
-            name: "path_error".into(),
-            message: format!("Failed to resolve app data dir: {e}"),
-        })
-}
+/// What Rustory contributes to the shared import driver.
+struct RustorySource;
 
-fn read_migration_log(app: &AppHandle) -> RustoryMigrationLog {
-    migration_log_path(app)
-        .ok()
-        .and_then(|path| read_to_string(path).ok())
-        .and_then(|content| serde_json::from_str(&content).ok())
-        .unwrap_or_default()
-}
+impl ImportSource for RustorySource {
+    type Item = RustoryInstanceRow;
 
-fn write_migration_log(app: &AppHandle, log: &RustoryMigrationLog) -> Result<(), UiError> {
-    let path = migration_log_path(app)?;
-    let content = serde_json::to_string_pretty(log)
-        .map_err(|e| UiError::new("serialize_failed", format!("Failed to serialize log: {e}")))?;
-    write(&path, content).map_err(|e| {
-        UiError::new(
-            "write_failed",
-            format!("Failed to write migration log: {e}"),
-        )
-    })
-}
-
-/// Lists Rustory instances that can be imported.
-#[command]
-pub async fn detect_rustory_instances(app: AppHandle) -> Result<Vec<RustoryInstance>, UiError> {
-    let handle = app.clone();
-    tokio::task::spawn_blocking(move || detect_blocking(&handle))
-        .await
-        .map_err(|e| UiError::new("internal_error", format!("Rustory scan failed: {e}")))?
-}
-
-fn detect_blocking(app: &AppHandle) -> Result<Vec<RustoryInstance>, UiError> {
-    let Some(paths) = resolve_paths(read_config().as_ref()) else {
-        return Ok(Vec::new());
-    };
-    let instances = read_instances(&paths.instances);
-    if instances.is_empty() {
-        return Ok(Vec::new());
+    fn log_file(&self) -> &'static str {
+        MIGRATION_LOG_FILE
     }
-    log_info!(
-        "rustory: reading {} ({} instances)",
-        paths.instances.display(),
-        instances.len()
-    );
 
-    let log = read_migration_log(app);
-    let profiles_root = profiles_folder(app.clone())?.join(profiles_subdir(app.clone()));
-    let mut results = Vec::new();
+    fn label(&self) -> &'static str {
+        "rustory"
+    }
 
-    for row in instances {
-        let path = row.dir.clone();
-        if normalize_path(&path).starts_with(normalize_path(&profiles_root))
-            || is_external_profile_dir(app, &path)
-        {
-            continue;
+    fn found_noun(&self) -> &'static str {
+        "instance(s)"
+    }
+
+    fn scan(&self, _app: &AppHandle) -> Result<Option<Vec<Self::Item>>, UiError> {
+        let Some(paths) = resolve_paths(read_config().as_ref()) else {
+            return Ok(None);
+        };
+        let instances = read_instances(&paths.instances);
+        if instances.is_empty() {
+            return Ok(Some(instances));
         }
+        log_info!(
+            "rustory: reading {} ({} instances)",
+            paths.instances.display(),
+            instances.len()
+        );
+        Ok(Some(instances))
+    }
 
-        let already_imported = log.migrations.iter().any(|entry| {
-            normalize_path(Path::new(&entry.source_path)) == normalize_path(&path)
-                && Path::new(&entry.target_path).join(PROFILE_JSON).is_file()
-        });
+    fn missing_source_error(&self) -> UiError {
+        UiError::not_found("Rustory data folder not found")
+    }
 
+    fn not_listed_reason(&self) -> &'static str {
+        "not listed in Rustory's instances folder"
+    }
+
+    fn missing_folder_reason(&self) -> &'static str {
+        "instance folder no longer exists"
+    }
+
+    fn describe(&self, row: &RustoryInstanceRow, log: &MigrationLog) -> DetectedInstance {
+        let path = row.dir.clone();
         let data_dir = data_dir_of(&path);
-        let size_bytes = dir_size_cached(&data_dir);
-        results.push(RustoryInstance {
+        let bytes = dir_size_cached(&data_dir);
+        let (size_bytes, size_display) = size_fields(bytes);
+        DetectedInstance {
             id: row.file.id.clone(),
             name: row.file.name.clone(),
             version: row.file.version.clone(),
             path: path.to_string_lossy().to_string(),
             source: "Rustory".into(),
-            mod_count: count_zips(&data_dir.join(MODS_DIR)),
+            mod_count: count_mod_zips(&data_dir.join(MODS_DIR)),
             size_bytes,
-            size_display: format_size(size_bytes),
-            has_saves: data_dir.join(SAVES_DIR).is_dir(),
+            size_display,
+            has_saves: has_saves(&data_dir),
             last_time_played: (row.file.last_time_played > 0)
                 .then_some(row.file.last_time_played as u64),
             is_default_game_data: false,
-            already_imported,
-        });
+            already_imported: is_already_imported(log, &path),
+        }
     }
 
-    log_info!("rustory: found {} instance(s)", results.len());
-    Ok(results)
-}
+    fn source_path(&self, row: &RustoryInstanceRow) -> PathBuf {
+        row.dir.clone()
+    }
 
-/// Imports Rustory instances into the profiles folder (copy only).
-#[command]
-pub async fn import_rustory_instances(
-    app: AppHandle,
-    paths: Vec<String>,
-) -> Result<LegacyMigrationReport, UiError> {
-    let handle = app.clone();
-    tokio::task::spawn_blocking(move || import_blocking(&handle, paths))
-        .await
-        .map_err(|e| UiError::new("internal_error", format!("Import failed: {e}")))?
-}
+    fn display_name(&self, row: &RustoryInstanceRow) -> String {
+        row.file.name.clone()
+    }
 
-fn import_blocking(
-    app: &AppHandle,
-    requested: Vec<String>,
-) -> Result<LegacyMigrationReport, UiError> {
-    let Some(paths) = resolve_paths(read_config().as_ref()) else {
-        return Err(UiError::not_found("Rustory data folder not found"));
-    };
-    let instances = read_instances(&paths.instances);
-
-    let profiles_root = profiles_folder(app.clone())?.join(profiles_subdir(app.clone()));
-    create_dir_all(&profiles_root).map_err(|e| {
-        UiError::new(
-            "create_dir_failed",
-            format!("Failed to create profiles folder: {e}"),
-        )
-    })?;
-
-    let mut log = read_migration_log(app);
-    let mut report = LegacyMigrationReport {
-        migrated: 0,
-        skipped: Vec::new(),
-    };
-
-    for requested_path in requested {
-        let requested_normalized = normalize_path(Path::new(&requested_path));
-        let Some(row) = instances
-            .iter()
-            .find(|row| normalize_path(&row.dir) == requested_normalized)
-        else {
-            report.skipped.push(LegacyMigrationSkip {
-                name: requested_path,
-                reason: "not listed in Rustory's instances folder".into(),
-            });
-            continue;
-        };
-
-        let source = row.dir.clone();
-        if !source.is_dir() {
-            report.skipped.push(LegacyMigrationSkip {
-                name: row.file.name.clone(),
-                reason: "instance folder no longer exists".into(),
-            });
-            continue;
-        }
-        if normalize_path(&source).starts_with(normalize_path(&profiles_root)) {
-            report.skipped.push(LegacyMigrationSkip {
-                name: row.file.name.clone(),
-                reason: "already inside the profiles folder".into(),
-            });
-            continue;
-        }
-        if is_external_profile_dir(app, &source) {
-            report.skipped.push(LegacyMigrationSkip {
-                name: row.file.name.clone(),
-                reason: "already linked as a profile".into(),
-            });
-            continue;
-        }
-
-        let folder = match safe_file_name(&row.file.name) {
+    fn target_folder(&self, row: &RustoryInstanceRow) -> String {
+        match safe_file_name(&row.file.name) {
             Ok(folder) if !folder.is_empty() => folder,
-            _ => super::utils::dir_name(&source),
-        };
-        let target = free_profile_dir(&profiles_root, &folder);
-        if let Err(reason) = copy_instance(&profiles_root, &source, &target) {
-            report.skipped.push(LegacyMigrationSkip {
-                name: row.file.name.clone(),
-                reason,
-            });
-            continue;
+            _ => dir_name(&row.dir),
         }
+    }
 
-        let mut info = read_profile_json(&target).unwrap_or_else(|_| ProfileInfo {
-            name: row.file.name.clone(),
-            ..Default::default()
-        });
+    fn placement(&self) -> Placement {
+        Placement::Selective
+    }
+
+    fn stage(
+        &self,
+        _app: &AppHandle,
+        row: &RustoryInstanceRow,
+        profile_dir: &Path,
+    ) -> Result<(), UiError> {
+        let data_dir = data_dir_of(&row.dir);
+        if data_dir.is_dir() {
+            copy_dir_contents(&data_dir, profile_dir)
+                .map_err(|e| UiError::new("copy_failed", e))?;
+        }
+        Ok(())
+    }
+
+    fn staged_noun(&self) -> &'static str {
+        "instance"
+    }
+
+    fn apply_profile(&self, row: &RustoryInstanceRow, info: &mut ProfileInfo) {
         if !row.file.name.trim().is_empty() {
             info.name = row.file.name.clone();
         }
@@ -434,53 +309,29 @@ fn import_blocking(
         info.last_played =
             (row.file.last_time_played > 0).then_some(row.file.last_time_played as u64);
         info.total_time_played = (row.file.total_time_played.max(0) / 1000) as u64;
-
-        if let Err(e) = write_profile_json(&target, &info) {
-            report.skipped.push(LegacyMigrationSkip {
-                name: row.file.name.clone(),
-                reason: format!("failed to write profile.json: {}", e.message),
-            });
-            continue;
-        }
-
-        log_info!("rustory: imported {} (copy)", info.name);
-        log.migrations.push(RustoryMigrationEntry {
-            source_path: source.to_string_lossy().to_string(),
-            target_path: target.to_string_lossy().to_string(),
-            name: info.name.clone(),
-        });
-        report.migrated += 1;
     }
 
-    if report.migrated > 0 {
-        write_migration_log(app, &log)?;
+    fn log_write(&self) -> LogWrite {
+        LogWrite::AtEnd
     }
-
-    Ok(report)
 }
 
-/// Copies the instance's `Data/` into a fresh profile folder, staging inside
-/// the profiles root so a partial copy never looks like a finished profile.
-fn copy_instance(profiles_root: &Path, instance_dir: &Path, target: &Path) -> Result<(), String> {
-    let staging = profiles_root.join(format!(".staging-{}", now_nanos()));
-    create_dir_all(&staging).map_err(|e| format!("failed to create staging folder: {e}"))?;
+/// Lists Rustory instances that can be imported.
+#[command]
+pub async fn detect_rustory_instances(app: AppHandle) -> Result<Vec<DetectedInstance>, UiError> {
+    let handle = app.clone();
+    tokio::task::spawn_blocking(move || detect_all(&handle, &RustorySource))
+        .await
+        .map_err(|e| UiError::new("internal_error", format!("Rustory scan failed: {e}")))?
+}
 
-    let result = (|| -> Result<(), String> {
-        let staged_profile = staging.join("profile");
-        create_dir_all(&staged_profile)
-            .map_err(|e| format!("failed to create the profile folder: {e}"))?;
-
-        let data_dir = data_dir_of(instance_dir);
-        if data_dir.is_dir() {
-            copy_dir_contents(&data_dir, &staged_profile)?;
-        }
-
-        rename(&staged_profile, target)
-            .map_err(|e| format!("failed to move the copied instance into place: {e}"))
-    })();
-
-    let _ = remove_dir_all(&staging);
-    result
+/// Imports Rustory instances into the profiles folder (copy only).
+#[command]
+pub async fn import_rustory_instances(
+    app: AppHandle,
+    paths: Vec<String>,
+) -> Result<ImportReport, UiError> {
+    run_import(app, RustorySource, paths, None, None).await
 }
 
 /// Game builds installed by Rustory (`<vsVersionsPath>/<version>`), ready to
@@ -585,7 +436,7 @@ mod tests {
         assert_eq!(rows[0].file.name, "Redwood");
         let data_dir = data_dir_of(&rows[0].dir);
         assert!(data_dir.join("Saves").is_dir());
-        assert_eq!(count_zips(&data_dir.join(MODS_DIR)), 1);
+        assert_eq!(count_mod_zips(&data_dir.join(MODS_DIR)), 1);
     }
 
     #[test]
