@@ -5,7 +5,7 @@ import { useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { elementCenter, switchTheme } from "../../lib/theme-transition";
-import { buttonVariants } from "../ui/button";
+import { buttonVariants } from "../ui/button-variants";
 
 interface ThemeToggleProps {
   className?: string;

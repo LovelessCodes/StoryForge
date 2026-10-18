@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { SearchX } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { buttonVariants } from "../ui/button";
+import { buttonVariants } from "../ui/button-variants";
 
 export default function RouteNotFound() {
   const { t } = useTranslation();

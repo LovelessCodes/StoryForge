@@ -42,18 +42,18 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { notify } from "@/components/ui/toast";
+import { notify } from "@/components/ui/toast-manager";
 import { installedModsQueryKey } from "@/hooks/use-installed-mods";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import { errorMessage } from "@/lib/errors";
 import { useDateLocale } from "@/lib/i18n/date-locale";
 import { toast } from "@/lib/notify";
+import { PROFILE_ICON_BASE } from "@/lib/profile-icons";
 import { useProfilesStore, type Profile } from "@/stores/profiles";
 import { useSettingsStore } from "@/stores/settings";
 
 import ProfileBackupsSheet from "./ProfileBackupsSheet";
-import { PROFILE_ICON_BASE } from "./ProfileIconPicker";
 import ProfileLogsSheet from "./ProfileLogsSheet";
 import ProfilePackSheet from "./ProfilePackSheet";
 import ProfileScreenshotsSheet from "./ProfileScreenshotsSheet";

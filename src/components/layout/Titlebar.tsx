@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { notify } from "@/components/ui/toast";
+import { notify } from "@/components/ui/toast-manager";
 import { useUpdater } from "@/hooks/use-updater";
 import { errorMessage } from "@/lib/errors";
 import { isMac, isWindows, modifierLabel } from "@/lib/helpers";

@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next";
 
 import { errorMessage } from "@/lib/errors";
 
-import { Button, buttonVariants } from "../ui/button";
+import { Button } from "../ui/button";
+import { buttonVariants } from "../ui/button-variants";
 
 export default function RouteError({ error, reset }: ErrorComponentProps) {
   const { t } = useTranslation();

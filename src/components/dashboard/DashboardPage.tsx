@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button";
 import { useActiveProfile } from "@/hooks/use-active-profile";
 import { useConnectToServer } from "@/hooks/use-connect-to-server";
 import { usePlayProfile } from "@/hooks/use-play-profile";
+import { PROFILE_ICON_BASE } from "@/lib/profile-icons";
 import { useProfiles } from "@/stores/profiles";
 import { useServerStore } from "@/stores/servers";
 import { useSettingsStore } from "@/stores/settings";
 
-import { PROFILE_ICON_BASE } from "../profiles/ProfileIconPicker";
 import { serverAddress } from "../servers/server-utils";
 
 /**

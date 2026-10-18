@@ -46,7 +46,7 @@ import {
   SidebarRail,
   SidebarSeparator,
 } from "../ui/sidebar";
-import { notify } from "../ui/toast";
+import { notify } from "../ui/toast-manager";
 import { DiscordIcon } from "./DiscordIcon";
 
 /** Sidebar entries; labels come from `layout.nav.<page>`. */

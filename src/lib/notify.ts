@@ -1,4 +1,4 @@
-import { notify, toast as toastManager } from "@/components/ui/toast";
+import { notify, toast as toastManager } from "@/components/ui/toast-manager";
 
 /**
  * Sonner-compatible toast facade backed by the app's Base UI toast manager.

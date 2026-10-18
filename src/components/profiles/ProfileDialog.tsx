@@ -28,6 +28,7 @@ import { useInstalledVersions } from "@/hooks/use-installed-versions";
 import { modConfigsQueryKey } from "@/hooks/use-mod-configs";
 import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import { profileBackupsQueryKey } from "@/hooks/use-profile-backups";
+import { envEntriesToMap, mapToEnvEntries, type EnvVarEntry } from "@/lib/env-vars";
 import { errorMessage } from "@/lib/errors";
 import {
   baseGameVersion,
@@ -43,7 +44,7 @@ import { gameVersionsQuery } from "@/lib/queries";
 import { useProfilesStore, type Profile } from "@/stores/profiles";
 import { useSettingsStore } from "@/stores/settings";
 
-import { EnvVarsEditor, envEntriesToMap, mapToEnvEntries, type EnvVarEntry } from "./EnvVarsEditor";
+import { EnvVarsEditor } from "./EnvVarsEditor";
 import { ProfileIconPicker } from "./ProfileIconPicker";
 
 interface ProfileDialogProps {
