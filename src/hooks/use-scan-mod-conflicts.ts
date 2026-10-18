@@ -25,7 +25,12 @@ export type ConflictReport = {
   truncated: boolean;
 };
 
-/** Scans a profile's installed mods for overlapping assets and patch targets. */
+/**
+ * Scans a profile's installed mods for overlapping assets and patch targets.
+ *
+ * Read-only scan modeled as a mutation for button-triggered execution: it
+ * writes nothing, so there is no query cache to invalidate.
+ */
 export const useScanModConflicts = (modsDirectory: string | undefined) =>
   useMutation({
     mutationFn: () => invoke<ConflictReport>("scan_mod_conflicts", { path: modsDirectory }),

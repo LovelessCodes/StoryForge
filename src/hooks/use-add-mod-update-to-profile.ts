@@ -8,6 +8,10 @@ import type { ModUpdate } from "./use-mod-updates";
 /**
  * Queues a mod update into the downloads manager (progress and pause/cancel
  * live in the Downloads sheet) and resolves once it finishes.
+ *
+ * Cache sync is owned by the download manager: `invalidateQueriesFor` in
+ * use-download-manager refreshes the installed-mods and mod-updates lists when
+ * the download lands, so this mutation adds no invalidation of its own.
  */
 export const useAddModUpdateToProfile = (
   props?: UseMutationOptions<
