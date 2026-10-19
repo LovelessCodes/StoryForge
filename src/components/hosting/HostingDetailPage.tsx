@@ -16,7 +16,8 @@ import {
   useStartServer,
   useStopServer,
 } from "@/hooks/queries/server-hosting";
-import { useServerDataDirSize } from "@/hooks/use-server-data-dir-size";
+import { useServerDataDirSize, type DirSizeInfo } from "@/hooks/use-server-data-dir-size";
+import type { HostedServerInstance, ServerRuntimeStatus } from "@/lib/server-hosting-types";
 
 import ServerConfigEditor from "./ServerConfigEditor";
 import ServerConsole from "./ServerConsole";
@@ -71,6 +72,10 @@ function HostingDetailContent() {
     });
   }
 
+  function openMods() {
+    void navigate({ to: "/server-hosting/$id/mods", params: { id: String(id) } });
+  }
+
   if (!instance) {
     if (isPending) {
       return <ListSkeleton rows={4} />;
@@ -100,84 +105,162 @@ function HostingDetailContent() {
           >
             <ArrowLeft />
           </Button>
-          <div className="min-w-0">
-            <div className="flex min-w-0 items-center gap-2">
-              <h1 className="truncate text-lg font-semibold">{instance.name}</h1>
-              {status.pid != null && (
-                <span className="text-muted-foreground shrink-0 text-xs">
-                  {t("hosting.detail.pid", { pid: status.pid })}
-                </span>
-              )}
-            </div>
-            <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
-              <span className={cn("flex items-center gap-1.5", statusText[status.status])}>
-                <span
-                  aria-hidden="true"
-                  className={cn("size-2 rounded-full", statusDot[status.status])}
-                />
-                {statusLabels[status.status] ?? status.status}
-                {status.status === "crashed" && status.exit_code != null && (
-                  <span className="text-muted-foreground">
-                    {t("hosting.detail.exitCode", { code: status.exit_code })}
-                  </span>
-                )}
-              </span>
-              {isRunning && status.uptime != null && (
-                <span className="text-muted-foreground">
-                  {t("hosting.detail.uptime", { duration: formatUptime(status.uptime) })}
-                </span>
-              )}
-              <span className="text-muted-foreground font-mono">
-                {instance.bind_ip}:{instance.port}
-              </span>
-              {dirSize && <span className="text-muted-foreground/60">{dirSize.size_display}</span>}
-            </p>
-          </div>
+          <HostingDetailTitle
+            dirSize={dirSize}
+            instance={instance}
+            isRunning={isRunning}
+            status={status}
+          />
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() =>
-              void navigate({ to: "/server-hosting/$id/mods", params: { id: String(id) } })
-            }
-          >
-            <Package /> {t("hosting.detail.mods")}
-          </Button>
-          {isRunning ? (
-            <Button
-              disabled={stopServer.isPending}
-              size="sm"
-              variant="outline"
-              onClick={() => stopServer.mutate(instanceId)}
-            >
-              <Square /> {t("common.actions.stop")}
-            </Button>
-          ) : (
-            <Button
-              disabled={isBusy || startServer.isPending}
-              size="sm"
-              variant="outline-success"
-              onClick={() => startServer.mutate(instanceId)}
-            >
-              <Play /> {t("hosting.detail.start")}
-            </Button>
-          )}
-          <Button
-            disabled={isBusy || !isRunning || restartServer.isPending}
-            size="sm"
-            variant="outline"
-            onClick={() => restartServer.mutate(instanceId)}
-          >
-            <RotateCcw /> {t("common.actions.restart")}
-          </Button>
-        </div>
+        <HostingDetailActions
+          isBusy={isBusy}
+          isRunning={isRunning}
+          onOpenMods={openMods}
+          onRestart={() => restartServer.mutate(instanceId)}
+          onStart={() => startServer.mutate(instanceId)}
+          onStop={() => stopServer.mutate(instanceId)}
+          restartPending={restartServer.isPending}
+          startPending={startServer.isPending}
+          stopPending={stopServer.isPending}
+        />
       </div>
 
+      <HostingDetailSections
+        instanceId={instanceId}
+        onSectionChange={setSection}
+        section={section}
+        status={status}
+      />
+    </div>
+  );
+}
+
+/** Instance name, live status line and data-dir size. */
+function HostingDetailTitle({
+  dirSize,
+  instance,
+  isRunning,
+  status,
+}: {
+  dirSize: DirSizeInfo | undefined;
+  instance: HostedServerInstance;
+  isRunning: boolean;
+  status: ServerRuntimeStatus;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="min-w-0">
+      <div className="flex min-w-0 items-center gap-2">
+        <h1 className="truncate text-lg font-semibold">{instance.name}</h1>
+        {status.pid != null && (
+          <span className="text-muted-foreground shrink-0 text-xs">
+            {t("hosting.detail.pid", { pid: status.pid })}
+          </span>
+        )}
+      </div>
+      <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
+        <span className={cn("flex items-center gap-1.5", statusText[status.status])}>
+          <span
+            aria-hidden="true"
+            className={cn("size-2 rounded-full", statusDot[status.status])}
+          />
+          {statusLabels[status.status] ?? status.status}
+          {status.status === "crashed" && status.exit_code != null && (
+            <span className="text-muted-foreground">
+              {t("hosting.detail.exitCode", { code: status.exit_code })}
+            </span>
+          )}
+        </span>
+        {isRunning && status.uptime != null && (
+          <span className="text-muted-foreground">
+            {t("hosting.detail.uptime", { duration: formatUptime(status.uptime) })}
+          </span>
+        )}
+        <span className="text-muted-foreground font-mono">
+          {instance.bind_ip}:{instance.port}
+        </span>
+        {dirSize ? <span className="text-muted-foreground/60">{dirSize.size_display}</span> : null}
+      </p>
+    </div>
+  );
+}
+
+/** Mods entry point plus the start/stop/restart controls. */
+function HostingDetailActions({
+  isBusy,
+  isRunning,
+  onOpenMods,
+  onRestart,
+  onStart,
+  onStop,
+  restartPending,
+  startPending,
+  stopPending,
+}: {
+  isBusy: boolean;
+  isRunning: boolean;
+  onOpenMods: () => void;
+  onRestart: () => void;
+  onStart: () => void;
+  onStop: () => void;
+  restartPending: boolean;
+  startPending: boolean;
+  stopPending: boolean;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex items-center gap-2">
+      <Button size="sm" variant="ghost" onClick={onOpenMods}>
+        <Package /> {t("hosting.detail.mods")}
+      </Button>
+      {isRunning ? (
+        <Button disabled={stopPending} size="sm" variant="outline" onClick={onStop}>
+          <Square /> {t("common.actions.stop")}
+        </Button>
+      ) : (
+        <Button
+          disabled={isBusy || startPending}
+          size="sm"
+          variant="outline-success"
+          onClick={onStart}
+        >
+          <Play /> {t("hosting.detail.start")}
+        </Button>
+      )}
+      <Button
+        disabled={isBusy || !isRunning || restartPending}
+        size="sm"
+        variant="outline"
+        onClick={onRestart}
+      >
+        <RotateCcw /> {t("common.actions.restart")}
+      </Button>
+    </div>
+  );
+}
+
+/** Section switcher and the active section's pane. */
+function HostingDetailSections({
+  instanceId,
+  onSectionChange,
+  section,
+  status,
+}: {
+  instanceId: number;
+  onSectionChange: (section: HostingSection) => void;
+  section: HostingSection;
+  status: ServerRuntimeStatus;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <>
       <ToggleGroup
         aria-label={t("hosting.detail.sectionAria")}
-        onValueChange={(value) => value[0] && setSection(value[0] as HostingSection)}
+        onValueChange={(value) => value[0] && onSectionChange(value[0] as HostingSection)}
         size="sm"
         value={[section]}
         variant="outline"
@@ -198,6 +281,6 @@ function HostingDetailContent() {
       {section === "settings" && (
         <ServerSettingsPane canDelete={status.status === "stopped"} instanceId={instanceId} />
       )}
-    </div>
+    </>
   );
 }

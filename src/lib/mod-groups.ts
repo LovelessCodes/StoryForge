@@ -30,19 +30,20 @@ export function moveMods(
   targetId: string | null,
 ): ModGroup[] {
   const moved = [...new Set(modids.map((modid) => modid.toLowerCase()))];
+  const movedSet = new Set(moved);
   const stripped = groups.map((group) => ({
     ...group,
-    modids: group.modids.filter((modid) => !moved.includes(modid)),
+    modids: group.modids.filter((modid) => !movedSet.has(modid)),
   }));
   if (!targetId) return stripped;
-  return stripped.map((group) =>
-    group.id === targetId
-      ? {
-          ...group,
-          modids: [...group.modids, ...moved.filter((modid) => !group.modids.includes(modid))],
-        }
-      : group,
-  );
+  return stripped.map((group) => {
+    if (group.id !== targetId) return group;
+    const existing = new Set(group.modids);
+    return {
+      ...group,
+      modids: [...group.modids, ...moved.filter((modid) => !existing.has(modid))],
+    };
+  });
 }
 
 /**

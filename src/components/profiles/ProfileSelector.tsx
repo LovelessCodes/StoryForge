@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { notify } from "@/components/ui/toast";
+import { notify } from "@/components/ui/toast-manager";
 import { useActiveProfile } from "@/hooks/use-active-profile";
 
 /**

@@ -13,9 +13,9 @@ import { PAGE_PATHS } from "@/lib/routes";
 import { switchTheme } from "@/lib/theme-transition";
 
 import { useSidebar } from "./ui/sidebar";
-import { notify } from "./ui/toast";
+import { notify } from "./ui/toast-manager";
 
-export const CommandRuntimeContext = createContext<CommandRuntime | null>(null);
+const CommandRuntimeContext = createContext<CommandRuntime | null>(null);
 
 interface CommandRuntimeProviderProps {
   children: ReactNode;

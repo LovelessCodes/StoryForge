@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import { OTPInput, type SlotProps } from "input-otp";
-import { useState } from "react";
+import { OTPInput, OTPInputContext } from "input-otp";
+import { useContext, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,8 @@ export default function AddAccountSheet({
   const { addUser, users } = useAccountStore();
   const [email, setEmail] = useState(initialEmail ?? "");
   const [password, setPassword] = useState("");
-  const [preloginToken, setPreloginToken] = useState("");
+  // Imperative scratch data for the next sign-in attempt; never rendered.
+  const preloginToken = useRef("");
   const [totpCode, setTotpCode] = useState("");
   const [challenge, setChallenge] = useState<"credentials" | "totp">("credentials");
   const [busy, setBusy] = useState(false);
@@ -55,7 +56,7 @@ export default function AddAccountSheet({
       const data = await invoke<SignInResponse>("login", {
         email,
         password,
-        prelogintoken: preloginToken,
+        prelogintoken: preloginToken.current,
         totpcode: totpCode,
       });
       addUser({
@@ -71,7 +72,7 @@ export default function AddAccountSheet({
       if (prelogintoken) {
         // Two-factor account: show (or keep) the code challenge. Every attempt
         // gets a fresh pre-login token.
-        setPreloginToken(prelogintoken);
+        preloginToken.current = prelogintoken;
         setChallenge("totp");
         setTotpCode("");
         if (message.includes("wrongtotpcode")) {
@@ -124,14 +125,9 @@ export default function AddAccountSheet({
                   value={totpCode}
                   onChange={setTotpCode}
                   onComplete={() => void signIn()}
-                  render={({ slots }) => (
-                    <div className="flex gap-2">
-                      {slots.map((slot, index) => (
-                        <OtpSlot key={index} {...slot} />
-                      ))}
-                    </div>
-                  )}
-                />
+                >
+                  <OtpSlots />
+                </OTPInput>
               </div>
             ) : (
               <>
@@ -206,15 +202,32 @@ export default function AddAccountSheet({
   );
 }
 
-function OtpSlot(props: SlotProps) {
+/** The six code slots, rendered positionally (no list, so no keys needed). */
+function OtpSlots() {
+  return (
+    <div className="flex gap-2">
+      <OtpSlot index={0} />
+      <OtpSlot index={1} />
+      <OtpSlot index={2} />
+      <OtpSlot index={3} />
+      <OtpSlot index={4} />
+      <OtpSlot index={5} />
+    </div>
+  );
+}
+
+function OtpSlot({ index }: { index: number }) {
+  const { slots } = useContext(OTPInputContext);
+  const { char, isActive } = slots[index];
+
   return (
     <div
       className={cn(
         "border-input bg-background text-foreground flex size-9 items-center justify-center border text-sm font-medium transition-colors",
-        props.isActive && "border-ring ring-ring/50 z-10 ring-[3px]",
+        isActive && "border-ring ring-ring/50 z-10 ring-[3px]",
       )}
     >
-      {props.char !== null && <span>{props.char}</span>}
+      {char !== null && <span>{char}</span>}
     </div>
   );
 }

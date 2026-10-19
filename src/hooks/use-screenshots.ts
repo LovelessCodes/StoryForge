@@ -21,27 +21,21 @@ export const useProfileScreenshots = (
     ...props,
   });
 
-/** A PNG preview of one screenshot (raw bytes over IPC, then a blob URL). */
+/** Raw PNG bytes of one screenshot preview; `ScreenshotImage` renders them. */
 export const useScreenshotImage = (path: string | null, size: number) =>
   useQuery({
     enabled: path !== null,
-    queryFn: async () => {
-      const bytes = await invoke<ArrayBuffer>("get_screenshot_thumbnail", { path, size });
-      return URL.createObjectURL(new Blob([bytes], { type: "image/png" }));
-    },
+    queryFn: () => invoke<ArrayBuffer>("get_screenshot_thumbnail", { path, size }),
     gcTime: 5 * 60_000,
     queryKey: ["screenshotImage", path, size],
     staleTime: Infinity,
   });
 
-/** The full-size screenshot for the in-app viewer. */
+/** Raw PNG bytes of the full-size screenshot for the in-app viewer. */
 export const useScreenshotFull = (path: string | null) =>
   useQuery({
     enabled: path !== null,
-    queryFn: async () => {
-      const bytes = await invoke<ArrayBuffer>("read_screenshot", { path });
-      return URL.createObjectURL(new Blob([bytes], { type: "image/png" }));
-    },
+    queryFn: () => invoke<ArrayBuffer>("read_screenshot", { path }),
     gcTime: 60_000,
     queryKey: ["screenshotFull", path],
     staleTime: Infinity,

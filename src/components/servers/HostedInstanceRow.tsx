@@ -55,7 +55,7 @@ export default function HostedInstanceRow({ instance }: { instance: HostedServer
         </div>
         <div className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px]">
           <span>v{instance.version}</span>
-          {dirSize && <span>{dirSize.size_display}</span>}
+          {dirSize ? <span>{dirSize.size_display}</span> : null}
           <span className={statusText[status.status]}>
             {statusLabels[status.status] ?? status.status}
             {isCrashed && status.exit_code != null && (

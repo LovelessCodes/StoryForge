@@ -79,11 +79,12 @@ export default function PublicServersTab() {
   const selectedGameVersionsSet = new Set(selectedGameVersions);
 
   function syncGameVersions(values: string[]) {
+    const valuesSet = new Set(values);
     for (const value of values) {
       if (!selectedGameVersionsSet.has(value)) addGameVersion(value);
     }
     for (const value of selectedGameVersions) {
-      if (!values.includes(value)) removeGameVersion(value);
+      if (!valuesSet.has(value)) removeGameVersion(value);
     }
   }
 

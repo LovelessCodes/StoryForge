@@ -16,6 +16,13 @@ export interface DownloadEntry {
   destpath: string | null;
   /** Profile root whose mod lists are refreshed after the download. */
   modsDirectory: string | null;
+  /**
+   * Set by queueing callers that refresh the lists themselves once the
+   * download lands (`invalidateQueriesFor` from their mutation). Cleared when
+   * an attempt settles, so a retry from the sheet falls back to the manager's
+   * own refresh.
+   */
+  refreshOwnedByCaller: boolean;
   /** Where a finished plain download saved its file (used to undo it). */
   savedPath: string | null;
   bytesDownloaded: number;
@@ -50,6 +57,7 @@ export const useDownloadStore = create<DownloadState & DownloadActions>((set) =>
           url: null,
           destpath: null,
           modsDirectory: null,
+          refreshOwnedByCaller: false,
           savedPath: null,
           ...entry,
           bytesDownloaded: 0,

@@ -105,9 +105,13 @@ function eventName(token: string): string {
   return `download://${token.replace(/[^\w:/-]/g, "_")}`;
 }
 
-/** Refreshes the lists a finished download belongs to. */
-function invalidateQueriesFor(
-  entry: DownloadEntry,
+/**
+ * Refreshes the lists a finished download belongs to. The manager calls this
+ * when a download lands unless the queueing caller took the refresh over with
+ * `refreshOwnedByCaller`.
+ */
+export function invalidateQueriesFor(
+  entry: Pick<DownloadEntry, "kind" | "modsDirectory">,
   queryClient: ReturnType<typeof useQueryClient>,
 ): void {
   if (entry.kind === "version") {
@@ -161,27 +165,36 @@ async function queueDependencies(
   requests: DependencyRequest[],
   target: DependencyTarget,
 ): Promise<void> {
-  for (const request of requests) {
-    const id = request.modid.trim().toLowerCase();
-    if (!id) continue;
+  // Independent lookups: run them together instead of one round trip at a
+  // time. The queue itself still caps concurrent downloads.
+  await Promise.all(requests.map((request) => queueDependency(queryClient, request, target)));
+}
 
-    try {
-      const info = (await invoke("fetch_mod_info", { modid: id })) as ModInfo;
-      const release = pickDependencyRelease(info.mod.releases, request.constraint ?? "");
-      if (!release?.mainfile) continue;
+/** Resolves one dependency and queues its release, if any. */
+async function queueDependency(
+  queryClient: ReturnType<typeof useQueryClient>,
+  request: DependencyRequest,
+  target: DependencyTarget,
+): Promise<void> {
+  const id = request.modid.trim().toLowerCase();
+  if (!id) return;
 
-      const token = `mod:${info.mod.modid}:${release.modversion}:${hashPath(target.destpath)}`;
-      queueModDownload(queryClient, {
-        token,
-        label: `${info.mod.name} v${release.modversion}`,
-        detail: target.detail,
-        url: release.mainfile,
-        destpath: target.destpath,
-        modsDirectory: target.modsDirectory,
-      });
-    } catch {
-      // Keep going with the remaining dependencies.
-    }
+  try {
+    const info = (await invoke("fetch_mod_info", { modid: id })) as ModInfo;
+    const release = pickDependencyRelease(info.mod.releases, request.constraint ?? "");
+    if (!release?.mainfile) return;
+
+    const token = `mod:${info.mod.modid}:${release.modversion}:${hashPath(target.destpath)}`;
+    queueModDownload(queryClient, {
+      token,
+      label: `${info.mod.name} v${release.modversion}`,
+      detail: target.detail,
+      url: release.mainfile,
+      destpath: target.destpath,
+      modsDirectory: target.modsDirectory,
+    });
+  } catch {
+    // Keep going with the remaining dependencies.
   }
 }
 
@@ -259,6 +272,7 @@ function queueModDownload(
     url: request.url,
     destpath: request.destpath,
     modsDirectory: request.modsDirectory ?? null,
+    refreshOwnedByCaller: request.refreshOwnedByCaller ?? false,
   });
   processQueue(queryClient);
 }
@@ -374,9 +388,9 @@ async function doDownload(
       store.removeEntry(token);
       settleWaiters(token, new Error("Download cancelled"));
     } else if (result === "success") {
-      store.updateEntry(token, { status: "done", percent: 100 });
+      store.updateEntry(token, { status: "done", percent: 100, refreshOwnedByCaller: false });
       settleWaiters(token);
-      invalidateQueriesFor(entry, queryClient);
+      if (!entry.refreshOwnedByCaller) invalidateQueriesFor(entry, queryClient);
       if (entry.kind === "mod") {
         const finished = useDownloadStore.getState().entries[token];
         if (finished) {
@@ -387,11 +401,11 @@ async function doDownload(
       store.removeEntry(token);
       settleWaiters(token);
       // The file is on disk: refresh the lists even though nothing downloaded.
-      invalidateQueriesFor(entry, queryClient);
+      if (!entry.refreshOwnedByCaller) invalidateQueriesFor(entry, queryClient);
     }
   } catch (err: unknown) {
     const message = errorMessage(err);
-    store.updateEntry(token, { status: "error", error: message });
+    store.updateEntry(token, { status: "error", error: message, refreshOwnedByCaller: false });
     settleWaiters(token, new Error(message));
   } finally {
     if (claimed && version !== null) releaseVersionDownload(version);
@@ -642,4 +656,11 @@ export interface ModDownloadRequest {
   destpath: string;
   /** Profile root whose mod lists are refreshed on success. */
   modsDirectory?: string | null;
+  /**
+   * Set by callers that await `waitForDownload` and refresh the lists in their
+   * own mutation (`onSuccess`), so the manager skips its refresh for this
+   * attempt. The flag is dropped when the attempt settles, so a retry from the
+   * downloads sheet refreshes through the manager.
+   */
+  refreshOwnedByCaller?: boolean;
 }

@@ -1,32 +1,8 @@
 import { ImageOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { PROFILE_ICONS, PROFILE_ICON_BASE } from "@/lib/profile-icons";
 import { cn } from "@/lib/utils";
-
-export const PROFILE_ICONS = [
-  "bogfort.png",
-  "butterfly.png",
-  "castleruin.png",
-  "cow.png",
-  "elk.png",
-  "family1.png",
-  "fishandtherain.png",
-  "forestdawn.png",
-  "glam.png",
-  "howl.png",
-  "hunter.png",
-  "hunterintheforest.png",
-  "iris.png",
-  "oldvillage.png",
-  "prey.png",
-  "seraph.png",
-  "sleepingwolf.png",
-  "traveler.png",
-  "uncle1.png",
-  "underwater.png",
-] as const;
-
-export const PROFILE_ICON_BASE = "/profile-icons";
 
 export function ProfileIconPicker({
   value,

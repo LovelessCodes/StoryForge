@@ -12,8 +12,7 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "./button";
-
-const toast = ToastPrimitive.createToastManager();
+import { toast } from "./toast-manager";
 
 function ToastProvider({ ...props }: ToastPrimitive.Provider.Props) {
   return <ToastPrimitive.Provider {...props} />;
@@ -111,18 +110,14 @@ function ToastAction({
   );
 }
 
-function ToastClose({
-  className,
-  children,
-  render = <Button variant="ghost" size="icon-sm" />,
-  ...props
-}: ToastPrimitive.Close.Props) {
+function ToastClose({ className, children, render, ...props }: ToastPrimitive.Close.Props) {
   const { t } = useTranslation();
+  const label = t("layout.toast.close");
   return (
     <ToastPrimitive.Close
       data-slot="toast-close"
-      aria-label={t("layout.toast.close")}
-      render={render}
+      aria-label={label}
+      render={render ?? <Button aria-label={label} variant="ghost" size="icon-sm" />}
       className={cn(
         "relative shrink-0 text-muted-foreground after:absolute after:-inset-2 after:content-[''] hover:text-foreground",
         className,
@@ -218,21 +213,6 @@ function Toaster({ children, toastManager = toast, ...props }: ToastPrimitive.Pr
   );
 }
 
-const createToastManager = ToastPrimitive.createToastManager;
-const useToastManager = ToastPrimitive.useToastManager;
-
-type ToastAddOptions = Parameters<typeof toast.add>[0];
-
-/**
- * Upserting toast: calls sharing a `key` update one toast in place and refresh
- * its auto-dismiss timer instead of stacking a duplicate. Use it for repeatable
- * actions (launch, sync, save, queue, per-profile mutations) so repeats stay a
- * single toast.
- */
-function notify(key: string, options: Omit<ToastAddOptions, "id">) {
-  return toast.add({ ...options, id: key });
-}
-
 export {
   Toaster,
   Toast,
@@ -244,8 +224,4 @@ export {
   ToastProvider,
   ToastTitle,
   ToastViewport,
-  createToastManager,
-  notify,
-  toast,
-  useToastManager,
 };

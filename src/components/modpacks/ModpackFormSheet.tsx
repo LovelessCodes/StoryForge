@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { CheckIcon, Loader2, SparklesIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { z } from "zod";
@@ -21,6 +20,8 @@ import { authClient } from "@/lib/auth";
 import { errorMessage } from "@/lib/errors";
 import { toast } from "@/lib/notify";
 
+import ModpackSlugField, { type SlugResult } from "./ModpackSlugField";
+
 const IMAGE_URL_PREFIX = "https://moddbcdn.vintagestory.at/";
 
 const formSchema = z.object({
@@ -41,11 +42,28 @@ function slugify(name: string): string {
     .replace(/-+/g, "-");
 }
 
-type SlugResult = {
-  available: boolean;
-  suggestion?: string;
-  alternatives?: string[];
-};
+/** Initial field values; the parent remounts the sheet on every open. */
+function formDefaults(modpack: ModpackItem | null) {
+  return {
+    description: modpack?.description ?? "",
+    imageUrl: modpack?.imageUrl ?? "",
+    name: modpack?.name ?? "",
+    slug: modpack?.slug ?? "",
+  };
+}
+
+type ModpackFormValues = z.infer<typeof formSchema>;
+
+/** Zod issues for the current values; empty while every field parses. */
+function formIssues(values: ModpackFormValues) {
+  const parsed = formSchema.safeParse(values);
+  return parsed.success ? [] : parsed.error.issues;
+}
+
+/** A create-mode slug the API has reported as taken (edits keep their slug). */
+function isSlugUnavailable(isEdit: boolean, slugCheck: SlugResult | null): boolean {
+  return !isEdit && slugCheck !== null && !slugCheck.available;
+}
 
 interface ModpackFormSheetProps {
   open: boolean;
@@ -71,10 +89,11 @@ export default function ModpackFormSheet({
   const { t } = useTranslation();
   const isEdit = modpack != null;
 
-  const [name, setName] = useState(modpack?.name ?? "");
-  const [slug, setSlug] = useState(modpack?.slug ?? "");
-  const [description, setDescription] = useState(modpack?.description ?? "");
-  const [imageUrl, setImageUrl] = useState(modpack?.imageUrl ?? "");
+  const defaults = formDefaults(modpack);
+  const [name, setName] = useState(defaults.name);
+  const [slug, setSlug] = useState(defaults.slug);
+  const [description, setDescription] = useState(defaults.description);
+  const [imageUrl, setImageUrl] = useState(defaults.imageUrl);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
   const slugManuallyEdited = useRef(false);
@@ -96,8 +115,7 @@ export default function ModpackFormSheet({
     retry: false,
   });
 
-  const parsed = formSchema.safeParse({ description, imageUrl, name, slug });
-  const issues = parsed.success ? [] : parsed.error.issues;
+  const issues = formIssues({ description, imageUrl, name, slug });
   const issueFor = (path: string) => {
     const message = touched[path]
       ? issues.find((issue) => issue.path[0] === path)?.message
@@ -106,7 +124,7 @@ export default function ModpackFormSheet({
   };
 
   const slugValid = /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug.trim());
-  const slugUnavailable = !isEdit && slugCheck !== null && !slugCheck.available;
+  const slugUnavailable = isSlugUnavailable(isEdit, slugCheck);
   const canSubmit =
     name.trim().length > 0 && (isEdit || (slugValid && !slugUnavailable)) && !saving;
 
@@ -116,7 +134,7 @@ export default function ModpackFormSheet({
   };
 
   async function submit() {
-    if (!parsed.success) {
+    if (issues.length > 0) {
       setTouched({ description: true, imageUrl: true, name: true, slug: true });
       return;
     }
@@ -204,72 +222,20 @@ export default function ModpackFormSheet({
 
             {/* Slug — create only */}
             {!isEdit && (
-              <div className="grid gap-1.5">
-                <label className="text-xs font-medium" htmlFor="modpack-slug">
-                  {t("modpacks.form.slug")} <span className="text-destructive">*</span>
-                </label>
-                <div className="relative">
-                  <Input
-                    className="pr-8 font-mono"
-                    disabled={saving}
-                    id="modpack-slug"
-                    placeholder="my-awesome-modpack"
-                    value={slug}
-                    onBlur={() => setTouched((prev) => ({ ...prev, slug: true }))}
-                    onChange={(event) => {
-                      slugManuallyEdited.current = true;
-                      setSlug(event.target.value);
-                    }}
-                  />
-                  {slugChecking && (
-                    <Loader2 className="text-muted-foreground absolute top-2 right-2.5 size-3.5 animate-spin" />
-                  )}
-                  {!slugChecking && slugValid && slugCheck?.available && (
-                    <CheckIcon className="text-success absolute top-2 right-2.5 size-3.5" />
-                  )}
-                </div>
-                {issueFor("slug") && (
-                  <p className="text-destructive text-[11px]">{issueFor("slug")}</p>
-                )}
-
-                {/* Suggestion / alternatives when the slug is taken */}
-                {!slugChecking && slugCheck && !slugCheck.available && (
-                  <div className="grid gap-1">
-                    {slugCheck.suggestion && (
-                      <div className="flex items-center gap-1.5">
-                        <SparklesIcon className="text-muted-foreground size-3" />
-                        <span className="text-muted-foreground text-xs">
-                          {t("modpacks.form.suggestion")}
-                        </span>
-                        <button
-                          className="text-accent-primary text-xs font-medium hover:underline"
-                          type="button"
-                          onClick={() => applySuggestion(slugCheck.suggestion!)}
-                        >
-                          {slugCheck.suggestion}
-                        </button>
-                      </div>
-                    )}
-                    {slugCheck.alternatives && slugCheck.alternatives.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-1">
-                        <span className="text-muted-foreground text-xs">
-                          {t("modpacks.form.alternatives")}
-                        </span>
-                        {slugCheck.alternatives.map((alternative) => (
-                          <button
-                            className="bg-muted hover:bg-accent rounded-none px-1.5 py-0.5 text-xs transition-colors"
-                            key={alternative}
-                            type="button"
-                            onClick={() => applySuggestion(alternative)}
-                          >
-                            {alternative}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+              <ModpackSlugField
+                error={issueFor("slug")}
+                saving={saving}
+                slug={slug}
+                slugCheck={slugCheck}
+                slugChecking={slugChecking}
+                slugValid={slugValid}
+                onApplySuggestion={applySuggestion}
+                onBlur={() => setTouched((prev) => ({ ...prev, slug: true }))}
+                onChange={(value) => {
+                  slugManuallyEdited.current = true;
+                  setSlug(value);
+                }}
+              />
             )}
 
             {/* Description */}

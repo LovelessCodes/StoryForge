@@ -26,10 +26,13 @@ import { useAddServerToProfile } from "@/hooks/use-add-server-to-profile";
 import { useRemoveServerFromProfile } from "@/hooks/use-remove-server-from-profile";
 import { errorMessage } from "@/lib/errors";
 import { toast } from "@/lib/notify";
-import { useProfiles } from "@/stores/profiles";
+import { useProfiles, type Profile } from "@/stores/profiles";
 import { useServerStore, type Server } from "@/stores/servers";
 
 import { sameMinorVersion, serverEntryString, type SniffResult } from "./server-utils";
+
+/** Translator returned by `useTranslation`, for module-scope label helpers. */
+type Translate = ReturnType<typeof useTranslation>["t"];
 
 interface ServerFormSheetProps {
   open: boolean;
@@ -38,6 +41,49 @@ interface ServerFormSheetProps {
   onOpenChangeComplete?: (open: boolean) => void;
   /** Existing server to edit; null/undefined to add a new one. */
   server?: Server | null;
+}
+
+/** First-render field values; later edits come from the form state. */
+function initialFormValues(
+  server: Server | null | undefined,
+  activeProfile: Profile | null,
+  profiles: Profile[],
+) {
+  return {
+    name: server?.name ?? "",
+    password: server?.password ?? "",
+    ip: server?.ip ?? "",
+    port: server?.port?.toString() ?? "42420",
+    profileId: server
+      ? String(server.profileId)
+      : activeProfile
+        ? String(activeProfile.id)
+        : profiles[0]
+          ? String(profiles[0].id)
+          : "0",
+  };
+}
+
+/** The profile the form shows, plus the id the select should display. */
+function resolveProfile(profiles: Profile[], profileId: string, isEdit: boolean) {
+  const selectedProfile =
+    profiles.find((p) => String(p.id) === profileId) ??
+    (profileId === "0" && !isEdit ? profiles[0] : undefined);
+  return {
+    selectedProfile,
+    effectiveProfileId: selectedProfile ? String(selectedProfile.id) : profileId,
+  };
+}
+
+/** Sheet title for the add / edit mode. */
+function sheetTitle(t: Translate, server: Server | null | undefined) {
+  return server ? t("servers.form.editTitle", { name: server.name }) : t("servers.form.addTitle");
+}
+
+/** Footer button label for the add / edit mode while idle or busy. */
+function submitLabel(t: Translate, busy: boolean, isEdit: boolean) {
+  if (busy) return isEdit ? t("servers.form.updating") : t("servers.form.adding");
+  return isEdit ? t("servers.form.updateSubmit") : t("servers.form.addSubmit");
 }
 
 export default function ServerFormSheet({
@@ -56,29 +102,19 @@ export default function ServerFormSheet({
   const addServerToProfile = useAddServerToProfile();
   const removeServerFromProfile = useRemoveServerFromProfile();
 
-  const [name, setName] = useState(server?.name ?? "");
-  const [password, setPassword] = useState(server?.password ?? "");
-  const [ip, setIp] = useState(server?.ip ?? "");
-  const [port, setPort] = useState(server?.port?.toString() ?? "42420");
-  const [profileId, setProfileId] = useState(
-    server
-      ? String(server.profileId)
-      : activeProfile
-        ? String(activeProfile.id)
-        : profiles[0]
-          ? String(profiles[0].id)
-          : "0",
-  );
+  const initial = initialFormValues(server, activeProfile, profiles);
+  const [name, setName] = useState(initial.name);
+  const [password, setPassword] = useState(initial.password);
+  const [ip, setIp] = useState(initial.ip);
+  const [port, setPort] = useState(initial.port);
+  const [profileId, setProfileId] = useState(initial.profileId);
   const [sniffResult, setSniffResult] = useState<SniffResult | null>(null);
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [createdAt] = useState(() => Date.now());
 
-  const selectedProfile =
-    profiles.find((p) => String(p.id) === profileId) ??
-    (profileId === "0" && !isEdit ? profiles[0] : undefined);
-  const effectiveProfileId = selectedProfile ? String(selectedProfile.id) : profileId;
+  const { selectedProfile, effectiveProfileId } = resolveProfile(profiles, profileId, isEdit);
   const busy = addServerToProfile.isPending || removeServerFromProfile.isPending;
 
   function parsePort(): number | null {
@@ -173,14 +209,6 @@ export default function ServerFormSheet({
     }
   }
 
-  const submitLabel = busy
-    ? isEdit
-      ? t("servers.form.updating")
-      : t("servers.form.adding")
-    : isEdit
-      ? t("servers.form.updateSubmit")
-      : t("servers.form.addSubmit");
-
   return (
     <Sheet
       open={open}
@@ -189,96 +217,25 @@ export default function ServerFormSheet({
     >
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b">
-          <SheetTitle>
-            {isEdit
-              ? t("servers.form.editTitle", { name: server?.name ?? "" })
-              : t("servers.form.addTitle")}
-          </SheetTitle>
+          <SheetTitle>{sheetTitle(t, server)}</SheetTitle>
           <SheetDescription>{t("servers.form.description")}</SheetDescription>
         </SheetHeader>
 
         <ScrollArea scrollFade className="min-h-0 flex-1">
           <div className="grid gap-4 p-4">
-            <div className="grid gap-1.5">
-              <label className="text-xs font-medium" htmlFor="server-name">
-                {t("common.fields.name")}
-              </label>
-              <Input
-                id="server-name"
-                placeholder={t("servers.form.namePlaceholder")}
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </div>
-
-            <div className="grid gap-1.5">
-              <label className="text-xs font-medium" htmlFor="server-password">
-                {t("common.fields.password")}{" "}
-                <span className="text-muted-foreground">({t("common.states.optional")})</span>
-              </label>
-              <Input
-                id="server-password"
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-1.5">
-                <label className="text-xs font-medium" htmlFor="server-ip">
-                  {t("servers.form.ipAddress")}
-                </label>
-                <Input
-                  id="server-ip"
-                  placeholder="127.0.0.1"
-                  value={ip}
-                  onChange={(event) => setIp(event.target.value)}
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <label className="text-xs font-medium" htmlFor="server-port">
-                  {t("common.fields.port")}
-                </label>
-                <Input
-                  id="server-port"
-                  inputMode="numeric"
-                  value={port}
-                  onChange={(event) => setPort(event.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-1.5">
-              <span className="text-xs font-medium">
-                {t("servers.profile")} <span className="text-destructive">*</span>
-              </span>
-              <Select
-                items={profiles.map((p) => ({
-                  label: `${p.name} (v${p.version})`,
-                  value: String(p.id),
-                }))}
-                value={effectiveProfileId}
-                onValueChange={(value) => value && setProfileId(value)}
-              >
-                <SelectTrigger className="w-full" aria-label={t("servers.profile")}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {profiles.map((p) => (
-                    <SelectItem key={p.id} value={String(p.id)}>
-                      {p.name}
-                      <span className="text-muted-foreground ml-2 text-xs">v{p.version}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {profiles.length === 0 && (
-                <p className="text-muted-foreground text-[11px]">
-                  {t("servers.form.createProfileFirst")}
-                </p>
-              )}
-            </div>
+            <ServerFormFields
+              effectiveProfileId={effectiveProfileId}
+              ip={ip}
+              name={name}
+              password={password}
+              port={port}
+              profiles={profiles}
+              setIp={setIp}
+              setName={setName}
+              setPassword={setPassword}
+              setPort={setPort}
+              setProfileId={setProfileId}
+            />
 
             <Button
               className="w-full"
@@ -310,11 +267,125 @@ export default function ServerFormSheet({
             disabled={busy || profiles.length === 0}
             onClick={() => void submit()}
           >
-            {submitLabel}
+            {submitLabel(t, busy, isEdit)}
           </Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
+  );
+}
+
+/** Name, password, address, port and profile fields of the form body. */
+function ServerFormFields({
+  effectiveProfileId,
+  ip,
+  name,
+  password,
+  port,
+  profiles,
+  setIp,
+  setName,
+  setPassword,
+  setPort,
+  setProfileId,
+}: {
+  effectiveProfileId: string;
+  ip: string;
+  name: string;
+  password: string;
+  port: string;
+  profiles: Profile[];
+  setIp: (value: string) => void;
+  setName: (value: string) => void;
+  setPassword: (value: string) => void;
+  setPort: (value: string) => void;
+  setProfileId: (value: string) => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <>
+      <div className="grid gap-1.5">
+        <label className="text-xs font-medium" htmlFor="server-name">
+          {t("common.fields.name")}
+        </label>
+        <Input
+          id="server-name"
+          placeholder={t("servers.form.namePlaceholder")}
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
+      </div>
+
+      <div className="grid gap-1.5">
+        <label className="text-xs font-medium" htmlFor="server-password">
+          {t("common.fields.password")}{" "}
+          <span className="text-muted-foreground">({t("common.states.optional")})</span>
+        </label>
+        <Input
+          id="server-password"
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-1.5">
+          <label className="text-xs font-medium" htmlFor="server-ip">
+            {t("servers.form.ipAddress")}
+          </label>
+          <Input
+            id="server-ip"
+            placeholder="127.0.0.1"
+            value={ip}
+            onChange={(event) => setIp(event.target.value)}
+          />
+        </div>
+        <div className="grid gap-1.5">
+          <label className="text-xs font-medium" htmlFor="server-port">
+            {t("common.fields.port")}
+          </label>
+          <Input
+            id="server-port"
+            inputMode="numeric"
+            value={port}
+            onChange={(event) => setPort(event.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-1.5">
+        <span className="text-xs font-medium">
+          {t("servers.profile")} <span className="text-destructive">*</span>
+        </span>
+        <Select
+          items={profiles.map((p) => ({
+            label: `${p.name} (v${p.version})`,
+            value: String(p.id),
+          }))}
+          value={effectiveProfileId}
+          onValueChange={(value) => value && setProfileId(value)}
+        >
+          <SelectTrigger className="w-full" aria-label={t("servers.profile")}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {profiles.map((p) => (
+              <SelectItem key={p.id} value={String(p.id)}>
+                {p.name}
+                <span className="text-muted-foreground ml-2 text-xs">v{p.version}</span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {profiles.length === 0 && (
+          <p className="text-muted-foreground text-[11px]">
+            {t("servers.form.createProfileFirst")}
+          </p>
+        )}
+      </div>
+    </>
   );
 }
 

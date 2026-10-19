@@ -23,7 +23,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
-import { profileBackupsQueryKey, useProfileBackups } from "@/hooks/use-profile-backups";
+import {
+  profileBackupsQueryKey,
+  useProfileBackups,
+  type ProfileBackup,
+} from "@/hooks/use-profile-backups";
 import { useTauriEvent } from "@/hooks/use-tauri-event";
 import { errorMessage } from "@/lib/errors";
 import { useDateLocale } from "@/lib/i18n/date-locale";
@@ -47,6 +51,96 @@ function messageOf(error: unknown) {
   return errorMessage(error);
 }
 
+/** One snapshot row: timestamp, size, restore/delete actions and their inline confirmations. */
+function BackupSnapshotItem({
+  backup,
+  busy,
+  confirmingDelete,
+  confirmingRestore,
+  onCancelConfirm,
+  onDelete,
+  onRequestDelete,
+  onRequestRestore,
+  onRestore,
+  restoring,
+}: {
+  backup: ProfileBackup;
+  busy: boolean;
+  confirmingDelete: boolean;
+  confirmingRestore: boolean;
+  onCancelConfirm: () => void;
+  onDelete: () => void;
+  onRequestDelete: () => void;
+  onRequestRestore: () => void;
+  onRestore: () => void;
+  restoring: boolean;
+}) {
+  const { t } = useTranslation();
+  const dateLocale = useDateLocale();
+  return (
+    <div className="grid gap-2 border p-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="grid gap-0.5">
+          <p className="text-xs font-medium">
+            {format(new Date(backup.created_at), "PPp", { locale: dateLocale })}
+          </p>
+          <p className="text-muted-foreground text-[11px]">
+            {formatDistanceToNow(new Date(backup.created_at), {
+              addSuffix: true,
+              locale: dateLocale,
+            })}{" "}
+            · {backup.size_display}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          <Button disabled={busy} size="sm" variant="outline" onClick={onRequestRestore}>
+            {t("common.actions.restore")}
+          </Button>
+          <Button
+            aria-label={t("profiles.backups.deleteBackup")}
+            className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+            disabled={busy}
+            size="icon-sm"
+            variant="ghost"
+            onClick={onRequestDelete}
+          >
+            <Trash2 />
+          </Button>
+        </div>
+      </div>
+
+      {confirmingRestore && (
+        <div className="border-warning/40 bg-warning/5 grid gap-2 border p-2">
+          <p className="text-[11px]">{t("profiles.backups.confirmRestore")}</p>
+          <div className="flex items-center gap-2">
+            <Button disabled={busy} size="sm" variant="accent-primary" onClick={onRestore}>
+              {restoring ? <Loader2 className="animate-spin" /> : null}
+              {t("profiles.backups.restoreBackup")}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={onCancelConfirm}>
+              {t("common.actions.cancel")}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {confirmingDelete && (
+        <div className="border-destructive/40 bg-destructive/5 grid gap-2 border p-2">
+          <p className="text-[11px]">{t("profiles.backups.confirmDelete")}</p>
+          <div className="flex items-center gap-2">
+            <Button disabled={busy} size="sm" variant="destructive" onClick={onDelete}>
+              {t("profiles.backups.deleteBackup")}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={onCancelConfirm}>
+              {t("common.actions.cancel")}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * Backup snapshots of a profile's data folder: create, restore and delete
  * them, and configure the automatic pre-launch backup.
@@ -57,7 +151,6 @@ export default function ProfileBackupsSheet({
   profile,
 }: ProfileBackupsSheetProps) {
   const { t } = useTranslation();
-  const dateLocale = useDateLocale();
   const queryClient = useQueryClient();
   const loadProfiles = useProfilesStore((s) => s.loadProfiles);
   const backupsQuery = useProfileBackups(profile.id);
@@ -171,6 +264,11 @@ export default function ProfileBackupsSheet({
     }
   }
 
+  function cancelConfirm() {
+    setConfirmRestore(null);
+    setConfirmDelete(null);
+  }
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
@@ -268,87 +366,25 @@ export default function ProfileBackupsSheet({
                   {t("profiles.backups.count", { count: backups.length })}
                 </p>
                 {backups.map((backup) => (
-                  <div className="grid gap-2 border p-3" key={backup.id}>
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="grid gap-0.5">
-                        <p className="text-xs font-medium">
-                          {format(new Date(backup.created_at), "PPp", { locale: dateLocale })}
-                        </p>
-                        <p className="text-muted-foreground text-[11px]">
-                          {formatDistanceToNow(new Date(backup.created_at), {
-                            addSuffix: true,
-                            locale: dateLocale,
-                          })}{" "}
-                          · {backup.size_display}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-1">
-                        <Button
-                          disabled={busy !== null}
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setConfirmDelete(null);
-                            setConfirmRestore(backup.id);
-                          }}
-                        >
-                          {t("common.actions.restore")}
-                        </Button>
-                        <Button
-                          aria-label={t("profiles.backups.deleteBackup")}
-                          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                          disabled={busy !== null}
-                          size="icon-sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setConfirmRestore(null);
-                            setConfirmDelete(backup.id);
-                          }}
-                        >
-                          <Trash2 />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {confirmRestore === backup.id && (
-                      <div className="border-warning/40 bg-warning/5 grid gap-2 border p-2">
-                        <p className="text-[11px]">{t("profiles.backups.confirmRestore")}</p>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            disabled={busy !== null}
-                            size="sm"
-                            variant="accent-primary"
-                            onClick={() => void doRestore(backup.id)}
-                          >
-                            {busy === "restore" ? <Loader2 className="animate-spin" /> : null}
-                            {t("profiles.backups.restoreBackup")}
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => setConfirmRestore(null)}>
-                            {t("common.actions.cancel")}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    {confirmDelete === backup.id && (
-                      <div className="border-destructive/40 bg-destructive/5 grid gap-2 border p-2">
-                        <p className="text-[11px]">{t("profiles.backups.confirmDelete")}</p>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            disabled={busy !== null}
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => void doDelete(backup.id)}
-                          >
-                            {t("profiles.backups.deleteBackup")}
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => setConfirmDelete(null)}>
-                            {t("common.actions.cancel")}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <BackupSnapshotItem
+                    backup={backup}
+                    busy={busy !== null}
+                    confirmingDelete={confirmDelete === backup.id}
+                    confirmingRestore={confirmRestore === backup.id}
+                    key={backup.id}
+                    restoring={busy === "restore"}
+                    onCancelConfirm={cancelConfirm}
+                    onDelete={() => void doDelete(backup.id)}
+                    onRequestDelete={() => {
+                      setConfirmRestore(null);
+                      setConfirmDelete(backup.id);
+                    }}
+                    onRequestRestore={() => {
+                      setConfirmDelete(null);
+                      setConfirmRestore(backup.id);
+                    }}
+                    onRestore={() => void doRestore(backup.id)}
+                  />
                 ))}
               </div>
             )}

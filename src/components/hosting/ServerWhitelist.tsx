@@ -246,6 +246,7 @@ function AddPlayerForm({ instanceId, isRunning }: { instanceId: number; isRunnin
           value={lookupName}
           onChange={(event) => setLookupName(event.target.value)}
           onKeyDown={(event) => {
+            if (event.nativeEvent.isComposing) return;
             if (event.key === "Enter") void handleLookup();
           }}
         />

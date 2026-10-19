@@ -1,5 +1,4 @@
 import { invoke } from "@tauri-apps/api/core";
-import { UserX } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -9,19 +8,12 @@ import { useActiveProfile } from "@/hooks/use-active-profile";
 import { errorMessage } from "@/lib/errors";
 import { baseGameVersion, pathBasename } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
-import type { Mod, ModInfo, OutputMod } from "@/lib/types";
+import type { Mod, ModInfo } from "@/lib/types";
 import { useSettingsStore } from "@/stores/settings";
 
-import { AddModSheet } from "./AddModSheet";
-import { BlockedAuthorsSheet } from "./BlockedAuthorsSheet";
-import BrokenModsBanner from "./BrokenModsBanner";
 import { InstalledModsView } from "./InstalledModsView";
-import MissingDependenciesBanner from "./MissingDependenciesBanner";
-import { ModFiltersBar } from "./ModFiltersBar";
-import { ModList } from "./ModList";
-import { RemoveModSheet } from "./RemoveModSheet";
-import { StandaloneInstallPickerSheet } from "./StandaloneInstallPickerSheet";
-import { UpdateModSheet } from "./UpdateModSheet";
+import { ModsBrowseView } from "./ModsBrowseView";
+import { ModSheetHost, type SheetRequest } from "./ModSheetHost";
 import { useModFilters, useModsData } from "./use-mods-data";
 
 export type ModsPageProps = {
@@ -40,12 +32,6 @@ export type ModsPageProps = {
    */
   targetKind?: "profile" | "server";
 };
-
-type SheetRequest =
-  | { kind: "add"; mod: Mod; version?: string }
-  | { kind: "update"; mod: Mod; installedMod: OutputMod }
-  | { kind: "remove"; mod: Mod; installedMod: OutputMod }
-  | { kind: "standalone"; mod: Mod; prompt?: boolean; version?: string };
 
 export default function ModsPage({
   targetPath,
@@ -171,63 +157,16 @@ export default function ModsPage({
         </div>
 
         {view === "browse" ? (
-          <>
-            <ModFiltersBar
-              destinationLabel={destinationLabel}
-              filters={filters}
-              gameVersion={gameVersion}
-              gameVersions={data.gameVersions}
-              instMods={data.instMods}
-              modCount={data.modsList.length}
-              modsDirectory={profilePath}
-              modTags={data.modTags}
-              modUpdates={data.modUpdates}
-              onManageBlocked={() => setBlockedOpen(true)}
-            />
-            {data.hiddenByBlockCount > 0 && (
-              <button
-                className="text-muted-foreground hover:text-foreground flex w-fit shrink-0 cursor-pointer items-center gap-1.5 text-xs"
-                onClick={() => setBlockedOpen(true)}
-                title={t("mods.blocked.manage")}
-                type="button"
-              >
-                <UserX className="size-3.5" />
-                {t("mods.blocked.hidden", { count: data.hiddenByBlockCount })}
-              </button>
-            )}
-            {profilePath && (
-              <MissingDependenciesBanner
-                destinationLabel={destinationLabel}
-                missing={data.missingDependencies}
-                modsDirectory={profilePath}
-              />
-            )}
-            {profilePath && (
-              <BrokenModsBanner
-                destinationLabel={destinationLabel}
-                duplicates={data.duplicateMods}
-                errors={data.modErrors}
-                modsDirectory={profilePath}
-              />
-            )}
-            <ModList
-              canToggleMods={canToggleMods}
-              destinationLabel={destinationLabel}
-              installedMods={profilePath ? (data.instMods?.mods ?? []) : []}
-              mods={data.modsList}
-              modsDirectory={profilePath}
-              modUpdates={profilePath ? data.modUpdates : undefined}
-              onAdd={(mod) => openSheet({ kind: "add", mod })}
-              onAuthorClick={filters.setAuthor}
-              onRemove={(mod, installedMod) => openSheet({ kind: "remove", mod, installedMod })}
-              onStandaloneInstall={(mod) => openSheet({ kind: "standalone", mod })}
-              onTagClick={filters.handleTagClick}
-              onUpdate={(mod, installedMod) => openSheet({ kind: "update", mod, installedMod })}
-              selectedTagNames={filters.selectedTagNames}
-              tagByName={data.tagByName}
-              tagColorMap={data.tagColorMap}
-            />
-          </>
+          <ModsBrowseView
+            canToggleMods={canToggleMods}
+            data={data}
+            destinationLabel={destinationLabel}
+            filters={filters}
+            gameVersion={gameVersion}
+            onBlockedOpen={() => setBlockedOpen(true)}
+            onOpenSheet={openSheet}
+            profilePath={profilePath}
+          />
         ) : profilePath ? (
           <InstalledModsView canToggleMods={canToggleMods} modsDirectory={profilePath} />
         ) : (
@@ -237,52 +176,16 @@ export default function ModsPage({
         )}
       </div>
 
-      {sheet?.kind === "add" && profilePath && (
-        <AddModSheet
-          destinationLabel={destinationLabel}
-          initialVersion={sheet.version}
-          key={sheet.mod.modid}
-          mod={sheet.mod}
-          modsDirectory={profilePath}
-          onOpenChange={setSheetOpen}
-          open={sheetOpen}
-        />
-      )}
-      {sheet?.kind === "update" && profilePath && (
-        <UpdateModSheet
-          destinationLabel={destinationLabel}
-          installedMod={sheet.installedMod}
-          key={sheet.mod.modid}
-          mod={sheet.mod}
-          modsDirectory={profilePath}
-          onOpenChange={setSheetOpen}
-          open={sheetOpen}
-        />
-      )}
-      {sheet?.kind === "remove" && profilePath && (
-        <RemoveModSheet
-          destinationLabel={destinationLabel}
-          key={sheet.mod.modid}
-          modpath={sheet.installedMod.path}
-          modsDirectory={profilePath}
-          name={sheet.mod.name}
-          onOpenChange={setSheetOpen}
-          open={sheetOpen}
-        />
-      )}
-      {sheet?.kind === "standalone" && (
-        <StandaloneInstallPickerSheet
-          initialDestinationId={activeProfile ? `profile-${activeProfile.id}` : null}
-          initialVersion={sheet.version}
-          key={sheet.mod.modid}
-          mod={sheet.mod}
-          onOpenChange={setSheetOpen}
-          open={sheetOpen}
-          prompt={sheet.prompt}
-        />
-      )}
-
-      <BlockedAuthorsSheet open={blockedOpen} onOpenChange={setBlockedOpen} />
+      <ModSheetHost
+        activeProfile={activeProfile}
+        blockedOpen={blockedOpen}
+        destinationLabel={destinationLabel}
+        modsDirectory={profilePath}
+        onBlockedOpenChange={setBlockedOpen}
+        onOpenChange={setSheetOpen}
+        open={sheetOpen}
+        sheet={sheet}
+      />
     </TooltipProvider>
   );
 }

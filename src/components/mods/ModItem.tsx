@@ -1,29 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { openUrl } from "@tauri-apps/plugin-opener";
 import { cn } from "cn";
-import {
-  Check,
-  Download,
-  DownloadCloudIcon,
-  ExternalLink,
-  EyeOff,
-  Heart,
-  MessageSquare,
-  PackageMinusIcon,
-  PackagePlusIcon,
-  PackageSearchIcon,
-  Pin,
-  PinOff,
-  Power,
-  PowerOff,
-  SkipForward,
-  Star,
-} from "lucide-react";
+import { Check, Download, Heart, MessageSquare } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAddLatestModVersion } from "@/hooks/use-add-latest-mod-version";
 import { useAddModUpdateToProfile } from "@/hooks/use-add-mod-update-to-profile";
@@ -34,10 +15,12 @@ import {
   modUpdatesQueryKey,
 } from "@/hooks/use-mod-updates";
 import { useSetModEnabled } from "@/hooks/use-set-mod-enabled";
-import { compareSemverAsc, hashPath, pathDelimiter } from "@/lib/helpers";
+import { compareSemverAsc, hashPath } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
 import type { Mod, ModTag, OutputMod } from "@/lib/types";
 import { useSettingsStore } from "@/stores/settings";
+
+import { ModActions } from "./ModActions";
 
 const DEFAULT_LOGO = "https://mods.vintagestory.at/web/img/mod-default.png";
 
@@ -84,11 +67,7 @@ export function ModItem({
   const installedMod = installedMods.find(
     (i) => i.modid === String(mod.modid) || modIdStrings.has(i.modid),
   );
-  const updateMod =
-    modUpdates?.updates[mod.modidstrs[0]] ??
-    modUpdates?.updates[mod.modid.toString()] ??
-    modUpdates?.updates[mod.assetid.toString()] ??
-    modUpdates?.updates[mod.urlalias ?? ""];
+  const updateMod = findModUpdate(mod, modUpdates);
 
   const pathHash = modsDirectory ? hashPath(modsDirectory) : "standalone";
 
@@ -164,31 +143,13 @@ export function ModItem({
   const clearModUpdateSkip = useSettingsStore((s) => s.clearModUpdateSkip);
   const favoriteMods = useSettingsStore((s) => s.favoriteMods);
   const toggleFavoriteMod = useSettingsStore((s) => s.toggleFavoriteMod);
-  // Favourites are keyed by the primary modidstr so they survive profile
-  // changes and match the same listing across search results and installs.
-  const favoriteKey = (mod.modidstrs[0] ?? mod.urlalias ?? String(mod.modid)).toLowerCase();
+  const favoriteKey = favoriteModKey(mod);
   const isFavorite = favoriteMods.includes(favoriteKey);
   // The same key identifies the skip entry: only recorded for installed mods.
   const skippedVersion = installedMod ? skippedModUpdates[favoriteKey] : undefined;
 
   return (
-    <div
-      className={cn(
-        "group flex w-full items-start gap-3 border bg-card p-3 transition-colors hover:bg-muted/40",
-        // Installed: green. Pinned: amber. Update waiting (and not pinned):
-        // purple, so a pending update stands out from a plain install.
-        showInstalled &&
-          !pinned &&
-          !canUpdate &&
-          "border-success/40 bg-linear-to-r from-success/15 to-transparent",
-        showInstalled &&
-          pinned &&
-          "border-accent-amber/40 bg-linear-to-r from-accent-amber/15 to-transparent",
-        canUpdate &&
-          "border-accent-primary/40 bg-linear-to-r from-accent-primary/15 to-transparent",
-        isDisabled && "opacity-60",
-      )}
-    >
+    <div className={modRowClassName({ canUpdate, isDisabled, pinned, showInstalled })}>
       <ModSummary
         installedMod={installedMod}
         mod={mod}
@@ -199,281 +160,35 @@ export function ModItem({
         tagColorMap={tagColorMap}
       />
 
-      <div className="flex shrink-0 items-center gap-1.5 self-center">
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                aria-label={t(isFavorite ? "mods.item.unfavorite" : "mods.item.favorite")}
-                onClick={() => toggleFavoriteMod(favoriteKey)}
-                size="icon-sm"
-                variant="ghost"
-              />
-            }
-          >
-            <Star
-              className={
-                isFavorite
-                  ? "fill-[var(--color-accent-amber)] text-[var(--color-accent-amber)]"
-                  : undefined
-              }
-            />
-          </TooltipTrigger>
-          <TooltipContent>
-            {t(isFavorite ? "mods.item.unfavorite" : "mods.item.favorite")}
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                aria-label={t("mods.item.openOnModDB")}
-                onClick={() =>
-                  void openUrl(`https://mods.vintagestory.at/${mod.urlalias ?? mod.modid}`)
-                }
-                size="icon-sm"
-                variant="ghost"
-              />
-            }
-          >
-            <ExternalLink />
-          </TooltipTrigger>
-          <TooltipContent>{t("mods.item.openOnModDB")}</TooltipContent>
-        </Tooltip>
-        {canUpdate && installedMod && updateMod ? (
-          <>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    aria-label={t("mods.item.updateToLatest")}
-                    disabled={removeUpdatePending || updatePending}
-                    onClick={() =>
-                      removeThenUpdate({
-                        path: modsDirectory ?? "",
-                        modpath: installedMod.path,
-                        update: updateMod,
-                      })
-                    }
-                    size="icon-sm"
-                    variant="outline-accent-primary"
-                  />
-                }
-              >
-                <DownloadCloudIcon aria-hidden="true" />
-              </TooltipTrigger>
-              <TooltipContent>
-                <span className="grid gap-0.5">
-                  <span className="font-mono">
-                    {installedMod.version} → {updateMod.modversion}
-                  </span>
-                  <span>{t("mods.item.updateToLatest")}</span>
-                </span>
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    aria-label={t("mods.updates.skipTooltip", { version: updateMod.modversion })}
-                    onClick={() => {
-                      skipModUpdate(favoriteKey, updateMod.modversion);
-                      toast.info(
-                        t("mods.updates.skippedToast", {
-                          name: mod.name,
-                          version: updateMod.modversion,
-                        }),
-                      );
-                    }}
-                    size="icon-sm"
-                    variant="ghost"
-                  />
-                }
-              >
-                <SkipForward aria-hidden="true" />
-              </TooltipTrigger>
-              <TooltipContent>
-                {t("mods.updates.skipTooltip", { version: updateMod.modversion })}
-              </TooltipContent>
-            </Tooltip>
-          </>
-        ) : installedMod ? (
-          skippedVersion ? (
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    aria-label={t("mods.updates.skippedTooltip", { version: skippedVersion })}
-                    onClick={() => {
-                      clearModUpdateSkip(favoriteKey);
-                      toast.info(t("mods.updates.restoredToast", { name: mod.name }));
-                    }}
-                    size="icon-sm"
-                    variant="ghost"
-                  />
-                }
-              >
-                <EyeOff aria-hidden="true" />
-              </TooltipTrigger>
-              <TooltipContent>
-                {t("mods.updates.skippedTooltip", { version: skippedVersion })}
-              </TooltipContent>
-            </Tooltip>
-          ) : null
-        ) : modsDirectory ? (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  aria-label={t("mods.item.downloadLatest")}
-                  disabled={isDownloading}
-                  onClick={() => downloadLatest({ path: `${modsDirectory}${pathDelimiter}Mods` })}
-                  size="icon-sm"
-                  variant="outline"
-                />
-              }
-            >
-              <DownloadCloudIcon aria-hidden="true" />
-            </TooltipTrigger>
-            <TooltipContent>{t("mods.item.installLatest")}</TooltipContent>
-          </Tooltip>
-        ) : (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  aria-label={t("mods.item.installTo")}
-                  onClick={() => onStandaloneInstall(mod)}
-                  size="icon-sm"
-                  variant="outline-accent-primary"
-                />
-              }
-            >
-              <DownloadCloudIcon aria-hidden="true" />
-            </TooltipTrigger>
-            <TooltipContent>{t("mods.item.installToDestination")}</TooltipContent>
-          </Tooltip>
-        )}
-
-        {modsDirectory && installedMod ? (
-          <>
-            {canToggleMods && (
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button
-                      aria-label={isDisabled ? t("mods.item.enable") : t("mods.item.disable")}
-                      disabled={statePending}
-                      onClick={() =>
-                        setModEnabled({
-                          modid: installedMod.modid,
-                          version: installedMod.version,
-                          enabled: isDisabled,
-                          name: mod.name,
-                        })
-                      }
-                      size="icon-sm"
-                      variant={isDisabled ? "outline" : "ghost"}
-                    />
-                  }
-                >
-                  {isDisabled ? <Power aria-hidden="true" /> : <PowerOff aria-hidden="true" />}
-                </TooltipTrigger>
-                <TooltipContent>
-                  {isDisabled
-                    ? t("mods.item.enableTooltip", { name: mod.name })
-                    : t("mods.item.disableTooltip", { name: mod.name })}
-                </TooltipContent>
-              </Tooltip>
-            )}
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    aria-label={pinned ? t("mods.item.unpin") : t("mods.item.pin")}
-                    onClick={() => toggleModPin(modsDirectory, installedMod.modid)}
-                    size="icon-sm"
-                    variant={pinned ? "outline-amber" : "outline"}
-                  />
-                }
-              >
-                {pinned ? <PinOff aria-hidden="true" /> : <Pin aria-hidden="true" />}
-              </TooltipTrigger>
-              <TooltipContent>
-                {pinned
-                  ? t("mods.item.pinnedTooltip", { version: installedMod.version })
-                  : t("mods.item.pinTooltip", { version: installedMod.version })}
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    aria-label={t("mods.item.browseVersions")}
-                    onClick={() => onUpdate(mod, installedMod)}
-                    size="icon-sm"
-                    variant="outline"
-                  />
-                }
-              >
-                <PackageSearchIcon aria-hidden="true" />
-              </TooltipTrigger>
-              <TooltipContent>{t("mods.item.browseVersionsTooltip")}</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    aria-label={t("common.actions.remove")}
-                    onClick={() => onRemove(mod, installedMod)}
-                    size="icon-sm"
-                    variant="destructive"
-                  />
-                }
-              >
-                <PackageMinusIcon aria-hidden="true" />
-              </TooltipTrigger>
-              <TooltipContent>
-                {t("mods.item.removeFrom", { destination: destinationLabel })}
-              </TooltipContent>
-            </Tooltip>
-          </>
-        ) : modsDirectory ? (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  aria-label={t("mods.item.add")}
-                  onClick={() => onAdd(mod)}
-                  size="icon-sm"
-                  variant="outline"
-                />
-              }
-            >
-              <PackagePlusIcon aria-hidden="true" />
-            </TooltipTrigger>
-            <TooltipContent>
-              {t("mods.item.addTo", { destination: destinationLabel })}
-            </TooltipContent>
-          </Tooltip>
-        ) : (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  aria-label={t("mods.item.install")}
-                  onClick={() => onStandaloneInstall(mod)}
-                  size="icon-sm"
-                  variant="outline"
-                />
-              }
-            >
-              <PackagePlusIcon aria-hidden="true" />
-            </TooltipTrigger>
-            <TooltipContent>{t("mods.item.installToDestination")}</TooltipContent>
-          </Tooltip>
-        )}
-      </div>
+      <ModActions
+        canToggleMods={canToggleMods}
+        canUpdate={canUpdate}
+        clearModUpdateSkip={clearModUpdateSkip}
+        destinationLabel={destinationLabel}
+        downloadLatest={downloadLatest}
+        favoriteKey={favoriteKey}
+        installedMod={installedMod}
+        isDisabled={isDisabled}
+        isDownloading={isDownloading}
+        isFavorite={isFavorite}
+        mod={mod}
+        modsDirectory={modsDirectory}
+        onAdd={onAdd}
+        onRemove={onRemove}
+        onStandaloneInstall={onStandaloneInstall}
+        onUpdate={onUpdate}
+        pinned={pinned}
+        removeThenUpdate={removeThenUpdate}
+        removeUpdatePending={removeUpdatePending}
+        setModEnabled={setModEnabled}
+        skippedVersion={skippedVersion}
+        skipModUpdate={skipModUpdate}
+        statePending={statePending}
+        toggleFavoriteMod={toggleFavoriteMod}
+        toggleModPin={toggleModPin}
+        updateMod={updateMod}
+        updatePending={updatePending}
+      />
     </div>
   );
 }
@@ -637,5 +352,54 @@ function ModTagChip({
     >
       {tagName}
     </button>
+  );
+}
+
+/** The pending update for a mod, matched by any of its known identifiers. */
+function findModUpdate(
+  mod: Mod,
+  modUpdates: ModUpdatesResponse | undefined,
+): ModUpdate | undefined {
+  return (
+    modUpdates?.updates[mod.modidstrs[0]] ??
+    modUpdates?.updates[mod.modid.toString()] ??
+    modUpdates?.updates[mod.assetid.toString()] ??
+    modUpdates?.updates[mod.urlalias ?? ""]
+  );
+}
+
+/**
+ * Favourites are keyed by the primary modidstr so they survive profile
+ * changes and match the same listing across search results and installs.
+ */
+function favoriteModKey(mod: Mod) {
+  return (mod.modidstrs[0] ?? mod.urlalias ?? String(mod.modid)).toLowerCase();
+}
+
+/** Row tint: installed mods go green, pinned amber, a pending update purple. */
+function modRowClassName({
+  canUpdate,
+  isDisabled,
+  pinned,
+  showInstalled,
+}: {
+  canUpdate: boolean;
+  isDisabled: boolean;
+  pinned: boolean;
+  showInstalled: boolean;
+}) {
+  return cn(
+    "group flex w-full items-start gap-3 border bg-card p-3 transition-colors hover:bg-muted/40",
+    // Installed: green. Pinned: amber. Update waiting (and not pinned):
+    // purple, so a pending update stands out from a plain install.
+    showInstalled &&
+      !pinned &&
+      !canUpdate &&
+      "border-success/40 bg-linear-to-r from-success/15 to-transparent",
+    showInstalled &&
+      pinned &&
+      "border-accent-amber/40 bg-linear-to-r from-accent-amber/15 to-transparent",
+    canUpdate && "border-accent-primary/40 bg-linear-to-r from-accent-primary/15 to-transparent",
+    isDisabled && "opacity-60",
   );
 }
