@@ -1,19 +1,20 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
 import { hashPath, latestRelease } from "@/lib/helpers";
 import { t } from "@/lib/i18n";
 import type { Mod, ModInfo } from "@/lib/types";
 
-import { useDownloadManager, waitForDownload } from "./use-download-manager";
+import { invalidateQueriesFor, useDownloadManager, waitForDownload } from "./use-download-manager";
 
 /**
  * Queues the newest release of a mod into the downloads manager (progress and
  * pause/cancel live in the Downloads sheet) and resolves once it finishes.
  *
- * Cache sync is owned by the download manager: `invalidateQueriesFor` in
- * use-download-manager refreshes the installed-mods and mod-updates lists when
- * the download lands, so this mutation adds no invalidation of its own.
+ * This mutation owns the cache sync for its download: the queue entry asks the
+ * manager to skip its own refresh (`refreshOwnedByCaller`), and `onSuccess`
+ * refreshes the profile's lists. Standalone downloads carry no profile root,
+ * so for them the refresh is a no-op.
  */
 export const useAddLatestModVersion = ({
   destinationLabel,
@@ -26,6 +27,7 @@ export const useAddLatestModVersion = ({
   destinationLabel?: string;
 }) => {
   const { startModDownload } = useDownloadManager();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ path }: { path: string }) => {
       const modInfo = (await invoke("fetch_mod_info", {
@@ -47,9 +49,13 @@ export const useAddLatestModVersion = ({
         url: release.mainfile,
         destpath: path,
         modsDirectory: modsDirectory ?? null,
+        refreshOwnedByCaller: true,
       });
       await waitForDownload(token);
       return { modInfo };
+    },
+    onSuccess: () => {
+      invalidateQueriesFor({ kind: "mod", modsDirectory: modsDirectory ?? null }, queryClient);
     },
   });
 };

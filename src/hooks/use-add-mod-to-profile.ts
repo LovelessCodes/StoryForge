@@ -1,17 +1,17 @@
-import { type UseMutationOptions, useMutation } from "@tanstack/react-query";
+import { type UseMutationOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { hashPath, pathDelimiter } from "@/lib/helpers";
 import type { ModInfo } from "@/lib/types";
 
-import { useDownloadManager, waitForDownload } from "./use-download-manager";
+import { invalidateQueriesFor, useDownloadManager, waitForDownload } from "./use-download-manager";
 
 /**
  * Queues a mod install into the downloads manager (progress and pause/cancel
  * live in the Downloads sheet) and resolves once it finishes.
  *
- * Cache sync is owned by the download manager: `invalidateQueriesFor` in
- * use-download-manager refreshes the installed-mods and mod-updates lists when
- * the download lands, so this mutation adds no invalidation of its own.
+ * This mutation owns the cache sync for its download: the queue entry asks the
+ * manager to skip its own refresh (`refreshOwnedByCaller`), and `onSuccess`
+ * refreshes the profile's installed-mods and mod-updates lists.
  */
 export const useAddModToProfile = (
   props?: UseMutationOptions<
@@ -26,6 +26,7 @@ export const useAddModToProfile = (
   >,
 ) => {
   const { startModDownload } = useDownloadManager();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
       modsDirectory,
@@ -53,10 +54,15 @@ export const useAddModToProfile = (
         url: release.mainfile,
         destpath,
         modsDirectory,
+        refreshOwnedByCaller: true,
       });
       await waitForDownload(token);
       return "success";
     },
     ...props,
+    onSuccess: (result, variables, onMutateResult, context) => {
+      invalidateQueriesFor({ kind: "mod", modsDirectory: variables.modsDirectory }, queryClient);
+      props?.onSuccess?.(result, variables, onMutateResult, context);
+    },
   });
 };

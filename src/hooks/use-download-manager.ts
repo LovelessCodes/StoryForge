@@ -105,9 +105,13 @@ function eventName(token: string): string {
   return `download://${token.replace(/[^\w:/-]/g, "_")}`;
 }
 
-/** Refreshes the lists a finished download belongs to. */
-function invalidateQueriesFor(
-  entry: DownloadEntry,
+/**
+ * Refreshes the lists a finished download belongs to. The manager calls this
+ * when a download lands unless the queueing caller took the refresh over with
+ * `refreshOwnedByCaller`.
+ */
+export function invalidateQueriesFor(
+  entry: Pick<DownloadEntry, "kind" | "modsDirectory">,
   queryClient: ReturnType<typeof useQueryClient>,
 ): void {
   if (entry.kind === "version") {
@@ -268,6 +272,7 @@ function queueModDownload(
     url: request.url,
     destpath: request.destpath,
     modsDirectory: request.modsDirectory ?? null,
+    refreshOwnedByCaller: request.refreshOwnedByCaller ?? false,
   });
   processQueue(queryClient);
 }
@@ -383,9 +388,9 @@ async function doDownload(
       store.removeEntry(token);
       settleWaiters(token, new Error("Download cancelled"));
     } else if (result === "success") {
-      store.updateEntry(token, { status: "done", percent: 100 });
+      store.updateEntry(token, { status: "done", percent: 100, refreshOwnedByCaller: false });
       settleWaiters(token);
-      invalidateQueriesFor(entry, queryClient);
+      if (!entry.refreshOwnedByCaller) invalidateQueriesFor(entry, queryClient);
       if (entry.kind === "mod") {
         const finished = useDownloadStore.getState().entries[token];
         if (finished) {
@@ -396,11 +401,11 @@ async function doDownload(
       store.removeEntry(token);
       settleWaiters(token);
       // The file is on disk: refresh the lists even though nothing downloaded.
-      invalidateQueriesFor(entry, queryClient);
+      if (!entry.refreshOwnedByCaller) invalidateQueriesFor(entry, queryClient);
     }
   } catch (err: unknown) {
     const message = errorMessage(err);
-    store.updateEntry(token, { status: "error", error: message });
+    store.updateEntry(token, { status: "error", error: message, refreshOwnedByCaller: false });
     settleWaiters(token, new Error(message));
   } finally {
     if (claimed && version !== null) releaseVersionDownload(version);
@@ -651,4 +656,11 @@ export interface ModDownloadRequest {
   destpath: string;
   /** Profile root whose mod lists are refreshed on success. */
   modsDirectory?: string | null;
+  /**
+   * Set by callers that await `waitForDownload` and refresh the lists in their
+   * own mutation (`onSuccess`), so the manager skips its refresh for this
+   * attempt. The flag is dropped when the attempt settles, so a retry from the
+   * downloads sheet refreshes through the manager.
+   */
+  refreshOwnedByCaller?: boolean;
 }
