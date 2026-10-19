@@ -31,6 +31,9 @@ import type { ModInfo, OutputMod } from "@/lib/types";
 
 type RowState = { kind: "running" } | { kind: "done" } | { kind: "failed"; message: string };
 
+/** A plan row plus the id its progress state and JSX key are anchored to. */
+type PlanRow = ImportPlanEntry & { id: string };
+
 /**
  * Review-and-install sheet for a RiftLauncher-format modpack manifest. Every
  * listed mod is resolved on the ModDB and downloaded through the download
@@ -56,10 +59,12 @@ export function ImportModpackSheet({
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [importing, setImporting] = useState(false);
-  const [states, setStates] = useState<Record<number, RowState>>({});
+  const [states, setStates] = useState<Record<string, RowState>>({});
   // Frozen when the sheet opens: the installed-mods query is invalidated as
   // downloads land, and the plan must not reshuffle under the running import.
-  const [plan] = useState(() => planImport(manifest, installedMods));
+  const [plan] = useState<PlanRow[]>(() =>
+    planImport(manifest, installedMods).map((row) => ({ ...row, id: crypto.randomUUID() })),
+  );
 
   const actionable = plan.filter(({ status }) => status.kind !== "same");
   const finishedCount = Object.values(states).filter(
@@ -73,57 +78,61 @@ export function ImportModpackSheet({
 
   const { mutateAsync: addModToProfile } = useAddModToProfile();
 
-  const setRow = (index: number, state: RowState) =>
-    setStates((previous) => ({ ...previous, [index]: state }));
+  const setRow = (id: string, state: RowState) =>
+    setStates((previous) => ({ ...previous, [id]: state }));
+
+  /** Resolves one plan row and installs it, replacing an older version first. */
+  async function importRow(row: PlanRow): Promise<boolean> {
+    setRow(row.id, { kind: "running" });
+    try {
+      const info = await queryClient.fetchQuery({
+        queryKey: ["modInfo", row.entry.modid],
+        queryFn: () => invoke("fetch_mod_info", { modid: row.entry.modid }) as Promise<ModInfo>,
+        staleTime: 5 * 60 * 1000,
+      });
+      const release = info.mod.releases.find(
+        (candidate) => candidate.modversion === row.entry.version,
+      );
+      if (!release?.mainfile) {
+        throw new Error(
+          t("mods.modpackIO.importSheet.missingVersion", { version: row.entry.version }),
+        );
+      }
+      if (row.status.kind === "replace") {
+        await invoke("remove_mod_from_profile", {
+          params: { modpath: row.status.installed.path, path: modsDirectory },
+        });
+      }
+      await addModToProfile({
+        destinationLabel,
+        mod: info,
+        modsDirectory,
+        version: row.entry.version,
+      });
+      setRow(row.id, { kind: "done" });
+      return true;
+    } catch (error) {
+      setRow(row.id, {
+        kind: "failed",
+        message: (error as Error)?.message ?? String(error),
+      });
+      return false;
+    }
+  }
 
   async function runImport() {
     setImporting(true);
-    let installed = 0;
-    let failed = 0;
-
-    for (const [index, row] of plan.entries()) {
-      if (row.status.kind === "same") continue;
-      setRow(index, { kind: "running" });
-      try {
-        const info = await queryClient.fetchQuery({
-          queryKey: ["modInfo", row.entry.modid],
-          queryFn: () => invoke("fetch_mod_info", { modid: row.entry.modid }) as Promise<ModInfo>,
-          staleTime: 5 * 60 * 1000,
-        });
-        const release = info.mod.releases.find(
-          (candidate) => candidate.modversion === row.entry.version,
-        );
-        if (!release?.mainfile) {
-          throw new Error(
-            t("mods.modpackIO.importSheet.missingVersion", { version: row.entry.version }),
-          );
-        }
-        if (row.status.kind === "replace") {
-          await invoke("remove_mod_from_profile", {
-            params: { modpath: row.status.installed.path, path: modsDirectory },
-          });
-        }
-        await addModToProfile({
-          destinationLabel,
-          mod: info,
-          modsDirectory,
-          version: row.entry.version,
-        });
-        installed += 1;
-        setRow(index, { kind: "done" });
-      } catch (error) {
-        failed += 1;
-        setRow(index, {
-          kind: "failed",
-          message: (error as Error)?.message ?? String(error),
-        });
-      }
-    }
+    // Rows resolve and install concurrently; the downloads manager caps how
+    // many downloads run at once. Each row keeps its own replace-then-install
+    // order.
+    const results = await Promise.all(actionable.map((row) => importRow(row)));
 
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: installedModsQueryKey(modsDirectory) }),
       queryClient.invalidateQueries({ queryKey: modUpdatesQueryKey(modsDirectory) }),
     ]);
+    const failed = results.filter((ok) => !ok).length;
+    const installed = results.length - failed;
     if (failed === 0) {
       toast.success(
         installed > 0
@@ -176,8 +185,8 @@ export function ImportModpackSheet({
               </p>
             ) : (
               <div className="divide-y border">
-                {plan.map((row, index) => (
-                  <ImportRow key={`${row.entry.modid}-${index}`} row={row} state={states[index]} />
+                {plan.map((row) => (
+                  <ImportRow key={row.id} row={row} state={states[row.id]} />
                 ))}
               </div>
             )}
