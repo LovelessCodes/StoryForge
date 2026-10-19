@@ -161,27 +161,36 @@ async function queueDependencies(
   requests: DependencyRequest[],
   target: DependencyTarget,
 ): Promise<void> {
-  for (const request of requests) {
-    const id = request.modid.trim().toLowerCase();
-    if (!id) continue;
+  // Independent lookups: run them together instead of one round trip at a
+  // time. The queue itself still caps concurrent downloads.
+  await Promise.all(requests.map((request) => queueDependency(queryClient, request, target)));
+}
 
-    try {
-      const info = (await invoke("fetch_mod_info", { modid: id })) as ModInfo;
-      const release = pickDependencyRelease(info.mod.releases, request.constraint ?? "");
-      if (!release?.mainfile) continue;
+/** Resolves one dependency and queues its release, if any. */
+async function queueDependency(
+  queryClient: ReturnType<typeof useQueryClient>,
+  request: DependencyRequest,
+  target: DependencyTarget,
+): Promise<void> {
+  const id = request.modid.trim().toLowerCase();
+  if (!id) return;
 
-      const token = `mod:${info.mod.modid}:${release.modversion}:${hashPath(target.destpath)}`;
-      queueModDownload(queryClient, {
-        token,
-        label: `${info.mod.name} v${release.modversion}`,
-        detail: target.detail,
-        url: release.mainfile,
-        destpath: target.destpath,
-        modsDirectory: target.modsDirectory,
-      });
-    } catch {
-      // Keep going with the remaining dependencies.
-    }
+  try {
+    const info = (await invoke("fetch_mod_info", { modid: id })) as ModInfo;
+    const release = pickDependencyRelease(info.mod.releases, request.constraint ?? "");
+    if (!release?.mainfile) return;
+
+    const token = `mod:${info.mod.modid}:${release.modversion}:${hashPath(target.destpath)}`;
+    queueModDownload(queryClient, {
+      token,
+      label: `${info.mod.name} v${release.modversion}`,
+      detail: target.detail,
+      url: release.mainfile,
+      destpath: target.destpath,
+      modsDirectory: target.modsDirectory,
+    });
+  } catch {
+    // Keep going with the remaining dependencies.
   }
 }
 
