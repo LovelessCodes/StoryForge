@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
 import { errorMessage } from "@/lib/errors";
@@ -28,13 +28,22 @@ export type ConflictReport = {
 /**
  * Scans a profile's installed mods for overlapping assets and patch targets.
  *
- * Read-only scan modeled as a mutation for button-triggered execution: it
- * writes nothing, so there is no query cache to invalidate.
+ * Read-only scan modeled as a lazily-triggered query: the consumers call
+ * `refetch` when the sheet opens and on demand. The last report per profile
+ * stays cached, so reopening the sheet shows it again while the fresh scan
+ * runs.
  */
 export const useScanModConflicts = (modsDirectory: string | undefined) =>
-  useMutation({
-    mutationFn: () => invoke<ConflictReport>("scan_mod_conflicts", { path: modsDirectory }),
-    onError: (error) => {
-      toast.error(t("mods.conflicts.failed"), { description: errorMessage(error) });
+  useQuery({
+    queryKey: ["modConflicts", modsDirectory],
+    queryFn: async () => {
+      try {
+        return await invoke<ConflictReport>("scan_mod_conflicts", { path: modsDirectory });
+      } catch (error) {
+        toast.error(t("mods.conflicts.failed"), { description: errorMessage(error) });
+        throw error;
+      }
     },
+    enabled: false,
+    retry: false,
   });

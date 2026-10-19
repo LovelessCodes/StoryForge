@@ -33,17 +33,12 @@ export function ModConflictsSheet({
   open: boolean;
 }) {
   const { t } = useTranslation();
-  const scan = useScanModConflicts(modsDirectory);
-  const { mutate } = scan;
+  const { data: report, isFetching, isPending, refetch } = useScanModConflicts(modsDirectory);
 
   useEffect(() => {
     if (!open || !modsDirectory) return;
-    mutate();
-    // `mutate` is stable in TanStack v5; the scan runs once per open.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, modsDirectory]);
-
-  const report = scan.data;
+    void refetch();
+  }, [open, modsDirectory, refetch]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -58,7 +53,7 @@ export function ModConflictsSheet({
 
         <ScrollArea scrollFade className="min-h-0 flex-1">
           <div className="grid gap-3 p-4">
-            {scan.isPending ? (
+            {isPending ? (
               <div className="grid gap-2">
                 <p className="text-muted-foreground text-xs">{t("mods.conflicts.scanning")}</p>
                 <Skeleton className="h-12 w-full" />
@@ -122,12 +117,12 @@ export function ModConflictsSheet({
 
         <SheetFooter className="border-t">
           <Button
-            disabled={scan.isPending || !modsDirectory}
-            onClick={() => mutate()}
+            disabled={isFetching || !modsDirectory}
+            onClick={() => void refetch()}
             size="sm"
             variant="outline"
           >
-            <RefreshCw className={scan.isPending ? "animate-spin" : undefined} />
+            <RefreshCw className={isFetching ? "animate-spin" : undefined} />
             {t("mods.conflicts.rescan")}
           </Button>
         </SheetFooter>
