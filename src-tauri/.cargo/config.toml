@@ -1,7 +1,12 @@
 # `strip` removes the symbol table but not the dynamic export table dyld
 # reads, so Rust symbols stay exported from the macOS binary regardless.
 # The v0 mangling scheme gives every Rust symbol the `_R` prefix (Mach-O
-# symbol tables add a leading underscore, hence `__R`), which lets the
-# linker stop exporting exactly those symbols.
+# symbol tables add a leading underscore, hence `__R`).
+#
+# The matching `-Wl,-unexported_symbol,__R*` link argument lives in
+# `build.rs` and is scoped to bin targets: Cargo `rustflags` apply to every
+# unit, including proc-macro dylibs, and rustc links those with
+# `-exported_symbols_list`, which ld64 refuses to combine with
+# `-unexported_symbol`.
 [target.'cfg(target_os = "macos")']
-rustflags = ["-C", "symbol-mangling-version=v0", "-C", "link-arg=-Wl,-unexported_symbol,__R*"]
+rustflags = ["-C", "symbol-mangling-version=v0"]
