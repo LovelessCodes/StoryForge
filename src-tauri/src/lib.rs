@@ -299,10 +299,15 @@ pub fn run() {
                                 file_name: Some("app".into()),
                             },
                         ))
-                        .max_file_size(50_000 /* bytes */)
+                        .max_file_size(512_000 /* bytes */)
                         .level(log::LevelFilter::Info)
                         .format(|out, message, record| {
-                            out.finish(format_args!("[{}] {}", record.level(), message))
+                            out.finish(format_args!(
+                                "[{}][{}] {}",
+                                chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
+                                record.level(),
+                                message
+                            ))
                         })
                         .build(),
                 )
