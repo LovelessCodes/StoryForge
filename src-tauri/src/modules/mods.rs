@@ -1540,12 +1540,33 @@ pub async fn copy_mods_to_profile(
     );
     require_managed_path(&app, Path::new(&params.source), "Source profile")?;
     require_managed_path(&app, Path::new(&params.destination), "Destination profile")?;
+    let store = mod_store::for_app_best_effort(&app);
+    let destination = PathBuf::from(&params.destination);
     tokio::task::spawn_blocking(move || {
-        copy_mods_between_profiles_at(
-            Path::new(&params.source),
-            Path::new(&params.destination),
-            &params.files,
-        )
+        let result = {
+            let _guard = mod_store::lock_mod_mutations();
+            copy_mods_between_profiles_at(Path::new(&params.source), &destination, &params.files)
+        }?;
+
+        // The copy wrote fresh bytes. Link them into the shared store when the
+        // destination is on the same volume, so copying a large library does
+        // not leave two independent copies on disk.
+        if let Some(store) = store.as_ref() {
+            match mod_store::optimize_profile(store, &destination) {
+                Ok(report) if report.linked > 0 => log_info!(
+                    "copy_mods_to_profile: linked {} copied mod(s), reclaiming {} bytes",
+                    report.linked,
+                    report.reclaimed_bytes
+                ),
+                Ok(_) => {}
+                Err(error) => log_error!(
+                    "copy_mods_to_profile: could not deduplicate the destination: {}",
+                    error.message
+                ),
+            }
+        }
+
+        Ok::<ModCopyResult, UiError>(result)
     })
     .await
     .map_err(|e| UiError::new("internal_error", format!("Copy failed: {e}")))?
