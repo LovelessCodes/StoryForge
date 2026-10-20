@@ -184,7 +184,7 @@ bun run build     # typecheck + frontend build
 bun tauri build   # bundle the app
 ```
 
-Requires Bun, Rust (1.85+) and the [Tauri prerequisites](https://tauri.app/start/prerequisites/).
+Requires Bun, Rust (1.90+) and the [Tauri prerequisites](https://tauri.app/start/prerequisites/).
 
 ### Layout
 

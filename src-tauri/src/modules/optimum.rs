@@ -1386,6 +1386,7 @@ pub async fn install_optimum(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::modules::utils::hex_lower;
     use sha2::{Digest, Sha256};
     use std::io::Write;
 
@@ -1626,7 +1627,7 @@ mod tests {
         assert!(root.ends_with("Optimum-v0.3.19-linux-x64-overlay"));
         assert_eq!(fs::read(root.join(".optimum/version")).unwrap(), body);
 
-        let digest = format!("{:x}", Sha256::digest(&body));
+        let digest = hex_lower(Sha256::digest(&body).as_slice());
         let manifest = OptimumManifest {
             manifest_version: 1,
             optimum_version: "0.3.19".to_string(),

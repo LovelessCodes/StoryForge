@@ -37,7 +37,7 @@ use tokio_util::sync::CancellationToken;
 use walkdir::WalkDir;
 
 use super::errors::UiError;
-use super::utils::{lock, parse_loopback_origin, sha256_file, CleanupTarget};
+use super::utils::{hex_lower, lock, parse_loopback_origin, sha256_file, CleanupTarget};
 use crate::{log_error, log_info};
 
 /// Hard ceiling both forks' manifest documents are held to. It exists so a
@@ -397,7 +397,7 @@ pub async fn download_archive(
     }
     drop(file);
 
-    let digest = format!("{:x}", hasher.finalize());
+    let digest = hex_lower(hasher.finalize().as_slice());
     if written != expected_size || digest != expected_sha256 {
         let _ = fs::remove_file(&part);
         return Err(UiError::new(
@@ -628,7 +628,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("archive.bin");
         fs::write(&path, b"payload").unwrap();
-        let digest = format!("{:x}", Sha256::digest(b"payload"));
+        let digest = hex_lower(Sha256::digest(b"payload").as_slice());
         assert!(cached_archive_is_valid(&path, 7, &digest));
         assert!(!cached_archive_is_valid(&path, 8, &digest));
         assert!(!cached_archive_is_valid(&path, 7, &"a".repeat(64)));

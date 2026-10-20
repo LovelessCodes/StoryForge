@@ -630,7 +630,12 @@ fn extract_zip_sync(
         .map_err(|e| UiError::new("archive_error", format!("zip open error: {e}")))?;
 
     let count_to_extract: u64 = (0..archive.len())
-        .filter_map(|i| archive.by_index(i).ok().map(|e| e.name().to_string()))
+        .filter_map(|i| {
+            archive
+                .by_index(i)
+                .ok()
+                .and_then(|entry| entry.name().ok().map(|name| name.into_owned()))
+        })
         .filter(|name| should_extract(name, &prefix))
         .count() as u64;
 
@@ -643,7 +648,10 @@ fn extract_zip_sync(
         let mut entry = archive
             .by_index(i)
             .map_err(|e| UiError::new("archive_error", format!("zip index error: {e}")))?;
-        let entry_name = entry.name().to_string();
+        let entry_name = entry
+            .name()
+            .map_err(|e| UiError::new("archive_error", format!("zip entry name error: {e}")))?
+            .into_owned();
 
         if !should_extract(&entry_name, &prefix) {
             continue;

@@ -164,7 +164,10 @@ pub(crate) fn scan_conflicts(profile_dir: &Path) -> Result<ConflictReport, UiErr
             if entry.is_dir() {
                 continue;
             }
-            let name = entry.name().to_string();
+            let name = match entry.name() {
+                Ok(name) => name.into_owned(),
+                Err(_) => continue,
+            };
             if name.starts_with("__MACOSX/") || name.ends_with("modinfo.json") {
                 continue;
             }

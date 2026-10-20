@@ -58,8 +58,8 @@ use super::client_fork::{
 };
 use super::errors::UiError;
 use super::utils::{
-    is_safe_relative_path, require_managed_path, sha256_file, versions_folder, versions_subdir,
-    CleanupTarget,
+    hex_lower, is_safe_relative_path, require_managed_path, sha256_file, versions_folder,
+    versions_subdir, CleanupTarget,
 };
 use super::versions::VULKANSTORY_SUFFIX;
 use crate::{log_error, log_info};
@@ -302,7 +302,7 @@ fn read_local_package(archive: &Path) -> Result<(VulkanStoryPackage, String), Ui
             "the package inventory is unexpectedly large".to_string(),
         ));
     }
-    let digest = format!("{:x}", Sha256::digest(text.as_bytes()));
+    let digest = hex_lower(Sha256::digest(text.as_bytes()).as_slice());
     let package = parse_package_json(&text).ok_or_else(|| {
         unreadable("the package inventory did not survive validation".to_string())
     })?;
@@ -885,7 +885,10 @@ fn extract_package(
         let mut entry = zip
             .by_index(index)
             .map_err(|error| unreadable(error.to_string()))?;
-        let name = entry.name().to_string();
+        let name = entry
+            .name()
+            .map_err(|error| unreadable(error.to_string()))?
+            .into_owned();
         if !is_safe_relative_path(&name) {
             return Err(unreadable(format!(
                 "the package holds a path that escapes the game folder: {name}"
@@ -1287,7 +1290,7 @@ mod tests {
     use std::io::Write;
 
     fn sha_of(bytes: &[u8]) -> String {
-        format!("{:x}", Sha256::digest(bytes))
+        hex_lower(Sha256::digest(bytes).as_slice())
     }
 
     fn package_json(files: &[(&str, &str)]) -> String {

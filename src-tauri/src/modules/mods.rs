@@ -15,7 +15,7 @@ use super::errors::UiError;
 use super::mod_store::{self, BlobMeta, ModStore};
 use super::paths;
 use super::profiles::find_profile_by_id;
-use super::utils::{lock, require_managed_path, safe_file_name, safe_join};
+use super::utils::{hex_lower, lock, require_managed_path, safe_file_name, safe_join};
 use crate::{log_error, log_info};
 
 #[derive(Debug, Clone, Deserialize)]
@@ -444,7 +444,7 @@ pub async fn download_mod_file(
 /// Lowercase hex sha256 of a byte slice.
 pub fn sha256_hex(bytes: &[u8]) -> String {
     use sha2::{Digest, Sha256};
-    format!("{:x}", Sha256::digest(bytes))
+    hex_lower(Sha256::digest(bytes).as_slice())
 }
 
 /// Optional verification and shared-store inputs for a manifest download.
@@ -752,7 +752,10 @@ pub fn get_mod_dependencies(
         if entry.is_dir() {
             continue;
         }
-        let name_in_zip = entry.name().to_string();
+        let name_in_zip = match entry.name() {
+            Ok(name) => name.into_owned(),
+            Err(_) => continue,
+        };
         let filename = Path::new(&name_in_zip)
             .file_name()
             .and_then(|s| s.to_str())
@@ -797,7 +800,17 @@ fn read_modinfo_from_zip(
             continue;
         }
 
-        let name_in_zip = file_in_zip.name().to_string();
+        let name_in_zip = match file_in_zip.name() {
+            Ok(name) => name.into_owned(),
+            Err(e) => {
+                errors.push(ModError {
+                    file: zip_path.to_string_lossy().into_owned(),
+                    stage: "read_entry".into(),
+                    message: format!("name({}): {}", i, e),
+                });
+                continue;
+            }
+        };
         let filename = Path::new(&name_in_zip)
             .file_name()
             .and_then(|s| s.to_str())
