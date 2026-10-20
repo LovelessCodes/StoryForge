@@ -405,6 +405,29 @@ pub fn home_dir() -> Option<PathBuf> {
         .map(PathBuf::from)
 }
 
+/// Formats a path for log output, replacing the user's home directory with `~`.
+///
+/// Logs are shared in bug reports, and absolute paths carry the account name
+/// on every platform. Keeping the rest of the path preserves what support
+/// needs to diagnose a missing file or folder.
+pub fn display_path(path: &Path) -> String {
+    display_path_from(path, home_dir().as_deref())
+}
+
+fn display_path_from(path: &Path, home: Option<&Path>) -> String {
+    let Some(home) = home else {
+        return path.display().to_string();
+    };
+    match path.strip_prefix(home) {
+        Ok(rest) if rest.as_os_str().is_empty() => "~".to_string(),
+        Ok(rest) => {
+            let rest = rest.display().to_string().replace('\\', "/");
+            format!("~/{rest}")
+        }
+        Err(_) => path.display().to_string(),
+    }
+}
+
 /// `<OS app-config dir>` on this platform, most specific first.
 ///
 /// This is the base other launchers keep their configs under: Linux
@@ -593,6 +616,28 @@ mod tests {
         assert_eq!(format_size(1024), "1.00 KB");
         assert_eq!(format_size(1024 * 1024), "1.00 MB");
         assert_eq!(format_size(1024 * 1024 * 1024), "1.00 GB");
+    }
+
+    #[test]
+    fn display_path_replaces_the_home_directory() {
+        let home = Path::new("/home/alice");
+        assert_eq!(display_path_from(home, Some(home)), "~");
+        assert_eq!(
+            display_path_from(Path::new("/home/alice/profiles/main"), Some(home)),
+            "~/profiles/main"
+        );
+        assert_eq!(
+            display_path_from(Path::new("/srv/storyforge/profiles"), Some(home)),
+            "/srv/storyforge/profiles"
+        );
+        assert_eq!(
+            display_path_from(Path::new("/home/alice2/profiles"), Some(home)),
+            "/home/alice2/profiles"
+        );
+        assert_eq!(
+            display_path_from(Path::new("/tmp/profile"), None),
+            "/tmp/profile"
+        );
     }
 
     #[test]
