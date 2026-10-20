@@ -60,7 +60,10 @@ export default function LogViewer() {
           <FileTextIcon className="size-4" />
           {t("settings.logs.title")}
         </CardTitle>
-        <CardDescription>{t("settings.logs.description")}</CardDescription>
+        <CardDescription>
+          {t("settings.logs.description")}
+          <span className="mt-1 block text-xs">{t("settings.logs.privacy")}</span>
+        </CardDescription>
         <CardAction className="flex items-center gap-1">
           <Button
             aria-label={t("settings.logs.copy")}

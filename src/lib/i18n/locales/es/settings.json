@@ -102,6 +102,7 @@
   "logs": {
     "title": "Registro de la aplicación",
     "description": "Salida de la aplicación en vivo, actualizada cada 5 segundos.",
+    "privacy": "Los registros pueden contener rutas de archivos y nombres de cuentas. Revísalos antes de compartirlos.",
     "copy": "Copiar registros",
     "refresh": "Actualizar registros",
     "copied": "Registros copiados al portapapeles",
