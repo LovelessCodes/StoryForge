@@ -427,6 +427,7 @@ pub fn run() {
             mods::set_mod_enabled,
             mods::install_mod_file,
             mods::install_mod_url,
+            mods::copy_mods_to_profile,
             mods::apply_mod_state,
             // Conflict detection (overlapping assets and patch targets)
             conflicts::scan_mod_conflicts,

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Copying mods between profiles**: the Installed view's **Copy to profile** button copies every installed mod to another profile, and selecting rows shows the same action for just those mods. The sheet lists what will be copied, warns when the destination runs a different game version, and notes that an installed version is replaced when it differs. Files are copied locally — nothing is re-downloaded — and copied mods keep their enabled/disabled state.
 - **Blocking mod authors**: the mod browser can hide every listing from an author you would rather not see. Right-click a mod row to block its author — a toast offers to undo — and the **Blocked authors** button beside the favourites toggle opens the list, where authors can be added by name, unblocked one by one, or cleared entirely. The toolbar also counts the results being hidden, so an emptied list is not mistaken for a search miss, and blocked authors no longer appear in the author filter's suggestions. Blocking is browse-only: installed mods are untouched.
 
 ### Fixed

@@ -93,7 +93,9 @@ The core domain concept is the **profile**:
   and queue its missing dependencies (recursively) in the downloads sheet; installed mods are
   also checked for missing dependencies, with a one-click "Install missing" banner. Pin a mod
   to keep its installed version — pinned mods are left out of the update check, so "Update All"
-  skips them (unpin to see updates again).
+  skips them (unpin to see updates again). Copy all installed mods, or just the selected rows,
+  into another profile without re-downloading them — version differences and the source's
+  enabled/disabled state come along.
 - **Modpacks** — browse/install community modpacks (optional cloud login via Better Auth),
   create and publish your own.
 - **Deep links & 1-click install** — `storyforge://install?mod=<id>` opens a ModDB mod in the app

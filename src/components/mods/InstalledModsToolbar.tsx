@@ -1,4 +1,4 @@
-import { Bookmark, FolderPlus, Power, PowerOff } from "lucide-react";
+import { Bookmark, Copy, FolderPlus, Power, PowerOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ export function InstalledModsToolbar({
   newGroupName,
   onApplyAll,
   onCancelCreate,
+  onCopyAll,
   onCreateGroup,
   onNewGroupNameChange,
   onOpenPresets,
@@ -28,6 +29,7 @@ export function InstalledModsToolbar({
   newGroupName: string;
   onApplyAll: (enabled: boolean) => void;
   onCancelCreate: () => void;
+  onCopyAll: () => void;
   onCreateGroup: () => void;
   onNewGroupNameChange: (name: string) => void;
   onOpenPresets: () => void;
@@ -69,6 +71,10 @@ export function InstalledModsToolbar({
             </Button>
           </>
         )}
+        <Button disabled={modCount === 0} onClick={onCopyAll} size="sm" variant="outline">
+          <Copy />
+          {t("mods.copy.button")}
+        </Button>
         {creatingGroup ? (
           <div className="flex items-center gap-2">
             <Input

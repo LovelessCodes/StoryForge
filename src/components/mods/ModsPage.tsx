@@ -168,7 +168,11 @@ export default function ModsPage({
             profilePath={profilePath}
           />
         ) : profilePath ? (
-          <InstalledModsView canToggleMods={canToggleMods} modsDirectory={profilePath} />
+          <InstalledModsView
+            canToggleMods={canToggleMods}
+            gameVersion={gameVersion}
+            modsDirectory={profilePath}
+          />
         ) : (
           <p className="text-muted-foreground border border-dashed p-6 text-center text-xs">
             {t("mods.installed.noTarget")}

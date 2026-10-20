@@ -277,6 +277,26 @@
     "deleteConfirm": "确定删除？",
     "deleted": "已删除 {{name}}"
   },
+  "copy": {
+    "button": "复制到档案",
+    "selected": "将所选模组复制到其他档案",
+    "title": "将模组复制到其他档案",
+    "description_other": "将 {{count}} 个模组复制到其他档案。",
+    "destination": "目标档案",
+    "destinationAria": "目标档案",
+    "destinationPlaceholder": "选择档案…",
+    "noProfiles": "还没有其他可复制的档案。",
+    "mods": "要复制的模组",
+    "replaceHint": "目标档案中已安装的模组若版本不同会被替换。复制的模组会保留启用/禁用状态。",
+    "versionMismatch": "该档案运行 Vintage Story {{version}}，但这些模组来自 {{sourceVersion}} 的档案。模组可能无法跨游戏版本使用。",
+    "copyAction": "复制模组",
+    "copying": "正在复制…",
+    "done_other": "已将 {{count}} 个模组复制到 {{profile}}",
+    "partial_other": "已将 {{copied}}/{{count}} 个模组复制到 {{profile}}",
+    "nothing": "这些模组已安装在 {{profile}} 中",
+    "replaced_other": "已替换 {{count}} 个现有模组",
+    "failed": "无法复制模组"
+  },
   "conflicts": {
     "button": "冲突",
     "title": "模组冲突",
