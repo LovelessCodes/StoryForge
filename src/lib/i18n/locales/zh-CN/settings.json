@@ -107,5 +107,26 @@
     "copied": "日志已复制到剪贴板",
     "copyFailed": "复制日志失败",
     "empty": "还没有日志…"
+  },
+  "modStore": {
+    "title": "共享模组存储",
+    "description": "每个模组 zip 只保留一份，并硬链接到所有使用它的配置。节省磁盘空间，加快配置复制。",
+    "enabled": "在配置之间共享模组文件",
+    "enabledDescription": "新安装的模组会从中央存储硬链接过来。关闭后将保留独立副本。",
+    "location": "存储位置",
+    "stats": "已存储 {{count}} 个模组 · {{size}}",
+    "statsFailed": "无法读取存储：{{message}}",
+    "optimize": "优化现有配置",
+    "prune": "释放未使用空间",
+    "optimizeHint": "优化会链接此功能之前安装的模组，以及从备份复制的模组。其他磁盘上的配置会被跳过。",
+    "optimizing": "正在链接现有模组…",
+    "optimizeDone": "已链接 {{linked}} 个模组，释放 {{size}}。",
+    "optimizePartial": "{{failed}} 个模组无法链接。",
+    "optimizeFailed": "无法优化模组存储：{{message}}",
+    "pruning": "正在从存储中移除未使用的模组…",
+    "pruneDone": "已移除 {{count}} 个未使用的模组，释放 {{size}}。",
+    "pruneFailed": "无法释放空间：{{message}}",
+    "openFailed": "无法打开存储文件夹：{{message}}",
+    "disabledHint": "共享模组存储已关闭。请先启用。"
   }
 }

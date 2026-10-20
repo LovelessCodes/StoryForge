@@ -29,6 +29,7 @@ import AccountCard from "./AccountCard";
 import DataFoldersCard from "./DataFoldersCard";
 import GameDefaultsCard from "./GameDefaultsCard";
 import LogViewer from "./LogViewer";
+import ModStoreCard from "./ModStoreCard";
 
 function SettingRow({
   label,
@@ -323,6 +324,7 @@ export default function SettingsPage() {
   return (
     <div className="grid gap-6">
       <DataFoldersCard />
+      <ModStoreCard />
       <AppearanceCard />
       <BehaviourCard />
       <GameDefaultsCard />

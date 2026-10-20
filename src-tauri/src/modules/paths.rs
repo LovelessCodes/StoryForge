@@ -58,6 +58,10 @@ pub const DEFAULT_VERSIONS_SUBDIR: &str = "versions";
 /// Subdirectory inside the app data dir where profiles are stored by default.
 pub const DEFAULT_PROFILES_SUBDIR: &str = "profiles";
 
+/// Sibling of the profiles folder that holds the shared, content-addressed mod
+/// store. Lives on the same filesystem as the profiles so hardlinks work.
+pub const MOD_STORE_SUBDIR: &str = "mods-store";
+
 /// Default name of the zustand store file/directory.
 pub const STORE_DIR: &str = "store";
 

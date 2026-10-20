@@ -21,8 +21,10 @@ use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
 use super::errors::UiError;
+use super::mod_store;
 use super::profiles::{find_profile_by_id, is_profile_running};
 use super::utils::{format_size, lock};
+use crate::{log_error, log_info};
 
 /// Top-level profile folders that are skipped: logs are disposable and can be
 /// large.
@@ -419,18 +421,33 @@ fn restore_profile(
                     UiError::new("restore_failed", format!("Failed to create a folder: {e}"))
                 })?;
             }
-            let mut writer = File::create(&target).map_err(|e| {
+
+            // Restore through a temp file. Writing directly over a mod zip
+            // would write through its hardlink and corrupt the shared blob in
+            // every other profile.
+            let temp =
+                target.with_file_name(format!(".storyforge-restore-{}.tmp", uuid::Uuid::new_v4()));
+            let mut writer = File::create(&temp).map_err(|e| {
                 UiError::new(
                     "restore_failed",
                     format!("Failed to write a profile file: {e}"),
                 )
             })?;
-            std::io::copy(&mut entry, &mut writer).map_err(|e| {
-                UiError::new(
+            if let Err(error) = std::io::copy(&mut entry, &mut writer) {
+                let _ = fs::remove_file(&temp);
+                return Err(UiError::new(
                     "restore_failed",
-                    format!("Failed to extract a profile file: {e}"),
-                )
-            })?;
+                    format!("Failed to extract a profile file: {error}"),
+                ));
+            }
+            drop(writer);
+            if let Err(error) = fs::rename(&temp, &target) {
+                let _ = fs::remove_file(&temp);
+                return Err(UiError::new(
+                    "restore_failed",
+                    format!("Failed to put a profile file in place: {error}"),
+                ));
+            }
         }
         on_progress(index as u64 + 1, total);
     }
@@ -581,8 +598,30 @@ fn run_restore(app: &AppHandle, profile_id: u64, backup_id: &str) -> Result<(), 
         }
     };
 
-    match restore_profile(&backups_dir, &profile_dir, backup_id, &mut on_progress) {
+    let restored = {
+        // Keep installs, deletes, and optimize from touching the same Mods
+        // tree while the archive is being written.
+        let _mod_guard = mod_store::lock_mod_mutations();
+        restore_profile(&backups_dir, &profile_dir, backup_id, &mut on_progress)
+    };
+    match restored {
         Ok(()) => {
+            // The restore wrote fresh copies. Re-link the profile's mods so the
+            // next backup/restore cycle stays deduplicated.
+            if let Ok(Some(store)) = mod_store::for_app(app) {
+                match mod_store::optimize_profile(&store, &profile_dir) {
+                    Ok(report) => log_info!(
+                        "backups: restore linked {} mod(s), copied {}, reclaimed {}",
+                        report.linked,
+                        report.copied,
+                        format_size(report.reclaimed_bytes)
+                    ),
+                    Err(error) => log_error!(
+                        "backups: could not deduplicate the restored profile: {}",
+                        error.message
+                    ),
+                }
+            }
             let _ = app.emit(&event, json!({ "phase": "done" }));
             Ok(())
         }

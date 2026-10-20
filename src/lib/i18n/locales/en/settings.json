@@ -107,5 +107,26 @@
     "copied": "Logs copied to clipboard",
     "copyFailed": "Failed to copy logs",
     "empty": "No logs yet..."
+  },
+  "modStore": {
+    "title": "Shared mod storage",
+    "description": "Keep one copy of each mod zip and link it into every profile that uses it. Saves disk space and makes profile copies fast.",
+    "enabled": "Share mod files between profiles",
+    "enabledDescription": "New mod installs are hardlinked from a central store. Turn off to keep independent copies.",
+    "location": "Store location",
+    "stats": "{{count}} mod(s) stored · {{size}}",
+    "statsFailed": "Could not read the store: {{message}}",
+    "optimize": "Optimize existing profiles",
+    "prune": "Free unused space",
+    "optimizeHint": "Optimize links mods that were installed before this feature or copied by a backup. It skips profiles on another drive.",
+    "optimizing": "Linking existing mods…",
+    "optimizeDone": "Linked {{linked}} mod(s), reclaiming {{size}}.",
+    "optimizePartial": "{{failed}} mod(s) could not be linked.",
+    "optimizeFailed": "Could not optimize mod storage: {{message}}",
+    "pruning": "Removing unused mods from the store…",
+    "pruneDone": "Removed {{count}} unused mod(s), freeing {{size}}.",
+    "pruneFailed": "Could not free space: {{message}}",
+    "openFailed": "Could not open the store folder: {{message}}",
+    "disabledHint": "Shared mod storage is turned off. Enable it first."
   }
 }

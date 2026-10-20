@@ -132,6 +132,9 @@ type SettingsStore = {
   /** List release-candidate game versions in the version pickers. */
   showPreRelease: boolean;
   toggleShowPreRelease: () => void;
+  /** Share identical mod zips between profiles with hardlinks. */
+  modStoreEnabled: boolean;
+  toggleModStoreEnabled: () => void;
   useSystemDotnet: boolean;
   toggleUseSystemDotnet: () => void;
 };
@@ -363,6 +366,8 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
   streamMode: false,
   showPreRelease: false,
   toggleShowPreRelease: () => set((state) => ({ showPreRelease: !state.showPreRelease })),
+  modStoreEnabled: true,
+  toggleModStoreEnabled: () => set((state) => ({ modStoreEnabled: !state.modStoreEnabled })),
   toggleUseSystemDotnet: () => set((state) => ({ useSystemDotnet: !state.useSystemDotnet })),
   toggleStreamMode: () => set((state) => ({ streamMode: !state.streamMode })),
   useSystemDotnet: true,

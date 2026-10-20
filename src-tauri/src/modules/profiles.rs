@@ -12,6 +12,7 @@ use zip::ZipArchive;
 
 use super::backups;
 use super::errors::UiError;
+use super::mod_store::{self, BlobMeta};
 use super::mods;
 use super::packs::{self, PackLock};
 use super::paths::{self, mods_dir, profile_json_path};
@@ -836,6 +837,7 @@ pub async fn import_profile(
     let mut errors: Vec<String> = Vec::new();
     let mut skipped: Vec<String> = Vec::new();
     let client = app.state::<Arc<reqwest::Client>>().clone();
+    let store = mod_store::for_app_best_effort(&app);
 
     let manifest_mods = manifest_mods.filter(|entries| !entries.is_empty());
     if let Some(entries) = manifest_mods.as_ref() {
@@ -870,13 +872,21 @@ pub async fn import_profile(
                 }),
             );
 
+            let meta = BlobMeta {
+                modid: Some(entry.mod_id_str.clone()),
+                version: Some(entry.mod_version.clone()),
+            };
             match mods::download_manifest_mod_file(
                 &client,
                 &entry.url,
                 &entry.filename,
-                entry.sha256.as_deref(),
-                entry.size,
                 &mods_dir,
+                mods::ManifestModOptions {
+                    expected_sha256: entry.sha256.as_deref(),
+                    expected_size: entry.size,
+                    store: store.as_ref(),
+                    meta: Some(&meta),
+                },
             )
             .await
             {
@@ -943,7 +953,16 @@ pub async fn import_profile(
                 }),
             );
 
-            match mods::download_mod_file(&client, modid, version_str, &mods_dir).await {
+            match mods::download_mod_file(
+                &client,
+                modid,
+                version_str,
+                &mods_dir,
+                store.as_ref(),
+                None,
+            )
+            .await
+            {
                 Ok(filename) => {
                     log_info!(
                         "import_profile: [{}/{}] downloaded {}@{}",
@@ -1071,6 +1090,25 @@ pub async fn move_profiles_folder(
     log_info!("move_profiles_folder: {:?} -> {:?}", src, dst);
     let outcome = move_folder(src, dst)?;
     log_info!("move_profiles_folder: {outcome}");
+
+    // Keep the shared store beside the profiles. Otherwise changing the
+    // profiles parent would strand the hardlink targets on the old volume.
+    let source_parent = Path::new(&source);
+    let destination_parent = Path::new(&destination);
+    if source_parent != destination_parent {
+        let store_src = source_parent.join(paths::MOD_STORE_SUBDIR);
+        let store_dst = destination_parent.join(paths::MOD_STORE_SUBDIR);
+        if store_src.is_dir() && !store_dst.exists() {
+            match move_folder(store_src, store_dst) {
+                Ok(outcome) => log_info!("move_profiles_folder: store {outcome}"),
+                Err(error) => log_error!(
+                    "move_profiles_folder: could not move the mod store: {}",
+                    error.message
+                ),
+            }
+        }
+    }
+
     Ok(outcome)
 }
 

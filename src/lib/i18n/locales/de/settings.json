@@ -107,5 +107,26 @@
     "copied": "Logs in die Zwischenablage kopiert",
     "copyFailed": "Logs konnten nicht kopiert werden",
     "empty": "Noch keine Logs..."
+  },
+  "modStore": {
+    "title": "Gemeinsamer Mod-Speicher",
+    "description": "Behält jede Mod-Zip nur einmal und verlinkt sie in alle Profile, die sie verwenden. Spart Speicherplatz und beschleunigt Profilkopien.",
+    "enabled": "Mod-Dateien zwischen Profilen teilen",
+    "enabledDescription": "Neue Mod-Installationen werden aus einem zentralen Speicher hart verlinkt. Ausschalten, um unabhängige Kopien zu behalten.",
+    "location": "Speicherort",
+    "stats": "{{count}} Mod(s) gespeichert · {{size}}",
+    "statsFailed": "Speicher konnte nicht gelesen werden: {{message}}",
+    "optimize": "Bestehende Profile optimieren",
+    "prune": "Ungenutzten Speicher freigeben",
+    "optimizeHint": "Optimieren verlinkt Mods, die vor dieser Funktion installiert oder aus einem Backup kopiert wurden. Profile auf einem anderen Laufwerk werden übersprungen.",
+    "optimizing": "Bestehende Mods werden verlinkt…",
+    "optimizeDone": "{{linked}} Mod(s) verlinkt, {{size}} freigegeben.",
+    "optimizePartial": "{{failed}} Mod(s) konnten nicht verlinkt werden.",
+    "optimizeFailed": "Mod-Speicher konnte nicht optimiert werden: {{message}}",
+    "pruning": "Ungenutzte Mods werden aus dem Speicher entfernt…",
+    "pruneDone": "{{count}} ungenutzte Mod(s) entfernt, {{size}} freigegeben.",
+    "pruneFailed": "Speicher konnte nicht freigegeben werden: {{message}}",
+    "openFailed": "Speicherordner konnte nicht geöffnet werden: {{message}}",
+    "disabledHint": "Gemeinsamer Mod-Speicher ist ausgeschaltet. Zuerst einschalten."
   }
 }
