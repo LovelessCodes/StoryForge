@@ -767,7 +767,10 @@ pub async fn create_hosted_server(
     .await?;
     log_info!("create_hosted_server: DOTNET_ROOT={dotnet_root:?}");
 
-    log_info!("create_hosted_server: running --setconfig: exe={:?} dataPath={data_dir_str} arg={setconfig_arg}", exe_path);
+    log_info!(
+        "create_hosted_server: running --setconfig: port={port} whitelist={whitelist_enabled} password_set={}",
+        !password.is_empty()
+    );
 
     let setconfig_output = Command::new(exe_path.to_string_lossy().as_ref())
         .env("DOTNET_ROOT", &dotnet_root)
@@ -792,7 +795,9 @@ pub async fn create_hosted_server(
         log_error!("create_hosted_server: --setconfig failed (exit {exit_code}): stdout={stdout} stderr={stderr}");
         return Err(UiError {
             name: "setconfig_failed".into(),
-            message: format!("--setconfig failed (exit {exit_code})\n{stdout}\n{stderr}"),
+            message: format!(
+                "Server setup failed (exit {exit_code}). Check the application log for details."
+            ),
         });
     }
     log_info!("create_hosted_server: --setconfig completed (exit {exit_code}), serverconfig.json generated");
