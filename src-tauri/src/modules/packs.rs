@@ -28,6 +28,7 @@ use sha2::{Digest, Sha256};
 use tauri::{command, AppHandle, Emitter, State};
 
 use super::errors::UiError;
+use super::utils::hex_lower;
 use super::{mod_store, mods, paths, profiles};
 use crate::{log_error, log_info};
 
@@ -129,7 +130,7 @@ pub(crate) fn sha256_file(path: &Path) -> Result<String, UiError> {
         }
         hasher.update(&buffer[..read]);
     }
-    Ok(format!("{:x}", hasher.finalize()))
+    Ok(hex_lower(hasher.finalize().as_slice()))
 }
 
 fn now_ms() -> u64 {

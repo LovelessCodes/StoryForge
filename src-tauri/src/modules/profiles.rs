@@ -794,12 +794,16 @@ pub async fn import_profile(
                     name: "modconfig_extract_failed".into(),
                     message: format!("Failed to read zip entry {i}: {e}"),
                 })?;
-                let out_path = safe_join(&config_dir, entry.name()).map_err(|e| UiError {
+                let entry_name = entry.name().map_err(|e| UiError {
                     name: "modconfig_extract_failed".into(),
-                    message: format!("Unsafe entry {}: {}", entry.name(), e.message),
+                    message: format!("Failed to read zip entry {i} name: {e}"),
+                })?;
+                let out_path = safe_join(&config_dir, &entry_name).map_err(|e| UiError {
+                    name: "modconfig_extract_failed".into(),
+                    message: format!("Unsafe entry {entry_name}: {}", e.message),
                 })?;
 
-                if entry.name().ends_with('/') {
+                if entry_name.ends_with('/') {
                     create_dir_all(&out_path).map_err(|e| UiError {
                         name: "modconfig_extract_failed".into(),
                         message: format!("Failed to create dir in ModConfig: {e}"),

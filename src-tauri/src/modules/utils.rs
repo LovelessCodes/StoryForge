@@ -495,6 +495,17 @@ pub fn copy_dir_contents(from: &Path, to: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// Lowercase hex encoding of a byte slice.
+pub fn hex_lower(bytes: &[u8]) -> String {
+    use std::fmt::Write as _;
+
+    let mut out = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        let _ = write!(out, "{byte:02x}");
+    }
+    out
+}
+
 /// Streams a file through SHA-256 so a large assembly is never held in memory.
 pub fn sha256_file(path: &Path) -> Result<String, UiError> {
     let mut file = File::open(path)
@@ -510,7 +521,7 @@ pub fn sha256_file(path: &Path) -> Result<String, UiError> {
         }
         hasher.update(&buffer[..read]);
     }
-    Ok(format!("{:x}", hasher.finalize()))
+    Ok(hex_lower(hasher.finalize().as_slice()))
 }
 
 /// True when a path is relative, forward-slashed and stays inside the folder it

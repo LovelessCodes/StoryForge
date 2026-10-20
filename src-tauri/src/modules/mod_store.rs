@@ -28,7 +28,8 @@ use uuid::Uuid;
 
 use super::errors::UiError;
 use super::utils::{
-    dir_name, format_size, generate_id, lock, profiles_folder, profiles_subdir, safe_file_name,
+    dir_name, format_size, generate_id, hex_lower, lock, profiles_folder, profiles_subdir,
+    safe_file_name,
 };
 use super::{paths, profile_ops, profiles, server_hosting};
 use crate::{log_error, log_info};
@@ -368,7 +369,7 @@ impl ModStore {
             }
             hasher.update(&buffer[..read]);
         }
-        Ok(format!("{:x}", hasher.finalize()))
+        Ok(hex_lower(hasher.finalize().as_slice()))
     }
 
     pub fn ingest_bytes(
@@ -820,7 +821,7 @@ fn normalize_hash(value: &str) -> Option<String> {
 fn sha256_bytes(bytes: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
-    format!("{:x}", hasher.finalize())
+    hex_lower(hasher.finalize().as_slice())
 }
 
 fn sync_file(path: &Path) -> Result<(), UiError> {

@@ -688,7 +688,10 @@ fn extract_world_zip(source: &Path, saves_dir: &Path, maps_dir: &Path) -> Result
         if entry.is_dir() {
             continue;
         }
-        let raw = entry.name().replace('\\', "/");
+        let raw = entry
+            .name()
+            .map_err(|e| UiError::new("invalid_archive", format!("Zip entry name error: {e}")))?
+            .replace('\\', "/");
         let parts: Vec<&str> = raw
             .split('/')
             .filter(|part| !part.is_empty() && *part != ".")

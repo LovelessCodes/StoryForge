@@ -772,7 +772,7 @@ mod tests {
         let names: Vec<String> = ZipArchive::new(file)
             .unwrap()
             .file_names()
-            .map(str::to_string)
+            .map(|name| name.unwrap().into_owned())
             .collect();
         assert!(names.iter().any(|name| name == "Saves/World 1/world.dat"));
         assert!(!names.iter().any(|name| name.starts_with("Logs/")));

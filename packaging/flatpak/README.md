@@ -54,7 +54,7 @@ in this directory:
   `flatpak run --command=flathub-build org.flatpak.Builder --install <manifest>`
   before submitting.
 - `org.freedesktop.Sdk.Extension.rust-stable` on GNOME 50 provides rustc 1.98,
-  which satisfies the app's `rust-version = 1.85`.
+  which satisfies the app's `rust-version = 1.90`.
 
 Open review questions to be ready for: `--device=all` justification (gamepad /
 game processes), `--filesystem=xdg-documents` justification (world/save import),
