@@ -1,4 +1,4 @@
-import { FolderInput, Power, PowerOff, Trash2, X } from "lucide-react";
+import { Copy, FolderInput, Power, PowerOff, Trash2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ export function InstalledModsSelectionBar({
   groups,
   moveToGroup,
   onClearSelection,
+  onCopySelected,
   onRemoveSelected,
   selectedCount,
   selectedMods,
@@ -38,6 +39,7 @@ export function InstalledModsSelectionBar({
   groups: ModGroup[];
   moveToGroup: (groupId: string | null) => void;
   onClearSelection: () => void;
+  onCopySelected: () => void;
   onRemoveSelected: () => void;
   selectedCount: number;
   selectedMods: OutputMod[];
@@ -109,6 +111,16 @@ export function InstalledModsSelectionBar({
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
+        <Button
+          aria-label={t("mods.copy.selected")}
+          disabled={applyPending}
+          onClick={onCopySelected}
+          size="icon-sm"
+          title={t("mods.copy.selected")}
+          variant="ghost"
+        >
+          <Copy />
+        </Button>
         {confirmBatchRemove ? (
           <>
             <span className="text-destructive px-1 text-[11px]">

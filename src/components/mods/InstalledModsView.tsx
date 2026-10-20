@@ -29,6 +29,7 @@ import { toast } from "@/lib/notify";
 import type { OutputMod } from "@/lib/types";
 import { useSettingsStore } from "@/stores/settings";
 
+import { CopyModsSheet } from "./CopyModsSheet";
 import { InstalledModsList } from "./InstalledModsList";
 import { InstalledModsSelectionBar } from "./InstalledModsSelectionBar";
 import { InstalledModsToolbar } from "./InstalledModsToolbar";
@@ -74,9 +75,12 @@ function groupAnnouncements(t: TFunction, groups: ModGroup[]): Announcements {
  */
 export function InstalledModsView({
   canToggleMods,
+  gameVersion,
   modsDirectory,
 }: {
   canToggleMods: boolean;
+  /** Game version of this target, for the copy-to-profile warning. */
+  gameVersion?: string;
   modsDirectory: string;
 }) {
   const { t } = useTranslation();
@@ -100,6 +104,8 @@ export function InstalledModsView({
   const [confirmDeleteGroupId, setConfirmDeleteGroupId] = useState<string | null>(null);
   const [confirmBatchRemove, setConfirmBatchRemove] = useState(false);
   const [presetsOpen, setPresetsOpen] = useState(false);
+  const [copyMods, setCopyMods] = useState<OutputMod[]>([]);
+  const [copyOpen, setCopyOpen] = useState(false);
   const [draggingGroupId, setDraggingGroupId] = useState<string | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -182,6 +188,11 @@ export function InstalledModsView({
     setSelected(new Set());
   };
 
+  const openCopy = (targets: OutputMod[]) => {
+    setCopyMods(targets);
+    setCopyOpen(true);
+  };
+
   const clearSelection = () => {
     setConfirmBatchRemove(false);
     setSelected(new Set());
@@ -251,6 +262,7 @@ export function InstalledModsView({
           newGroupName={newGroupName}
           onApplyAll={(enabled) => applyEnabled(mods, enabled)}
           onCancelCreate={() => setCreatingGroup(false)}
+          onCopyAll={() => openCopy(mods)}
           onCreateGroup={saveNewGroup}
           onNewGroupNameChange={setNewGroupName}
           onOpenPresets={() => setPresetsOpen(true)}
@@ -291,6 +303,7 @@ export function InstalledModsView({
           groups={groups}
           moveToGroup={moveSelection}
           onClearSelection={clearSelection}
+          onCopySelected={() => openCopy(selectedMods)}
           onRemoveSelected={removeSelected}
           selectedCount={selected.size}
           selectedMods={selectedMods}
@@ -301,6 +314,15 @@ export function InstalledModsView({
           modsDirectory={modsDirectory}
           open={presetsOpen}
           onOpenChange={setPresetsOpen}
+        />
+
+        <CopyModsSheet
+          gameVersion={gameVersion}
+          mods={copyMods}
+          modsDirectory={modsDirectory}
+          onCopied={() => setSelected(new Set())}
+          onOpenChange={setCopyOpen}
+          open={copyOpen}
         />
 
         <DragOverlay>

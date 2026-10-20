@@ -1031,6 +1031,311 @@ pub(crate) async fn install_mod_url_at(
     }
 }
 
+// ── Copying mods between profiles ──
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModCopyParams {
+    /// Profile root to copy from.
+    pub source: String,
+    /// Profile root to copy into.
+    pub destination: String,
+    /// File names inside the source `Mods` directory. Empty copies every zip.
+    pub files: Vec<String>,
+}
+
+#[derive(Debug, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModCopyResult {
+    pub copied: usize,
+    pub replaced: usize,
+    pub unchanged: usize,
+    pub failed: Vec<ModCopyFailure>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModCopyFailure {
+    pub file: String,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CopyStatus {
+    Copied,
+    Replaced,
+    Unchanged,
+}
+
+/// The zips directly inside a `Mods` directory, sorted for stable results.
+fn zip_file_names(mods_dir: &Path) -> Result<Vec<String>, UiError> {
+    let mut names = Vec::new();
+    for entry in read_dir(mods_dir)
+        .map_err(|e| UiError::io(format!("Failed to read {}: {e}", mods_dir.display())))?
+    {
+        let entry =
+            entry.map_err(|e| UiError::io(format!("Failed to read a directory entry: {e}")))?;
+        let path = entry.path();
+        let is_zip = path.is_file()
+            && path
+                .extension()
+                .and_then(|extension| extension.to_str())
+                .map(|extension| extension.eq_ignore_ascii_case("zip"))
+                .unwrap_or(false);
+        if !is_zip {
+            continue;
+        }
+        if let Some(name) = path.file_name().and_then(|name| name.to_str()) {
+            names.push(name.to_string());
+        }
+    }
+    names.sort();
+    Ok(names)
+}
+
+/// An unused file name in `mods_dir`, derived from `filename` (`a.zip`,
+/// `a (2).zip`, …), so a copy never overwrites an unrelated mod that happens
+/// to use the same file name.
+fn available_destination_path(mods_dir: &Path, filename: &str) -> PathBuf {
+    let original = mods_dir.join(filename);
+    if !original.exists() {
+        return original;
+    }
+    let path = Path::new(filename);
+    let stem = path
+        .file_stem()
+        .and_then(|stem| stem.to_str())
+        .filter(|stem| !stem.is_empty())
+        .unwrap_or("mod");
+    let extension = path
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .unwrap_or("zip");
+    let mut counter = 2;
+    loop {
+        let candidate = mods_dir.join(format!("{stem} ({counter}).{extension}"));
+        if !candidate.exists() {
+            return candidate;
+        }
+        counter += 1;
+    }
+}
+
+/// Copies one source zip into the destination `Mods` directory.
+///
+/// A destination copy of the same mod and version is left alone. A different
+/// version is replaced, including any duplicate files for the same modid, so
+/// the destination never ends up loading two versions of one mod. A file name
+/// already used by an unrelated mod gets a suffixed name instead.
+fn copy_one_mod(
+    source_mods: &Path,
+    destination_mods: &Path,
+    file: &str,
+    existing_by_modid: &mut HashMap<String, Vec<OutputMod>>,
+) -> Result<(CopyStatus, ModFileInfo), String> {
+    let filename = safe_file_name(file).map_err(|error| error.message)?;
+    if filename != file {
+        return Err("Expected a file name inside the Mods folder, not a path".into());
+    }
+    let is_zip = Path::new(&filename)
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .map(|extension| extension.eq_ignore_ascii_case("zip"))
+        .unwrap_or(false);
+    if !is_zip {
+        return Err("Not a mod archive (.zip)".into());
+    }
+
+    let source = source_mods.join(&filename);
+    if !source.is_file() {
+        return Err(format!("File not found: {}", source.display()));
+    }
+    let info = inspect_mod_zip(&source).map_err(|error| error.message)?;
+    let key = info.modid.to_ascii_lowercase();
+    let existing = existing_by_modid.get(&key);
+    let same_version = existing
+        .map(|mods| {
+            mods.iter()
+                .any(|installed| installed.version.eq_ignore_ascii_case(&info.version))
+        })
+        .unwrap_or(false);
+    if same_version {
+        return Ok((CopyStatus::Unchanged, info));
+    }
+
+    let target = destination_mods.join(&filename);
+    let target_is_this_mod = existing
+        .map(|mods| {
+            mods.iter()
+                .any(|installed| Path::new(&installed.path) == target)
+        })
+        .unwrap_or(false);
+    // Another mod can share the file name. Give this copy a distinct name
+    // instead of deleting the unrelated mod.
+    let target = if !target_is_this_mod && target.exists() {
+        available_destination_path(destination_mods, &filename)
+    } else {
+        target
+    };
+    let existed = existing.map(|mods| !mods.is_empty()).unwrap_or(false) || target.exists();
+
+    // Stage the copy first so a failed read or a full disk does not remove the
+    // destination's current version.
+    let temp = destination_mods.join(format!(".{filename}.{}.tmp", uuid::Uuid::new_v4()));
+    std::fs::copy(&source, &temp).map_err(|error| {
+        let _ = remove_file(&temp);
+        format!("Failed to copy {}: {error}", source.display())
+    })?;
+
+    if let Some(replacements) = existing_by_modid.remove(&key) {
+        for installed in replacements {
+            let path = PathBuf::from(&installed.path);
+            if let Err(error) = remove_file(&path) {
+                let _ = remove_file(&temp);
+                return Err(format!("Failed to replace {}: {error}", path.display()));
+            }
+        }
+    }
+    // A same-named file that could not be scanned is not in the map; remove it
+    // so the rename lands on the exact file name.
+    if target.exists() {
+        if let Err(error) = remove_file(&target) {
+            let _ = remove_file(&temp);
+            return Err(format!("Failed to replace {}: {error}", target.display()));
+        }
+    }
+    if let Err(error) = std::fs::rename(&temp, &target) {
+        let _ = remove_file(&temp);
+        return Err(format!("Failed to store {}: {error}", target.display()));
+    }
+
+    Ok((
+        if existed {
+            CopyStatus::Replaced
+        } else {
+            CopyStatus::Copied
+        },
+        info,
+    ))
+}
+
+/// Copies mod zips between two profile roots, carrying the source's
+/// enabled/disabled state for the mods that were actually copied or replaced.
+fn copy_mods_between_profiles_at(
+    source_dir: &Path,
+    destination_dir: &Path,
+    files: &[String],
+) -> Result<ModCopyResult, UiError> {
+    let source_canon = dunce::canonicalize(source_dir)
+        .map_err(|e| UiError::not_found(format!("Source profile not found: {e}")))?;
+    let destination_canon = dunce::canonicalize(destination_dir)
+        .map_err(|e| UiError::not_found(format!("Destination profile not found: {e}")))?;
+    if source_canon == destination_canon {
+        return Err(UiError::new(
+            "same_profile",
+            "Choose a different profile to copy the mods to",
+        ));
+    }
+
+    let source_mods = paths::mods_dir(source_dir);
+    if !source_mods.is_dir() {
+        return Err(UiError::not_found(format!(
+            "No Mods folder in {}",
+            source_dir.display()
+        )));
+    }
+    let destination_mods = paths::mods_dir(destination_dir);
+    create_dir_all(&destination_mods).map_err(|e| {
+        UiError::io(format!(
+            "Failed to create {}: {e}",
+            destination_mods.display()
+        ))
+    })?;
+
+    let requested = if files.is_empty() {
+        zip_file_names(&source_mods)?
+    } else {
+        files.to_vec()
+    };
+    let existing_scan = get_mods_in_dir(&destination_mods)?;
+    let mut existing_by_modid: HashMap<String, Vec<OutputMod>> = HashMap::new();
+    for installed in existing_scan.mods {
+        existing_by_modid
+            .entry(installed.modid.to_ascii_lowercase())
+            .or_default()
+            .push(installed);
+    }
+
+    let source_settings = read_settings_file_or_default(source_dir);
+    let mut copied_state: Vec<(String, String, bool)> = Vec::new();
+    let mut result = ModCopyResult::default();
+
+    for file in requested {
+        match copy_one_mod(
+            &source_mods,
+            &destination_mods,
+            &file,
+            &mut existing_by_modid,
+        ) {
+            Ok((status, info)) => {
+                match status {
+                    CopyStatus::Copied => result.copied += 1,
+                    CopyStatus::Replaced => result.replaced += 1,
+                    CopyStatus::Unchanged => result.unchanged += 1,
+                }
+                if status != CopyStatus::Unchanged {
+                    let disabled = is_mod_disabled(&source_settings, &info.modid, &info.version);
+                    copied_state.push((info.modid, info.version, disabled));
+                }
+            }
+            Err(message) => result.failed.push(ModCopyFailure { file, message }),
+        }
+    }
+
+    if !copied_state.is_empty() {
+        match read_settings_file(destination_dir) {
+            Ok(mut settings) => {
+                for (modid, version, disabled) in &copied_state {
+                    apply_mod_enabled(&mut settings, modid, version, !*disabled);
+                }
+                if let Err(error) = write_settings_file(destination_dir, &settings) {
+                    log_error!("copy_mods_to_profile: could not carry enabled state: {error}");
+                }
+            }
+            Err(error) => {
+                log_error!("copy_mods_to_profile: could not read destination settings: {error}")
+            }
+        }
+    }
+
+    invalidate_mods_cache(&destination_mods);
+    Ok(result)
+}
+
+#[command]
+pub async fn copy_mods_to_profile(
+    app: AppHandle,
+    params: ModCopyParams,
+) -> Result<ModCopyResult, UiError> {
+    log_info!(
+        "copy_mods_to_profile: {} -> {} ({} file(s))",
+        params.source,
+        params.destination,
+        params.files.len()
+    );
+    require_managed_path(&app, Path::new(&params.source), "Source profile")?;
+    require_managed_path(&app, Path::new(&params.destination), "Destination profile")?;
+    tokio::task::spawn_blocking(move || {
+        copy_mods_between_profiles_at(
+            Path::new(&params.source),
+            Path::new(&params.destination),
+            &params.files,
+        )
+    })
+    .await
+    .map_err(|e| UiError::new("internal_error", format!("Copy failed: {e}")))?
+}
+
 /// Whether a preset's disabled-modid list names one mod (case-insensitive).
 pub(crate) fn is_in_disabled_set(disabled: &[String], modid: &str) -> bool {
     disabled
@@ -1483,6 +1788,174 @@ mod tests {
         let error = install_mod_file_at(&profile, &bad).unwrap_err();
         assert_eq!(error.name, "invalid_mod");
         assert!(!paths::mods_dir(&profile).join("bad.zip").exists());
+    }
+
+    #[test]
+    fn copies_selected_mods_to_another_profile() {
+        let tmp = tempfile::tempdir().unwrap();
+        let source = tmp.path().join("source");
+        let destination = tmp.path().join("destination");
+        let source_mods = paths::mods_dir(&source);
+        std::fs::create_dir_all(&source_mods).unwrap();
+        std::fs::create_dir_all(&destination).unwrap();
+        write_test_mod_zip(&source_mods.join("a.zip"), "a", "1.0.0", "A");
+        write_test_mod_zip(&source_mods.join("b.zip"), "b", "1.0.0", "B");
+
+        let result =
+            copy_mods_between_profiles_at(&source, &destination, &["a.zip".to_string()]).unwrap();
+        assert_eq!(result.copied, 1);
+        assert_eq!(result.replaced, 0);
+        assert_eq!(result.unchanged, 0);
+        assert!(result.failed.is_empty());
+
+        let scanned = get_mods_in_dir(&paths::mods_dir(&destination)).unwrap();
+        assert_eq!(scanned.mods.len(), 1);
+        assert_eq!(scanned.mods[0].modid, "a");
+        assert!(!paths::mods_dir(&destination).join("b.zip").exists());
+    }
+
+    #[test]
+    fn copies_all_mods_when_no_file_list_is_given() {
+        let tmp = tempfile::tempdir().unwrap();
+        let source = tmp.path().join("source");
+        let destination = tmp.path().join("destination");
+        let source_mods = paths::mods_dir(&source);
+        std::fs::create_dir_all(&source_mods).unwrap();
+        std::fs::create_dir_all(&destination).unwrap();
+        write_test_mod_zip(&source_mods.join("a.zip"), "a", "1.0.0", "A");
+        write_test_mod_zip(&source_mods.join("b.zip"), "b", "1.0.0", "B");
+        std::fs::write(source_mods.join("notes.txt"), b"ignored").unwrap();
+
+        let result = copy_mods_between_profiles_at(&source, &destination, &[]).unwrap();
+        assert_eq!(result.copied, 2);
+        let scanned = get_mods_in_dir(&paths::mods_dir(&destination)).unwrap();
+        assert_eq!(scanned.mods.len(), 2);
+    }
+
+    #[test]
+    fn copying_a_different_version_replaces_the_installed_one() {
+        let tmp = tempfile::tempdir().unwrap();
+        let source = tmp.path().join("source");
+        let destination = tmp.path().join("destination");
+        let source_mods = paths::mods_dir(&source);
+        let destination_mods = paths::mods_dir(&destination);
+        std::fs::create_dir_all(&source_mods).unwrap();
+        std::fs::create_dir_all(&destination_mods).unwrap();
+        write_test_mod_zip(&source_mods.join("a_2.zip"), "a", "2.0.0", "A");
+        write_test_mod_zip(&destination_mods.join("a_1.zip"), "a", "1.0.0", "A");
+        std::fs::write(
+            paths::clientsettings_path(&destination),
+            r#"{"stringListSettings":{"disabledMods":["a@1.0.0"]}}"#,
+        )
+        .unwrap();
+
+        let result =
+            copy_mods_between_profiles_at(&source, &destination, &["a_2.zip".to_string()]).unwrap();
+        assert_eq!(result.replaced, 1);
+        assert!(result.failed.is_empty());
+
+        let scanned = get_mods_in_dir(&destination_mods).unwrap();
+        assert_eq!(scanned.mods.len(), 1);
+        assert_eq!(scanned.mods[0].version, "2.0.0");
+        assert!(!destination_mods.join("a_1.zip").exists());
+        // The old version's disabled entry must not linger.
+        let settings = read_settings_file(&destination).unwrap();
+        assert!(!is_mod_disabled(&settings, "a", "2.0.0"));
+    }
+
+    #[test]
+    fn copying_the_same_version_is_a_no_op() {
+        let tmp = tempfile::tempdir().unwrap();
+        let source = tmp.path().join("source");
+        let destination = tmp.path().join("destination");
+        let source_mods = paths::mods_dir(&source);
+        let destination_mods = paths::mods_dir(&destination);
+        std::fs::create_dir_all(&source_mods).unwrap();
+        std::fs::create_dir_all(&destination_mods).unwrap();
+        write_test_mod_zip(&source_mods.join("a.zip"), "a", "2.0.0", "A");
+        write_test_mod_zip(&destination_mods.join("a_other.zip"), "a", "2.0.0", "A");
+
+        let result =
+            copy_mods_between_profiles_at(&source, &destination, &["a.zip".to_string()]).unwrap();
+        assert_eq!(result.unchanged, 1);
+        assert_eq!(result.copied, 0);
+        assert!(!destination_mods.join("a.zip").exists());
+        assert!(destination_mods.join("a_other.zip").exists());
+    }
+
+    #[test]
+    fn copying_mods_carries_the_disabled_state() {
+        let tmp = tempfile::tempdir().unwrap();
+        let source = tmp.path().join("source");
+        let destination = tmp.path().join("destination");
+        let source_mods = paths::mods_dir(&source);
+        std::fs::create_dir_all(&source_mods).unwrap();
+        std::fs::create_dir_all(&destination).unwrap();
+        write_test_mod_zip(&source_mods.join("a.zip"), "a", "2.0.0", "A");
+        std::fs::write(
+            paths::clientsettings_path(&source),
+            r#"{"stringListSettings":{"disabledMods":["a@2.0.0"]}}"#,
+        )
+        .unwrap();
+
+        copy_mods_between_profiles_at(&source, &destination, &["a.zip".to_string()]).unwrap();
+        let settings = read_settings_file(&destination).unwrap();
+        assert!(is_mod_disabled(&settings, "a", "2.0.0"));
+    }
+
+    #[test]
+    fn a_filename_collision_does_not_replace_another_mod() {
+        let tmp = tempfile::tempdir().unwrap();
+        let source = tmp.path().join("source");
+        let destination = tmp.path().join("destination");
+        let source_mods = paths::mods_dir(&source);
+        let destination_mods = paths::mods_dir(&destination);
+        std::fs::create_dir_all(&source_mods).unwrap();
+        std::fs::create_dir_all(&destination_mods).unwrap();
+        write_test_mod_zip(&source_mods.join("shared.zip"), "a", "1.0.0", "A");
+        write_test_mod_zip(&destination_mods.join("shared.zip"), "b", "1.0.0", "B");
+
+        let result =
+            copy_mods_between_profiles_at(&source, &destination, &["shared.zip".to_string()])
+                .unwrap();
+        assert_eq!(result.copied, 1);
+        let mut scanned = get_mods_in_dir(&destination_mods).unwrap();
+        scanned.mods.sort_by(|a, b| a.modid.cmp(&b.modid));
+        assert_eq!(
+            scanned
+                .mods
+                .iter()
+                .map(|installed| installed.modid.as_str())
+                .collect::<Vec<_>>(),
+            vec!["a", "b"]
+        );
+        assert!(destination_mods.join("shared (2).zip").is_file());
+        // The unrelated mod keeps its original file.
+        assert_eq!(
+            inspect_mod_zip(&destination_mods.join("shared.zip"))
+                .unwrap()
+                .modid,
+            "b"
+        );
+    }
+
+    #[test]
+    fn copy_refuses_the_same_profile_and_path_tricks() {
+        let tmp = tempfile::tempdir().unwrap();
+        let profile = tmp.path().join("profile");
+        let other = tmp.path().join("other");
+        let mods = paths::mods_dir(&profile);
+        std::fs::create_dir_all(&mods).unwrap();
+        std::fs::create_dir_all(&other).unwrap();
+        write_test_mod_zip(&mods.join("a.zip"), "a", "1.0.0", "A");
+
+        let error = copy_mods_between_profiles_at(&profile, &profile, &[]).unwrap_err();
+        assert_eq!(error.name, "same_profile");
+
+        let result =
+            copy_mods_between_profiles_at(&profile, &other, &["../a.zip".to_string()]).unwrap();
+        assert_eq!(result.failed.len(), 1);
+        assert!(!paths::mods_dir(&other).join("a.zip").exists());
     }
 
     #[test]
