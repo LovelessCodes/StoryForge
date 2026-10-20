@@ -323,7 +323,6 @@ pub fn run() {
             }
 
             // ── Step 1: Create store directory ──
-            log_info!("Setup step 1: creating store directory...");
             let t1 = std::time::Instant::now();
             let store_path = match app.path().app_data_dir() {
                 Ok(dir) => dir.join(modules::paths::STORE_DIR),
@@ -340,7 +339,6 @@ pub fn run() {
             modules::logger::log_elapsed("Setup step 1 elapsed", t1);
 
             // ── Step 2: Init zustand plugin ──
-            log_info!("Setup step 2: initializing zustand plugin...");
             let t2 = std::time::Instant::now();
             app_handle
                 .plugin(
@@ -360,7 +358,6 @@ pub fn run() {
             // profiles root (tens of gigabytes for a big profile). Nothing can
             // be writing into one now — the app enforces a single instance —
             // so they are safe to remove on every start.
-            log_info!("Setup step 2.1: sweeping import staging leftovers...");
             let t2_1 = std::time::Instant::now();
             importer::sweep_staging_leftovers(app_handle);
             log_info!("Setup step 2.1 done: staging leftovers swept");
@@ -372,14 +369,12 @@ pub fn run() {
             // reads user data, so legacy import and account loading find
             // them. Idempotent; a few file existence checks when nothing
             // needs doing.
-            log_info!("Setup step 2.25: running store-file data migrations...");
             let t2_25 = std::time::Instant::now();
             modules::migrations::run_all(app_handle);
             log_info!("Setup step 2.25 done: store-file migrations complete");
             modules::logger::log_elapsed("Setup step 2.25 elapsed", t2_25);
 
             // ── Step 2.5: Shared HTTP client ──
-            log_info!("Setup step 2.5: initializing shared HTTP client...");
             let t2_5 = std::time::Instant::now();
             let http_client = Arc::new(
                 reqwest::Client::builder()
