@@ -5670,14 +5670,14 @@
   {
     "type": "archive",
     "archive-type": "tar-gzip",
-    "url": "https://static.crates.io/crates/tauri-plugin-deep-link/tauri-plugin-deep-link-2.6.2.crate",
-    "sha256": "1b3c64e24ebcbc63aaa2d88a9c51e2507084b46620baf39ecb0baa0738a08bb4",
-    "dest": "cargo/vendor/tauri-plugin-deep-link-2.6.2"
+    "url": "https://static.crates.io/crates/tauri-plugin-deep-link/tauri-plugin-deep-link-2.6.1.crate",
+    "sha256": "4ac7a92a46ab5c88f44532ca50906d6e448a948d4ddf8c5376ab125e3260f736",
+    "dest": "cargo/vendor/tauri-plugin-deep-link-2.6.1"
   },
   {
     "type": "inline",
-    "contents": "{\"package\": \"1b3c64e24ebcbc63aaa2d88a9c51e2507084b46620baf39ecb0baa0738a08bb4\", \"files\": {}}",
-    "dest": "cargo/vendor/tauri-plugin-deep-link-2.6.2",
+    "contents": "{\"package\": \"4ac7a92a46ab5c88f44532ca50906d6e448a948d4ddf8c5376ab125e3260f736\", \"files\": {}}",
+    "dest": "cargo/vendor/tauri-plugin-deep-link-2.6.1",
     "dest-filename": ".cargo-checksum.json"
   },
   {
@@ -5761,14 +5761,14 @@
   {
     "type": "archive",
     "archive-type": "tar-gzip",
-    "url": "https://static.crates.io/crates/tauri-plugin-single-instance/tauri-plugin-single-instance-2.5.4.crate",
-    "sha256": "561cd99484561bc39c954768e7b41a66cebbe1ac3d9d081c34361f740c489e2c",
-    "dest": "cargo/vendor/tauri-plugin-single-instance-2.5.4"
+    "url": "https://static.crates.io/crates/tauri-plugin-single-instance/tauri-plugin-single-instance-2.5.3.crate",
+    "sha256": "3c142ed88deee222bd2d979269d35c73b6c1c0f6ebd5b79b4ff80066fcad6af1",
+    "dest": "cargo/vendor/tauri-plugin-single-instance-2.5.3"
   },
   {
     "type": "inline",
-    "contents": "{\"package\": \"561cd99484561bc39c954768e7b41a66cebbe1ac3d9d081c34361f740c489e2c\", \"files\": {}}",
-    "dest": "cargo/vendor/tauri-plugin-single-instance-2.5.4",
+    "contents": "{\"package\": \"3c142ed88deee222bd2d979269d35c73b6c1c0f6ebd5b79b4ff80066fcad6af1\", \"files\": {}}",
+    "dest": "cargo/vendor/tauri-plugin-single-instance-2.5.3",
     "dest-filename": ".cargo-checksum.json"
   },
   {

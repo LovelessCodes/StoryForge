@@ -44,7 +44,10 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = [] }
 tauri-plugin-clipboard-manager = "2"
-tauri-plugin-deep-link = "2"
+# 2.6.2 builds a `rust_ini::ParseOption` literal without the fields rust-ini
+# 0.21.2 added, so it fails to compile on Linux. Drop the pin when a fixed
+# release is out.
+tauri-plugin-deep-link = "=2.6.1"
 tauri-plugin-dialog = "2"
 tauri-plugin-os = "2"
 tauri-plugin-process = "2"
