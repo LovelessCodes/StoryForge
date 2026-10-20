@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Blocking mod authors**: the mod browser can hide every listing from an author you would rather not see. Right-click a mod row to block its author — a toast offers to undo — and the **Blocked authors** button beside the favourites toggle opens the list, where authors can be added by name, unblocked one by one, or cleared entirely. The toolbar also counts the results being hidden, so an emptied list is not mistaken for a search miss, and blocked authors no longer appear in the author filter's suggestions. Blocking is browse-only: installed mods are untouched.
 
+### Fixed
+
+- **Optimum installs on 0.3.20**: every install failed with "The patch conflicted with files in the game folder" because 0.3.20's API patcher looks for `cairo-sharp.dll` beside its vanilla backup instead of the game's `Lib` folder ([StratumServer/Optimum#140](https://github.com/StratumServer/Optimum/issues/140)). The game's copy is now placed where the patcher looks, and the CLI's own failure message is written to the log instead of only its reason token, so a future failure can be diagnosed from a support report.
+
 ### Changed
 
 - **Smaller downloads**: the release build now optimizes the app crate for size while dependency optimization stays as before, shrinking the app binary and installers.

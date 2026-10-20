@@ -64,6 +64,17 @@ const OPTIMUM_PATCH_MANIFEST: &str = "manifest.json";
 /// Overlay marker written by the packaging script.
 const OPTIMUM_VERSION_FILE: &str = "version";
 
+/// The game assembly Optimum 0.3.20's API patcher cannot find on its own.
+///
+/// The CLI patches `VintagestoryAPI.dll` from the copy it keeps in
+/// `.optimum/vanilla`, and the patcher's Cecil resolver only looks beside that
+/// copy, in its `Lib` folder and in the contracts folder. The game's own
+/// `Lib/cairo-sharp.dll` is therefore invisible, the new GUI-metrics patch
+/// throws `AssemblyResolutionException`, and the whole run reports
+/// `patch-conflict` (StratumServer/Optimum#140). Upstream merged the resolver
+/// fix, but no overlay with it has been released yet.
+const API_PATCHER_LIB_ASSEMBLY: &str = "cairo-sharp.dll";
+
 /// Hard ceilings, mirroring what the overlay manifest parser in RiftLauncher
 /// refuses. They exist so a hostile or corrupt document cannot make the
 /// verification pass unbounded. The manifest ceiling itself is shared by both
@@ -752,6 +763,42 @@ fn verify_patched_output(game_dir: &Path, manifest: &OptimumManifest) -> Result<
 
 // ── CLI runner ──────────────────────────────────────────────────────────────
 
+/// Makes the game's `Lib` visible to the API patcher's backup-based resolver.
+///
+/// Optimum 0.3.20 patches `VintagestoryAPI.dll` from `.optimum/vanilla`, then
+/// resolves its dependencies from that folder and `.optimum/vanilla/Lib` only
+/// (see [`API_PATCHER_LIB_ASSEMBLY`]). Copying the one assembly the patch
+/// resolves into that `Lib` is the workaround upstream documented in issue #140;
+/// it becomes a no-op once a fixed overlay searches the game folder itself.
+///
+/// A missing source file is not an error. The overlay may target a layout that
+/// does not ship `cairo-sharp`, and a patch that never resolves it still works.
+fn seed_api_patcher_lib(game_dir: &Path) -> Result<(), UiError> {
+    let source = game_dir.join("Lib").join(API_PATCHER_LIB_ASSEMBLY);
+    if !source.is_file() {
+        return Ok(());
+    }
+    let backup_lib = game_dir
+        .join(OPTIMUM_STATE_FOLDER)
+        .join("vanilla")
+        .join("Lib");
+    let destination = backup_lib.join(API_PATCHER_LIB_ASSEMBLY);
+    if destination.is_file() {
+        return Ok(());
+    }
+    fs::create_dir_all(&backup_lib).map_err(|error| {
+        UiError::io(format!(
+            "Failed to prepare the Optimum patch backup: {error}"
+        ))
+    })?;
+    fs::copy(&source, &destination).map_err(|error| {
+        UiError::io(format!(
+            "Failed to prepare the Optimum patch backup: {error}"
+        ))
+    })?;
+    Ok(())
+}
+
 /// The ten failure tokens the CLI itself can send.
 const WIRE_REASONS: [&str; 10] = [
     "bad-input",
@@ -782,6 +829,10 @@ enum CliResult {
 struct OptimumOutputReader {
     last_progress: u8,
     result: Option<CliResult>,
+    /// The CLI's own explanation for a failed run, kept for the log. The UI
+    /// still keys off the reason token, but the detail is what makes a support
+    /// report actionable (0.3.20's `patch-conflict` is an example).
+    failure_detail: Option<String>,
 }
 
 impl OptimumOutputReader {
@@ -814,6 +865,12 @@ impl OptimumOutputReader {
                             WIRE_REASONS.iter().find(|wire| **wire == reason).copied()
                         })
                         .unwrap_or("engine-internal");
+                    self.failure_detail = parsed
+                        .get("message")
+                        .and_then(Value::as_str)
+                        .map(str::trim)
+                        .filter(|message| !message.is_empty())
+                        .map(|message| message.chars().take(512).collect());
                     self.result = Some(CliResult::Failed(reason));
                 }
             }
@@ -984,7 +1041,7 @@ async fn run_optimum_cli(
                 }
             }
         }
-        reader.finish()
+        (reader.finish(), reader.failure_detail)
     });
 
     let stderr_task = tokio::spawn(async move {
@@ -1028,11 +1085,16 @@ async fn run_optimum_cli(
     }
 
     let _ = stderr_task.await;
-    let result = stdout_task.await.unwrap_or(None);
+    let (result, failure_detail) = stdout_task.await.unwrap_or((None, None));
 
     match read_run_outcome(exit_code, result, stop) {
         Ok(()) => Ok(()),
-        Err(reason) => Err(UiError::new("optimum_patch_failed", reason)),
+        Err(reason) => {
+            if let Some(detail) = failure_detail {
+                log_error!("[optimum] CLI failure detail: {detail}");
+            }
+            Err(UiError::new("optimum_patch_failed", reason))
+        }
     }
 }
 
@@ -1270,6 +1332,11 @@ pub async fn install_optimum(
         &PLATFORM,
     )?;
 
+    // Seed the backup the API patcher resolves from before the CLI runs; see
+    // `seed_api_patcher_lib`. Safe on every overlay, and required to get past
+    // 0.3.20's resolver bug.
+    seed_api_patcher_lib(&target_dir)?;
+
     emitter.emit("patch", 70, None);
     let args = vec![
         "patch".to_string(),
@@ -1431,6 +1498,74 @@ mod tests {
         let mut reader = OptimumOutputReader::default();
         reader.push_line("not json");
         assert_eq!(reader.finish(), None);
+    }
+
+    #[test]
+    fn ndjson_reader_keeps_the_cli_failure_detail() {
+        let mut reader = OptimumOutputReader::default();
+        reader.push_line(
+            r#"{"type":"result","ok":false,"reason":"patch-conflict","message":"failed to patch VintagestoryAPI.dll (exit 134): cairo-sharp"}"#,
+        );
+        assert_eq!(reader.finish(), Some(CliResult::Failed("patch-conflict")));
+        assert_eq!(
+            reader.failure_detail.as_deref(),
+            Some("failed to patch VintagestoryAPI.dll (exit 134): cairo-sharp")
+        );
+    }
+
+    #[test]
+    fn seeds_the_api_patcher_lib_from_the_game_folder() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::create_dir_all(dir.path().join("Lib")).unwrap();
+        fs::write(
+            dir.path().join("Lib").join(API_PATCHER_LIB_ASSEMBLY),
+            b"assembly",
+        )
+        .unwrap();
+
+        seed_api_patcher_lib(dir.path()).unwrap();
+        assert_eq!(
+            fs::read(
+                dir.path()
+                    .join(OPTIMUM_STATE_FOLDER)
+                    .join("vanilla")
+                    .join("Lib")
+                    .join(API_PATCHER_LIB_ASSEMBLY)
+            )
+            .unwrap(),
+            b"assembly"
+        );
+
+        // An existing copy is left alone: an update must not overwrite state
+        // the previous patch run already recorded.
+        fs::write(
+            dir.path()
+                .join(OPTIMUM_STATE_FOLDER)
+                .join("vanilla")
+                .join("Lib")
+                .join(API_PATCHER_LIB_ASSEMBLY),
+            b"seeded",
+        )
+        .unwrap();
+        seed_api_patcher_lib(dir.path()).unwrap();
+        assert_eq!(
+            fs::read(
+                dir.path()
+                    .join(OPTIMUM_STATE_FOLDER)
+                    .join("vanilla")
+                    .join("Lib")
+                    .join(API_PATCHER_LIB_ASSEMBLY)
+            )
+            .unwrap(),
+            b"seeded"
+        );
+    }
+
+    #[test]
+    fn seeding_is_a_noop_without_the_game_lib() {
+        let dir = tempfile::tempdir().unwrap();
+        seed_api_patcher_lib(dir.path()).unwrap();
+        assert!(!dir.path().join(OPTIMUM_STATE_FOLDER).exists());
     }
 
     #[test]
