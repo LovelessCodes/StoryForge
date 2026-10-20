@@ -3,7 +3,7 @@ use modules::{
     auth, backups, cairn, conflicts, download, game_data, game_defaults, gruntlauncher, importer,
     launch, launcher_logins, legacy, lithic, maps, mod_store, modpack_io, mods, mvl, news, optimum,
     packs, profile_ops, profiles, rustory, saves, screenshots, server_hosting, servers, sniffer,
-    versions, vs_launcher, vulkanstory, waxlight, yelloowstone,
+    utils, versions, vs_launcher, vulkanstory, waxlight, yelloowstone,
 };
 use tauri::RunEvent;
 
@@ -311,7 +311,7 @@ pub fn run() {
             // Log startup info
             let startup_start = std::time::Instant::now();
             if let Ok(data_dir) = app_handle.path().app_data_dir() {
-                log_info!("App started, data dir: {:?}", data_dir);
+                log_info!("App started, data dir: {}", utils::display_path(&data_dir));
             } else {
                 log_error!("FATAL: Failed to resolve app_data_dir");
                 panic!("Failed to resolve app_data_dir");
@@ -328,10 +328,17 @@ pub fn run() {
                 }
             };
             if let Err(e) = std::fs::create_dir_all(&store_path) {
-                log_error!("Failed to create store directory {:?}: {}", store_path, e);
+                log_error!(
+                    "Failed to create store directory {}: {}",
+                    utils::display_path(&store_path),
+                    e
+                );
                 panic!("Failed to create store directory: {}", e);
             }
-            log_info!("Setup step 1 done: store dir created at {:?}", store_path);
+            log_info!(
+                "Setup step 1 done: store dir created at {}",
+                utils::display_path(&store_path)
+            );
             modules::logger::log_elapsed("Setup step 1 elapsed", t1);
 
             // ── Step 2: Init zustand plugin ──

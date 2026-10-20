@@ -317,23 +317,23 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
     const dest = path ?? appFolder;
     const src = profilesParent ?? appFolder;
     if (config?.moveCurrentData) {
-      await logToFile(
-        "INFO ",
-        `[settings] move_profiles: ${src}/${profilesSubdir} -> ${dest}/${profilesSubdir}`,
-      );
+      await logToFile("INFO ", `[settings] move_profiles: subdir=${profilesSubdir}`);
       await invoke("move_profiles_folder", {
         destination: dest,
         source: src,
         subdir: profilesSubdir,
       });
     } else if (config?.deleteCurrentData) {
-      await logToFile("INFO ", `[settings] remove_all_profiles: ${src}/${profilesSubdir}`);
+      await logToFile("INFO ", `[settings] remove_all_profiles: subdir=${profilesSubdir}`);
       await invoke("remove_all_profiles", {
         source: src,
         subdir: profilesSubdir,
       });
     } else {
-      await logToFile("INFO ", `[settings] set_profiles_parent: ${dest}`);
+      await logToFile(
+        "INFO ",
+        `[settings] set_profiles_parent: parent=${path ? "custom" : "app-data"}`,
+      );
     }
     set(() => ({ profilesParent: path }));
   },
@@ -343,23 +343,23 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
     const dest = path ?? appFolder;
     const src = versionsParent ?? appFolder;
     if (config?.moveCurrentData) {
-      await logToFile(
-        "INFO ",
-        `[settings] move_versions: ${src}/${versionsSubdir} -> ${dest}/${versionsSubdir}`,
-      );
+      await logToFile("INFO ", `[settings] move_versions: subdir=${versionsSubdir}`);
       await invoke("move_versions_folder", {
         destination: dest,
         source: src,
         subdir: versionsSubdir,
       });
     } else if (config?.deleteCurrentData) {
-      await logToFile("INFO ", `[settings] remove_all_versions: ${src}/${versionsSubdir}`);
+      await logToFile("INFO ", `[settings] remove_all_versions: subdir=${versionsSubdir}`);
       await invoke("remove_all_versions", {
         source: src,
         subdir: versionsSubdir,
       });
     } else {
-      await logToFile("INFO ", `[settings] set_versions_parent: ${dest}`);
+      await logToFile(
+        "INFO ",
+        `[settings] set_versions_parent: parent=${path ? "custom" : "app-data"}`,
+      );
     }
     set(() => ({ versionsParent: path }));
   },

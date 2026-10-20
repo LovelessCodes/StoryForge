@@ -26,12 +26,12 @@ use super::profiles::{
     find_profile_by_id, mark_profile_running, profile_id_for_dir, read_profile_json,
     write_profile_json, ProfileInfo,
 };
-use super::utils::{parse_start_params, require_managed_path};
+use super::utils::{display_path, parse_start_params, require_managed_path};
 use crate::{log_debug, log_error, log_info};
 
 #[command]
 pub async fn initialize_game(app: AppHandle, path: String) -> Result<String, UiError> {
-    log_info!("initialize_game: {:?}", path);
+    log_info!("initialize_game: {}", display_path(Path::new(&path)));
     require_managed_path(&app, Path::new(&path), "Profile path")?;
     let pb = mods_dir(PathBuf::from(&path));
     if !pb.exists() {
@@ -65,7 +65,10 @@ fn load_selected_account(app: &AppHandle) -> Option<SavedAccount> {
     use tauri::Manager;
     let data_dir = app.path().app_data_dir().ok()?;
     let path = data_dir.join("accounts.json");
-    log_debug!("[play_game] load_selected_account: looking for {:?}", path);
+    log_debug!(
+        "[play_game] load_selected_account: looking for {}",
+        display_path(&path)
+    );
     if !path.exists() {
         log_info!(
             "[play_game] load_selected_account: accounts.json not found — no account selected"
@@ -314,7 +317,7 @@ pub async fn play_game(
         message: "Invalid play game parameters.".into(),
     })?;
     let (pb, profile) = find_profile_by_id(&app, options.profile_id)?;
-    log_info!("[play_game] profile dir: {:?}", pb);
+    log_info!("[play_game] profile dir: {}", display_path(&pb));
     log_info!(
         "[play_game] profile info: name={}, version={}, startParams={}",
         profile.name,
@@ -419,10 +422,10 @@ async fn resolve_launch_context(
         options.use_system_dotnet,
     )
     .await?;
-    log_info!("[play_game] DOTNET_ROOT={:?}", dotnet_root);
+    log_info!("[play_game] DOTNET_ROOT={}", display_path(&dotnet_root));
 
     let version_path = super::versions::resolve_version_dir(app, &profile.version)?;
-    log_info!("[play_game] version_path: {:?}", version_path);
+    log_info!("[play_game] version_path: {}", display_path(&version_path));
     if !version_path.exists() || !version_path.is_dir() {
         return Err(UiError::not_found(format!(
             "Version directory not found: {}",
@@ -431,7 +434,7 @@ async fn resolve_launch_context(
     }
 
     let combined_path = find_game_executable(&version_path).await?;
-    log_info!("[play_game] using exe: {:?}", combined_path);
+    log_info!("[play_game] using exe: {}", display_path(&combined_path));
 
     #[cfg(target_os = "macos")]
     let app_bundle = macos::resolve_app_bundle(&version_path, &combined_path).await?;
@@ -552,7 +555,10 @@ fn write_clientsettings(
     apply_game_defaults: bool,
 ) -> Result<(), UiError> {
     let settings_path = clientsettings_path(pb);
-    log_info!("[play_game] clientsettings.json path: {:?}", settings_path);
+    log_info!(
+        "[play_game] clientsettings.json path: {}",
+        display_path(&settings_path)
+    );
 
     let mut settings_json: Value = if settings_path.exists() {
         log_info!("[play_game] reading existing clientsettings.json");

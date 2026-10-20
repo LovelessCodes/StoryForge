@@ -12,7 +12,9 @@ use tokio::process::Command;
 use super::dotnet;
 use super::errors::UiError;
 use super::paths;
-use super::utils::{dir_size, format_size, lock, normalize_path, profiles_folder, versions_folder};
+use super::utils::{
+    dir_size, display_path, format_size, lock, normalize_path, profiles_folder, versions_folder,
+};
 use crate::modules::server_hosting_actor;
 use crate::{log_error, log_info};
 
@@ -765,7 +767,10 @@ pub async fn create_hosted_server(
         true,
     )
     .await?;
-    log_info!("create_hosted_server: DOTNET_ROOT={dotnet_root:?}");
+    log_info!(
+        "create_hosted_server: DOTNET_ROOT={}",
+        display_path(&dotnet_root)
+    );
 
     log_info!("create_hosted_server: running --setconfig: exe={:?} dataPath={data_dir_str} arg={setconfig_arg}", exe_path);
 

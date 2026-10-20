@@ -15,7 +15,9 @@ use super::errors::UiError;
 use super::mod_store::{self, BlobMeta, ModStore};
 use super::paths;
 use super::profiles::find_profile_by_id;
-use super::utils::{hex_lower, lock, require_managed_path, safe_file_name, safe_join};
+use super::utils::{
+    display_path, hex_lower, lock, require_managed_path, safe_file_name, safe_join,
+};
 use crate::{log_error, log_info};
 
 #[derive(Debug, Clone, Deserialize)]
@@ -436,7 +438,7 @@ pub async fn download_mod_file(
         write_bytes_atomic(&destination, &content)?;
     }
 
-    log_info!("download_mod_file: saved to {:?}", destination);
+    log_info!("download_mod_file: saved to {}", display_path(&destination));
     invalidate_mods_cache(mods_dir);
     Ok(filename)
 }
@@ -570,7 +572,10 @@ pub async fn download_manifest_mod_file(
         write_bytes_atomic(&destination, &content)?;
     }
 
-    log_info!("download_manifest_mod_file: saved to {:?}", destination);
+    log_info!(
+        "download_manifest_mod_file: saved to {}",
+        display_path(&destination)
+    );
     invalidate_mods_cache(mods_dir);
     Ok(filename)
 }
@@ -1644,7 +1649,11 @@ pub async fn install_mod_file(
     path: String,
     file: String,
 ) -> Result<ModFileInfo, UiError> {
-    log_info!("install_mod_file: {} -> {}", file, path);
+    log_info!(
+        "install_mod_file: {} -> {}",
+        display_path(Path::new(&file)),
+        display_path(Path::new(&path))
+    );
     require_managed_path(&app, Path::new(&path), "Profile path")?;
     let store = mod_store::for_app_best_effort(&app);
     tokio::task::spawn_blocking(move || {
@@ -1662,7 +1671,11 @@ pub async fn install_mod_url(
     path: String,
     url: String,
 ) -> Result<ModFileInfo, UiError> {
-    log_info!("install_mod_url: {} -> {}", url, path);
+    log_info!(
+        "install_mod_url: {} -> {}",
+        url,
+        display_path(Path::new(&path))
+    );
     require_managed_path(&app, Path::new(&path), "Profile path")?;
     validate_mod_url(&url)?;
     let store = mod_store::for_app_best_effort(&app);
@@ -1712,7 +1725,7 @@ pub async fn set_mod_enabled(
 
 #[command]
 pub async fn get_mods(app: AppHandle, path: String) -> Result<ModsResult, UiError> {
-    log_info!("get_mods: {}", path);
+    log_info!("get_mods: {}", display_path(Path::new(&path)));
     require_managed_path(&app, Path::new(&path), "Profile path")?;
     let profile_dir = PathBuf::from(&path);
     let mods_dir = profile_dir.join(paths::MODS_DIR);
@@ -1859,7 +1872,10 @@ pub async fn remove_mod_from_profile(
     app: AppHandle,
     params: ModRemoveParams,
 ) -> Result<String, UiError> {
-    log_info!("remove_mod_from_profile: {:?}", params.modpath);
+    log_info!(
+        "remove_mod_from_profile: {}",
+        display_path(Path::new(&params.modpath))
+    );
     require_managed_path(&app, Path::new(&params.path), "Profile path")?;
     let mods_path = PathBuf::from(&params.path).join(paths::MODS_DIR);
     if !mods_path.exists() || !mods_path.is_dir() {

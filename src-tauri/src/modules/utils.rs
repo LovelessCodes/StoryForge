@@ -598,7 +598,10 @@ impl CleanupTarget {
 impl Drop for CleanupTarget {
     fn drop(&mut self) {
         if let Some(path) = self.path.take() {
-            log_info!("[cleanup] removing failed install at {}", path.display());
+            log_info!(
+                "[cleanup] removing failed install at {}",
+                display_path(&path)
+            );
             let _ = remove_dir_all(&path);
         }
     }

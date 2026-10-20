@@ -27,7 +27,7 @@ use tauri::{command, AppHandle};
 use zip::ZipArchive;
 
 use super::errors::UiError;
-use super::utils::require_managed_path;
+use super::utils::{display_path, require_managed_path};
 use super::{mods, paths};
 use crate::log_info;
 
@@ -273,7 +273,7 @@ pub(crate) fn scan_conflicts(profile_dir: &Path) -> Result<ConflictReport, UiErr
 /// Reports overlapping content between a profile's installed mods.
 #[command]
 pub async fn scan_mod_conflicts(app: AppHandle, path: String) -> Result<ConflictReport, UiError> {
-    log_info!("scan_mod_conflicts: {}", path);
+    log_info!("scan_mod_conflicts: {}", display_path(Path::new(&path)));
     require_managed_path(&app, Path::new(&path), "Profile path")?;
     tokio::task::spawn_blocking(move || scan_conflicts(Path::new(&path)))
         .await
