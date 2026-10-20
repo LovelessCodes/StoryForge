@@ -107,5 +107,26 @@
     "copied": "Registros copiados al portapapeles",
     "copyFailed": "No se pudieron copiar los registros",
     "empty": "Aún no hay registros..."
+  },
+  "modStore": {
+    "title": "Almacenamiento compartido de mods",
+    "description": "Guarda una sola copia de cada zip de mod y la enlaza en todos los perfiles que lo usan. Ahorra espacio y acelera las copias de perfiles.",
+    "enabled": "Compartir archivos de mods entre perfiles",
+    "enabledDescription": "Las nuevas instalaciones de mods se enlazan desde un almacén central. Desactívalo para mantener copias independientes.",
+    "location": "Ubicación del almacén",
+    "stats": "{{count}} mod(s) almacenados · {{size}}",
+    "statsFailed": "No se pudo leer el almacén: {{message}}",
+    "optimize": "Optimizar perfiles existentes",
+    "prune": "Liberar espacio no usado",
+    "optimizeHint": "Optimizar enlaza los mods instalados antes de esta función o copiados desde una copia de seguridad. Omite los perfiles en otra unidad.",
+    "optimizing": "Enlazando mods existentes…",
+    "optimizeDone": "{{linked}} mod(s) enlazados, liberando {{size}}.",
+    "optimizePartial": "No se pudieron enlazar {{failed}} mod(s).",
+    "optimizeFailed": "No se pudo optimizar el almacenamiento de mods: {{message}}",
+    "pruning": "Eliminando mods no usados del almacén…",
+    "pruneDone": "Se eliminaron {{count}} mod(s) no usados, liberando {{size}}.",
+    "pruneFailed": "No se pudo liberar espacio: {{message}}",
+    "openFailed": "No se pudo abrir la carpeta del almacén: {{message}}",
+    "disabledHint": "El almacenamiento compartido de mods está desactivado. Actívalo primero."
   }
 }

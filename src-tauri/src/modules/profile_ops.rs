@@ -22,7 +22,6 @@ use std::io::{Read, Write};
 use tauri::{command, AppHandle};
 
 use super::errors::UiError;
-use super::mods;
 use super::packs;
 use super::paths::mods_dir;
 use super::profiles::{
@@ -32,6 +31,7 @@ use super::utils::{
     dir_name, dir_size_cached, format_size, generate_id, profiles_folder, profiles_subdir,
     require_managed_path, safe_file_name,
 };
+use super::{mod_store, mods};
 use crate::{log_error, log_info};
 
 /// Hidden folder (inside the profiles root) that holds soft-deleted profiles.
@@ -257,6 +257,26 @@ fn clone_profile_blocking(
 
     info.name = new_name.to_string();
     write_profile_json(&target_dir, &info)?;
+
+    // The copy duplicated every mod byte. Re-link the clone into the shared
+    // store so it shares inodes with the source profile. Failure is not fatal:
+    // the clone is already complete and correct, just not deduplicated.
+    if let Ok(Some(store)) = mod_store::for_app(app) {
+        match mod_store::optimize_profile(&store, &target_dir) {
+            Ok(report) => log_info!(
+                "clone_profile: linked {} mod(s), already linked {}, copied {}, reclaimed {}",
+                report.linked,
+                report.already_linked,
+                report.copied,
+                format_size(report.reclaimed_bytes)
+            ),
+            Err(error) => log_error!(
+                "clone_profile: could not deduplicate the clone: {}",
+                error.message
+            ),
+        }
+    }
+
     profile_result_from_dir(&target_dir)
 }
 

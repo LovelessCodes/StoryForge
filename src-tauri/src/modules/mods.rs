@@ -12,6 +12,7 @@ use tauri::{command, AppHandle, State};
 use zip::read::ZipArchive;
 
 use super::errors::UiError;
+use super::mod_store::{self, BlobMeta, ModStore};
 use super::paths;
 use super::profiles::find_profile_by_id;
 use super::utils::{lock, require_managed_path, safe_file_name, safe_join};
@@ -196,6 +197,65 @@ pub async fn fetch_mod_info(
     Ok(json)
 }
 
+/// Writes bytes next to `destination` and renames them into place. Renaming
+/// replaces an existing hardlink instead of truncating the shared inode.
+fn write_bytes_atomic(destination: &Path, bytes: &[u8]) -> Result<(), UiError> {
+    let parent = destination
+        .parent()
+        .ok_or_else(|| UiError::new("invalid_path", "Mod destination has no parent directory"))?;
+    if !parent.is_dir() {
+        return Err(UiError::not_found(format!(
+            "Mod destination directory {} no longer exists",
+            parent.display()
+        )));
+    }
+    let temp = parent.join(format!(".storyforge-{}.tmp", uuid::Uuid::new_v4()));
+    if let Err(error) = std::fs::write(&temp, bytes) {
+        let _ = std::fs::remove_file(&temp);
+        return Err(UiError::io(format!(
+            "Failed to write {}: {error}",
+            destination.display()
+        )));
+    }
+    if let Err(error) = std::fs::rename(&temp, destination) {
+        let _ = std::fs::remove_file(&temp);
+        return Err(UiError::io(format!(
+            "Failed to put {} in place: {error}",
+            destination.display()
+        )));
+    }
+    Ok(())
+}
+
+fn copy_file_atomic(source: &Path, destination: &Path) -> Result<(), UiError> {
+    let parent = destination
+        .parent()
+        .ok_or_else(|| UiError::new("invalid_path", "Mod destination has no parent directory"))?;
+    if !parent.is_dir() {
+        return Err(UiError::not_found(format!(
+            "Mod destination directory {} no longer exists",
+            parent.display()
+        )));
+    }
+    let temp = parent.join(format!(".storyforge-{}.tmp", uuid::Uuid::new_v4()));
+    if let Err(error) = std::fs::copy(source, &temp) {
+        let _ = std::fs::remove_file(&temp);
+        return Err(UiError::io(format!(
+            "Failed to copy {} to {}: {error}",
+            source.display(),
+            destination.display()
+        )));
+    }
+    if let Err(error) = std::fs::rename(&temp, destination) {
+        let _ = std::fs::remove_file(&temp);
+        return Err(UiError::io(format!(
+            "Failed to put {} in place: {error}",
+            destination.display()
+        )));
+    }
+    Ok(())
+}
+
 /// Download a mod by modid + version into a Mods directory.
 /// Returns the saved filename.
 pub async fn download_mod_file(
@@ -203,6 +263,8 @@ pub async fn download_mod_file(
     modid: &str,
     version: &str,
     mods_dir: &Path,
+    store: Option<&ModStore>,
+    expected_sha256: Option<&str>,
 ) -> Result<String, UiError> {
     log_info!(
         "download_mod_file: modid={} version={} dir={:?}",
@@ -210,6 +272,60 @@ pub async fn download_mod_file(
         version,
         mods_dir
     );
+
+    if !mods_dir.exists() {
+        create_dir_all(mods_dir).map_err(|e| UiError {
+            name: "create_dir_failed".into(),
+            message: format!("Failed to create Mods directory: {e}"),
+        })?;
+    }
+    let store = store.filter(|store| store.is_usable_for(mods_dir));
+
+    // A lock knows the exact bytes: prefer that blob even if another re-upload
+    // of the same version is also in the store.
+    if let (Some(store), Some(expected)) = (store, expected_sha256) {
+        if let Some(blob) = store.blob_for_hash(expected) {
+            let _guard = mod_store::lock_mod_mutations();
+            let destination = mods_dir.join(&blob.filename);
+            if store.link_to(&blob.hash, &destination).is_ok() {
+                let meta = BlobMeta {
+                    modid: Some(modid.to_string()),
+                    version: Some(version.to_string()),
+                };
+                store.record_meta(&blob.hash, &meta);
+                log_info!(
+                    "download_mod_file: served {}@{} from the locked store blob",
+                    modid,
+                    version
+                );
+                invalidate_mods_cache(mods_dir);
+                return Ok(blob.filename);
+            }
+        }
+    }
+
+    // A stored blob can answer this without the network. The profile still gets
+    // its own normal-looking filename through a hardlink.
+    if let Some(store) = store {
+        if let Some(blob) = store.find_by_mod(modid, version) {
+            let hash_matches = expected_sha256
+                .map(|expected| blob.hash.eq_ignore_ascii_case(expected))
+                .unwrap_or(true);
+            if hash_matches {
+                let _guard = mod_store::lock_mod_mutations();
+                let destination = mods_dir.join(&blob.filename);
+                if store.link_to(&blob.hash, &destination).is_ok() {
+                    log_info!(
+                        "download_mod_file: served {}@{} from the shared store",
+                        modid,
+                        version
+                    );
+                    invalidate_mods_cache(mods_dir);
+                    return Ok(blob.filename);
+                }
+            }
+        }
+    }
 
     // 1. Fetch mod info to get the download URL for the given version
     let url = format!("https://mods.vintagestory.at/api/mod/{}", modid);
@@ -245,15 +361,7 @@ pub async fn download_mod_file(
     let download_url = &release.mainfile;
     log_info!("download_mod_file: download_url={}", download_url);
 
-    // 3. Ensure Mods directory exists
-    if !mods_dir.exists() {
-        create_dir_all(mods_dir).map_err(|e| UiError {
-            name: "create_dir_failed".into(),
-            message: format!("Failed to create Mods directory: {e}"),
-        })?;
-    }
-
-    // 4. Download the mod file
+    // 3. Download the mod file
     let response = client
         .get(download_url)
         .send()
@@ -284,23 +392,51 @@ pub async fn download_mod_file(
     // so it cannot escape the Mods directory.
     let filename = safe_file_name(&filename)?;
 
-    let filepath = mods_dir.join(&filename);
     let content = response.bytes().await.map_err(|e| UiError {
         name: "read_response_failed".into(),
         message: format!("Failed to read response: {e}"),
     })?;
 
-    let mut file = File::create(&filepath).map_err(|e| UiError {
-        name: "create_file_failed".into(),
-        message: format!("Failed to create file: {e}"),
-    })?;
+    if let Some(expected) = expected_sha256 {
+        let actual = sha256_hex(&content);
+        if !actual.eq_ignore_ascii_case(expected) {
+            return Err(UiError {
+                name: "hash_mismatch".into(),
+                message: format!(
+                    "sha256 mismatch for {modid}@{version}: expected {expected}, got {actual}"
+                ),
+            });
+        }
+    }
 
-    file.write_all(&content).map_err(|e| UiError {
-        name: "write_file_failed".into(),
-        message: format!("Failed to write file: {e}"),
-    })?;
+    let destination = mods_dir.join(&filename);
+    let _guard = mod_store::lock_mod_mutations();
+    let mut saved_via_store = false;
+    if let Some(store) = store {
+        let meta = BlobMeta {
+            modid: Some(modid.to_string()),
+            version: Some(version.to_string()),
+        };
+        match store.ingest_bytes(&content, &filename, &meta) {
+            Ok(ingested) => match store.link_to(&ingested.blob.hash, &destination) {
+                Ok(_) => saved_via_store = true,
+                Err(error) => log_error!(
+                    "download_mod_file: store link failed, writing directly: {}",
+                    error.message
+                ),
+            },
+            Err(error) => log_error!(
+                "download_mod_file: store ingest failed, writing directly: {}",
+                error.message
+            ),
+        }
+    }
 
-    log_info!("download_mod_file: saved to {:?}", filepath);
+    if !saved_via_store {
+        write_bytes_atomic(&destination, &content)?;
+    }
+
+    log_info!("download_mod_file: saved to {:?}", destination);
     invalidate_mods_cache(mods_dir);
     Ok(filename)
 }
@@ -311,21 +447,60 @@ pub fn sha256_hex(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
 
+/// Optional verification and shared-store inputs for a manifest download.
+#[derive(Default)]
+pub struct ManifestModOptions<'a> {
+    pub expected_sha256: Option<&'a str>,
+    pub expected_size: Option<u64>,
+    pub store: Option<&'a ModStore>,
+    pub meta: Option<&'a BlobMeta>,
+}
+
 /// Downloads a mod from an explicit manifest URL, verifying size and sha256
 /// when the manifest provides them. Returns the stored filename.
 pub async fn download_manifest_mod_file(
     client: &reqwest::Client,
     url: &str,
     filename: &str,
-    expected_sha256: Option<&str>,
-    expected_size: Option<u64>,
     mods_dir: &Path,
+    options: ManifestModOptions<'_>,
 ) -> Result<String, UiError> {
+    let ManifestModOptions {
+        expected_sha256,
+        expected_size,
+        store,
+        meta,
+    } = options;
     if !mods_dir.exists() {
         create_dir_all(mods_dir).map_err(|e| UiError {
             name: "create_dir_failed".into(),
             message: format!("Failed to create Mods directory: {e}"),
         })?;
+    }
+
+    // The name comes from the manifest; reduce it to a single component so it
+    // cannot escape the Mods directory.
+    let filename = safe_file_name(filename)?;
+    let store = store.filter(|store| store.is_usable_for(mods_dir));
+
+    // A pack lock already carries the content hash: if the blob is present the
+    // profile can be synced offline.
+    if let (Some(store), Some(expected)) = (store, expected_sha256) {
+        if let Some(blob) = store.blob_for_hash(expected) {
+            let _guard = mod_store::lock_mod_mutations();
+            let destination = mods_dir.join(&filename);
+            if store.link_to(&blob.hash, &destination).is_ok() {
+                if let Some(meta) = meta {
+                    store.record_meta(&blob.hash, meta);
+                }
+                log_info!(
+                    "download_manifest_mod_file: served {} from the shared store",
+                    filename
+                );
+                invalidate_mods_cache(mods_dir);
+                return Ok(filename);
+            }
+        }
     }
 
     let response = client
@@ -370,21 +545,32 @@ pub async fn download_manifest_mod_file(
         }
     }
 
-    // The name comes from the manifest; reduce it to a single component so it
-    // cannot escape the Mods directory.
-    let filename = safe_file_name(filename)?;
-    let filepath = mods_dir.join(&filename);
+    let destination = mods_dir.join(&filename);
 
-    let mut file = File::create(&filepath).map_err(|e| UiError {
-        name: "create_file_failed".into(),
-        message: format!("Failed to create file: {e}"),
-    })?;
-    file.write_all(&content).map_err(|e| UiError {
-        name: "write_file_failed".into(),
-        message: format!("Failed to write file: {e}"),
-    })?;
+    let _guard = mod_store::lock_mod_mutations();
+    let mut saved_via_store = false;
+    if let Some(store) = store {
+        let meta = meta.cloned().unwrap_or_default();
+        match store.ingest_bytes(&content, &filename, &meta) {
+            Ok(ingested) => match store.link_to(&ingested.blob.hash, &destination) {
+                Ok(_) => saved_via_store = true,
+                Err(error) => log_error!(
+                    "download_manifest_mod_file: store link failed, writing directly: {}",
+                    error.message
+                ),
+            },
+            Err(error) => log_error!(
+                "download_manifest_mod_file: store ingest failed, writing directly: {}",
+                error.message
+            ),
+        }
+    }
 
-    log_info!("download_manifest_mod_file: saved to {:?}", filepath);
+    if !saved_via_store {
+        write_bytes_atomic(&destination, &content)?;
+    }
+
+    log_info!("download_manifest_mod_file: saved to {:?}", destination);
     invalidate_mods_cache(mods_dir);
     Ok(filename)
 }
@@ -943,11 +1129,13 @@ pub(crate) fn inspect_mod_zip(zip_path: &Path) -> Result<ModFileInfo, UiError> {
 
 /// Copies a local mod zip into a profile's `Mods` directory.
 ///
-/// The zip must carry a `modinfo.json`; a file picked from the Mods directory
-/// itself is accepted as-is rather than copied onto itself.
+/// The zip must carry a `modinfo.json`. When the shared store is available the
+/// bytes are linked instead of copied, so installing the same mod into several
+/// profiles costs one copy on disk.
 pub(crate) fn install_mod_file_at(
     profile_dir: &Path,
     source: &Path,
+    store: Option<&ModStore>,
 ) -> Result<ModFileInfo, UiError> {
     if !source.is_file() {
         return Err(UiError::not_found(format!(
@@ -966,22 +1154,31 @@ pub(crate) fn install_mod_file_at(
             .ok_or_else(|| UiError::new("invalid_filename", "The file has no usable name"))?,
     )?;
     let destination = mods_dir.join(&filename);
-    let same_file = match (
-        dunce::canonicalize(source),
-        dunce::canonicalize(&destination),
-    ) {
-        (Ok(a), Ok(b)) => a == b,
-        _ => source == destination,
-    };
-    if !same_file {
-        std::fs::copy(source, &destination).map_err(|e| {
-            UiError::io(format!(
-                "Failed to copy {} to {}: {e}",
-                source.display(),
-                destination.display()
-            ))
-        })?;
+    let _guard = mod_store::lock_mod_mutations();
+
+    if let Some(store) = store.filter(|store| store.is_usable_for(&mods_dir)) {
+        let meta = BlobMeta {
+            modid: Some(info.modid.clone()),
+            version: Some(info.version.clone()),
+        };
+        match store.ingest_file(source, &filename, &meta) {
+            Ok(ingested) => {
+                if store.link_to(&ingested.blob.hash, &destination).is_ok() {
+                    invalidate_mods_cache(&mods_dir);
+                    info.filename = filename;
+                    return Ok(info);
+                }
+            }
+            Err(error) => log_error!(
+                "install_mod_file_at: store ingest failed, copying directly: {}",
+                error.message
+            ),
+        }
     }
+
+    // Atomic replace: never truncate an existing hardlink if the store is off
+    // but the profile still contains linked files from an earlier run.
+    copy_file_atomic(source, &destination)?;
     invalidate_mods_cache(&mods_dir);
     info.filename = filename;
     Ok(info)
@@ -1007,6 +1204,7 @@ pub(crate) async fn install_mod_url_at(
     client: &reqwest::Client,
     profile_dir: &Path,
     url: &str,
+    store: Option<&ModStore>,
 ) -> Result<ModFileInfo, UiError> {
     let trimmed = url.split(['?', '#']).next().unwrap_or(url);
     let filename = trimmed
@@ -1016,10 +1214,27 @@ pub(crate) async fn install_mod_url_at(
         .unwrap_or("mod.zip");
     let filename = safe_file_name(filename)?;
     let mods_dir = paths::mods_dir(profile_dir);
-    let stored = download_manifest_mod_file(client, url, &filename, None, None, &mods_dir).await?;
+    let stored = download_manifest_mod_file(
+        client,
+        url,
+        &filename,
+        &mods_dir,
+        ManifestModOptions {
+            store,
+            ..Default::default()
+        },
+    )
+    .await?;
     let path = mods_dir.join(&stored);
     match inspect_mod_zip(&path) {
         Ok(mut info) => {
+            if let Some(store) = store {
+                let meta = BlobMeta {
+                    modid: Some(info.modid.clone()),
+                    version: Some(info.version.clone()),
+                };
+                store.record_meta_for_file(&path, &meta);
+            }
             info.filename = stored;
             Ok(info)
         }
@@ -1397,9 +1612,12 @@ pub async fn install_mod_file(
 ) -> Result<ModFileInfo, UiError> {
     log_info!("install_mod_file: {} -> {}", file, path);
     require_managed_path(&app, Path::new(&path), "Profile path")?;
-    tokio::task::spawn_blocking(move || install_mod_file_at(Path::new(&path), Path::new(&file)))
-        .await
-        .map_err(|e| UiError::new("internal_error", format!("Install failed: {e}")))?
+    let store = mod_store::for_app_best_effort(&app);
+    tokio::task::spawn_blocking(move || {
+        install_mod_file_at(Path::new(&path), Path::new(&file), store.as_ref())
+    })
+    .await
+    .map_err(|e| UiError::new("internal_error", format!("Install failed: {e}")))?
 }
 
 /// Installs a mod zip from a direct URL into a profile.
@@ -1413,7 +1631,8 @@ pub async fn install_mod_url(
     log_info!("install_mod_url: {} -> {}", url, path);
     require_managed_path(&app, Path::new(&path), "Profile path")?;
     validate_mod_url(&url)?;
-    install_mod_url_at(&client, Path::new(&path), &url).await
+    let store = mod_store::for_app_best_effort(&app);
+    install_mod_url_at(&client, Path::new(&path), &url, store.as_ref()).await
 }
 
 #[derive(Debug, Deserialize)]
@@ -1632,6 +1851,7 @@ pub async fn remove_mod_from_profile(
             ),
         });
     }
+    let _guard = mod_store::lock_mod_mutations();
     remove_file(&mod_file).map_err(|e| UiError {
         name: "remove_failed".into(),
         message: format!("Failed to remove mod file: {e}"),
@@ -1740,7 +1960,7 @@ mod tests {
         let source = tmp.path().join("carryon_1.13.0.zip");
         write_test_mod_zip(&source, "carryon", "1.13.0", "Carry On");
 
-        let info = install_mod_file_at(&profile, &source).unwrap();
+        let info = install_mod_file_at(&profile, &source, None).unwrap();
         assert_eq!(info.modid, "carryon");
         assert_eq!(info.version, "1.13.0");
         assert_eq!(info.name, "Carry On");
@@ -1756,6 +1976,30 @@ mod tests {
     }
 
     #[test]
+    fn installing_into_two_profiles_shares_one_store_blob() {
+        let tmp = tempfile::tempdir().unwrap();
+        let store = ModStore::new(tmp.path().join("store"));
+        let profile_a = tmp.path().join("profile-a");
+        let profile_b = tmp.path().join("profile-b");
+        std::fs::create_dir_all(&profile_a).unwrap();
+        std::fs::create_dir_all(&profile_b).unwrap();
+        let source = tmp.path().join("carryon_1.13.0.zip");
+        write_test_mod_zip(&source, "carryon", "1.13.0", "Carry On");
+
+        let first = install_mod_file_at(&profile_a, &source, Some(&store)).unwrap();
+        let second = install_mod_file_at(&profile_b, &source, Some(&store)).unwrap();
+        assert_eq!(first.filename, "carryon_1.13.0.zip");
+        assert_eq!(second.filename, "carryon_1.13.0.zip");
+
+        let blob = store.find_by_mod("carryon", "1.13.0").unwrap();
+        let linked_a = paths::mods_dir(&profile_a).join(&first.filename);
+        let linked_b = paths::mods_dir(&profile_b).join(&second.filename);
+        assert!(same_file::is_same_file(Path::new(&blob.path), &linked_a).unwrap());
+        assert!(same_file::is_same_file(Path::new(&blob.path), &linked_b).unwrap());
+        assert_eq!(store.stats().unwrap().blob_count, 1);
+    }
+
+    #[test]
     fn install_accepts_a_zip_already_in_the_mods_directory() {
         let tmp = tempfile::tempdir().unwrap();
         let profile = tmp.path().join("profile");
@@ -1764,7 +2008,7 @@ mod tests {
         let existing = mods_dir.join("mod_a.zip");
         write_test_mod_zip(&existing, "a", "1.0.0", "A");
 
-        let info = install_mod_file_at(&profile, &existing).unwrap();
+        let info = install_mod_file_at(&profile, &existing, None).unwrap();
         assert_eq!(info.modid, "a");
         assert!(existing.is_file());
         let scanned = get_mods_in_dir(&mods_dir).unwrap();
@@ -1785,7 +2029,7 @@ mod tests {
         writer.write_all(b"nope").unwrap();
         writer.finish().unwrap();
 
-        let error = install_mod_file_at(&profile, &bad).unwrap_err();
+        let error = install_mod_file_at(&profile, &bad, None).unwrap_err();
         assert_eq!(error.name, "invalid_mod");
         assert!(!paths::mods_dir(&profile).join("bad.zip").exists());
     }

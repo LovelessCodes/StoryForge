@@ -107,5 +107,26 @@
     "copied": "Journaux copiés dans le presse-papiers",
     "copyFailed": "Échec de la copie des journaux",
     "empty": "Aucun journal pour l'instant..."
+  },
+  "modStore": {
+    "title": "Stockage partagé des mods",
+    "description": "Conserve une seule copie de chaque zip de mod et la lie à chaque profil qui l'utilise. Économise de l'espace et accélère la copie des profils.",
+    "enabled": "Partager les fichiers de mods entre profils",
+    "enabledDescription": "Les nouvelles installations de mods sont liées depuis un stockage central. Désactivez pour conserver des copies indépendantes.",
+    "location": "Emplacement du stockage",
+    "stats": "{{count}} mod(s) stocké(s) · {{size}}",
+    "statsFailed": "Impossible de lire le stockage : {{message}}",
+    "optimize": "Optimiser les profils existants",
+    "prune": "Libérer l'espace inutilisé",
+    "optimizeHint": "L'optimisation lie les mods installés avant cette fonction ou copiés depuis une sauvegarde. Les profils sur un autre disque sont ignorés.",
+    "optimizing": "Liaison des mods existants…",
+    "optimizeDone": "{{linked}} mod(s) lié(s), {{size}} récupérés.",
+    "optimizePartial": "{{failed}} mod(s) n'ont pas pu être liés.",
+    "optimizeFailed": "Impossible d'optimiser le stockage des mods : {{message}}",
+    "pruning": "Suppression des mods inutilisés du stockage…",
+    "pruneDone": "{{count}} mod(s) inutilisé(s) supprimé(s), {{size}} libérés.",
+    "pruneFailed": "Impossible de libérer de l'espace : {{message}}",
+    "openFailed": "Impossible d'ouvrir le dossier du stockage : {{message}}",
+    "disabledHint": "Le stockage partagé des mods est désactivé. Activez-le d'abord."
   }
 }

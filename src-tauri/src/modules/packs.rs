@@ -28,7 +28,7 @@ use sha2::{Digest, Sha256};
 use tauri::{command, AppHandle, Emitter, State};
 
 use super::errors::UiError;
-use super::{mods, paths, profiles};
+use super::{mod_store, mods, paths, profiles};
 use crate::{log_error, log_info};
 
 /// File name of the lock inside a profile folder.
@@ -413,6 +413,7 @@ pub(crate) async fn sync_locked_profile(
         .collect();
     let total = pending.len();
     let mods_dir = paths::mods_dir(dir);
+    let store = mod_store::for_app_best_effort(app);
     let mut report = SyncReport {
         applied: Vec::new(),
         removed: Vec::new(),
@@ -433,7 +434,16 @@ pub(crate) async fn sync_locked_profile(
             );
         }
 
-        match mods::download_mod_file(client, &entry.modid, &entry.version, &mods_dir).await {
+        match mods::download_mod_file(
+            client,
+            &entry.modid,
+            &entry.version,
+            &mods_dir,
+            store.as_ref(),
+            Some(&entry.sha256),
+        )
+        .await
+        {
             Ok(filename) => {
                 let downloaded = mods_dir.join(&filename);
                 let digest = sha256_file(&downloaded)?;
@@ -454,6 +464,7 @@ pub(crate) async fn sync_locked_profile(
                 // The repaired mod supersedes the file that was there before.
                 if let Some(previous) = &entry.installed_filename {
                     if previous != &filename {
+                        let _guard = mod_store::lock_mod_mutations();
                         let previous_path = mods_dir.join(previous);
                         if previous_path.is_file() {
                             let _ = fs::remove_file(&previous_path);

@@ -33,6 +33,7 @@ use tokio_util::sync::CancellationToken;
 use walkdir::WalkDir;
 
 use super::errors::UiError;
+use super::mod_store;
 use super::paths::{PROFILE_JSON, SAVES_DIR};
 use super::profiles::{
     is_external_profile_dir, read_profile_json, write_profile_json, ProfileInfo,
@@ -941,6 +942,26 @@ fn run_import_blocking<A: ImportSource>(
                 reason: format!("failed to write profile.json: {}", e.message),
             });
             continue;
+        }
+
+        // Imported launchers copy each mod into the new profile. Link them into
+        // the shared store now so importing a large library does not double
+        // every mod on disk. Failure only costs deduplication, never the import.
+        if let Ok(Some(store)) = mod_store::for_app(app) {
+            match mod_store::optimize_profile(&store, &target) {
+                Ok(result) => log_info!(
+                    "{}: linked {} mod(s) into the shared store for {}",
+                    source.label(),
+                    result.linked,
+                    info.name
+                ),
+                Err(error) => log_error!(
+                    "{}: could not deduplicate {}: {}",
+                    source.label(),
+                    info.name,
+                    error.message
+                ),
+            }
         }
 
         log_info!("{}: imported {} ({})", source.label(), info.name, mode);

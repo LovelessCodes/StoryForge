@@ -16,6 +16,7 @@ use tauri::{command, AppHandle, Emitter, EventId, Listener, State};
 use tokio_util::sync::CancellationToken;
 
 use super::errors::UiError;
+use super::mod_store::{self, BlobMeta, ModStore};
 use super::paths::vintagestory_exe;
 use super::utils::{
     is_at_least_1_22_3, lock, normalize_path, require_managed_path, safe_file_name, safe_join,
@@ -255,6 +256,12 @@ fn find_resume_manifest(dest_dir: &Path, url: &str) -> Option<(PathBuf, ResumeMa
         } else {
             PathBuf::from(&manifest.filepath)
         };
+        if !archive.is_file() {
+            // A completed or externally removed download leaves a stale
+            // manifest. Do not offer to resume a file that is not there.
+            let _ = fs::remove_file(&path);
+            continue;
+        }
         return Some((archive, manifest));
     }
     None
@@ -298,6 +305,56 @@ fn is_zip(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
+fn is_mods_dir(path: &Path) -> bool {
+    path.file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name.eq_ignore_ascii_case("Mods"))
+}
+
+/// Puts a finished plain download in place. Mod zips go through the shared
+/// store so profiles share one inode; everything else is a normal rename.
+fn finalize_plain_download(
+    store: Option<&ModStore>,
+    downloaded: &DownloadedFile,
+    dest_dir: &Path,
+) -> Result<PathBuf, UiError> {
+    let _guard = mod_store::lock_mod_mutations();
+    let final_path = dest_dir.join(&downloaded.filename);
+
+    if is_mods_dir(dest_dir) && is_zip(Path::new(&downloaded.filename)) {
+        if let Some(store) = store.filter(|store| store.is_usable_for(dest_dir)) {
+            let ingested = store.ingest_file(
+                &downloaded.archive_path,
+                &downloaded.filename,
+                &BlobMeta::default(),
+            )?;
+            store.link_to(&ingested.blob.hash, &final_path)?;
+            let _ = fs::remove_file(&downloaded.archive_path);
+
+            // The download manager does not know the modid up front. Read the
+            // modinfo once so later installs can use the store cache offline.
+            if let Ok(info) = super::mods::inspect_mod_zip(&final_path) {
+                store.record_meta(
+                    &ingested.blob.hash,
+                    &BlobMeta {
+                        modid: Some(info.modid),
+                        version: Some(info.version),
+                    },
+                );
+            }
+            return Ok(final_path);
+        }
+    }
+
+    fs::rename(&downloaded.archive_path, &final_path).map_err(|e| {
+        UiError::new(
+            "io_error",
+            format!("Failed to put the download in place: {e}"),
+        )
+    })?;
+    Ok(final_path)
+}
+
 /// Extract a filename from a Content-Disposition header, or fall back to the URL.
 /// The result is always a single path component so it cannot escape `dest_dir`.
 fn infer_filename(url: &str, headers: &reqwest::header::HeaderMap) -> String {
@@ -332,9 +389,17 @@ fn infer_filename(url: &str, headers: &reqwest::header::HeaderMap) -> String {
     }
 }
 
-/// Stream a remote file to disk, returning the path to the saved archive.
-/// When `resume_offset > 0`, sends a `Range` header and appends to the existing partial file.
-/// Returns `Ok(archive_path)` on completion, `Ok(("<paused>", archive_path))` on pause.
+/// A completed (or paused) download. `archive_path` is a `.part` file so it is
+/// never mistaken for an installed mod; `filename` is the name it should have
+/// once it is put into place.
+struct DownloadedFile {
+    archive_path: PathBuf,
+    filename: String,
+}
+
+/// Stream a remote file to disk, returning the temporary archive and its final
+/// filename. When `resume_offset > 0`, sends a `Range` header and appends to the
+/// existing partial file.
 async fn download_file(
     ctx: &DownloadContext,
     client: &reqwest::Client,
@@ -342,7 +407,7 @@ async fn download_file(
     dest_dir: &Path,
     resume_offset: u64,
     resume_etag: &str,
-) -> Result<PathBuf, UiError> {
+) -> Result<DownloadedFile, UiError> {
     let mut req = client.get(url);
 
     let mut resume_offset = resume_offset;
@@ -389,7 +454,9 @@ async fn download_file(
     })?;
 
     let filename = infer_filename(url, resp.headers());
-    let archive_path = dest_dir.join(&filename);
+    // Download to a `.part` sibling. Opening the final path would truncate a
+    // hardlink and corrupt the shared blob in every other profile.
+    let archive_path = dest_dir.join(format!("{filename}.part"));
     // Pause-on-exit needs the real path, which the URL alone cannot provide.
     *lock(&ctx.stored_filepath) = archive_path.to_string_lossy().to_string();
     let etag = resp
@@ -422,7 +489,10 @@ async fn download_file(
 
     while let Some(chunk) = stream.next().await {
         if ctx.is_cancelled() {
-            return Ok(archive_path);
+            return Ok(DownloadedFile {
+                archive_path,
+                filename,
+            });
         }
 
         if ctx.is_paused() {
@@ -444,7 +514,10 @@ async fn download_file(
                 downloaded,
                 manifest_path.display()
             );
-            return Ok(archive_path);
+            return Ok(DownloadedFile {
+                archive_path,
+                filename,
+            });
         }
 
         let chunk =
@@ -486,7 +559,10 @@ async fn download_file(
         }
     }
 
-    Ok(archive_path)
+    Ok(DownloadedFile {
+        archive_path,
+        filename,
+    })
 }
 
 /// Extract a zip archive to `extract_dir`, optionally stripping `prefix`.
@@ -847,8 +923,15 @@ pub async fn download_and_maybe_extract(
     // matched by URL instead of by guessing the file name.
     let (resume_offset, resume_etag): (u64, String) = match find_resume_manifest(&destpath, &url) {
         Some((archive, manifest)) => {
+            // Older builds resumed into the final `<name>.zip`. That path may
+            // now be a hardlink to the shared store, so appending to it would
+            // corrupt every profile that shares the blob. Start over instead.
+            let is_partial = archive
+                .extension()
+                .and_then(|extension| extension.to_str())
+                .is_some_and(|extension| extension.eq_ignore_ascii_case("part"));
             let size = fs::metadata(&archive).map(|m| m.len()).unwrap_or(0);
-            if size > 0 && size == manifest.offset {
+            if is_partial && size > 0 && size == manifest.offset {
                 log_info!(
                     "download: resuming {} from offset {}",
                     archive.display(),
@@ -922,7 +1005,8 @@ pub async fn download_and_maybe_extract(
         })?;
     }
 
-    let archive_path =
+    let store = mod_store::for_app_best_effort(&app);
+    let downloaded =
         download_file(&ctx, &client, &url, &destpath, resume_offset, &resume_etag).await?;
 
     // Check if paused (non-cleanup exit, partial file + manifest preserved)
@@ -940,7 +1024,10 @@ pub async fn download_and_maybe_extract(
     }
 
     if ctx.is_cancelled() {
-        cleanup(&archive_path, extract.then_some(destpath.as_path()));
+        cleanup(
+            &downloaded.archive_path,
+            extract.then_some(destpath.as_path()),
+        );
         ctx.emit(DownloadContext::cancelled_payload("Download cancelled"))?;
         return Ok("cancelled".into());
     }
@@ -951,25 +1038,25 @@ pub async fn download_and_maybe_extract(
             .ok_or_else(|| UiError::from("extract_dir must be provided when extract=true"))?;
         let extract_dir = PathBuf::from(extract_dir);
 
-        if is_zip(&archive_path) {
+        if is_zip(Path::new(&downloaded.filename)) {
             extract_zip(
                 &ctx,
-                &archive_path,
+                &downloaded.archive_path,
                 &extract_dir,
                 zipsubfolderprefix.as_deref(),
             )
             .await?;
         } else {
-            extract_tar(&ctx, &archive_path, &extract_dir).await?;
+            extract_tar(&ctx, &downloaded.archive_path, &extract_dir).await?;
         }
 
         if ctx.is_cancelled() {
-            cleanup(&archive_path, Some(&extract_dir));
+            cleanup(&downloaded.archive_path, Some(&extract_dir));
             ctx.emit(DownloadContext::cancelled_payload("Extraction cancelled"))?;
             return Ok("cancelled".into());
         }
 
-        fs::remove_file(&archive_path)
+        fs::remove_file(&downloaded.archive_path)
             .map_err(|e| UiError::new("io_error", format!("remove file error: {e}")))?;
 
         if !is_already_installed(&destpath)? {
@@ -983,7 +1070,28 @@ pub async fn download_and_maybe_extract(
     // Plain downloads report where the file landed so the UI can undo the
     // download later; extractions delete their archive and leave nothing to
     // point at.
-    let saved_path = (!extract).then(|| archive_path.to_string_lossy().to_string());
+    let saved_path = if extract {
+        None
+    } else {
+        let final_path = match finalize_plain_download(store.as_ref(), &downloaded, &destpath) {
+            Ok(path) => path,
+            Err(error) => {
+                log_error!(
+                    "download: shared-store finalization failed: {}",
+                    error.message
+                );
+                let final_path = destpath.join(&downloaded.filename);
+                fs::rename(&downloaded.archive_path, &final_path).map_err(|e| {
+                    UiError::new(
+                        "io_error",
+                        format!("Failed to put the download in place: {e}"),
+                    )
+                })?;
+                final_path
+            }
+        };
+        Some(final_path.to_string_lossy().to_string())
+    };
     ctx.emit(ProgressPayload {
         phase: "done",
         downloaded: None,
@@ -1264,6 +1372,32 @@ mod tests {
 
         // A different URL must not pick up this manifest.
         assert!(find_resume_manifest(tmp.path(), "https://example.invalid/other").is_none());
+    }
+
+    #[test]
+    fn finalizing_a_mod_download_uses_the_shared_store() {
+        let tmp = tempfile::tempdir().unwrap();
+        let store = ModStore::new(tmp.path().join("store"));
+        let mods = tmp.path().join("profile/Mods");
+        std::fs::create_dir_all(&mods).unwrap();
+        let part = mods.join("carryon_1.13.0.zip.part");
+        std::fs::write(&part, b"zip bytes").unwrap();
+
+        let downloaded = DownloadedFile {
+            archive_path: part.clone(),
+            filename: "carryon_1.13.0.zip".to_string(),
+        };
+        let final_path = finalize_plain_download(Some(&store), &downloaded, &mods).unwrap();
+
+        assert_eq!(final_path, mods.join("carryon_1.13.0.zip"));
+        assert!(final_path.is_file());
+        assert!(!part.exists());
+        assert_eq!(std::fs::read(&final_path).unwrap(), b"zip bytes");
+        assert_eq!(store.stats().unwrap().blob_count, 1);
+        let blob = store
+            .blob_for_hash(&ModStore::sha256_file(&final_path).unwrap())
+            .unwrap();
+        assert!(same_file::is_same_file(Path::new(&blob.path), &final_path).unwrap());
     }
 
     #[test]

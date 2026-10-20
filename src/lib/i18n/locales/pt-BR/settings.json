@@ -107,5 +107,26 @@
     "copied": "Logs copiados para a área de transferência",
     "copyFailed": "Falha ao copiar os logs",
     "empty": "Nenhum log ainda..."
+  },
+  "modStore": {
+    "title": "Armazenamento compartilhado de mods",
+    "description": "Mantém uma única cópia de cada zip de mod e a vincula a todos os perfis que a usam. Economiza espaço e acelera a cópia de perfis.",
+    "enabled": "Compartilhar arquivos de mods entre perfis",
+    "enabledDescription": "Novas instalações de mods são vinculadas a partir de um armazenamento central. Desative para manter cópias independentes.",
+    "location": "Local do armazenamento",
+    "stats": "{{count}} mod(s) armazenado(s) · {{size}}",
+    "statsFailed": "Não foi possível ler o armazenamento: {{message}}",
+    "optimize": "Otimizar perfis existentes",
+    "prune": "Liberar espaço não usado",
+    "optimizeHint": "A otimização vincula mods instalados antes deste recurso ou copiados de um backup. Perfis em outra unidade são ignorados.",
+    "optimizing": "Vinculando mods existentes…",
+    "optimizeDone": "{{linked}} mod(s) vinculado(s), liberando {{size}}.",
+    "optimizePartial": "Não foi possível vincular {{failed}} mod(s).",
+    "optimizeFailed": "Não foi possível otimizar o armazenamento de mods: {{message}}",
+    "pruning": "Removendo mods não usados do armazenamento…",
+    "pruneDone": "{{count}} mod(s) não usado(s) removido(s), liberando {{size}}.",
+    "pruneFailed": "Não foi possível liberar espaço: {{message}}",
+    "openFailed": "Não foi possível abrir a pasta do armazenamento: {{message}}",
+    "disabledHint": "O armazenamento compartilhado de mods está desativado. Ative-o primeiro."
   }
 }
