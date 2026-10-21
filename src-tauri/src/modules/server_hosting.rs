@@ -11,7 +11,7 @@ use tokio::process::Command;
 
 use super::dotnet;
 use super::errors::UiError;
-use super::log_privacy::player_ref;
+use super::log_privacy::{command_name, player_ref};
 use super::paths;
 use super::utils::{dir_size, format_size, lock, normalize_path, profiles_folder, versions_folder};
 use crate::modules::server_hosting_actor;
@@ -1131,7 +1131,10 @@ async fn send_server_command_internal(instance_id: u64, command: &str) -> Result
 
 #[command]
 pub async fn send_server_command(instance_id: u64, command: String) -> Result<(), UiError> {
-    log_info!("send_server_command: id={instance_id} cmd={command}");
+    log_info!(
+        "send_server_command: id={instance_id} cmd={}",
+        command_name(&command)
+    );
     send_server_command_internal(instance_id, &command).await
 }
 

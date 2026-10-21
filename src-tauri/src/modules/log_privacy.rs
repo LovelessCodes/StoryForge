@@ -49,6 +49,14 @@ pub fn player_ref(kind: &str, value: &str) -> String {
     format!("{}-{kind}-{id}", refs.run)
 }
 
+/// The command verb without its arguments.
+///
+/// The server console and moderation actions accept free-form commands. Their
+/// arguments can be player names or UIDs, so only the verb is safe to log.
+pub fn command_name(command: &str) -> &str {
+    command.split_whitespace().next().unwrap_or("")
+}
+
 /// Short per-run marker so aliases from different launches cannot collide in a
 /// log that has survived a restart.
 fn run_prefix() -> String {
@@ -90,5 +98,13 @@ mod tests {
     fn empty_values_get_a_placeholder() {
         assert_eq!(player_ref("name", ""), "name-none");
         assert_eq!(player_ref("uid", "   "), "uid-none");
+    }
+
+    #[test]
+    fn command_name_drops_arguments() {
+        assert_eq!(command_name("/kick Alice"), "/kick");
+        assert_eq!(command_name("/whitelist add Alice"), "/whitelist");
+        assert_eq!(command_name("  /ban  Alice  "), "/ban");
+        assert_eq!(command_name(""), "");
     }
 }
