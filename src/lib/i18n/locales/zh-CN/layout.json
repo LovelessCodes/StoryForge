@@ -40,6 +40,10 @@
     "maximize": "最大化窗口",
     "close": "关闭窗口"
   },
+  "intelBuild": {
+    "title": "Apple Silicon 上的 Intel 构建",
+    "description": "Story Forge 正通过 Rosetta 以 Intel 构建运行，后续更新仍会安装 Intel 构建。请从 <link>getstoryforge.app</link> 下载 Apple Silicon 构建，以获得原生性能。"
+  },
   "theme": {
     "toggle": "切换主题",
     "switchToLight": "切换到浅色模式",

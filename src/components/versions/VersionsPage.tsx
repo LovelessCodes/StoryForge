@@ -15,10 +15,11 @@ import {
 } from "@/lib/helpers";
 import { useDownloadStore } from "@/stores/downloads";
 
-import AddVersionSheet, { MAC_WIKI_URL } from "./AddVersionSheet";
+import AddVersionSheet from "./AddVersionSheet";
 import DownloadRow from "./DownloadRow";
 import LinkExistingVersionSheet from "./LinkExistingVersionSheet";
 import LinkVersionsBanner from "./LinkVersionsBanner";
+import { MAC_WIKI_URL } from "./MacVersionWarnings";
 import { OptimumInstallSheet } from "./OptimumInstallSheet";
 import VersionRow from "./VersionRow";
 import { VulkanStoryInstallSheet } from "./VulkanStoryInstallSheet";

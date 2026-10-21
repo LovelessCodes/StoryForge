@@ -40,6 +40,10 @@
     "maximize": "Maximizar ventana",
     "close": "Cerrar ventana"
   },
+  "intelBuild": {
+    "title": "Compilación Intel en Apple Silicon",
+    "description": "Story Forge se ejecuta como compilación Intel mediante Rosetta, y las actualizaciones siguen instalando compilaciones Intel. Descarga la compilación para Apple Silicon desde <link>getstoryforge.app</link> para obtener rendimiento nativo."
+  },
   "theme": {
     "toggle": "Cambiar tema",
     "switchToLight": "Cambiar a modo claro",

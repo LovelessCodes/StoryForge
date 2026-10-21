@@ -40,6 +40,10 @@
     "maximize": "Maximize window",
     "close": "Close window"
   },
+  "intelBuild": {
+    "title": "Intel build on Apple Silicon",
+    "description": "Story Forge is running the Intel build through Rosetta, and updates keep installing Intel builds. Download the Apple Silicon build from <link>getstoryforge.app</link> for native performance."
+  },
   "theme": {
     "toggle": "Toggle theme",
     "switchToLight": "Switch to light mode",

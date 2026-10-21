@@ -47,14 +47,35 @@ const SEARCH_DEBOUNCE_MS = 250;
 /** Emitted by the Rust side when a background refresh replaced the cached catalog. */
 const MODS_CATALOG_REFRESHED_EVENT = "mods-catalog-refreshed";
 
+/**
+ * The command hands back ModDB's raw body so neither side re-serialises the
+ * ~9k-record catalog. Validate the envelope before reading from it, so a
+ * malformed response fails the query instead of reaching the page as `undefined`.
+ */
+function parseModsCatalog(body: ArrayBuffer): Mod[] {
+  let payload: unknown;
+  try {
+    payload = JSON.parse(new TextDecoder().decode(body));
+  } catch {
+    throw new Error("The mod catalog response is not valid JSON");
+  }
+  if (
+    typeof payload !== "object" ||
+    payload === null ||
+    !Array.isArray((payload as { mods?: unknown }).mods)
+  ) {
+    throw new Error("The mod catalog response is missing the mods array");
+  }
+  return (payload as { mods: Mod[] }).mods;
+}
+
 export const modsQuery = (params: ModsParams) => ({
   placeholderData: keepPreviousData,
   // The command returns ModDB's raw body so neither side re-serialises the
   // ~9k-record catalog; only the array reaches the cache.
   queryFn: async () => {
     const body = await invoke<ArrayBuffer>("fetch_mods", { options: params });
-    const { mods } = JSON.parse(new TextDecoder().decode(body)) as { mods: Mod[] };
-    return mods;
+    return parseModsCatalog(body);
   },
   queryKey: ["mods", params] as const,
   refetchOnWindowFocus: false,

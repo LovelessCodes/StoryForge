@@ -55,6 +55,9 @@ type SettingsStore = {
   /** User hid the "import instances from Yelloowstone" banner. */
   yelloowstoneDismissed: boolean;
   dismissYelloowstone: () => void;
+  /** User hid the "Intel build on Apple Silicon" banner. */
+  intelBuildDismissed: boolean;
+  dismissIntelBuild: () => void;
   /**
    * Mods pinned to their installed version, keyed by profile/server path.
    * Pinned mods are excluded from update checks and "Update All".
@@ -174,6 +177,8 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
   dismissLithic: () => set(() => ({ lithicDismissed: true })),
   yelloowstoneDismissed: false,
   dismissYelloowstone: () => set(() => ({ yelloowstoneDismissed: true })),
+  intelBuildDismissed: false,
+  dismissIntelBuild: () => set(() => ({ intelBuildDismissed: true })),
   pinnedMods: {},
   toggleModPin: (path, modid) =>
     set((state) => {

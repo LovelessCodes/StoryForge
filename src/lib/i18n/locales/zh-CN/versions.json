@@ -7,6 +7,9 @@
     "installedOption": "{{version}}（已安装）",
     "installedTag": "（已安装）",
     "macWarning": "此版本在 macOS 上运行可能需要额外设置。请参阅 <wiki>在 macOS 上安装 Vintage Story</wiki> wiki 文章。",
+    "macIntelWarning": "此版本没有 Apple Silicon 构建，将通过 Rosetta 运行；请选择 1.22.3 或更高版本以获得原生构建。",
+    "macIntelWarningTitle": "macOS：仅 Intel 构建",
+    "macRosettaMissing": "此版本没有 Apple Silicon 构建，且未安装 Rosetta，游戏无法启动。请使用 `softwareupdate --install-rosetta` 安装 Rosetta，或选择 1.22.3 或更高版本。",
     "macWarningTitle": "macOS：低于 1.19.0 的版本",
     "pickPlaceholder": "选择游戏版本",
     "title": "添加版本"

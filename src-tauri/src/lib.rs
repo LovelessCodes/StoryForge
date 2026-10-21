@@ -409,6 +409,7 @@ pub fn run() {
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             is_flatpak_cmd,
+            modules::platform::get_host_platform,
             // Authorization
             auth::login,
             auth::verify,

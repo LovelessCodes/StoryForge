@@ -22,6 +22,7 @@ use super::dotnet;
 use super::errors::UiError;
 use super::game_defaults;
 use super::paths::{self, clientsettings_path, mods_dir};
+use super::platform::{self, MachArch};
 use super::profiles::{
     find_profile_by_id, mark_profile_running, profile_id_for_dir, read_profile_json,
     write_profile_json, ProfileInfo,
@@ -414,16 +415,6 @@ async fn resolve_launch_context(
         }
     })?;
 
-    let dotnet_root = dotnet::ensure_dotnet(
-        app,
-        &app_data,
-        super::versions::base_game_version(&profile.version),
-        options.profile_id,
-        options.use_system_dotnet,
-    )
-    .await?;
-    log_info!("[play_game] DOTNET_ROOT={}", display_path(&dotnet_root));
-
     let version_path = super::versions::resolve_version_dir(app, &profile.version)?;
     log_info!("[play_game] version_path: {}", display_path(&version_path));
     if !version_path.exists() || !version_path.is_dir() {
@@ -436,6 +427,40 @@ async fn resolve_launch_context(
     let combined_path = find_game_executable(&version_path).await?;
     log_info!("[play_game] using exe: {}", display_path(&combined_path));
 
+    // The game binary architecture determines which .NET runtime it can load.
+    // It also tells us whether an Intel-only build needs Rosetta, which is not
+    // installed by default on Apple Silicon — without it the process exits
+    // before the game window ever appears.
+    let game_arch = platform::macho_arch(&combined_path);
+    log_info!("[play_game] game architecture: {:?}", game_arch);
+    if needs_rosetta(
+        platform::apple_silicon(),
+        game_arch,
+        platform::rosetta_available(),
+    ) {
+        log_error!(
+            "[play_game] Intel-only build on Apple Silicon without Rosetta: {}",
+            display_path(&combined_path)
+        );
+        return Err(UiError::new(
+            "rosetta_missing",
+            "This Vintage Story build is Intel-only and Rosetta is not installed. \
+             Install it with `softwareupdate --install-rosetta --agree-to-license`, \
+             or install Vintage Story 1.22.3 or newer for an Apple Silicon build.",
+        ));
+    }
+
+    let dotnet_root = dotnet::ensure_dotnet_for(
+        app,
+        &app_data,
+        super::versions::base_game_version(&profile.version),
+        options.profile_id,
+        options.use_system_dotnet,
+        game_arch,
+    )
+    .await?;
+    log_info!("[play_game] DOTNET_ROOT={}", display_path(&dotnet_root));
+
     #[cfg(target_os = "macos")]
     let app_bundle = macos::resolve_app_bundle(&version_path, &combined_path).await?;
 
@@ -445,6 +470,15 @@ async fn resolve_launch_context(
         #[cfg(target_os = "macos")]
         app_bundle,
     })
+}
+
+/// True when launching this build would fail because Rosetta is missing.
+fn needs_rosetta(
+    apple_silicon: bool,
+    game_arch: Option<MachArch>,
+    rosetta_available: bool,
+) -> bool {
+    apple_silicon && matches!(game_arch, Some(MachArch::X86_64)) && !rosetta_available
 }
 
 /// Search the version directory for the Vintage Story executable.
@@ -1143,6 +1177,18 @@ pub mod macos {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// An Intel build can only start through Rosetta; a missing install is a
+    /// launch error we can report instead of letting the process die silently.
+    #[test]
+    fn rosetta_is_only_required_for_intel_builds_on_apple_silicon() {
+        assert!(needs_rosetta(true, Some(MachArch::X86_64), false));
+        assert!(!needs_rosetta(true, Some(MachArch::X86_64), true));
+        assert!(!needs_rosetta(false, Some(MachArch::X86_64), false));
+        assert!(!needs_rosetta(true, Some(MachArch::Arm64), false));
+        assert!(!needs_rosetta(true, Some(MachArch::Universal), false));
+        assert!(!needs_rosetta(true, None, false));
+    }
 
     /// Only a definite "expired" verdict skips writing the session; an
     /// unreachable check is unverified, not invalid.

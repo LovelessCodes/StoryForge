@@ -11,6 +11,7 @@ import { ScrollArea } from "../ui/scroll-area";
 import { SidebarInset, SidebarProvider } from "../ui/sidebar";
 import DeepLinkHandler from "./DeepLinkHandler";
 import Header from "./Header";
+import IntelBuildBanner from "./IntelBuildBanner";
 import Sidebar from "./Sidebar";
 import Titlebar from "./Titlebar";
 
@@ -52,6 +53,7 @@ export default function MainLayout() {
         <Sidebar />
         <SidebarInset data-tauri-drag-region={false} className="min-w-0 overflow-hidden">
           <Header onRefresh={showRefresh ? handleRefresh : undefined} isRefreshing={fetching > 0} />
+          <IntelBuildBanner />
           {managesOwnScroll ? (
             <div className="min-h-0 flex-1 p-6">
               <Outlet />
