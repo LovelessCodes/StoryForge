@@ -18,6 +18,7 @@ use tokio_util::sync::CancellationToken;
 use super::errors::UiError;
 use super::mod_store::{self, BlobMeta, ModStore};
 use super::paths::vintagestory_exe;
+use super::platform;
 use super::utils::{
     is_at_least_1_22_3, lock, normalize_path, require_managed_path, safe_file_name, safe_join,
     versions_folder, versions_subdir, Throttle,
@@ -1155,25 +1156,33 @@ fn make_output_path(base: &Path, entry_name: &str, prefix: &str) -> Result<PathB
     safe_join(base, trimmed).map_err(|e| e.message)
 }
 
+/// The game build platform to request for this host and version.
+///
+/// The hardware architecture decides, not the architecture the app was built
+/// for: an Intel build of Story Forge running under Rosetta still needs the
+/// native Apple Silicon game build. Versions before 1.22.3 only ship x64.
+fn download_platform(os: &str, apple_silicon: bool, version: &str) -> String {
+    let platform = os.replace("macos", "mac");
+    if platform == "mac" && apple_silicon && is_at_least_1_22_3(version).unwrap_or(false) {
+        "mac_arm64".to_string()
+    } else {
+        platform
+    }
+}
+
 #[command]
 pub async fn get_download_link(
     client: State<'_, Arc<reqwest::Client>>,
     version: &str,
 ) -> Result<String, UiError> {
-    // if platform is macos it should say mac
-    let mut platform = tauri_plugin_os::platform().replace("macos", "mac");
-    let arch = tauri_plugin_os::arch();
+    let apple_silicon = platform::apple_silicon();
+    let platform_name = download_platform(tauri_plugin_os::platform(), apple_silicon, version);
 
-    log_info!("platform: {platform}, arch: {arch}");
-
-    // If platform is mac and their arch is arm64, set platform to mac-arm64
-    if is_at_least_1_22_3(version).unwrap_or(false) && platform == "mac" && arch == "aarch64" {
-        platform = "mac_arm64".to_string();
-    }
+    log_info!("platform: {platform_name}, apple_silicon: {apple_silicon}");
 
     let url = format!(
         "https://api.getstoryforge.app/download/{}/{}/",
-        version, platform
+        version, platform_name
     );
     let res = client
         .get(&url)
@@ -1300,6 +1309,20 @@ fn read_resume_manifest_for_path(path: &Path) -> Option<ResumeManifest> {
 mod tests {
     use super::*;
     use std::path::PathBuf;
+
+    #[test]
+    fn download_platform_follows_the_hardware_arch() {
+        // Apple Silicon, even when the app itself is an Intel build.
+        assert_eq!(download_platform("macos", true, "1.22.3"), "mac_arm64");
+        assert_eq!(download_platform("macos", true, "1.22.7"), "mac_arm64");
+        // Older versions only ship x64 builds.
+        assert_eq!(download_platform("macos", true, "1.22.2"), "mac");
+        assert_eq!(download_platform("macos", true, "1.21.6"), "mac");
+        // Intel Macs and other platforms are unchanged.
+        assert_eq!(download_platform("macos", false, "1.22.7"), "mac");
+        assert_eq!(download_platform("windows", false, "1.22.7"), "windows");
+        assert_eq!(download_platform("linux", true, "1.22.7"), "linux");
+    }
 
     #[test]
     fn test_should_extract() {

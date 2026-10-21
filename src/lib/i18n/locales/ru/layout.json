@@ -40,6 +40,10 @@
     "maximize": "Развернуть окно",
     "close": "Закрыть окно"
   },
+  "intelBuild": {
+    "title": "Сборка Intel на Apple Silicon",
+    "description": "Story Forge работает как сборка Intel через Rosetta, и обновления продолжают устанавливать сборки Intel. Скачайте сборку для Apple Silicon с <link>getstoryforge.app</link> для нативной производительности."
+  },
   "theme": {
     "toggle": "Переключить тему",
     "switchToLight": "Переключиться на светлую тему",

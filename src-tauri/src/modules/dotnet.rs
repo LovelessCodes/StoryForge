@@ -2,8 +2,6 @@ use futures_util::StreamExt;
 use reqwest::Client;
 use serde::Deserialize;
 use serde_json::json;
-#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
-use std::io::Read;
 use std::{
     fs::{self, create_dir_all, File},
     io::{BufReader, Write},
@@ -14,6 +12,7 @@ use std::{
 use tauri::{AppHandle, Emitter, Manager};
 
 use super::errors::UiError;
+use super::platform::{self, MachArch};
 use super::utils::{is_at_least_1_22_3, Throttle};
 use crate::{log_debug, log_error, log_info};
 
@@ -34,10 +33,10 @@ fn dotnet_channel(game_version: &str) -> &str {
     }
 }
 
-/// On macOS arm64, verify a dotnet root actually contains ARM64-native binaries
-/// by reading the Mach-O header of libhostfxr. Returns false for x64-only installs.
-#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
-fn is_dotnet_arm64(root: &Path) -> bool {
+/// Verify a dotnet root contains binaries for the requested architecture by
+/// reading the Mach-O header of libhostfxr.
+#[cfg(target_os = "macos")]
+fn is_dotnet_arch(root: &Path, expected: MachArch) -> bool {
     // Find a hostfxr version dir
     let fxr_dir = root.join("host").join("fxr");
     let version_dir = match std::fs::read_dir(&fxr_dir) {
@@ -47,77 +46,57 @@ fn is_dotnet_arm64(root: &Path) -> bool {
             .map(|e| e.path()),
         Err(_) => return false,
     };
-    let version_dir = match version_dir {
-        Some(d) => d,
-        None => return false,
+    let Some(version_dir) = version_dir else {
+        return false;
     };
 
     let hostfxr = version_dir.join("libhostfxr.dylib");
-    let mut file = match std::fs::File::open(&hostfxr) {
-        Ok(f) => f,
-        Err(e) => {
-            log_debug!("[dotnet] arm64_check: can't open {:?}: {}", hostfxr, e);
-            return false;
-        }
-    };
-
-    let mut magic = [0u8; 4];
-    if file.read_exact(&mut magic).is_err() {
-        return false;
-    }
-
-    // Mach-O fat binary magic: 0xCAFEBABE (big-endian) or 0xBEBAFECA (little-endian)
-    let fat_be = u32::from_be_bytes(magic);
-    let fat_le = u32::from_le_bytes(magic);
-    if fat_be == 0xCAFEBABE || fat_le == 0xCAFEBABE {
+    let Some(found) = platform::macho_arch(&hostfxr) else {
         log_debug!(
-            "[dotnet] arm64_check: {:?} is a fat (universal) binary",
+            "[dotnet] arch_check: {:?} is missing or not a Mach-O binary",
             hostfxr
         );
-        return true; // universal — supports arm64
-    }
-
-    // Single-arch 64-bit Mach-O: magic is 0xFEEDFACF (or byte-swapped 0xCFFAEDFE)
-    // CPU type follows at offset 4 (little-endian u32)
-    let macho64 = u32::from_be_bytes(magic);
-    if macho64 != 0xFEEDFACF && macho64 != 0xCFFAEDFE {
-        log_debug!(
-            "[dotnet] arm64_check: {:?} magic={:#x} — not Mach-O",
-            hostfxr,
-            macho64
-        );
         return false;
-    }
+    };
 
-    let mut cpu_type = [0u8; 4];
-    if file.read_exact(&mut cpu_type).is_err() {
-        return false;
-    }
-    let cpu = u32::from_le_bytes(cpu_type);
-    // CPU_TYPE_ARM64 = 0x0100000C, CPU_TYPE_X86_64 = 0x01000007
-    let is_arm = cpu == 0x0100000C;
+    let matches = match expected {
+        MachArch::Arm64 => matches!(found, MachArch::Arm64 | MachArch::Universal),
+        MachArch::X86_64 => matches!(found, MachArch::X86_64 | MachArch::Universal),
+        MachArch::Universal => true,
+    };
     log_debug!(
-        "[dotnet] arm64_check: {:?} cpu_type={:#x} is_arm64={}",
+        "[dotnet] arch_check: {:?} is {:?}, expected {:?} -> {}",
         hostfxr,
-        cpu,
-        is_arm
+        found,
+        expected,
+        matches
     );
-    is_arm
+    matches
 }
 
-/// On macOS arm64, check that a dotnet root passes both the runtime check
-/// AND the architecture check (real ARM64, not x64).
-#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
-fn has_runtime_arm64(root: &Path, channel: &str) -> bool {
+/// Check that a dotnet root has the shared runtime for `channel` with binaries
+/// matching `arch`. Native and translated runtimes can coexist on macOS, so the
+/// architecture has to be verified rather than inferred from the path.
+fn has_runtime_for(root: &Path, channel: &str, arch: &str) -> bool {
+    let _ = arch;
     if !has_runtime(root, channel) {
         return false;
     }
-    if !is_dotnet_arm64(root) {
-        log_debug!(
-            "[dotnet] system_arm64: {:?} has runtime but is x64 (not arm64), skipping",
-            root
-        );
-        return false;
+    #[cfg(target_os = "macos")]
+    {
+        let expected = if arch == "arm64" {
+            MachArch::Arm64
+        } else {
+            MachArch::X86_64
+        };
+        if !is_dotnet_arch(root, expected) {
+            log_debug!(
+                "[dotnet] has_runtime_for: {:?} has runtime but no {} binaries, skipping",
+                root,
+                arch
+            );
+            return false;
+        }
     }
     true
 }
@@ -142,36 +121,37 @@ fn has_runtime(root: &Path, channel: &str) -> bool {
     false
 }
 
-/// Try to find an existing system dotnet profile with the required runtime.
-/// On macOS aarch64, delegates to the arm64-specific check which handles
-/// dotnet 10 (ARM64-native) vs dotnet 8/7 (x64-only via Rosetta).
-pub fn find_system_dotnet_root(channel: &str) -> Option<PathBuf> {
-    log_debug!("[dotnet] find_system: channel={}", channel);
+/// Try to find an existing system dotnet profile with the required runtime and
+/// binaries for `arch` (`"arm64"` or `"x64"`).
+///
+/// On macOS aarch64 the arm64 and x64 checks are separate: dotnet 10 can be
+/// native, while dotnet 8/7 and Intel game builds need the x64 runtime.
+pub fn find_system_dotnet_root(channel: &str, arch: &str) -> Option<PathBuf> {
+    log_debug!("[dotnet] find_system: channel={} arch={}", channel, arch);
 
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     {
-        let result = find_system_dotnet_root_macos_arm64(channel);
-        if result.is_some() {
-            log_info!(
-                "[dotnet] find_system: found arm64 system dotnet at {:?}",
-                result
-            );
-        } else {
-            log_debug!("[dotnet] find_system: no arm64 system dotnet found");
+        if arch == "arm64" {
+            let result = find_system_dotnet_root_macos_arm64(channel);
+            if result.is_some() {
+                log_info!(
+                    "[dotnet] find_system: found arm64 system dotnet at {:?}",
+                    result
+                );
+            } else {
+                log_debug!("[dotnet] find_system: no arm64 system dotnet found");
+            }
+            return result;
         }
-        result
     }
 
-    #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
-    {
-        let result = find_system_dotnet_root_default(channel);
-        if result.is_some() {
-            log_info!("[dotnet] find_system: found system dotnet at {:?}", result);
-        } else {
-            log_debug!("[dotnet] find_system: no system dotnet found");
-        }
-        result
+    let result = find_system_dotnet_root_default(channel, arch);
+    if result.is_some() {
+        log_info!("[dotnet] find_system: found system dotnet at {:?}", result);
+    } else {
+        log_debug!("[dotnet] find_system: no system dotnet found");
     }
+    result
 }
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
@@ -189,7 +169,7 @@ fn find_system_dotnet_root_macos_arm64(channel: &str) -> Option<PathBuf> {
     // 1. Check DOTNET_ROOT environment variable
     if let Ok(root) = std::env::var("DOTNET_ROOT") {
         let p = PathBuf::from(&root);
-        if has_runtime_arm64(&p, channel) {
+        if has_runtime_for(&p, channel, "arm64") {
             log_info!("[dotnet] system_arm64: found via DOTNET_ROOT={:?}", p);
             return Some(p);
         }
@@ -209,7 +189,7 @@ fn find_system_dotnet_root_macos_arm64(channel: &str) -> Option<PathBuf> {
 
     for path_str in &common_paths {
         let p = PathBuf::from(path_str);
-        if has_runtime_arm64(&p, channel) {
+        if has_runtime_for(&p, channel, "arm64") {
             log_info!("[dotnet] system_arm64: found at common path {:?}", p);
             return Some(p);
         }
@@ -219,7 +199,7 @@ fn find_system_dotnet_root_macos_arm64(channel: &str) -> Option<PathBuf> {
     if let Ok(dotnet_exe) = which::which("dotnet") {
         log_debug!("[dotnet] system_arm64: which dotnet → {:?}", dotnet_exe);
         if let Some(parent) = dotnet_exe.parent() {
-            if has_runtime_arm64(parent, channel) {
+            if has_runtime_for(parent, channel, "arm64") {
                 log_info!(
                     "[dotnet] system_arm64: found via which → parent {:?}",
                     parent
@@ -227,7 +207,7 @@ fn find_system_dotnet_root_macos_arm64(channel: &str) -> Option<PathBuf> {
                 return Some(parent.to_path_buf());
             }
             if let Some(grandparent) = parent.parent() {
-                if has_runtime_arm64(grandparent, channel) {
+                if has_runtime_for(grandparent, channel, "arm64") {
                     log_info!(
                         "[dotnet] system_arm64: found via which → grandparent {:?}",
                         grandparent
@@ -242,12 +222,11 @@ fn find_system_dotnet_root_macos_arm64(channel: &str) -> Option<PathBuf> {
     None
 }
 
-#[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
-fn find_system_dotnet_root_default(channel: &str) -> Option<PathBuf> {
+fn find_system_dotnet_root_default(channel: &str, arch: &str) -> Option<PathBuf> {
     // 1. Check DOTNET_ROOT environment variable
     if let Ok(root) = std::env::var("DOTNET_ROOT") {
         let p = PathBuf::from(&root);
-        if has_runtime(&p, channel) {
+        if has_runtime_for(&p, channel, arch) {
             log_info!("[dotnet] system_default: found via DOTNET_ROOT={:?}", p);
             return Some(p);
         }
@@ -296,7 +275,7 @@ fn find_system_dotnet_root_default(channel: &str) -> Option<PathBuf> {
 
     for path_str in &common_paths {
         let p = PathBuf::from(path_str);
-        if has_runtime(&p, channel) {
+        if has_runtime_for(&p, channel, arch) {
             log_info!("[dotnet] system_default: found at common path {:?}", p);
             return Some(p);
         }
@@ -306,7 +285,7 @@ fn find_system_dotnet_root_default(channel: &str) -> Option<PathBuf> {
     if let Ok(dotnet_exe) = which::which("dotnet") {
         log_debug!("[dotnet] system_default: which dotnet → {:?}", dotnet_exe);
         if let Some(parent) = dotnet_exe.parent() {
-            if has_runtime(parent, channel) {
+            if has_runtime_for(parent, channel, arch) {
                 log_info!(
                     "[dotnet] system_default: found via which → parent {:?}",
                     parent
@@ -315,7 +294,7 @@ fn find_system_dotnet_root_default(channel: &str) -> Option<PathBuf> {
             }
             // Some installs put dotnet in a subdir; try parent of parent
             if let Some(grandparent) = parent.parent() {
-                if has_runtime(grandparent, channel) {
+                if has_runtime_for(grandparent, channel, arch) {
                     log_info!(
                         "[dotnet] system_default: found via which → grandparent {:?}",
                         grandparent
@@ -373,19 +352,30 @@ async fn resolve_dotnet_version(client: &Client, channel: &str) -> Result<String
 }
 
 /// Determine which architecture's dotnet runtime to use for a given game version.
-/// On macOS aarch64, VS >= 1.22.3 supports ARM64-native dotnet; older versions need x64.
-fn runtime_arch(game_version: &str) -> &str {
-    let is_macos_arm = cfg!(all(target_os = "macos", target_arch = "aarch64"));
+///
+/// The game binary wins when its architecture is known: an Intel build imported
+/// from another launcher still needs the x64 runtime on an Apple Silicon Mac.
+/// Otherwise, on Apple Silicon, VS >= 1.22.3 supports ARM64-native dotnet and
+/// older versions need x64.
+fn runtime_arch(game_version: &str, game_arch: Option<MachArch>) -> &'static str {
+    #[cfg(target_os = "macos")]
+    let macos_arm = platform::apple_silicon();
+    #[cfg(not(target_os = "macos"))]
+    let macos_arm = false;
+
     let at_least = is_at_least_1_22_3(game_version).unwrap_or(false);
-    let arch = if is_macos_arm && at_least {
+    let arch = if let (true, Some(arch)) = (macos_arm, game_arch) {
+        arch.dotnet_arch()
+    } else if macos_arm && at_least {
         "arm64"
     } else {
         "x64"
     };
     log_debug!(
-        "[dotnet] runtime_arch: game={} macos_arm={} at_least_1_22_3={} -> arch={}",
+        "[dotnet] runtime_arch: game={} game_arch={:?} macos_arm={} at_least_1_22_3={} -> arch={}",
         game_version,
-        is_macos_arm,
+        game_arch,
+        macos_arm,
         at_least,
         arch
     );
@@ -580,11 +570,33 @@ pub async fn ensure_dotnet(
     profile_id: u64,
     use_system_dotnet: bool,
 ) -> Result<PathBuf, UiError> {
+    ensure_dotnet_for(
+        app,
+        app_data_dir,
+        game_version,
+        profile_id,
+        use_system_dotnet,
+        None,
+    )
+    .await
+}
+
+/// Like [`ensure_dotnet`], but picks the runtime architecture to match the
+/// game binary at `game_arch` when it is known.
+pub async fn ensure_dotnet_for(
+    app: &AppHandle,
+    app_data_dir: &Path,
+    game_version: &str,
+    profile_id: u64,
+    use_system_dotnet: bool,
+    game_arch: Option<MachArch>,
+) -> Result<PathBuf, UiError> {
     let channel = dotnet_channel(game_version);
+    let arch = runtime_arch(game_version, game_arch);
 
     // 1. Try system profile (if enabled)
     if use_system_dotnet {
-        if let Some(root) = find_system_dotnet_root(channel) {
+        if let Some(root) = find_system_dotnet_root(channel, arch) {
             log_info!("[dotnet] found system dotnet at {:?}", root);
             return Ok(root);
         }
@@ -595,7 +607,6 @@ pub async fn ensure_dotnet(
     // 2. Check if we already downloaded it
     // x64 runtimes use the plain channel dir (backward-compatible).
     // arm64 runtimes use {channel}-arm64 to avoid colliding with existing x64 caches.
-    let arch = runtime_arch(game_version);
     let local_dir = if arch == "arm64" {
         app_data_dir
             .join("dotnet")
@@ -610,7 +621,7 @@ pub async fn ensure_dotnet(
         arch,
         local_dir
     );
-    if has_runtime(&local_dir, channel) {
+    if has_runtime_for(&local_dir, channel, arch) {
         log_info!("[dotnet] using cached dotnet at {:?}", local_dir);
         return Ok(local_dir);
     }
@@ -619,7 +630,7 @@ pub async fn ensure_dotnet(
     if let Ok(entries) = std::fs::read_dir(&local_dir) {
         for entry in entries.flatten() {
             let p = entry.path();
-            if p.is_dir() && has_runtime(&p, channel) {
+            if p.is_dir() && has_runtime_for(&p, channel, arch) {
                 log_info!("[dotnet] using cached dotnet at {:?}", p);
                 return Ok(p);
             }
@@ -635,7 +646,6 @@ pub async fn ensure_dotnet(
     let client: Arc<Client> = app.state::<Arc<Client>>().inner().clone();
     let version = resolve_dotnet_version(&client, channel).await?;
     log_info!("[dotnet] resolved to version {}", version);
-    let arch = runtime_arch(game_version);
     let root =
         download_dotnet_runtime(&client, app, &version, &local_dir, profile_id, arch).await?;
     log_info!("[dotnet] installed to {:?}", root);
@@ -645,6 +655,26 @@ pub async fn ensure_dotnet(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The installed game binary decides which runtime it can load; version
+    /// checks only fill in when the binary architecture is unknown.
+    #[test]
+    fn runtime_arch_follows_the_game_binary() {
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        {
+            assert_eq!(runtime_arch("1.22.7", Some(MachArch::Arm64)), "arm64");
+            assert_eq!(runtime_arch("1.22.7", Some(MachArch::Universal)), "arm64");
+            assert_eq!(runtime_arch("1.22.7", Some(MachArch::X86_64)), "x64");
+            // An ARM build always needs the ARM runtime, even below the
+            // version where Vintage Story started publishing one.
+            assert_eq!(runtime_arch("1.22.2", Some(MachArch::Arm64)), "arm64");
+        }
+        #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+        {
+            assert_eq!(runtime_arch("1.22.7", Some(MachArch::Arm64)), "x64");
+            assert_eq!(runtime_arch("1.22.7", Some(MachArch::X86_64)), "x64");
+        }
+    }
 
     #[test]
     fn dotnet_channel_matches_game_version() {

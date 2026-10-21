@@ -28,7 +28,7 @@ import { useDownloadManager } from "@/hooks/use-download-manager";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { compareSemverDesc } from "@/lib/helpers";
 import { filterPreReleaseVersions } from "@/lib/pre-release";
-import { gameVersionsQuery } from "@/lib/queries";
+import { gameVersionsQuery, hostPlatformQuery } from "@/lib/queries";
 import { useDownloadStore } from "@/stores/downloads";
 import { useSettingsStore } from "@/stores/settings";
 
@@ -43,6 +43,7 @@ interface AddVersionSheetProps {
 export default function AddVersionSheet({ open, onOpenChange }: AddVersionSheetProps) {
   const { t } = useTranslation();
   const { data: gameVersions, isPending } = useQuery(gameVersionsQuery);
+  const { data: hostPlatform } = useQuery(hostPlatformQuery);
   const installedNames = useInstalledVersionNames();
   const installedSet = useMemo(() => new Set(installedNames), [installedNames]);
   const entries = useDownloadStore((s) => s.entries);
@@ -90,6 +91,16 @@ export default function AddVersionSheet({ open, onOpenChange }: AddVersionSheetP
 
   const macWarning =
     currentPlatform === "macos" && version !== "" && compareSemverDesc(version, "1.19.0") > 0;
+
+  // Vintage Story only started publishing Apple Silicon builds with 1.22.3.
+  // On an Apple Silicon Mac everything before that is an Intel build that
+  // needs Rosetta, and newer macOS installs do not include it by default.
+  const macIntelOnly =
+    currentPlatform === "macos" &&
+    hostPlatform?.appleSilicon === true &&
+    version !== "" &&
+    compareSemverDesc(version, "1.19.0") <= 0 &&
+    compareSemverDesc(version, "1.22.3") > 0;
 
   const submit = () => {
     if (!version || installedSet.has(version) || busyVersions.has(version)) return;
@@ -175,6 +186,18 @@ export default function AddVersionSheet({ open, onOpenChange }: AddVersionSheetP
                       ),
                     }}
                   />
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {macIntelOnly && (
+              <Alert variant="destructive">
+                <TriangleAlert />
+                <AlertTitle>{t("versions.add.macIntelWarningTitle")}</AlertTitle>
+                <AlertDescription>
+                  {hostPlatform?.rosettaAvailable
+                    ? t("versions.add.macIntelWarning")
+                    : t("versions.add.macRosettaMissing")}
                 </AlertDescription>
               </Alert>
             )}

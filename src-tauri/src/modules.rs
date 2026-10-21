@@ -25,6 +25,7 @@ pub mod news;
 pub mod optimum;
 pub mod packs;
 pub mod paths;
+pub mod platform;
 pub mod profile_ops;
 pub mod profiles;
 pub mod proto;

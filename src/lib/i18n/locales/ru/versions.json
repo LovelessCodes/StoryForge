@@ -7,6 +7,9 @@
     "installedOption": "{{version}} (установлено)",
     "installedTag": "(установлено)",
     "macWarning": "Для запуска этой версии на macOS может потребоваться дополнительная настройка. См. статью вики <wiki>Installing Vintage Story on macOS</wiki>.",
+    "macIntelWarning": "Для этой версии нет сборки под Apple Silicon. Она запускается через Rosetta; выберите 1.22.3 или новее, чтобы получить нативную сборку.",
+    "macIntelWarningTitle": "macOS: сборка только для Intel",
+    "macRosettaMissing": "Для этой версии нет сборки под Apple Silicon, а Rosetta не установлена, поэтому игра не сможет запуститься. Установите Rosetta командой `softwareupdate --install-rosetta` или выберите 1.22.3 или новее.",
     "macWarningTitle": "macOS: версия ниже 1.19.0",
     "pickPlaceholder": "Выберите версию игры",
     "title": "Добавить версию"
