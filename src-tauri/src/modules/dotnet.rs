@@ -12,7 +12,9 @@ use std::{
 use tauri::{AppHandle, Emitter, Manager};
 
 use super::errors::UiError;
-use super::platform::{self, MachArch};
+#[cfg(target_os = "macos")]
+use super::platform;
+use super::platform::MachArch;
 use super::utils::{is_at_least_1_22_3, Throttle};
 use crate::{log_debug, log_error, log_info};
 
