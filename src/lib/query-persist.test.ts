@@ -5,9 +5,19 @@ import { QUERY_CACHE_GC_TIME, QUERY_CACHE_MAX_AGE, shouldPersistQuery } from "./
 describe("shouldPersistQuery", () => {
   it("persists cacheable page data", () => {
     expect(shouldPersistQuery({ queryKey: ["news"] })).toBe(true);
-    expect(shouldPersistQuery({ queryKey: ["mods", { page: 1 }] })).toBe(true);
+    expect(shouldPersistQuery({ queryKey: ["mods", { search: "", versions: [] }] })).toBe(true);
     expect(shouldPersistQuery({ queryKey: ["publicServers"] })).toBe(true);
     expect(shouldPersistQuery({ queryKey: ["installedMods", "/profiles/a"] })).toBe(true);
+  });
+
+  it("skips searched or version-filtered mod catalogs", () => {
+    expect(shouldPersistQuery({ queryKey: ["mods", { search: "dana", versions: [] }] })).toBe(
+      false,
+    );
+    expect(shouldPersistQuery({ queryKey: ["mods", { search: "", versions: ["1.22.0"] }] })).toBe(
+      false,
+    );
+    expect(shouldPersistQuery({ queryKey: ["mods"] })).toBe(false);
   });
 
   it("skips live, ephemeral and map data", () => {

@@ -54,9 +54,9 @@ export function ModExtraFilters({
 }) {
   const { t } = useTranslation();
   const {
+    appliedSearchText,
     author,
     category,
-    searchText,
     selectedGameVersions,
     selectedModTags,
     setAuthor,
@@ -197,7 +197,7 @@ export function ModExtraFilters({
             </span>
             <ModAuthorFilter
               onChange={setAuthor}
-              searchText={searchText}
+              searchText={appliedSearchText}
               selectedGameVersions={selectedGameVersions}
               value={author}
             />

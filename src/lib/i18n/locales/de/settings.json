@@ -102,6 +102,7 @@
   "logs": {
     "title": "Anwendungslog",
     "description": "Live-Ausgabe der App, alle 5 Sekunden aktualisiert.",
+    "privacy": "Protokolle können Dateipfade und Kontonamen enthalten. Prüfe sie, bevor du sie teilst.",
     "copy": "Logs kopieren",
     "refresh": "Logs aktualisieren",
     "copied": "Logs in die Zwischenablage kopiert",
