@@ -7,7 +7,7 @@ use std::{
 };
 use tauri::{command, AppHandle, Manager, State};
 
-use crate::modules::utils::{dir_size_cached, format_size, move_folder};
+use crate::modules::utils::{dir_size_cached, display_path, format_size, move_folder};
 
 use super::errors::UiError;
 use super::utils::{
@@ -310,7 +310,10 @@ pub fn remove_installed_version(version: String, app: AppHandle) -> Result<Strin
     let subdir = versions_subdir(app.clone());
     let versions_path = versions_folder(app.clone())?.join(&subdir).join(&version);
     if !versions_path.exists() || !versions_path.is_dir() {
-        log_error!("remove_installed_version: not found: {:?}", versions_path);
+        log_error!(
+            "remove_installed_version: not found: {}",
+            display_path(&versions_path)
+        );
         return Err(UiError {
             name: "not_found".into(),
             message: format!(
@@ -539,7 +542,11 @@ pub async fn move_versions_folder(
     let dst = join_subdir(Path::new(&destination), &subdir, "Destination")?;
     require_managed_path(&app, &src, "Source directory")?;
     require_safe_destination(Path::new(&destination), "Destination")?;
-    log_info!("move_versions_folder: {:?} -> {:?}", src, dst);
+    log_info!(
+        "move_versions_folder: {} -> {}",
+        display_path(&src),
+        display_path(&dst)
+    );
     let outcome = move_folder(src, dst)?;
     log_info!("move_versions_folder: {outcome}");
     Ok(outcome)
@@ -558,7 +565,7 @@ pub async fn remove_all_versions(
         return Ok("not_exists".into());
     }
 
-    log_info!("remove_all_versions: {:?}", source_path);
+    log_info!("remove_all_versions: {}", display_path(&source_path));
     remove_dir_all(&source_path).map_err(|e| {
         log_error!("remove_all_versions: remove_dir_all failed: {e}");
         UiError {

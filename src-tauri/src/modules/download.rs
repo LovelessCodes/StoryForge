@@ -19,8 +19,8 @@ use super::errors::UiError;
 use super::mod_store::{self, BlobMeta, ModStore};
 use super::paths::vintagestory_exe;
 use super::utils::{
-    is_at_least_1_22_3, lock, normalize_path, require_managed_path, safe_file_name, safe_join,
-    versions_folder, versions_subdir, Throttle,
+    display_path, is_at_least_1_22_3, lock, normalize_path, require_managed_path, safe_file_name,
+    safe_join, versions_folder, versions_subdir, Throttle,
 };
 use crate::{log_error, log_info};
 
@@ -897,7 +897,7 @@ pub async fn download_and_maybe_extract(
         zipsubfolderprefix,
     } = params;
     let destpath = PathBuf::from(&destpath);
-    log_info!("download: url={} dest={:?}", url, destpath);
+    log_info!("download: url={} dest={}", url, display_path(&destpath));
 
     // Downloads may only target app-managed directories: version/profile
     // folders, app data, or a hosted server's data directory.

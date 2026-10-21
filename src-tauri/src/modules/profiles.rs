@@ -17,9 +17,9 @@ use super::mods;
 use super::packs::{self, PackLock};
 use super::paths::{self, mods_dir, profile_json_path};
 use super::utils::{
-    dir_name, dir_size, dir_size_cached, find_dir_by_id, format_size, generate_id, join_subdir,
-    lock, move_folder, normalize_path, profiles_folder, profiles_subdir, require_managed_path,
-    require_safe_destination, safe_join,
+    dir_name, dir_size, dir_size_cached, display_path, find_dir_by_id, format_size, generate_id,
+    join_subdir, lock, move_folder, normalize_path, profiles_folder, profiles_subdir,
+    require_managed_path, require_safe_destination, safe_join,
 };
 use crate::{log_error, log_info};
 
@@ -311,7 +311,7 @@ fn profile_info_for_dir(dir: &Path) -> ProfileInfo {
 pub async fn get_all_profiles(app: AppHandle) -> Result<Vec<ProfileResult>, UiError> {
     let subdir = profiles_subdir(app.clone());
     let profiles_dir = profiles_folder(app.clone())?.join(&subdir);
-    log_info!("get_all_profiles: scanning {:?}", profiles_dir);
+    log_info!("get_all_profiles: scanning {}", display_path(&profiles_dir));
 
     // Walks every profile (and its files) on disk: keep it off the UI thread.
     let mut results = tokio::task::spawn_blocking(move || scan_profiles(&profiles_dir))
@@ -334,8 +334,8 @@ pub async fn get_all_profiles(app: AppHandle) -> Result<Vec<ProfileResult>, UiEr
         let info = profile_info_for_dir(&external);
         let size_bytes = dir_size_cached(&external);
         log_info!(
-            "get_all_profiles: including external profile {:?}",
-            external
+            "get_all_profiles: including external profile {}",
+            display_path(&external)
         );
         results.push(ProfileResult {
             id: generate_id(&dir_name(&external)),
@@ -468,8 +468,8 @@ pub fn save_profile(
     env_vars: Option<HashMap<String, String>>,
 ) -> Result<(), UiError> {
     log_info!(
-        "save_profile: path={:?} name={:?} favorite={} icon={:?}",
-        path,
+        "save_profile: path={} name={:?} favorite={} icon={:?}",
+        display_path(Path::new(&path)),
         name,
         favorite,
         icon
@@ -829,7 +829,10 @@ pub async fn import_profile(
             // Clean up the zip file
             let _ = std::fs::remove_file(&config_zip_path);
 
-            log_info!("import_profile: ModConfig extracted to {:?}", config_dir);
+            log_info!(
+                "import_profile: ModConfig extracted to {}",
+                display_path(&config_dir)
+            );
         }
     }
 
@@ -1091,7 +1094,11 @@ pub async fn move_profiles_folder(
     let dst = join_subdir(Path::new(&destination), &subdir, "Destination")?;
     require_managed_path(&app, &src, "Source directory")?;
     require_safe_destination(Path::new(&destination), "Destination")?;
-    log_info!("move_profiles_folder: {:?} -> {:?}", src, dst);
+    log_info!(
+        "move_profiles_folder: {} -> {}",
+        display_path(&src),
+        display_path(&dst)
+    );
     let outcome = move_folder(src, dst)?;
     log_info!("move_profiles_folder: {outcome}");
 
@@ -1127,7 +1134,7 @@ pub async fn remove_all_profiles(
     if !source_path.exists() || !source_path.is_dir() {
         return Ok("not_exists".into());
     }
-    log_info!("remove_all_profiles: {:?}", source_path);
+    log_info!("remove_all_profiles: {}", display_path(&source_path));
     remove_dir_all(&source_path).map_err(|e| {
         log_error!("profiles: remove_failed: {e}");
         UiError {
@@ -1248,7 +1255,11 @@ pub fn zip_modconfig(app: AppHandle, profile_path: String) -> Result<Vec<u8>, Ui
         })?;
     }
 
-    log_info!("zip_modconfig: {:?} → {} bytes", modconfig_dir, buf.len());
+    log_info!(
+        "zip_modconfig: {} → {} bytes",
+        display_path(&modconfig_dir),
+        buf.len()
+    );
     Ok(buf)
 }
 

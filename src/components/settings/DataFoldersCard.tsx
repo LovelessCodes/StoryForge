@@ -201,7 +201,7 @@ export default function DataFoldersCard() {
 
     await logToFile(
       "INFO ",
-      `[settings] Folder change: field=${pending.field} choice=${choice} path=${pending.path ?? "app-data-dir"}`,
+      `[settings] Folder change: field=${pending.field} choice=${choice} path=${pending.path ? "custom" : "app-data-dir"}`,
     );
 
     const config: SetParentConfigProps =
