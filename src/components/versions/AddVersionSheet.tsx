@@ -1,11 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { openUrl } from "@tauri-apps/plugin-opener";
-import { platform } from "@tauri-apps/plugin-os";
-import { TriangleAlert } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Trans, useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -28,12 +24,11 @@ import { useDownloadManager } from "@/hooks/use-download-manager";
 import { useInstalledVersionNames } from "@/hooks/use-installed-versions";
 import { compareSemverDesc } from "@/lib/helpers";
 import { filterPreReleaseVersions } from "@/lib/pre-release";
-import { gameVersionsQuery, hostPlatformQuery } from "@/lib/queries";
+import { gameVersionsQuery } from "@/lib/queries";
 import { useDownloadStore } from "@/stores/downloads";
 import { useSettingsStore } from "@/stores/settings";
 
-export const MAC_WIKI_URL =
-  "https://wiki.vintagestory.at/index.php?title=Installing_Vintage_Story_on_macOS";
+import { MacIntelWarning, MacSetupWarning } from "./MacVersionWarnings";
 
 interface AddVersionSheetProps {
   open: boolean;
@@ -43,13 +38,11 @@ interface AddVersionSheetProps {
 export default function AddVersionSheet({ open, onOpenChange }: AddVersionSheetProps) {
   const { t } = useTranslation();
   const { data: gameVersions, isPending } = useQuery(gameVersionsQuery);
-  const { data: hostPlatform } = useQuery(hostPlatformQuery);
   const installedNames = useInstalledVersionNames();
   const installedSet = useMemo(() => new Set(installedNames), [installedNames]);
   const entries = useDownloadStore((s) => s.entries);
   const { startDownload } = useDownloadManager();
   const showPreRelease = useSettingsStore((s) => s.showPreRelease);
-  const currentPlatform = platform();
 
   const [picked, setPicked] = useState<string | null>(null);
 
@@ -88,19 +81,6 @@ export default function AddVersionSheet({ open, onOpenChange }: AddVersionSheetP
   // entry is the default pick.
   const defaultVersion = selectableVersions[0] ?? "";
   const version = picked ?? defaultVersion;
-
-  const macWarning =
-    currentPlatform === "macos" && version !== "" && compareSemverDesc(version, "1.19.0") > 0;
-
-  // Vintage Story only started publishing Apple Silicon builds with 1.22.3.
-  // On an Apple Silicon Mac everything before that is an Intel build that
-  // needs Rosetta, and newer macOS installs do not include it by default.
-  const macIntelOnly =
-    currentPlatform === "macos" &&
-    hostPlatform?.appleSilicon === true &&
-    version !== "" &&
-    compareSemverDesc(version, "1.19.0") <= 0 &&
-    compareSemverDesc(version, "1.22.3") > 0;
 
   const submit = () => {
     if (!version || installedSet.has(version) || busyVersions.has(version)) return;
@@ -164,43 +144,8 @@ export default function AddVersionSheet({ open, onOpenChange }: AddVersionSheetP
               )}
             </div>
 
-            {macWarning && (
-              <Alert variant="destructive">
-                <TriangleAlert />
-                <AlertTitle>{t("versions.add.macWarningTitle")}</AlertTitle>
-                <AlertDescription>
-                  <Trans
-                    i18nKey="versions.add.macWarning"
-                    components={{
-                      wiki: (
-                        <a
-                          className="hover:text-foreground underline underline-offset-2"
-                          href={MAC_WIKI_URL}
-                          rel="noreferrer"
-                          target="_blank"
-                          onClick={(event) => {
-                            event.preventDefault();
-                            void openUrl(MAC_WIKI_URL);
-                          }}
-                        />
-                      ),
-                    }}
-                  />
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {macIntelOnly && (
-              <Alert variant="destructive">
-                <TriangleAlert />
-                <AlertTitle>{t("versions.add.macIntelWarningTitle")}</AlertTitle>
-                <AlertDescription>
-                  {hostPlatform?.rosettaAvailable
-                    ? t("versions.add.macIntelWarning")
-                    : t("versions.add.macRosettaMissing")}
-                </AlertDescription>
-              </Alert>
-            )}
+            <MacSetupWarning version={version} />
+            <MacIntelWarning version={version} />
           </div>
         </ScrollArea>
 
