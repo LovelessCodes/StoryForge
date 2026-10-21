@@ -5,6 +5,7 @@ use std::sync::Arc;
 use tauri::{command, State};
 
 use super::errors::UiError;
+use super::log_privacy::player_ref;
 use crate::{log_error, log_info};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -82,7 +83,7 @@ pub async fn verify(
     uid: String,
     sessionkey: String,
 ) -> Result<AuthVerifyResponse, UiError> {
-    log_info!("verify: uid={}", uid);
+    log_info!("verify: uid={}", player_ref("uid", &uid));
     let mut headers = HeaderMap::new();
     headers.insert(
         CONTENT_TYPE,

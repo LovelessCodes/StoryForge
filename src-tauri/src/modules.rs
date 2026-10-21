@@ -14,6 +14,7 @@ pub mod launch;
 pub mod launcher_logins;
 pub mod legacy;
 pub mod lithic;
+pub mod log_privacy;
 pub mod logger;
 pub mod maps;
 pub mod migrations;
