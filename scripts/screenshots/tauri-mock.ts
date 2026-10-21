@@ -69,6 +69,10 @@ export function installTauriMock(platform: MockPlatform): void {
         const infos = fixtures[cmd] as Record<string, unknown>;
         return Promise.resolve(infos[String(args.modid)] ?? null);
       }
+      // `fetch_mods` hands the frontend ModDB's raw body as bytes.
+      if (cmd === "fetch_mods") {
+        return Promise.resolve(new TextEncoder().encode(JSON.stringify(fixtures[cmd])));
+      }
       if (Object.prototype.hasOwnProperty.call(fixtures, cmd)) {
         return Promise.resolve(structuredClone(fixtures[cmd]));
       }

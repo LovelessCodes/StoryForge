@@ -661,7 +661,7 @@ export function createFixtures(options: FixtureOptions): Record<string, unknown>
     get_all_profiles: PROFILES,
     get_installed_versions: INSTALLED_VERSIONS,
     fetch_versions: GAME_VERSIONS,
-    fetch_mods: MODS,
+    fetch_mods: { mods: MODS },
     fetch_mod_tags: MOD_TAGS,
     fetch_mod_info: MOD_INFOS,
     get_mods: { mods: INSTALLED_MODS },
