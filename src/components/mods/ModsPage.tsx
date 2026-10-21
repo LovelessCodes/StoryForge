@@ -60,7 +60,7 @@ export default function ModsPage({
     modsDirectory: profilePath,
     orderDirection: filters.orderDirection,
     profileGameVersion: gameVersion,
-    searchText: filters.searchText,
+    searchText: filters.appliedSearchText,
     selectedGameVersions: filters.selectedGameVersions,
     selectedModTags: filters.selectedModTags,
     side: filters.side,
