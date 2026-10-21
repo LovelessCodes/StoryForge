@@ -14,6 +14,7 @@ import {
 import { useActiveProfile } from "@/hooks/use-active-profile";
 import { useSaves } from "@/hooks/use-saves";
 import { useAllMaps } from "@/hooks/use-world-map";
+import { useSettingsStore } from "@/stores/settings";
 
 import ImportWorldSheet from "./ImportWorldSheet";
 import MapRow from "./MapRow";
@@ -25,12 +26,18 @@ const ALL_PROFILES = "all";
 export default function WorldsPage() {
   const { t } = useTranslation();
   const [searchText, setSearchText] = useState("");
-  const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null);
+  // `undefined` means the user has not picked a profile on this visit yet, so
+  // the setting decides; `null` is an explicit "All profiles" choice.
+  const [profileFilter, setProfileFilter] = useState<number | null | undefined>(undefined);
   const [importOpen, setImportOpen] = useState(false);
 
   const { activeProfile, profiles } = useActiveProfile();
+  const defaultToActiveProfile = useSettingsStore((s) => s.defaultWorldsToActiveProfile);
   const { data: worlds, isPending } = useSaves();
   const { data: allMaps } = useAllMaps();
+
+  const defaultProfileId = defaultToActiveProfile ? (activeProfile?.id ?? null) : null;
+  const selectedProfileId = profileFilter !== undefined ? profileFilter : defaultProfileId;
 
   // Standalone maps: maps not already attached to a world save
   const standaloneMaps = (allMaps ?? []).filter(
@@ -92,7 +99,7 @@ export default function WorldsPage() {
           items={[{ label: t("worlds.page.allProfiles"), value: ALL_PROFILES }, ...profileItems]}
           value={selectedProfileId === null ? ALL_PROFILES : String(selectedProfileId)}
           onValueChange={(value) =>
-            setSelectedProfileId(
+            setProfileFilter(
               typeof value !== "string" || value === ALL_PROFILES ? null : Number(value),
             )
           }

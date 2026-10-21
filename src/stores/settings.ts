@@ -97,6 +97,9 @@ type SettingsStore = {
   clearBlockedAuthors: () => void;
   defaultModSortBy: SortBy;
   setDefaultModSortBy: (sortBy: SortBy) => void;
+  /** Start the Worlds page filtered to the active profile instead of all. */
+  defaultWorldsToActiveProfile: boolean;
+  toggleDefaultWorldsToActiveProfile: () => void;
   /**
    * 1-click install links (ModDB's button or `storyforge://install?mod=…`)
    * ask for a destination instead of preselecting the active profile.
@@ -295,6 +298,9 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
   clearBlockedAuthors: () => set(() => ({ blockedAuthors: [] })),
   defaultModSortBy: "trending",
   setDefaultModSortBy: (sortBy) => set(() => ({ defaultModSortBy: sortBy })),
+  defaultWorldsToActiveProfile: false,
+  toggleDefaultWorldsToActiveProfile: () =>
+    set((state) => ({ defaultWorldsToActiveProfile: !state.defaultWorldsToActiveProfile })),
   promptModInstallDestination: false,
   togglePromptModInstallDestination: () =>
     set((state) => ({ promptModInstallDestination: !state.promptModInstallDestination })),

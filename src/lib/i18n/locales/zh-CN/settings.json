@@ -53,6 +53,8 @@
     "showPreReleaseDescription": "选择游戏版本时列出候选版本（RC）。",
     "defaultModSort": "默认模组排序",
     "defaultModSortDescription": "打开模组浏览器时使用的排序方式。",
+    "defaultWorldsToActiveProfile": "仅显示当前配置档的世界",
+    "defaultWorldsToActiveProfileDescription": "世界页面默认筛选当前配置档，而不是所有配置档。浏览时仍可更改筛选。",
     "promptModInstallDestination": "始终询问安装位置",
     "promptModInstallDestinationDescription": "一键安装链接将打开目标选择器，而不是默认使用当前配置档。",
     "sort": {
