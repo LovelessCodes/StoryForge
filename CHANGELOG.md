@@ -8,6 +8,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Mod browsing opens with the list already loaded**: ModDB's full catalog (over 9,000 mods, around 4 MB) is now cached on disk, so the browser no longer downloads and re-parses it every time it is opened. A copy older than 15 minutes is still shown instantly and refreshed in the background, a copy older than a week is refetched, and any cached copy is served when ModDB cannot be reached. The response also reaches the page without being decoded and re-encoded on the way.
+- **Search waits for you to stop typing**: the mod search re-requested the whole catalog on every keystroke. It now waits until typing pauses, and the results for an old search are dropped shortly after you move on instead of being kept for a day — so a long search session no longer leaves dozens of catalog copies in memory and in the saved cache.
+- **Snappier relevance sorting**: sorting by relevance no longer re-normalizes every mod's name, tags and summary for each comparison, and sorting by name reuses those normalized names too.
+
 ## [2.0.9] - 2026-10-20
 
 ### Added

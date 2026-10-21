@@ -1,14 +1,19 @@
 use json5::from_str as json5_from_str;
 use serde::{Deserialize, Serialize};
-use serde_json::{from_str, json, Value};
+use serde_json::{from_slice, from_str, json, Value};
 use std::{
     collections::HashMap,
     fs::{create_dir_all, read_dir, remove_file, File},
     io::{Read, Write},
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    time::{Duration, SystemTime},
 };
-use tauri::{command, AppHandle, State};
+use tauri::ipc::Response;
+use tauri::{command, AppHandle, Emitter, Manager, State};
 use zip::read::ZipArchive;
 
 use super::errors::UiError;
@@ -49,30 +54,13 @@ pub struct FetchModsParams {
     pub search: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Mod {
-    pub modid: i64,
-    pub assetid: i64,
-    pub downloads: i64,
-    pub follows: i64,
-    pub trendingpoints: i64,
-    pub comments: i64,
-    pub name: String,
-    pub summary: String,
-    pub modidstrs: Vec<String>,
-    pub author: String,
-    pub urlalias: Option<String>,
-    pub side: String,
-    pub r#type: String,
-    pub logo: Option<String>,
-    pub tags: Vec<String>,
-    pub lastreleased: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ModsResponse {
-    statuscode: String,
-    mods: Vec<Mod>,
+/// Shape check for a catalog response: valid JSON with the `mods` array the
+/// browser reads. `IgnoredAny` skips the 9k entries instead of materialising
+/// them, so validating a 4 MB body costs a tokenise pass, not a full parse.
+#[derive(Debug, Deserialize)]
+struct ModsEnvelope {
+    #[serde(rename = "mods")]
+    _mods: Vec<serde::de::IgnoredAny>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -143,24 +131,42 @@ pub async fn fetch_mod_tags(
     Ok(json.tags)
 }
 
-#[command]
-pub async fn fetch_mods(
-    client: State<'_, Arc<reqwest::Client>>,
-    options: FetchModsParams,
-) -> Result<Vec<Mod>, UiError> {
-    let mut params = Vec::new();
-    if !options.versions.is_empty() {
-        for version in options.versions {
-            params.push(("gameversions[]".to_string(), version.to_string()));
-        }
-    }
-    if !options.search.is_empty() {
-        params.push(("text".to_string(), options.search.clone()));
-    }
+/// How long the cached catalog is trusted without asking ModDB again. An older
+/// copy is still served immediately and refreshed in the background.
+const MODS_CACHE_FRESH: Duration = Duration::from_secs(15 * 60);
 
+/// A cached catalog older than this is not served while the network is
+/// available: it is refetched instead. It is still used if ModDB is unreachable.
+const MODS_CACHE_MAX_AGE: Duration = Duration::from_secs(7 * 24 * 60 * 60);
+
+const MODS_CATALOG_FILE: &str = "mods-catalog.json";
+
+/// Emitted when a background refresh replaced the cached catalog.
+const MODS_CATALOG_REFRESHED_EVENT: &str = "mods-catalog-refreshed";
+
+/// Set while a background catalog refresh is in flight.
+static CATALOG_REFRESHING: AtomicBool = AtomicBool::new(false);
+
+/// Where the unfiltered catalog response is cached, if the app has a cache dir.
+fn catalog_cache_path(app: &AppHandle) -> Option<PathBuf> {
+    app.path()
+        .app_cache_dir()
+        .ok()
+        .map(|dir| dir.join("mods").join(MODS_CATALOG_FILE))
+}
+
+fn cache_age(path: &Path) -> Option<Duration> {
+    let modified = std::fs::metadata(path).ok()?.modified().ok()?;
+    SystemTime::now().duration_since(modified).ok()
+}
+
+async fn fetch_catalog(
+    client: &Arc<reqwest::Client>,
+    params: &[(String, String)],
+) -> Result<Vec<u8>, UiError> {
     let res = client
         .get("https://mods.vintagestory.at/api/mods")
-        .query(&params)
+        .query(params)
         .send()
         .await
         .map_err(|e| format!("Request error: {e}"))?;
@@ -172,11 +178,118 @@ pub async fn fetch_mods(
         });
     }
 
-    let json = res
-        .json::<ModsResponse>()
-        .await
-        .map_err(|e| format!("JSON error: {e}"))?;
-    Ok(json.mods)
+    let bytes = res.bytes().await.map_err(|e| format!("Read error: {e}"))?;
+    Ok(bytes.to_vec())
+}
+
+/// Stores a catalog response, refusing anything that does not parse as the
+/// response the browser expects: a bad body would otherwise be served until it
+/// aged out.
+fn store_catalog(path: &Path, bytes: &[u8]) {
+    if from_slice::<ModsEnvelope>(bytes).is_err() {
+        log_error!("mods: not caching a catalog response that does not parse");
+        return;
+    }
+    let Some(parent) = path.parent() else { return };
+    if let Err(error) = create_dir_all(parent) {
+        log_error!("mods: could not create the catalog cache directory: {error}");
+        return;
+    }
+
+    let temp = parent.join(format!(".mods-catalog-{}.tmp", uuid::Uuid::new_v4()));
+    if let Err(error) = std::fs::write(&temp, bytes) {
+        log_error!("mods: could not write the catalog cache: {error}");
+        return;
+    }
+    if let Err(error) = std::fs::rename(&temp, path) {
+        let _ = remove_file(&temp);
+        log_error!("mods: could not put the catalog cache in place: {error}");
+    }
+}
+
+/// Replaces a stale catalog without making the caller wait for it, then tells
+/// the frontend the cached body changed.
+fn refresh_catalog_in_background(app: AppHandle, client: Arc<reqwest::Client>, path: PathBuf) {
+    // One refresh at a time: a page remount must not start a second
+    // multi-megabyte download behind the first.
+    if CATALOG_REFRESHING.swap(true, Ordering::AcqRel) {
+        return;
+    }
+
+    tauri::async_runtime::spawn(async move {
+        match fetch_catalog(&client, &[]).await {
+            Ok(bytes) => {
+                store_catalog(&path, &bytes);
+                let _ = app.emit(MODS_CATALOG_REFRESHED_EVENT, ());
+            }
+            Err(error) => log_error!("mods: background catalog refresh failed: {error}"),
+        }
+        CATALOG_REFRESHING.store(false, Ordering::Release);
+    });
+}
+
+/// The mod browser's catalog as the raw ModDB response body.
+///
+/// Handing back bytes instead of a parsed `Vec<Mod>` skips a full
+/// serialise/deserialise pass over ~9k records. The unfiltered catalog is also
+/// cached on disk: a fresh copy never touches the network, and an older one is
+/// served immediately with a background refresh behind it. Filtered requests
+/// (search text, game versions) are not cached; each would be its own body.
+#[command]
+pub async fn fetch_mods(
+    app: AppHandle,
+    client: State<'_, Arc<reqwest::Client>>,
+    options: FetchModsParams,
+) -> Result<Response, UiError> {
+    let mut params = Vec::new();
+    for version in &options.versions {
+        params.push(("gameversions[]".to_string(), version.clone()));
+    }
+    if !options.search.is_empty() {
+        params.push(("text".to_string(), options.search.clone()));
+    }
+
+    if !params.is_empty() {
+        return fetch_catalog(client.inner(), &params)
+            .await
+            .map(Response::new);
+    }
+
+    let cache_path = catalog_cache_path(&app);
+    let cached_age = cache_path
+        .as_deref()
+        .and_then(cache_age)
+        .filter(|age| *age <= MODS_CACHE_MAX_AGE);
+
+    if let (Some(path), Some(age)) = (cache_path.as_deref(), cached_age) {
+        if let Ok(bytes) = std::fs::read(path) {
+            if age > MODS_CACHE_FRESH {
+                refresh_catalog_in_background(app, Arc::clone(client.inner()), path.to_path_buf());
+            }
+            return Ok(Response::new(bytes));
+        }
+    }
+
+    let bytes = match fetch_catalog(client.inner(), &[]).await {
+        Ok(bytes) => bytes,
+        // Serving an old catalog beats an empty page while ModDB is unreachable.
+        Err(error) => match cache_path
+            .as_deref()
+            .and_then(|path| std::fs::read(path).ok())
+        {
+            Some(bytes) => {
+                log_error!("mods: {error}; serving the cached catalog");
+                return Ok(Response::new(bytes));
+            }
+            None => return Err(error),
+        },
+    };
+
+    if let Some(path) = cache_path {
+        store_catalog(&path, &bytes);
+    }
+
+    Ok(Response::new(bytes))
 }
 
 #[command]
@@ -1932,6 +2045,23 @@ mod tests {
         assert_eq!(modinfo_modid(&missing), "0");
         assert!(modinfo_string(&missing, "name").is_none());
         assert!(modinfo_string_array(&missing, "authors").is_empty());
+    }
+
+    #[test]
+    fn catalog_cache_rejects_bodies_without_mods() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("mods").join(MODS_CATALOG_FILE);
+
+        // An error envelope would otherwise be served until it aged out.
+        store_catalog(&path, br#"{"statuscode":"404","error":"not found"}"#);
+        assert!(
+            !path.exists(),
+            "a body without a mods array must not be cached"
+        );
+
+        store_catalog(&path, br#"{"statuscode":"200","mods":[]}"#);
+        assert!(path.is_file(), "a catalog body is cached");
+        assert!(cache_age(&path).is_some());
     }
 
     #[test]

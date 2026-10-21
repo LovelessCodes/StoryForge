@@ -5,13 +5,19 @@ vi.mock("@tauri-apps/plugin-os", () => ({ platform: () => "macos" }));
 vi.mock("@tauri-apps/plugin-clipboard-manager", () => ({ writeText: vi.fn() }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
 
-import { relevanceRank } from "./mod-sort";
+import { normalizedName, relevanceRank } from "./mod-sort";
 
 const mod = (overrides: Partial<Parameters<typeof relevanceRank>[0]> = {}) => ({
   name: "Chisel Tools",
   summary: "Adds chisels.",
   tags: [],
   ...overrides,
+});
+
+describe("normalizedName", () => {
+  it("lower-cases and drops punctuation and repeated whitespace", () => {
+    expect(normalizedName(mod({ name: "  Storage — Drawers!  " }))).toBe("storage drawers");
+  });
 });
 
 describe("relevanceRank", () => {

@@ -1,14 +1,15 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { useMemo, useState } from "react";
 
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useInstalledMods } from "@/hooks/use-installed-mods";
 import { useModUpdates } from "@/hooks/use-mod-updates";
-import { stripped } from "@/lib/helpers";
+import { useTauriEvent } from "@/hooks/use-tauri-event";
 import { blockedAuthorSet, excludeBlockedAuthors } from "@/lib/mod-blocklist";
 import { findMissingDependencies } from "@/lib/mod-dependencies";
 import { updateCheckParams } from "@/lib/mod-pins";
-import { relevanceRank, type SortBy } from "@/lib/mod-sort";
+import { normalizedName, relevanceRanker, type SortBy } from "@/lib/mod-sort";
 import { filterModUpdates } from "@/lib/mod-updates";
 import { gameVersionsQuery, modTagsQuery } from "@/lib/queries";
 import type { Mod, ModTag, OutputMod } from "@/lib/types";
@@ -33,17 +34,40 @@ type ModsParams = {
   versions: string[];
 };
 
+/**
+ * How long a searched or version-filtered catalog stays in memory once nothing
+ * observes it. Each one is a full multi-megabyte result set and none of them
+ * are persisted, so the default lifetime would just hold them all for a day.
+ */
+const FILTERED_MODS_GC_TIME = 1000 * 60 * 5;
+
+/** How long typing must pause before the catalog is re-fetched for the new text. */
+const SEARCH_DEBOUNCE_MS = 250;
+
+/** Emitted by the Rust side when a background refresh replaced the cached catalog. */
+const MODS_CATALOG_REFRESHED_EVENT = "mods-catalog-refreshed";
+
 export const modsQuery = (params: ModsParams) => ({
   placeholderData: keepPreviousData,
-  queryFn: () => invoke("fetch_mods", { options: params }) as Promise<Mod[]>,
+  // The command returns ModDB's raw body so neither side re-serialises the
+  // ~9k-record catalog; only the array reaches the cache.
+  queryFn: async () => {
+    const body = await invoke<ArrayBuffer>("fetch_mods", { options: params });
+    const { mods } = JSON.parse(new TextDecoder().decode(body)) as { mods: Mod[] };
+    return mods;
+  },
   queryKey: ["mods", params] as const,
   refetchOnWindowFocus: false,
   staleTime: Infinity,
+  gcTime: params.search || params.versions.length > 0 ? FILTERED_MODS_GC_TIME : undefined,
 });
 
 /** Filter state shared by the filter bar and the mod data hook. */
 export function useModFilters(defaultSortBy: SortBy) {
   const [searchText, setSearchText] = useState("");
+  // The input stays responsive; the catalog request and the relevance ranking
+  // wait for typing to settle, because each request is the whole mod catalog.
+  const appliedSearchText = useDebouncedValue(searchText, SEARCH_DEBOUNCE_MS);
   const [selectedModTags, setSelectedModTags] = useState<ModTag[]>([]);
   const [selectedGameVersions, setSelectedGameVersions] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
@@ -82,6 +106,7 @@ export function useModFilters(defaultSortBy: SortBy) {
   return {
     addGameVersion,
     addModTag,
+    appliedSearchText,
     author,
     category,
     favoritesOnly,
@@ -137,6 +162,13 @@ export function useModsData({
   side: Side;
   sortBy: SortBy;
 }) {
+  const queryClient = useQueryClient();
+  // A stale on-disk catalog is served immediately and refreshed behind the
+  // page; this swaps in the refreshed copy without the user doing anything.
+  useTauriEvent(MODS_CATALOG_REFRESHED_EVENT, () => {
+    void queryClient.invalidateQueries({ queryKey: ["mods"] });
+  });
+
   const { data: gameVersions } = useQuery(gameVersionsQuery);
   const { data: modTags } = useQuery(modTagsQuery);
   const { data: mods } = useQuery(
@@ -193,6 +225,7 @@ export function useModsData({
   const hiddenByBlockCount = (mods?.length ?? 0) - unblockedMods.length;
 
   const modsList = useMemo(() => {
+    const rankBy = relevanceRanker(searchText);
     return unblockedMods
       .filter((mod) => {
         if (
@@ -222,13 +255,13 @@ export function useModsData({
       })
       .sort((a, b) => {
         if (sortBy === "relevance") {
-          const rankA = relevanceRank(a, searchText);
-          const rankB = relevanceRank(b, searchText);
+          const rankA = rankBy(a);
+          const rankB = rankBy(b);
           if (rankA !== rankB) {
             return orderDirection === "descending" ? rankB - rankA : rankA - rankB;
           }
           // Same relevance tier — break ties by trending points.
-          const lengthDiff = stripped(a.name).length - stripped(b.name).length;
+          const lengthDiff = normalizedName(a).length - normalizedName(b).length;
           if (lengthDiff !== 0) {
             return orderDirection === "descending" ? -lengthDiff : lengthDiff;
           }
@@ -238,8 +271,8 @@ export function useModsData({
         }
         if (sortBy === "name") {
           return orderDirection === "descending"
-            ? stripped(b.name).localeCompare(stripped(a.name))
-            : stripped(a.name).localeCompare(stripped(b.name));
+            ? normalizedName(b).localeCompare(normalizedName(a))
+            : normalizedName(a).localeCompare(normalizedName(b));
         }
         if (sortBy === "updated") {
           return orderDirection === "descending"

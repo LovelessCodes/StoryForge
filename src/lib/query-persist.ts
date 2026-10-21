@@ -34,9 +34,25 @@ const EXCLUDED_ROOTS = new Set([
   "world-map",
 ]);
 
+/**
+ * The mod browser keys its catalog as `["mods", { search, versions }]`. Only the
+ * unfiltered catalog is worth restoring: it is what lets the page open with the
+ * mods already listed. A searched or version-filtered result is a separate
+ * multi-megabyte entry, and the persister re-serialises the whole snapshot on
+ * every write, so restoring them would grow the cache by one catalog per
+ * keystroke.
+ */
+function isBaseModsQuery(params: unknown): boolean {
+  if (!params || typeof params !== "object") return false;
+  const { search, versions } = params as { search?: unknown; versions?: unknown };
+  return (search ?? "") === "" && Array.isArray(versions) && versions.length === 0;
+}
+
 export function shouldPersistQuery(query: { queryKey: readonly unknown[] }): boolean {
-  const [root] = query.queryKey;
-  return typeof root === "string" && !EXCLUDED_ROOTS.has(root);
+  const [root, params] = query.queryKey;
+  if (typeof root !== "string" || EXCLUDED_ROOTS.has(root)) return false;
+  if (root === "mods") return isBaseModsQuery(params);
+  return true;
 }
 
 function createQueryCachePersister() {
