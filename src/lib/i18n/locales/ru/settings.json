@@ -53,6 +53,8 @@
     "showPreReleaseDescription": "Включать предварительные версии (RC) в выбор версии игры.",
     "defaultModSort": "Сортировка модов по умолчанию",
     "defaultModSortDescription": "Порядок сортировки при открытии браузера модов.",
+    "defaultWorldsToActiveProfile": "Показывать только миры активного профиля",
+    "defaultWorldsToActiveProfileDescription": "Страница миров открывается с фильтром по текущему профилю, а не по всем профилям. Фильтр можно изменить во время просмотра.",
     "promptModInstallDestination": "Всегда спрашивать, куда устанавливать",
     "promptModInstallDestinationDescription": "Ссылки установки в один клик открывают выбор назначения вместо активного профиля.",
     "sort": {

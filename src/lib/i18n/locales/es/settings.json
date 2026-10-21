@@ -53,6 +53,8 @@
     "showPreReleaseDescription": "Incluir versiones candidatas (RC) al elegir la versión del juego.",
     "defaultModSort": "Orden predeterminado de mods",
     "defaultModSortDescription": "Orden usado al abrir el explorador de mods.",
+    "defaultWorldsToActiveProfile": "Mostrar solo los mundos del perfil activo",
+    "defaultWorldsToActiveProfileDescription": "La página de mundos empieza filtrada por el perfil actual en lugar de todos los perfiles. Puedes cambiar el filtro mientras exploras.",
     "promptModInstallDestination": "Preguntar siempre dónde instalar",
     "promptModInstallDestinationDescription": "Los enlaces de instalación en un clic abren el selector de destino en lugar de usar el perfil activo.",
     "sort": {

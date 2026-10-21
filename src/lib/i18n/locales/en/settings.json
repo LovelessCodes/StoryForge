@@ -53,6 +53,8 @@
     "showPreReleaseDescription": "Include release candidates in the game version pickers.",
     "defaultModSort": "Default mod sort",
     "defaultModSortDescription": "Sort order used when the mod browser opens.",
+    "defaultWorldsToActiveProfile": "Only show worlds from the active profile",
+    "defaultWorldsToActiveProfileDescription": "The Worlds page starts filtered to the current profile instead of all profiles. You can still change the filter while browsing.",
     "promptModInstallDestination": "Always ask where to install",
     "promptModInstallDestinationDescription": "1-click install links open the destination picker instead of defaulting to the active profile.",
     "sort": {

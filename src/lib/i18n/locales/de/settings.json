@@ -53,6 +53,8 @@
     "showPreReleaseDescription": "Release-Candidates bei der Auswahl der Spielversion einblenden.",
     "defaultModSort": "Standard-Mod-Sortierung",
     "defaultModSortDescription": "Sortierreihenfolge beim Öffnen des Mod-Browsers.",
+    "defaultWorldsToActiveProfile": "Nur Welten des aktiven Profils anzeigen",
+    "defaultWorldsToActiveProfileDescription": "Die Weltenseite startet gefiltert auf das aktuelle Profil statt auf alle Profile. Der Filter lässt sich weiterhin ändern.",
     "promptModInstallDestination": "Immer nach dem Installationsziel fragen",
     "promptModInstallDestinationDescription": "1-Klick-Installationslinks öffnen die Zielauswahl, statt das aktive Profil zu verwenden.",
     "sort": {

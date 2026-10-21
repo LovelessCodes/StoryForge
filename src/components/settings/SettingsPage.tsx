@@ -171,6 +171,10 @@ function BehaviourCard() {
   const toggleUseSystemDotnet = useSettingsStore((s) => s.toggleUseSystemDotnet);
   const defaultModSortBy = useSettingsStore((s) => s.defaultModSortBy);
   const setDefaultModSortBy = useSettingsStore((s) => s.setDefaultModSortBy);
+  const defaultWorldsToActiveProfile = useSettingsStore((s) => s.defaultWorldsToActiveProfile);
+  const toggleDefaultWorldsToActiveProfile = useSettingsStore(
+    (s) => s.toggleDefaultWorldsToActiveProfile,
+  );
   const promptModInstallDestination = useSettingsStore((s) => s.promptModInstallDestination);
   const togglePromptModInstallDestination = useSettingsStore(
     (s) => s.togglePromptModInstallDestination,
@@ -245,6 +249,17 @@ function BehaviourCard() {
               ))}
             </SelectContent>
           </Select>
+        </SettingRow>
+
+        <SettingRow
+          description={t("settings.behaviour.defaultWorldsToActiveProfileDescription")}
+          label={t("settings.behaviour.defaultWorldsToActiveProfile")}
+        >
+          <Switch
+            aria-label={t("settings.behaviour.defaultWorldsToActiveProfile")}
+            checked={defaultWorldsToActiveProfile}
+            onCheckedChange={() => toggleDefaultWorldsToActiveProfile()}
+          />
         </SettingRow>
 
         <SettingRow

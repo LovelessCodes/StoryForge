@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Worlds filtered to the active profile**: a new Settings → Behaviour switch makes the Worlds page start filtered to the profile selected in the sidebar instead of showing every profile's worlds. The filter can still be changed on the page, and it is off by default.
+
 ### Changed
 
 - **Mod browsing opens with the list already loaded**: ModDB's full catalog (over 9,000 mods, around 4 MB) is now cached on disk, so the browser no longer downloads and re-parses it every time it is opened. A copy older than 15 minutes is still shown instantly and refreshed in the background, a copy older than a week is refetched, and any cached copy is served when ModDB cannot be reached. The response also reaches the page without being decoded and re-encoded on the way.
