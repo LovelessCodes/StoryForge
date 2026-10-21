@@ -102,6 +102,7 @@
   "logs": {
     "title": "Application log",
     "description": "Live app output, refreshed every 5 seconds.",
+    "privacy": "Logs can contain file paths and account names. Review them before sharing.",
     "copy": "Copy logs",
     "refresh": "Refresh logs",
     "copied": "Logs copied to clipboard",

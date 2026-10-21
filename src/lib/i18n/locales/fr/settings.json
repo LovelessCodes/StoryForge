@@ -102,6 +102,7 @@
   "logs": {
     "title": "Journal de l'application",
     "description": "Sortie de l'application en direct, actualisée toutes les 5 secondes.",
+    "privacy": "Les journaux peuvent contenir des chemins de fichiers et des noms de compte. Vérifiez-les avant de les partager.",
     "copy": "Copier les journaux",
     "refresh": "Actualiser les journaux",
     "copied": "Journaux copiés dans le presse-papiers",

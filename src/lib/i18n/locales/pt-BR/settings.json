@@ -102,6 +102,7 @@
   "logs": {
     "title": "Log do aplicativo",
     "description": "Saída do aplicativo ao vivo, atualizada a cada 5 segundos.",
+    "privacy": "Os logs podem conter caminhos de arquivos e nomes de contas. Revise-os antes de compartilhar.",
     "copy": "Copiar logs",
     "refresh": "Atualizar logs",
     "copied": "Logs copiados para a área de transferência",
