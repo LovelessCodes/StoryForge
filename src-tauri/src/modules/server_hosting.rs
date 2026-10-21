@@ -11,6 +11,7 @@ use tokio::process::Command;
 
 use super::dotnet;
 use super::errors::UiError;
+use super::log_privacy::player_ref;
 use super::paths;
 use super::utils::{dir_size, format_size, lock, normalize_path, profiles_folder, versions_folder};
 use crate::modules::server_hosting_actor;
@@ -1312,7 +1313,11 @@ pub async fn add_to_whitelist(
     uid: String,
     name: String,
 ) -> Result<WhitelistEntry, UiError> {
-    log_info!("add_to_whitelist: id={instance_id} uid={uid} name={name}");
+    log_info!(
+        "add_to_whitelist: id={instance_id} uid={} name={}",
+        player_ref("uid", &uid),
+        player_ref("name", &name)
+    );
 
     let (_dir, instance) = find_instance(&app, instance_id)?;
     let whitelist_path = paths::playerwhitelist_path(&instance.data_dir);
@@ -1367,7 +1372,10 @@ pub async fn add_to_whitelist(
         let _ = send_server_command_internal(instance_id, &format!("/whitelist add {uid}")).await;
     }
 
-    log_info!("add_to_whitelist: added {uid} to instance {instance_id}");
+    log_info!(
+        "add_to_whitelist: added {} to instance {instance_id}",
+        player_ref("uid", &uid)
+    );
     Ok(entry)
 }
 
@@ -1377,7 +1385,10 @@ pub async fn remove_from_whitelist(
     instance_id: u64,
     uid: String,
 ) -> Result<(), UiError> {
-    log_info!("remove_from_whitelist: id={instance_id} uid={uid}");
+    log_info!(
+        "remove_from_whitelist: id={instance_id} uid={}",
+        player_ref("uid", &uid)
+    );
 
     let (_dir, instance) = find_instance(&app, instance_id)?;
     let whitelist_path = paths::playerwhitelist_path(&instance.data_dir);
@@ -1529,7 +1540,10 @@ pub async fn lookup_player_uid(
     client: State<'_, Arc<reqwest::Client>>,
     account_name: String,
 ) -> Result<Option<WhitelistEntry>, UiError> {
-    log_info!("lookup_player_uid: name={account_name}");
+    log_info!(
+        "lookup_player_uid: name={}",
+        player_ref("name", &account_name)
+    );
     let res = client
         .post("https://auth3.vintagestory.at/resolveplayername")
         .header("Content-Type", "application/x-www-form-urlencoded")
@@ -1557,7 +1571,11 @@ pub async fn lookup_player_uid(
 
     match playeruid {
         Some(uid) if uid != "null" => {
-            log_info!("lookup_player_uid: {account_name} → {uid}");
+            log_info!(
+                "lookup_player_uid: {} → {}",
+                player_ref("name", &account_name),
+                player_ref("uid", uid)
+            );
             Ok(Some(WhitelistEntry {
                 uid: uid.to_string(),
                 name: account_name,
@@ -1566,7 +1584,10 @@ pub async fn lookup_player_uid(
             }))
         }
         _ => {
-            log_info!("lookup_player_uid: {account_name} not found");
+            log_info!(
+                "lookup_player_uid: {} not found",
+                player_ref("name", &account_name)
+            );
             Ok(None)
         }
     }
@@ -1577,7 +1598,7 @@ pub async fn lookup_player_name(
     client: State<'_, Arc<reqwest::Client>>,
     uid: String,
 ) -> Result<Option<String>, UiError> {
-    log_info!("lookup_player_name: uid={uid}");
+    log_info!("lookup_player_name: uid={}", player_ref("uid", &uid));
     let res = client
         .post("https://auth3.vintagestory.at/resolveplayeruid")
         .header("Content-Type", "application/x-www-form-urlencoded")
@@ -1605,11 +1626,15 @@ pub async fn lookup_player_name(
 
     match playername {
         Some(name) if name != "null" => {
-            log_info!("lookup_player_name: {uid} → {name}");
+            log_info!(
+                "lookup_player_name: {} → {}",
+                player_ref("uid", &uid),
+                player_ref("name", name)
+            );
             Ok(Some(name.to_string()))
         }
         _ => {
-            log_info!("lookup_player_name: {uid} not found");
+            log_info!("lookup_player_name: {} not found", player_ref("uid", &uid));
             Ok(None)
         }
     }
