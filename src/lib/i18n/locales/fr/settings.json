@@ -95,6 +95,7 @@
     "appVersion": "Version de l'application",
     "appVersionDescription": "Version actuellement installée.",
     "description": "Vérifie discrètement ; les mises à jour sont annoncées dans la barre de titre.",
+    "flatpakDescription": "Flatpak gère les mises à jour via Flathub. Mettez à jour depuis votre logithèque.",
     "check": "Rechercher des mises à jour",
     "checking": "Vérification...",
     "checkingToast": "Recherche de mises à jour...",

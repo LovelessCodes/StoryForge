@@ -95,6 +95,7 @@
     "appVersion": "App version",
     "appVersionDescription": "Currently installed version.",
     "description": "Checks quietly; updates are announced in the title bar.",
+    "flatpakDescription": "Flatpak handles updates through Flathub. Update from your software store.",
     "check": "Check for updates",
     "checking": "Checking...",
     "checkingToast": "Checking for updates...",

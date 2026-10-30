@@ -95,6 +95,7 @@
     "appVersion": "应用版本",
     "appVersionDescription": "当前安装的版本。",
     "description": "静默检查；更新会在标题栏中提示。",
+    "flatpakDescription": "Flatpak 通过 Flathub 管理更新。请通过软件商店进行更新。",
     "check": "检查更新",
     "checking": "正在检查…",
     "checkingToast": "正在检查更新…",

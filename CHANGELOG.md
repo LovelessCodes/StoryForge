@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Optimum installs where Story Forge supplies .NET**: the overlay patches through `Optimum.Patcher.dll` and starts it with a bare `dotnet` command, which failed with an empty "patch conflicted" error whenever the host had no .NET runtime on `PATH` — every Flatpak install, since the runtime Story Forge downloads for the game was never put on the search path. The runtime's own folder now leads `PATH` for the patch run, so installing Optimum no longer depends on a system-wide .NET ([#293](https://github.com/LovelessCodes/StoryForge/issues/293)).
+- **No update checks in the Flatpak build**: Flatpak installs are updated through Flathub, so the bundled updater is switched off there and the app no longer offers a check that reported "Update check complete" without being able to install anything. Settings → Updates now points at your software store, and the title bar and command palette no longer look for a newer build ([#292](https://github.com/LovelessCodes/StoryForge/issues/292)).
 
 ## [2.0.10] - 2026-10-21
 
