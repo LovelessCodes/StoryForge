@@ -8,6 +8,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Optimum installs where Story Forge supplies .NET**: the overlay patches through `Optimum.Patcher.dll` and starts it with a bare `dotnet` command, which failed with an empty "patch conflicted" error whenever the host had no .NET runtime on `PATH` — every Flatpak install, since the runtime Story Forge downloads for the game was never put on the search path. The runtime's own folder now leads `PATH` for the patch run, so installing Optimum no longer depends on a system-wide .NET ([#293](https://github.com/LovelessCodes/StoryForge/issues/293)).
+
 ## [2.0.10] - 2026-10-21
 
 ### Added
