@@ -883,12 +883,18 @@ impl OptimumOutputReader {
     }
 }
 
+/// The `dotnet` command the overlay's CLI starts its patcher with.
+const DOTNET_MUXER: &str = if cfg!(windows) {
+    "dotnet.exe"
+} else {
+    "dotnet"
+};
+
 /// The environment the child runs with, built rather than inherited: a .NET
 /// apphost needs somewhere to find its runtime and somewhere to write temporary
 /// files, and nothing else the launcher happens to carry.
 fn child_environment(dotnet_root: &Path) -> Vec<(String, String)> {
-    const FORWARDED: [&str; 10] = [
-        "PATH",
+    const FORWARDED: [&str; 9] = [
         "HOME",
         "USERPROFILE",
         "SystemRoot",
@@ -907,6 +913,7 @@ fn child_environment(dotnet_root: &Path) -> Vec<(String, String)> {
                 .map(|value| (key.to_string(), value))
         })
         .collect();
+    environment.push(("PATH".to_string(), child_path(dotnet_root)));
     environment.push((
         "DOTNET_ROOT".to_string(),
         dotnet_root.to_string_lossy().into_owned(),
@@ -914,6 +921,30 @@ fn child_environment(dotnet_root: &Path) -> Vec<(String, String)> {
     environment.push(("DOTNET_NOLOGO".to_string(), "1".to_string()));
     environment.push(("DOTNET_CLI_TELEMETRY_OPTOUT".to_string(), "1".to_string()));
     environment
+}
+
+/// `dotnet_root` followed by the inherited search path.
+///
+/// The overlay reaches its patcher through `Optimum.Patcher.dll` at its own
+/// root and starts it as a bare `dotnet` command. A `PATH` without the muxer's
+/// folder fails with an exit status of `-1` and an empty message, so the patch
+/// reports `patch-conflict` for its first target without saying why. On a
+/// desktop install the host's own runtime is on `PATH`; inside a sandbox it is
+/// not, and only the runtime the launcher provisioned is there to point at.
+///
+/// Only prepended when that folder actually holds the muxer: a system root that
+/// keeps it elsewhere leaves `PATH` as it was, and the bare `dotnet` lookup
+/// falls through to the rest of the path as before.
+fn child_path(dotnet_root: &Path) -> String {
+    let inherited = std::env::var_os("PATH").unwrap_or_default();
+    if !dotnet_root.join(DOTNET_MUXER).is_file() {
+        return inherited.to_string_lossy().into_owned();
+    }
+    let mut paths = vec![dotnet_root.to_path_buf()];
+    paths.extend(std::env::split_paths(&inherited));
+    std::env::join_paths(paths)
+        .map(|path| path.to_string_lossy().into_owned())
+        .unwrap_or_else(|_| inherited.to_string_lossy().into_owned())
 }
 
 fn cli_file_name() -> &'static str {
@@ -1511,6 +1542,49 @@ mod tests {
         assert_eq!(
             reader.failure_detail.as_deref(),
             Some("failed to patch VintagestoryAPI.dll (exit 134): cairo-sharp")
+        );
+    }
+
+    fn environment_value(environment: &[(String, String)], key: &str) -> Option<String> {
+        environment
+            .iter()
+            .find(|(name, _)| name == key)
+            .map(|(_, value)| value.clone())
+    }
+
+    #[test]
+    fn child_environment_leads_path_with_the_runtime_folder() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join(DOTNET_MUXER), b"").unwrap();
+
+        let environment = child_environment(dir.path());
+        assert_eq!(
+            environment_value(&environment, "DOTNET_ROOT"),
+            Some(dir.path().to_string_lossy().into_owned())
+        );
+        let path = environment_value(&environment, "PATH").expect("PATH is always set");
+        let mut entries = std::env::split_paths(&path);
+        assert_eq!(
+            entries.next().as_deref(),
+            Some(dir.path()),
+            "a bare `dotnet` lookup has to reach the launcher's runtime first"
+        );
+        let inherited = std::env::var_os("PATH").unwrap_or_default();
+        assert_eq!(
+            entries.collect::<Vec<_>>(),
+            std::env::split_paths(&inherited).collect::<Vec<_>>(),
+            "the inherited search path is kept behind the runtime"
+        );
+    }
+
+    #[test]
+    fn child_path_is_unchanged_without_a_muxer_in_the_runtime() {
+        let dir = tempfile::tempdir().unwrap();
+        let inherited = std::env::var_os("PATH").unwrap_or_default();
+        assert_eq!(
+            child_path(dir.path()),
+            inherited.to_string_lossy().into_owned(),
+            "a system root that keeps its muxer elsewhere must not shadow the host path"
         );
     }
 
