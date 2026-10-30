@@ -1,22 +1,23 @@
 import { type UseQueryOptions, useQuery } from "@tanstack/react-query";
-import { invoke } from "@tauri-apps/api/core";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 
+import { useIsFlatpak } from "@/hooks/use-is-flatpak";
+
 /**
- * Check for app updates. When running inside Flatpak (which manages updates
- * via Flathub), the updater plugin is not registered and this returns null.
+ * Check for app updates. Disabled inside Flatpak, where Flathub manages
+ * updates and the updater plugin is deliberately not registered.
  */
-export const useUpdater = (props?: UseQueryOptions<Update | null, Error, Update | null>) =>
-  useQuery({
+export const useUpdater = (props?: UseQueryOptions<Update | null, Error, Update | null>) => {
+  const { data: isFlatpak } = useIsFlatpak();
+
+  return useQuery({
+    // Wait for the sandbox check: inside Flatpak the plugin is not registered.
+    enabled: isFlatpak === false,
     queryFn: async () => {
-      // Flatpak manages updates through Flathub — our updater plugin is
-      // intentionally not registered in that environment.
-      const isFlatpak = await invoke<boolean>("is_flatpak_cmd").catch(() => false);
-      if (isFlatpak) return null;
       try {
         return await check();
       } catch {
-        // Plugin not available (Flatpak, etc.) — return null gracefully
+        // Plugin not available (e.g. built without updater support).
         return null;
       }
     },
@@ -24,3 +25,4 @@ export const useUpdater = (props?: UseQueryOptions<Update | null, Error, Update 
     staleTime: 1000 * 60 * 5, // 5 minutes
     ...props,
   });
+};

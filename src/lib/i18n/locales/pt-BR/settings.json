@@ -95,6 +95,7 @@
     "appVersion": "Versão do aplicativo",
     "appVersionDescription": "Versão instalada atualmente.",
     "description": "Verifica silenciosamente; atualizações são anunciadas na barra de título.",
+    "flatpakDescription": "O Flatpak gerencia as atualizações pelo Flathub. Atualize pela sua loja de aplicativos.",
     "check": "Verificar atualizações",
     "checking": "Verificando...",
     "checkingToast": "Verificando atualizações...",

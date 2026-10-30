@@ -24,6 +24,7 @@ describe("shouldPersistQuery", () => {
     for (const root of [
       "app-folder",
       "app-version",
+      "is-flatpak",
       "modpack-slug-availability",
       "profileLog",
       "profileLogs",

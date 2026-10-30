@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useAppVersion } from "@/hooks/use-app-version";
+import { useIsFlatpak } from "@/hooks/use-is-flatpak";
 import { errorMessage } from "@/lib/errors";
 import { LOCALES, resolveLocale } from "@/lib/i18n";
 import { type SortBy, sortOptions } from "@/lib/mod-sort";
@@ -280,6 +281,8 @@ function BehaviourCard() {
 function UpdatesCard() {
   const { t } = useTranslation();
   const { data: version } = useAppVersion();
+  // Undefined until the sandbox check resolves; it is warm from the titlebar.
+  const { data: isFlatpak } = useIsFlatpak();
   const queryClient = useQueryClient();
   const [checking, setChecking] = useState(false);
 
@@ -317,18 +320,22 @@ function UpdatesCard() {
           <span className="font-mono text-xs">{version ? `v${version}` : "…"}</span>
         </SettingRow>
         <SettingRow
-          description={t("settings.updates.description")}
+          description={
+            isFlatpak ? t("settings.updates.flatpakDescription") : t("settings.updates.description")
+          }
           label={t("settings.updates.label")}
         >
-          <Button
-            disabled={checking}
-            onClick={() => void checkForUpdates()}
-            size="sm"
-            variant="outline"
-          >
-            <RefreshCwIcon className={checking ? "animate-spin" : undefined} />
-            {checking ? t("settings.updates.checking") : t("settings.updates.check")}
-          </Button>
+          {isFlatpak ? null : (
+            <Button
+              disabled={checking || isFlatpak === undefined}
+              onClick={() => void checkForUpdates()}
+              size="sm"
+              variant="outline"
+            >
+              <RefreshCwIcon className={checking ? "animate-spin" : undefined} />
+              {checking ? t("settings.updates.checking") : t("settings.updates.check")}
+            </Button>
+          )}
         </SettingRow>
       </CardContent>
     </Card>

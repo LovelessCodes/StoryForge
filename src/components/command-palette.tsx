@@ -21,6 +21,7 @@ import { useTheme } from "next-themes";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
+import { useIsFlatpak } from "../hooks/use-is-flatpak";
 import { COMMANDS, getCommand, type AppCommandId } from "../lib/commands";
 import { elementCenter, switchTheme } from "../lib/theme-transition";
 import { useRunCommand } from "./command-runtime";
@@ -76,6 +77,14 @@ export default function CommandPalette({ open, onOpenChange }: CommandPalettePro
   const runCommand = useRunCommand();
   const { t } = useTranslation();
   const { resolvedTheme, setTheme } = useTheme();
+  const { data: isFlatpak } = useIsFlatpak();
+  const visibleGroups = groups
+    // Flatpak installs are updated through Flathub, so checking is a no-op.
+    .map((entry) => ({
+      ...entry,
+      ids: entry.ids.filter((id) => !(isFlatpak && id === "app.checkForUpdates")),
+    }))
+    .filter((entry) => entry.ids.length > 0);
   const isDark = resolvedTheme !== "light";
   const themeItemRef = useRef<HTMLDivElement>(null);
   const pendingThemeRef = useRef<{
@@ -130,7 +139,7 @@ export default function CommandPalette({ open, onOpenChange }: CommandPalettePro
         <CommandInput placeholder={t("layout.commandPalette.placeholder")} />
         <CommandList>
           <CommandEmpty>{t("layout.commandPalette.empty")}</CommandEmpty>
-          {groups.map((entry, index) => (
+          {visibleGroups.map((entry, index) => (
             <div key={entry.groupKey}>
               {index > 0 && <CommandSeparator />}
               <CommandGroup heading={t(entry.groupKey)}>
