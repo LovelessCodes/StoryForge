@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import type { OutputMod } from "@/lib/types";
 
-import { moveMods, reorderGroups, sectionMods, type ModGroup } from "./mod-groups";
+import {
+  moveMods,
+  reorderGroups,
+  sectionMods,
+  setGroupCollapsed,
+  type ModGroup,
+} from "./mod-groups";
 
 function mod(modid: string, version = "1.0.0"): OutputMod {
   return {
@@ -83,6 +89,30 @@ describe("reorderGroups", () => {
   it("does not mutate its input", () => {
     reorderGroups(groups, "g1", "g2");
     expect(groups.map((group) => group.id)).toEqual(["g1", "g2"]);
+  });
+});
+
+describe("setGroupCollapsed", () => {
+  it("adds a section that is collapsed and removes one that is expanded", () => {
+    expect(setGroupCollapsed(["g1"], "g2", true)).toEqual(["g1", "g2"]);
+    expect(setGroupCollapsed(["g1", "g2"], "g1", false)).toEqual(["g2"]);
+  });
+
+  it("does not add the same key twice", () => {
+    const collapsed = ["g1"];
+    expect(setGroupCollapsed(collapsed, "g1", true)).toBe(collapsed);
+  });
+
+  it("ignores keys that are not collapsed", () => {
+    const collapsed = ["g1"];
+    expect(setGroupCollapsed(collapsed, "g2", false)).toEqual(["g1"]);
+  });
+
+  it("does not mutate its input", () => {
+    const collapsed = ["g1"];
+    setGroupCollapsed(collapsed, "g2", true);
+    setGroupCollapsed(collapsed, "g1", false);
+    expect(collapsed).toEqual(["g1"]);
   });
 });
 

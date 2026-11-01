@@ -37,6 +37,7 @@ import { ModPresetsSheet } from "./ModPresetsSheet";
 
 /** Stable empty list so the selector doesn't churn identities. */
 const NO_GROUPS: never[] = [];
+const NO_COLLAPSED: never[] = [];
 
 /** Spoken during a drag; dnd-kit's defaults would announce the internal ids. */
 function groupAnnouncements(t: TFunction, groups: ModGroup[]): Announcements {
@@ -92,11 +93,14 @@ export function InstalledModsView({
   const deleteModGroup = useSettingsStore((s) => s.deleteModGroup);
   const reorderModGroups = useSettingsStore((s) => s.reorderModGroups);
   const moveModsToGroup = useSettingsStore((s) => s.moveModsToGroup);
+  const collapsedKeys = useSettingsStore(
+    (s) => s.collapsedModGroups[modsDirectory] ?? NO_COLLAPSED,
+  );
+  const setModGroupCollapsed = useSettingsStore((s) => s.setModGroupCollapsed);
   const applyState = useApplyModState(modsDirectory);
   const { mutate: setModEnabled } = useSetModEnabled(modsDirectory);
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -114,6 +118,9 @@ export function InstalledModsView({
 
   const mods = useMemo(() => data?.mods ?? [], [data]);
   const sections = useMemo(() => sectionMods(groups, mods), [groups, mods]);
+  const collapsed = useMemo(() => new Set(collapsedKeys), [collapsedKeys]);
+  const toggleCollapsed = (key: string) =>
+    setModGroupCollapsed(modsDirectory, key, !collapsed.has(key));
   const draggingGroup = groups.find((group) => group.id === draggingGroupId);
   const selectedMods = useMemo(
     () => mods.filter((mod) => selected.has(mod.modid.toLowerCase())),
@@ -281,6 +288,7 @@ export function InstalledModsView({
           modsDirectory={modsDirectory}
           moveModsToGroup={moveModsToGroup}
           onRemoveMod={(mod) => removeMods.mutate([mod.path])}
+          onToggleCollapsed={toggleCollapsed}
           renameName={renameName}
           renamingId={renamingId}
           saveRename={saveRename}
@@ -288,7 +296,6 @@ export function InstalledModsView({
           selectMod={selectMod}
           selectSection={selectSection}
           selected={selected}
-          setCollapsed={setCollapsed}
           setConfirmDeleteGroupId={setConfirmDeleteGroupId}
           setModEnabled={setModEnabled}
           setRenameName={setRenameName}

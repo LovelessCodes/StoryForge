@@ -61,6 +61,19 @@ export function reorderGroups(groups: ModGroup[], activeId: string, overId: stri
 }
 
 /**
+ * Marks one section as collapsed or expanded, leaving the other sections as
+ * they are. Returns a new array, or the input when nothing changes.
+ */
+export function setGroupCollapsed(
+  collapsed: string[],
+  key: string,
+  isCollapsed: boolean,
+): string[] {
+  if (!isCollapsed) return collapsed.filter((entry) => entry !== key);
+  return collapsed.includes(key) ? collapsed : [...collapsed, key];
+}
+
+/**
  * Splits installed mods into their groups in group order, with the ungrouped
  * mods last. Empty groups are kept so they stay visible (and deletable).
  */

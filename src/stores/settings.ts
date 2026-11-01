@@ -5,7 +5,7 @@ import { create } from "zustand";
 
 import { logToFile } from "@/lib/logger";
 import { toggleBlockedAuthor } from "@/lib/mod-blocklist";
-import { moveMods, reorderGroups, type ModGroup } from "@/lib/mod-groups";
+import { moveMods, reorderGroups, setGroupCollapsed, type ModGroup } from "@/lib/mod-groups";
 import type { SortBy } from "@/lib/mod-sort";
 import { relocateRecord } from "@/lib/profile-records";
 import { clampTextScale, TEXT_SCALE_DEFAULT } from "@/lib/text-scale";
@@ -83,6 +83,13 @@ type SettingsStore = {
   /** Moves a group into the slot of another one, e.g. after a drag. */
   reorderModGroups: (path: string, activeId: string, overId: string) => void;
   moveModsToGroup: (path: string, modids: string[], groupId: string | null) => void;
+  /**
+   * Sections whose rows are hidden, keyed by profile/server path: group ids
+   * plus the ungrouped section. Kept so switching views or restarting the app
+   * does not reopen every group.
+   */
+  collapsedModGroups: Record<string, string[]>;
+  setModGroupCollapsed: (path: string, key: string, isCollapsed: boolean) => void;
   /** Moves the path-keyed mod records to a renamed profile's new folder. */
   relocateProfileData: (oldPath: string, newPath: string) => void;
   /** Favourite mod listings (lowercased modidstrs), shared across profiles. */
@@ -225,7 +232,12 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
       const modGroups = { ...state.modGroups };
       if (remaining.length > 0) modGroups[path] = remaining;
       else delete modGroups[path];
-      return { modGroups };
+      // The collapsed markers of a deleted group have no section left.
+      const collapsedModGroups = { ...state.collapsedModGroups };
+      const collapsed = setGroupCollapsed(state.collapsedModGroups[path] ?? [], groupId, false);
+      if (collapsed.length > 0) collapsedModGroups[path] = collapsed;
+      else delete collapsedModGroups[path];
+      return { collapsedModGroups, modGroups };
     }),
   reorderModGroups: (path, activeId, overId) =>
     set((state) => ({
@@ -241,11 +253,21 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
         [path]: moveMods(state.modGroups[path] ?? [], modids, groupId),
       },
     })),
+  collapsedModGroups: {},
+  setModGroupCollapsed: (path, key, isCollapsed) =>
+    set((state) => {
+      const collapsed = setGroupCollapsed(state.collapsedModGroups[path] ?? [], key, isCollapsed);
+      const collapsedModGroups = { ...state.collapsedModGroups };
+      if (collapsed.length > 0) collapsedModGroups[path] = collapsed;
+      else delete collapsedModGroups[path];
+      return { collapsedModGroups };
+    }),
   relocateProfileData: (oldPath, newPath) =>
     set((state) => ({
       pinnedMods: relocateRecord(state.pinnedMods, oldPath, newPath),
       modPresets: relocateRecord(state.modPresets, oldPath, newPath),
       modGroups: relocateRecord(state.modGroups, oldPath, newPath),
+      collapsedModGroups: relocateRecord(state.collapsedModGroups, oldPath, newPath),
     })),
   modPresets: {},
   saveModPreset: (path, preset) =>

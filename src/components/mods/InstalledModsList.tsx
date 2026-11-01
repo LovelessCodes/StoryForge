@@ -12,7 +12,7 @@ import {
   PowerOff,
   Trash2,
 } from "lucide-react";
-import { useMemo, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,7 @@ export function InstalledModsList({
   modsDirectory,
   moveModsToGroup,
   onRemoveMod,
+  onToggleCollapsed,
   renameName,
   renamingId,
   saveRename,
@@ -62,7 +63,6 @@ export function InstalledModsList({
   selectMod,
   selectSection,
   selected,
-  setCollapsed,
   setConfirmDeleteGroupId,
   setModEnabled,
   setRenameName,
@@ -79,6 +79,7 @@ export function InstalledModsList({
   modsDirectory: string;
   moveModsToGroup: (modsDirectory: string, modids: string[], groupId: string | null) => void;
   onRemoveMod: (mod: OutputMod) => void;
+  onToggleCollapsed: (key: string) => void;
   renameName: string;
   renamingId: string | null;
   saveRename: (groupId: string) => void;
@@ -86,7 +87,6 @@ export function InstalledModsList({
   selectMod: (modid: string, isSelected: boolean) => void;
   selectSection: (section: ModSection, isSelected: boolean) => void;
   selected: Set<string>;
-  setCollapsed: Dispatch<SetStateAction<Set<string>>>;
   setConfirmDeleteGroupId: (groupId: string | null) => void;
   setModEnabled: (params: {
     enabled: boolean;
@@ -133,14 +133,7 @@ export function InstalledModsList({
                     )}
                     <Button
                       aria-label={isCollapsed ? t("mods.groups.expand") : t("mods.groups.collapse")}
-                      onClick={() =>
-                        setCollapsed((previous) => {
-                          const next = new Set(previous);
-                          if (next.has(key)) next.delete(key);
-                          else next.add(key);
-                          return next;
-                        })
-                      }
+                      onClick={() => onToggleCollapsed(key)}
                       size="icon-sm"
                       variant="ghost"
                     >
