@@ -349,7 +349,18 @@
     "moveToGroup": "Mover para grupo",
     "moved": "{{count}} mod(s) movidos",
     "removeMod": "Remover {{name}}",
-    "emptyGroup": "Nenhum mod neste grupo."
+    "emptyGroup": "Nenhum mod neste grupo.",
+    "order": {
+      "handle": "Arraste para reordenar o mod",
+      "role": "mod reordenável",
+      "instructions": "Para reordenar um mod, pressione Espaço ou Enter na alça, mova-o com as setas e pressione Espaço ou Enter novamente para soltá-lo.",
+      "lifted": "{{name}} levantado.",
+      "moved": "{{name}} agora está na posição {{position}} de {{total}}.",
+      "dropped": "{{name}} solto na posição {{position}} de {{total}}.",
+      "cancelled": "Reordenação cancelada.",
+      "reset": "Redefinir ordem",
+      "resetDone": "Ordem dos mods redefinida"
+    }
   },
   "groups": {
     "new": "Novo grupo",

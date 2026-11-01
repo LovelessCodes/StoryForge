@@ -1,4 +1,4 @@
-import { Bookmark, Copy, FolderPlus, Power, PowerOff } from "lucide-react";
+import { ArrowDownAZ, Bookmark, Copy, FolderPlus, Power, PowerOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ export function InstalledModsToolbar({
   applyPending,
   canToggleMods,
   creatingGroup,
+  hasCustomOrder,
   modCount,
   newGroupName,
   onApplyAll,
@@ -20,11 +21,13 @@ export function InstalledModsToolbar({
   onCreateGroup,
   onNewGroupNameChange,
   onOpenPresets,
+  onResetOrder,
   onStartCreate,
 }: {
   applyPending: boolean;
   canToggleMods: boolean;
   creatingGroup: boolean;
+  hasCustomOrder: boolean;
   modCount: number;
   newGroupName: string;
   onApplyAll: (enabled: boolean) => void;
@@ -33,6 +36,7 @@ export function InstalledModsToolbar({
   onCreateGroup: () => void;
   onNewGroupNameChange: (name: string) => void;
   onOpenPresets: () => void;
+  onResetOrder: () => void;
   onStartCreate: () => void;
 }) {
   const { t } = useTranslation();
@@ -74,6 +78,16 @@ export function InstalledModsToolbar({
         <Button disabled={modCount === 0} onClick={onCopyAll} size="sm" variant="outline">
           <Copy />
           {t("mods.copy.button")}
+        </Button>
+        <Button
+          aria-label={t("mods.installed.order.reset")}
+          disabled={!hasCustomOrder}
+          onClick={onResetOrder}
+          size="icon-sm"
+          title={t("mods.installed.order.reset")}
+          variant="outline"
+        >
+          <ArrowDownAZ />
         </Button>
         {creatingGroup ? (
           <div className="flex items-center gap-2">

@@ -29,7 +29,7 @@ import type { ModGroup, ModSection } from "@/lib/mod-groups";
 import { toast } from "@/lib/notify";
 import type { OutputMod } from "@/lib/types";
 
-import { InstalledModRow } from "./InstalledModRow";
+import { InstalledModRows } from "./InstalledModRows";
 
 /** Selected/enabled counts for one section header. */
 function sectionState(section: ModSection, selected: Set<string>) {
@@ -55,6 +55,7 @@ export function InstalledModsList({
   modsDirectory,
   moveModsToGroup,
   onRemoveMod,
+  onReorderMods,
   onToggleCollapsed,
   renameName,
   renamingId,
@@ -79,6 +80,7 @@ export function InstalledModsList({
   modsDirectory: string;
   moveModsToGroup: (modsDirectory: string, modids: string[], groupId: string | null) => void;
   onRemoveMod: (mod: OutputMod) => void;
+  onReorderMods: (section: ModSection, activeId: string, overId: string) => void;
   onToggleCollapsed: (key: string) => void;
   renameName: string;
   renamingId: string | null;
@@ -270,31 +272,27 @@ export function InstalledModsList({
                         {t("mods.installed.emptyGroup")}
                       </p>
                     ) : (
-                      <div className="grid gap-1.5">
-                        {section.mods.map((installed) => (
-                          <InstalledModRow
-                            canToggleMods={canToggleMods}
-                            groups={groups}
-                            installed={installed}
-                            key={installed.path}
-                            onMove={(modids, groupId) => {
-                              moveModsToGroup(modsDirectory, modids, groupId);
-                              toast.success(t("mods.installed.moved", { count: modids.length }));
-                            }}
-                            onRemove={onRemoveMod}
-                            onSelectedChange={selectMod}
-                            onToggleEnabled={(mod, enabledNow) =>
-                              setModEnabled({
-                                enabled: enabledNow,
-                                modid: mod.modid,
-                                name: mod.name,
-                                version: mod.version,
-                              })
-                            }
-                            selected={selected.has(installed.modid.toLowerCase())}
-                          />
-                        ))}
-                      </div>
+                      <InstalledModRows
+                        canToggleMods={canToggleMods}
+                        groups={groups}
+                        mods={section.mods}
+                        onMove={(modids, groupId) => {
+                          moveModsToGroup(modsDirectory, modids, groupId);
+                          toast.success(t("mods.installed.moved", { count: modids.length }));
+                        }}
+                        onRemove={onRemoveMod}
+                        onReorder={(activeId, overId) => onReorderMods(section, activeId, overId)}
+                        onSelectedChange={selectMod}
+                        onToggleEnabled={(mod, enabledNow) =>
+                          setModEnabled({
+                            enabled: enabledNow,
+                            modid: mod.modid,
+                            name: mod.name,
+                            version: mod.version,
+                          })
+                        }
+                        selected={selected}
+                      />
                     ))}
                 </>
               );

@@ -349,7 +349,18 @@
     "moveToGroup": "Move to group",
     "moved": "Moved {{count}} mod(s)",
     "removeMod": "Remove {{name}}",
-    "emptyGroup": "No mods in this group."
+    "emptyGroup": "No mods in this group.",
+    "order": {
+      "handle": "Drag to reorder mod",
+      "role": "reorderable mod",
+      "instructions": "To reorder a mod, press Space or Enter on its drag handle, move it with the arrow keys, then press Space or Enter again to drop it.",
+      "lifted": "Picked up {{name}}.",
+      "moved": "{{name}} is now at position {{position}} of {{total}}.",
+      "dropped": "Dropped {{name}} at position {{position}} of {{total}}.",
+      "cancelled": "Reordering cancelled.",
+      "reset": "Reset order",
+      "resetDone": "Mod order reset"
+    }
   },
   "groups": {
     "new": "New group",

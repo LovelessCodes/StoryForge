@@ -1,6 +1,6 @@
 /**
- * Path-keyed per-profile records: mod pins, presets and groups live in the
- * settings store under the profile's folder path. Renaming a profile moves the
+ * Path-keyed per-profile records: mod pins, presets, groups and the manual
+ * mod order live in the settings store under the profile's folder path. Renaming a profile moves the
  * folder, so the records have to move with it — otherwise the rename silently
  * drops them and a later profile reusing the folder inherits them.
  */

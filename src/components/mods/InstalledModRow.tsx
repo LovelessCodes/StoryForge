@@ -1,6 +1,6 @@
 import { cn } from "cn";
 import { FolderInput, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ import type { OutputMod } from "@/lib/types";
  */
 export function InstalledModRow({
   canToggleMods,
+  dragHandle,
   groups,
   installed,
   onMove,
@@ -34,6 +35,8 @@ export function InstalledModRow({
   selected,
 }: {
   canToggleMods: boolean;
+  /** Grip rendered for a row the list can reorder; absent otherwise. */
+  dragHandle?: ReactNode;
   groups: ModGroup[];
   installed: OutputMod;
   onMove: (modids: string[], groupId: string | null) => void;
@@ -56,6 +59,7 @@ export function InstalledModRow({
         disabled && "bg-muted/30 opacity-60",
       )}
     >
+      {dragHandle}
       <Checkbox
         aria-label={t("mods.installed.select", { name: installed.name })}
         checked={selected}
