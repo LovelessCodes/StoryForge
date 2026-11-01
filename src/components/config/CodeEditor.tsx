@@ -49,7 +49,7 @@ export default function CodeEditor({
         />
       </Suspense>
 
-      <div className="bg-background/90 absolute top-2 right-3 z-10 flex items-center gap-3 border px-2 py-1 text-[11px]">
+      <div className="bg-background/90 absolute top-2 right-3 z-10 flex items-center gap-3 border px-2 py-1 text-xs">
         <span className={canSave ? "text-[var(--color-warning)]" : "text-muted-foreground"}>
           {canSave ? t("config.code.unsaved") : t("config.code.saved")}
         </span>

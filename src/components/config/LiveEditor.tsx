@@ -131,9 +131,7 @@ export default function LiveEditor({
               {isCol ? <ChevronRightIcon /> : <ChevronDownIcon />}
             </Button>
             <span className="truncate font-mono text-xs">{keyLabel}</span>
-            <span className="text-muted-foreground text-[10px] tracking-wide uppercase">
-              [array]
-            </span>
+            <span className="text-muted-foreground text-2xs tracking-wide uppercase">[array]</span>
             <Button
               className="ml-auto"
               onClick={() => addArrayItem(path)}
@@ -159,7 +157,7 @@ export default function LiveEditor({
                 </div>
               ))}
               {value.length === 0 && (
-                <p className="text-muted-foreground text-[11px]">{t("config.live.emptyArray")}</p>
+                <p className="text-muted-foreground text-xs">{t("config.live.emptyArray")}</p>
               )}
             </div>
           )}
@@ -182,9 +180,7 @@ export default function LiveEditor({
               {isCol ? <ChevronRightIcon /> : <ChevronDownIcon />}
             </Button>
             <span className="truncate font-mono text-xs">{keyLabel}</span>
-            <span className="text-muted-foreground text-[10px] tracking-wide uppercase">
-              {"{ }"}
-            </span>
+            <span className="text-muted-foreground text-2xs tracking-wide uppercase">{"{ }"}</span>
           </div>
           {!isCol && (
             <div className="ml-3 grid gap-2 border-l pl-3">
@@ -260,12 +256,12 @@ export default function LiveEditor({
   return (
     <div className="grid gap-4 p-4">
       {parseError && (
-        <div className="border-destructive/40 bg-destructive/10 text-destructive border p-2 text-[11px]">
+        <div className="border-destructive/40 bg-destructive/10 text-destructive border p-2 text-xs">
           Parse error: {parseError}
         </div>
       )}
 
-      <p className="text-muted-foreground text-[10px] font-medium tracking-widest uppercase">
+      <p className="text-muted-foreground text-2xs font-medium tracking-widest uppercase">
         Live editor · {file}
       </p>
 
@@ -279,7 +275,7 @@ export default function LiveEditor({
         <p className="text-muted-foreground text-xs">{t("config.live.primitiveRoot")}</p>
       )}
 
-      <p className="text-muted-foreground text-right text-[11px]">{t("config.live.autoSaved")}</p>
+      <p className="text-muted-foreground text-right text-xs">{t("config.live.autoSaved")}</p>
     </div>
   );
 }

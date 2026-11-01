@@ -25,6 +25,9 @@
 }
 
 @theme {
+  /* Smallest label size. rem, not px, so the text-scale setting applies. */
+  --text-2xs: 0.625rem;
+
   --color-bg-primary: #0f1117;
   --color-bg-sidebar: #161b22;
   --color-bg-card: #1c2128;

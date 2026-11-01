@@ -111,9 +111,9 @@ export default function ConfigPage() {
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 border">
-          <div className="flex w-56 shrink-0 flex-col border-r">
+          <div className="flex w-60 shrink-0 flex-col border-r">
             <div className="border-b px-3 py-2">
-              <span className="text-muted-foreground text-[10px] font-medium tracking-widest uppercase">
+              <span className="text-muted-foreground text-2xs font-medium tracking-widest uppercase">
                 {t("config.files")}
               </span>
             </div>
@@ -134,7 +134,9 @@ export default function ConfigPage() {
                       type="button"
                     >
                       <FileJson2Icon className="size-3.5 shrink-0" />
-                      <span className="truncate font-mono text-[11px]">{config.filename}</span>
+                      <span className="truncate font-mono text-xs" title={config.filename}>
+                        {config.filename}
+                      </span>
                     </button>
                   );
                 })}
