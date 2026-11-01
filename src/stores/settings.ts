@@ -6,6 +6,7 @@ import { create } from "zustand";
 import { logToFile } from "@/lib/logger";
 import { toggleBlockedAuthor } from "@/lib/mod-blocklist";
 import { moveMods, reorderGroups, setGroupCollapsed, type ModGroup } from "@/lib/mod-groups";
+import { reorderSection } from "@/lib/mod-order";
 import type { SortBy } from "@/lib/mod-sort";
 import { relocateRecord } from "@/lib/profile-records";
 import { clampTextScale, TEXT_SCALE_DEFAULT } from "@/lib/text-scale";
@@ -90,6 +91,13 @@ type SettingsStore = {
    */
   collapsedModGroups: Record<string, string[]>;
   setModGroupCollapsed: (path: string, key: string, isCollapsed: boolean) => void;
+  /**
+   * User-chosen order of installed mods, keyed by profile/server path. Only
+   * mods that have been dragged appear; the rest keep the incoming order.
+   */
+  modOrder: Record<string, string[]>;
+  reorderMods: (path: string, section: string[], activeId: string, overId: string) => void;
+  resetModOrder: (path: string) => void;
   /** Moves the path-keyed mod records to a renamed profile's new folder. */
   relocateProfileData: (oldPath: string, newPath: string) => void;
   /** Favourite mod listings (lowercased modidstrs), shared across profiles. */
@@ -203,6 +211,20 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
       return { pinnedMods };
     }),
   modGroups: {},
+  modOrder: {},
+  reorderMods: (path, section, activeId, overId) =>
+    set((state) => ({
+      modOrder: {
+        ...state.modOrder,
+        [path]: reorderSection(state.modOrder[path] ?? [], section, activeId, overId),
+      },
+    })),
+  resetModOrder: (path) =>
+    set((state) => {
+      const modOrder = { ...state.modOrder };
+      delete modOrder[path];
+      return { modOrder };
+    }),
   createModGroup: (path, name) =>
     set((state) => ({
       modGroups: {
@@ -268,6 +290,7 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
       modPresets: relocateRecord(state.modPresets, oldPath, newPath),
       modGroups: relocateRecord(state.modGroups, oldPath, newPath),
       collapsedModGroups: relocateRecord(state.collapsedModGroups, oldPath, newPath),
+      modOrder: relocateRecord(state.modOrder, oldPath, newPath),
     })),
   modPresets: {},
   saveModPreset: (path, preset) =>

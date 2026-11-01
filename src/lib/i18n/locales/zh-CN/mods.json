@@ -336,7 +336,18 @@
     "moveToGroup": "移动到分组",
     "moved": "已移动 {{count}} 个模组",
     "removeMod": "移除 {{name}}",
-    "emptyGroup": "此分组中没有模组。"
+    "emptyGroup": "此分组中没有模组。",
+    "order": {
+      "handle": "拖动以调整模组顺序",
+      "role": "可调整顺序的模组",
+      "instructions": "要调整模组顺序，请在其拖动手柄上按 Space 或 Enter，用方向键移动，然后再次按 Space 或 Enter 放下。",
+      "lifted": "已拾起 {{name}}。",
+      "moved": "{{name}} 现在位于第 {{position}} 个，共 {{total}} 个。",
+      "dropped": "已将 {{name}} 放在第 {{position}} 个，共 {{total}} 个。",
+      "cancelled": "已取消调整顺序。",
+      "reset": "重置顺序",
+      "resetDone": "模组顺序已重置"
+    }
   },
   "groups": {
     "new": "新建分组",

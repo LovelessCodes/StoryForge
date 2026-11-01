@@ -25,6 +25,7 @@ import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import { useApplyModState, useSetModEnabled } from "@/hooks/use-set-mod-enabled";
 import { errorMessage } from "@/lib/errors";
 import { sectionMods, type ModGroup, type ModSection } from "@/lib/mod-groups";
+import { orderMods } from "@/lib/mod-order";
 import { toast } from "@/lib/notify";
 import type { OutputMod } from "@/lib/types";
 import { useSettingsStore } from "@/stores/settings";
@@ -38,6 +39,7 @@ import { ModPresetsSheet } from "./ModPresetsSheet";
 /** Stable empty list so the selector doesn't churn identities. */
 const NO_GROUPS: never[] = [];
 const NO_COLLAPSED: never[] = [];
+const NO_ORDER: never[] = [];
 
 /** Spoken during a drag; dnd-kit's defaults would announce the internal ids. */
 function groupAnnouncements(t: TFunction, groups: ModGroup[]): Announcements {
@@ -97,6 +99,9 @@ export function InstalledModsView({
     (s) => s.collapsedModGroups[modsDirectory] ?? NO_COLLAPSED,
   );
   const setModGroupCollapsed = useSettingsStore((s) => s.setModGroupCollapsed);
+  const order = useSettingsStore((s) => s.modOrder[modsDirectory] ?? NO_ORDER);
+  const reorderMods = useSettingsStore((s) => s.reorderMods);
+  const resetModOrder = useSettingsStore((s) => s.resetModOrder);
   const applyState = useApplyModState(modsDirectory);
   const { mutate: setModEnabled } = useSetModEnabled(modsDirectory);
 
@@ -116,7 +121,7 @@ export function InstalledModsView({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const mods = useMemo(() => data?.mods ?? [], [data]);
+  const mods = useMemo(() => orderMods(data?.mods ?? [], order), [data, order]);
   const sections = useMemo(() => sectionMods(groups, mods), [groups, mods]);
   const collapsed = useMemo(() => new Set(collapsedKeys), [collapsedKeys]);
   const toggleCollapsed = (key: string) =>
@@ -200,6 +205,11 @@ export function InstalledModsView({
     setCopyOpen(true);
   };
 
+  const resetOrder = () => {
+    resetModOrder(modsDirectory);
+    toast.success(t("mods.installed.order.resetDone"));
+  };
+
   const clearSelection = () => {
     setConfirmBatchRemove(false);
     setSelected(new Set());
@@ -265,6 +275,7 @@ export function InstalledModsView({
           applyPending={applyState.isPending}
           canToggleMods={canToggleMods}
           creatingGroup={creatingGroup}
+          hasCustomOrder={order.length > 0}
           modCount={mods.length}
           newGroupName={newGroupName}
           onApplyAll={(enabled) => applyEnabled(mods, enabled)}
@@ -273,6 +284,7 @@ export function InstalledModsView({
           onCreateGroup={saveNewGroup}
           onNewGroupNameChange={setNewGroupName}
           onOpenPresets={() => setPresetsOpen(true)}
+          onResetOrder={resetOrder}
           onStartCreate={() => setCreatingGroup(true)}
         />
 
@@ -288,6 +300,14 @@ export function InstalledModsView({
           modsDirectory={modsDirectory}
           moveModsToGroup={moveModsToGroup}
           onRemoveMod={(mod) => removeMods.mutate([mod.path])}
+          onReorderMods={(section, activeId, overId) =>
+            reorderMods(
+              modsDirectory,
+              section.mods.map((mod) => mod.modid),
+              activeId,
+              overId,
+            )
+          }
           onToggleCollapsed={toggleCollapsed}
           renameName={renameName}
           renamingId={renamingId}

@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Manual mod order**: rows in the Installed view can be dragged into any order inside their group (or the ungrouped section) and the order is remembered per profile. A reset button beside **Copy to profile** returns to the default filename order, and a newly installed mod is appended to its section instead of jumping into the middle. Disabled mods, selection and batch actions keep working as before.
+
 ### Fixed
 
 - **Optimum installs where Story Forge supplies .NET**: the overlay patches through `Optimum.Patcher.dll` and starts it with a bare `dotnet` command, which failed with an empty "patch conflicted" error whenever the host had no .NET runtime on `PATH` — every Flatpak install, since the runtime Story Forge downloads for the game was never put on the search path. The runtime's own folder now leads `PATH` for the patch run, so installing Optimum no longer depends on a system-wide .NET ([#293](https://github.com/LovelessCodes/StoryForge/issues/293)).
