@@ -589,6 +589,38 @@ pub fn parse_loopback_origin(raw: &str) -> Option<String> {
     Some(format!("http://127.0.0.1:{rest}"))
 }
 
+/// Sends `signal` to the process group led by `pid`.
+///
+/// A child started with `process_group(0)` leads its own group, so this reaches
+/// everything the child started, not just the child itself. A group that has
+/// already exited is not an error worth reporting: the caller wants those
+/// processes gone, and they are.
+#[cfg(unix)]
+pub fn signal_process_group(pid: u32, signal: nix::sys::signal::Signal) {
+    // `0` would name the caller's own group and a value that does not fit in an
+    // `i32` would wrap to a negative one, so both are refused outright.
+    match i32::try_from(pid) {
+        Ok(pgid) if pgid > 0 => {
+            let _ = nix::sys::signal::killpg(nix::unistd::Pid::from_raw(pgid), signal);
+        }
+        _ => {}
+    }
+}
+
+/// Full path to `taskkill.exe`.
+///
+/// Windows resolves a bare program name through the application directory and
+/// the working directory before `System32`, so a stray `taskkill.exe` dropped in
+/// either would be run in place of the real one. The system copy is addressed
+/// directly instead.
+#[cfg(windows)]
+pub fn taskkill_executable() -> PathBuf {
+    match std::env::var_os("SystemRoot") {
+        Some(root) if !root.is_empty() => Path::new(&root).join("System32").join("taskkill.exe"),
+        _ => PathBuf::from(r"C:\Windows\System32\taskkill.exe"),
+    }
+}
+
 /// Removes the freshly created target folder when a later step fails, so a
 /// failed first install never leaves a broken version behind.
 ///
@@ -860,5 +892,43 @@ mod tests {
         fs::write(root.join("b.txt"), b"1234567").unwrap();
         assert_eq!(dir_size_cached(root), 5);
         assert_eq!(dir_size(root), 12);
+    }
+
+    /// A pid of `0` names this process's own group and anything that does not
+    /// fit in an `i32` wraps to a negative group id; neither may be signalled.
+    #[test]
+    #[cfg(unix)]
+    fn signalling_an_impossible_group_is_a_no_op() {
+        signal_process_group(0, nix::sys::signal::Signal::SIGTERM);
+        signal_process_group(u32::MAX, nix::sys::signal::Signal::SIGTERM);
+    }
+
+    /// The server and patch runners rely on "pid is the process group id",
+    /// which only holds because the child is spawned as a group leader.
+    #[test]
+    #[cfg(unix)]
+    fn a_spawned_group_leader_can_be_signalled() {
+        use std::os::unix::process::CommandExt;
+        use std::process::{Command, Stdio};
+
+        let mut child = Command::new("sleep")
+            .arg("60")
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .process_group(0)
+            .spawn()
+            .expect("spawn sleep");
+
+        signal_process_group(child.id(), nix::sys::signal::Signal::SIGTERM);
+
+        let deadline = Instant::now() + Duration::from_secs(10);
+        let status = loop {
+            if let Some(status) = child.try_wait().unwrap() {
+                break status;
+            }
+            assert!(Instant::now() < deadline, "sleep survived SIGTERM");
+            std::thread::sleep(Duration::from_millis(10));
+        };
+        assert!(!status.success(), "sleep died from the signal");
     }
 }

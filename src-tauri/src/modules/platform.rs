@@ -147,7 +147,17 @@ pub fn rosetta_available() -> bool {
     }
 }
 
+/// Reads a 32-bit sysctl flag; `false` for a missing or non-int key.
+///
+/// This is the only `unsafe` in the crate (`unsafe_code` is denied in
+/// Cargo.toml). A safe wrapper would have to guess how `sysctlbyname` types the
+/// reply, and guessing wrong reports "not Apple Silicon" on an M-series Mac; the
+/// raw call is exact.
 #[cfg(target_os = "macos")]
+#[expect(
+    unsafe_code,
+    reason = "sysctlbyname has no safe wrapper; the block is bounded and documented below"
+)]
 fn sysctl_flag(name: &str) -> bool {
     let Ok(name) = std::ffi::CString::new(name) else {
         return false;
