@@ -1,16 +1,35 @@
 name: "Distribute"
 
+# Runs when a release draft is published (all artifacts exist by then), or by
+# hand against an existing tag to backfill a channel.
+#
+# Every third-party channel is generated from the release assets by
+# scripts/packaging/update-manifests.ts and pushed only when the generated
+# manifest actually matches the tag. A channel whose repository or secret is not
+# configured yet is skipped with a notice instead of failing the release.
+#
+# Each job regenerates the manifests itself rather than sharing an artifact: the
+# hashes are cheap to recompute and a job that owns its whole input is one less
+# way for a release to publish a manifest that does not match its assets.
+
 on:
   release:
     types: [published]
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag (e.g. storyforge-v2.0.0)"
+        description: "Release tag (e.g. storyforge-v2.0.11)"
         required: true
 
 permissions:
   contents: read
+
+concurrency:
+  group: distribute-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
+
+env:
+  TAG: ${{ github.event.release.tag_name || inputs.tag }}
 
 jobs:
   winget:
@@ -19,8 +38,6 @@ jobs:
     steps:
       - name: Resolve version
         id: version
-        env:
-          TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: echo "value=${TAG#storyforge-v}" >> "$GITHUB_OUTPUT"
 
       - name: Check the package exists in winget-pkgs
@@ -40,6 +57,181 @@ jobs:
         with:
           identifier: LovelessCodes.StoryForge
           version: ${{ steps.version.outputs.value }}
-          release-tag: ${{ github.event.release.tag_name || inputs.tag }}
+          release-tag: ${{ env.TAG }}
           installers-regex: 'Story\.Forge_.*_x64-setup\.exe$'
           token: ${{ secrets.WINGET_TOKEN }}
+
+  homebrew:
+    name: Publish to the Homebrew tap
+    runs-on: ubuntu-latest
+    env:
+      PACKAGING_TOKEN: ${{ secrets.PACKAGING_TOKEN }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          no-cache: true
+
+      - name: Generate the cask from the release assets
+        run: bun scripts/packaging/update-manifests.ts --only homebrew --tag "$TAG"
+
+      - name: Check that the cask matches the tag
+        id: cask
+        run: |
+          version="${TAG#storyforge-v}"
+          if grep -q "version \"$version\"" packaging/homebrew/Casks/storyforge.rb; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::the cask is not at $version (no macOS dmg in this release); skipping the tap update."
+          fi
+
+      - name: Check the tap token
+        id: token
+        run: |
+          if [ -n "$PACKAGING_TOKEN" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::PACKAGING_TOKEN is not set; skipped the tap update (see packaging/homebrew/README.md)."
+          fi
+
+      - name: Push the cask to LovelessCodes/homebrew-tap
+        if: steps.cask.outputs.ready == 'true' && steps.token.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          git clone --depth=1 "https://x-access-token:${PACKAGING_TOKEN}@github.com/LovelessCodes/homebrew-tap.git" tap
+          mkdir -p tap/Casks
+          cp packaging/homebrew/Casks/storyforge.rb tap/Casks/storyforge.rb
+          cd tap
+          if [ -z "$(git status --porcelain -- Casks/storyforge.rb)" ]; then
+            echo "The cask is already up to date."
+            exit 0
+          fi
+          git config user.name "Story Forge CI"
+          git config user.email "ci@getstoryforge.app"
+          git add Casks/storyforge.rb
+          git commit -m "storyforge ${TAG#storyforge-v}"
+          git push
+
+  scoop:
+    name: Publish to the Scoop bucket
+    runs-on: ubuntu-latest
+    env:
+      PACKAGING_TOKEN: ${{ secrets.PACKAGING_TOKEN }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          no-cache: true
+
+      - name: Generate the manifest from the release assets
+        run: bun scripts/packaging/update-manifests.ts --only scoop --tag "$TAG"
+
+      - name: Check that the manifest matches the tag
+        id: manifest
+        run: |
+          version="${TAG#storyforge-v}"
+          if grep -q "\"version\": \"$version\"" packaging/scoop/bucket/storyforge.json; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::no Windows artifacts in this release; skipping the bucket update."
+          fi
+
+      - name: Check the bucket token
+        id: token
+        run: |
+          if [ -n "$PACKAGING_TOKEN" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::PACKAGING_TOKEN is not set; skipped the bucket update (see packaging/scoop/README.md)."
+          fi
+
+      - name: Push the manifest to LovelessCodes/scoop-bucket
+        if: steps.manifest.outputs.ready == 'true' && steps.token.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          git clone --depth=1 "https://x-access-token:${PACKAGING_TOKEN}@github.com/LovelessCodes/scoop-bucket.git" bucket
+          mkdir -p bucket/bucket
+          cp packaging/scoop/bucket/storyforge.json bucket/bucket/storyforge.json
+          cd bucket
+          if [ -z "$(git status --porcelain -- bucket/storyforge.json)" ]; then
+            echo "The manifest is already up to date."
+            exit 0
+          fi
+          git config user.name "Story Forge CI"
+          git config user.email "ci@getstoryforge.app"
+          git add bucket/storyforge.json
+          git commit -m "storyforge: update to ${TAG#storyforge-v}"
+          git push
+
+  aur:
+    name: Publish to the AUR
+    runs-on: ubuntu-latest
+    env:
+      AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          no-cache: true
+
+      - name: Generate the PKGBUILD from the release assets
+        run: bun scripts/packaging/update-manifests.ts --only aur --tag "$TAG"
+
+      - name: Check that the PKGBUILD matches the tag
+        id: pkgbuild
+        run: |
+          version="${TAG#storyforge-v}"
+          if grep -q "^pkgver=$version$" packaging/aur/PKGBUILD; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::the PKGBUILD is not at $version (no amd64 deb in this release); skipping the AUR update."
+          fi
+
+      - name: Check the AUR deploy key
+        id: key
+        run: |
+          if [ -n "$AUR_SSH_PRIVATE_KEY" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::AUR_SSH_PRIVATE_KEY is not set; skipped the AUR update (see packaging/aur/README.md)."
+          fi
+
+      - name: Push the package to storyforge-bin
+        if: steps.pkgbuild.outputs.ready == 'true' && steps.key.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$AUR_SSH_PRIVATE_KEY" > "$HOME/.ssh/aur"
+          chmod 600 "$HOME/.ssh/aur"
+          ssh-keyscan -t rsa,ecdsa,ed25519 aur.archlinux.org > "$HOME/.ssh/known_hosts" 2>/dev/null
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/aur -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
+          git clone ssh://aur@aur.archlinux.org/storyforge-bin.git aur
+          cp packaging/aur/PKGBUILD packaging/aur/.SRCINFO aur/
+          cd aur
+          if [ -z "$(git status --porcelain -- PKGBUILD .SRCINFO)" ]; then
+            echo "The AUR package is already up to date."
+            exit 0
+          fi
+          git config user.name "Story Forge CI"
+          git config user.email "ci@getstoryforge.app"
+          git add PKGBUILD .SRCINFO
+          git commit -m "upgpkg: storyforge-bin ${TAG#storyforge-v}"
+          git push

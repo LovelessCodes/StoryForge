@@ -118,6 +118,31 @@ jobs:
           prerelease: ${{ contains(github.ref_name, '-rc.') }}
           args: ${{ matrix.args }}
 
+      # Tauri embeds the frontend and declares no sidecar resources, so the
+      # release exe is self-contained and a plain zip of it is a legitimate
+      # portable build — that is what the Scoop manifest consumes
+      # (packaging/scoop/). Only the WebView2 runtime has to be present, which
+      # every supported Windows ships.
+      - name: Package the portable Windows build
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $tag = "storyforge-v$version"
+          $zip = "Story.Forge_${version}_x64-portable.zip"
+          $exe = Get-Item "src-tauri/target/release/Story Forge.exe"
+          Compress-Archive -Path $exe.FullName -DestinationPath $zip -Force
+          # tauri-action leaves the release as a draft and the by-tag endpoint
+          # does not resolve drafts, so find the release in the list first.
+          $id = gh api "repos/$env:GITHUB_REPOSITORY/releases" --jq ".[] | select(.tag_name == '$tag') | .id" |
+            Select-Object -First 1
+          if (-not $id) { throw "no release found for $tag" }
+          Write-Host "Uploading $zip to $tag"
+          gh api --method POST -H "Content-Type: application/zip" --input $zip `
+            "repos/$env:GITHUB_REPOSITORY/releases/$id/assets?name=$zip"
+
       # Keep a size history visible per platform: shrinking the bundles is
       # only verifiable when every release reports what they weigh.
       - name: Report bundle sizes

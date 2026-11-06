@@ -27,12 +27,38 @@ A modern desktop manager for [Vintage Story](https://www.vintagestory.at/): inst
 game versions, manage **profiles** (isolated data folders with their own mods, worlds and
 settings), browse and update mods, join servers, host dedicated servers, and edit mod configs.
 
+## Install
+
+Every file in the table is attached to the [latest release](https://github.com/LovelessCodes/StoryForge/releases/latest).
+
+| Platform    | Channel         | How                                                                                                              |
+| ----------- | --------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Windows     | Installer       | `Story.Forge_<version>_x64-setup.exe`                                                                            |
+| Windows     | MSI             | `Story.Forge_<version>_x64_en-US.msi`                                                                            |
+| Windows     | Scoop           | `scoop bucket add lovelesscodes https://github.com/LovelessCodes/scoop-bucket`<br>`scoop install storyforge`     |
+| Windows     | WinGet          | `winget install LovelessCodes.StoryForge` — the manifest is still in review upstream                             |
+| macOS       | Homebrew        | `brew trust lovelesscodes/tap`<br>`brew install --cask lovelesscodes/tap/storyforge`                             |
+| macOS       | DMG             | `Story.Forge_<version>_aarch64.dmg` (Apple silicon) or `_x64.dmg` (Intel)                                        |
+| Linux       | Flatpak         | `flatpak install --bundle io.github.LovelessCodes.StoryForge-v<version>.flatpak` — Flathub submission is pending |
+| Linux       | AppImage        | `Story.Forge_<version>_amd64.AppImage` or `_aarch64.AppImage`                                                    |
+| Linux       | Debian/Ubuntu   | `Story.Forge_<version>_amd64.deb` (or `_arm64.deb`)                                                              |
+| Linux       | Fedora/openSUSE | `Story.Forge-<version>-1.x86_64.rpm` (or `.aarch64.rpm`)                                                         |
+| Linux       | Arch            | `paru -S storyforge-bin` — the first AUR push happens with the next release                                      |
+| Linux/macOS | Nix             | `nix run github:LovelessCodes/StoryForge` — see [Nix](#nix)                                                      |
+
 > [!WARNING]
 > **macOS Users:** Story Forge is not notarized yet, so macOS Gatekeeper may block it from launching. After installing, run the following in your terminal to allow the app:
 >
 > ```sh
 > sudo xattr -rd com.apple.quarantine /Applications/Story\ Forge.app
 > ```
+
+> [!NOTE]
+> Updates follow the channel you installed with. The installer, MSI, DMG, AppImage, `.deb`
+> and `.rpm` builds update themselves from inside the app; the Flatpak comes from Flathub/
+> `flatpak update`, and Homebrew, Scoop, AUR and Nix are updated by their own tool.
+
+## Concepts
 
 The core domain concept is the **profile**:
 
@@ -171,9 +197,21 @@ nix develop                                 # dev shell with Bun, Rust and the T
 ```
 
 On macOS the bundle is at `./result/Applications/Story Forge.app`. The flake resolves the frontend
-dependencies with [bun2nix](https://github.com/nix-community/bun2nix) — after changing `bun.lock`,
+with [bun2nix](https://github.com/nix-community/bun2nix) — after changing `bun.lock`,
 regenerate `bun.nix` from the dev shell with `bun2nix -o bun.nix`. Intel Macs are not supported
 (nixpkgs dropped `x86_64-darwin` in 26.11).
+
+The first build compiles the whole app (~25 minutes). Builds of the `release` branch are pushed to
+the `storyforge` [Cachix](https://cachix.org) cache, so most people substitute instead of
+compiling:
+
+```sh
+cachix use storyforge    # once per machine; adds the cache and its public key
+```
+
+CI skips the cache automatically until a `storyforge` cache exists and its token is stored as the
+`CACHIX_AUTH_TOKEN` secret — add the key printed by `cachix use` to the `nixConfig` block in
+`flake.nix` so `nix run` picks the cache up without any local setup.
 
 ## Development
 

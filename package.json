@@ -19,7 +19,8 @@
     "test": "vitest run",
     "typecheck": "tsc-rs --noEmit",
     "bump": "bun run scripts/bump-version.ts",
-    "check:i18n": "bun scripts/check-i18n.ts"
+    "check:i18n": "bun scripts/check-i18n.ts",
+    "check:packaging": "bun scripts/packaging/update-manifests.ts --check"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
