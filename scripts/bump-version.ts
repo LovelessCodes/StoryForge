@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createInterface } from "node:readline";
 
@@ -142,7 +142,13 @@ const updatedToml = cargoToml.replace(/^version\s*=\s*"[^"]*"/m, `version = "${n
 writeFileSync(join(ROOT, "src-tauri/Cargo.toml"), updatedToml);
 console.log(`  Cargo.toml → ${newVersion}`);
 
-// 4. Cargo.lock
+// 4. Package manifests (Homebrew cask, Scoop, AUR)
+// Only the version strings move here; scripts/packaging/update-manifests.ts
+// recomputes the checksums from the release assets once the build is published.
+sh("bun", ["scripts/packaging/update-manifests.ts", "--version-only", "--version", newVersion]);
+console.log(`  packaging manifests → ${newVersion}`);
+
+// 5. Cargo.lock
 const lockResult = spawnSync("cargo", ["generate-lockfile"], {
   cwd: join(ROOT, "src-tauri"),
   stdio: DRY_RUN ? "ignore" : "inherit",
@@ -153,21 +159,29 @@ if (lockResult.status === 0) {
   console.log("  Cargo.lock skipped (cargo not available?)");
 }
 
-// 5. Format
+// 6. Format
 sh("bun", ["run", "fmt"]);
 console.log("  formatted");
 
-// 6. Commit
+// 7. Commit
+const manifests = [
+  "packaging/homebrew/Casks/storyforge.rb",
+  "packaging/scoop/bucket/storyforge.json",
+  "packaging/aur/PKGBUILD",
+  "packaging/aur/.SRCINFO",
+].filter((path) => existsSync(join(ROOT, path)));
+
 git(
   "add",
   "package.json",
   "src-tauri/tauri.conf.json",
   "src-tauri/Cargo.toml",
   "src-tauri/Cargo.lock",
+  ...manifests,
 );
 git("commit", "-m", `chore: bump version to ${newVersion}`);
 
-// 7. Push & tag
+// 8. Push & tag
 const tag = `storyforge-v${newVersion}`;
 if (isPreRelease) {
   // Pre-release: tag only, don't push commit to release branch

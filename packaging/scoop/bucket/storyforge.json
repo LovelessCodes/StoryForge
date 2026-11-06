@@ -1,0 +1,38 @@
+{
+  "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
+  "version": "2.0.11",
+  "description": "A modern desktop launcher and mod manager for Vintage Story",
+  "homepage": "https://getstoryforge.app/",
+  "license": "GPL-3.0-only",
+  "architecture": {
+    "64bit": {
+      "url": "https://github.com/LovelessCodes/StoryForge/releases/download/storyforge-v2.0.11/Story.Forge_2.0.11_x64-setup.exe#/dl.7z",
+      "hash": "20a3336f4e1042a289f14297c5c4396ad9b77b4df6dad6b0b24715fcb429b5ec"
+    }
+  },
+  "##": "Scoop unpacks the NSIS installer; post_install drops the installer helpers. Releases that ship Story.Forge_<version>_x64-portable.zip use that instead.",
+  "post_install": "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Force -Recurse -ErrorAction SilentlyContinue",
+  "bin": [
+    [
+      "StoryForge.exe",
+      "storyforge"
+    ]
+  ],
+  "shortcuts": [
+    [
+      "StoryForge.exe",
+      "Story Forge"
+    ]
+  ],
+  "checkver": {
+    "github": "https://github.com/LovelessCodes/StoryForge",
+    "regex": "storyforge-v([\\d.]+)"
+  },
+  "autoupdate": {
+    "architecture": {
+      "64bit": {
+        "url": "https://github.com/LovelessCodes/StoryForge/releases/download/storyforge-v$version/Story.Forge_$version_x64-setup.exe#/dl.7z"
+      }
+    }
+  }
+}

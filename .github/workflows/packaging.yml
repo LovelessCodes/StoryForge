@@ -1,0 +1,47 @@
+name: Packaging
+
+# The Homebrew cask, Scoop manifest and AUR PKGBUILD are generated from the
+# release assets (scripts/packaging/update-manifests.ts). Their only hand-edited
+# state is the version, which has to track package.json — a release that ships a
+# stale cask silently pins macOS users to an older build, which is exactly how
+# the AUR package fell eleven versions behind.
+
+on:
+  push:
+    branches: ["release"]
+    paths:
+      - "packaging/**"
+      - "scripts/packaging/**"
+      - "package.json"
+      - ".github/workflows/packaging.yml"
+  pull_request:
+    paths:
+      - "packaging/**"
+      - "scripts/packaging/**"
+      - "package.json"
+      - ".github/workflows/packaging.yml"
+
+concurrency:
+  group: packaging-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  manifests:
+    name: manifests match package.json
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          no-cache: true
+
+      # Offline: only compares the version in each manifest with package.json.
+      - name: Check the generated manifests
+        run: bun scripts/packaging/update-manifests.ts --check

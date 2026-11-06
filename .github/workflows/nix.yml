@@ -26,11 +26,13 @@ permissions:
   contents: read
 
 jobs:
-  # The full `nix build` compiles the whole app and takes around 25 minutes,
-  # and every commit produces a new derivation, so a cache cannot carry it
-  # between runs. Pull requests that only change the dependency lock get the
-  # fast checks below; anything touching the packaging itself still builds
-  # fully, and pushes and manual runs always do.
+  # A full `nix build` compiles the whole app in about 25 minutes, and every
+  # commit produces a new derivation, so a shared cache cannot carry a PR
+  # between commits. What it does carry is the commit that lands on `release`:
+  # `nix run github:LovelessCodes/StoryForge` then substitutes the build most
+  # users would otherwise compile themselves. Pull requests that only change the
+  # dependency lock get the fast checks below; anything touching the packaging
+  # itself still builds fully, and pushes and manual runs always do.
   scope:
     name: Changed files
     runs-on: ubuntu-slim
@@ -63,6 +65,8 @@ jobs:
     name: Checks (evaluate + bun.nix)
     needs: scope
     runs-on: ubuntu-latest
+    env:
+      CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
@@ -72,6 +76,17 @@ jobs:
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
+
+      # Skipped until a cache is set up: create one at cachix.org and store its
+      # auth token as the CACHIX_AUTH_TOKEN secret (see README → Nix).
+      - name: Use the Story Forge binary cache
+        if: env.CACHIX_AUTH_TOKEN != ''
+        uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866 # v17
+        with:
+          name: storyforge
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          # PR derivations are throwaway; only landable commits get pushed.
+          skipPush: ${{ github.event_name == 'pull_request' }}
 
       - name: Evaluate the flake for both platforms
         run: |
@@ -88,6 +103,8 @@ jobs:
     needs: scope
     if: needs.scope.outputs.full == 'true'
     runs-on: ubuntu-latest
+    env:
+      CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
@@ -97,6 +114,15 @@ jobs:
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
+
+      - name: Use the Story Forge binary cache
+        if: env.CACHIX_AUTH_TOKEN != ''
+        uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866 # v17
+        with:
+          name: storyforge
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          pathsToPush: ./result
+          skipPush: ${{ github.event_name == 'pull_request' }}
 
       - name: Lock flake
         run: nix flake lock && cat flake.lock

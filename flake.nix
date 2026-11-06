@@ -11,9 +11,14 @@
   };
 
   nixConfig = {
-    extra-substituters = [ "https://nix-community.cachix.org" ];
+    extra-substituters = [
+      "https://nix-community.cachix.org"
+      # Builds of the `release` branch, pushed by .github/workflows/nix.yml.
+      "https://storyforge.cachix.org"
+    ];
     extra-trusted-public-keys = [
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+      "storyforge.cachix.org-1:7zr0esCJt/Rq5sUReXD3lAPeZ7j8lteiiXdfGLut9Zo="
     ];
   };
 
