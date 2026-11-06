@@ -35,8 +35,23 @@ ships with Windows 10/11 and is what the installer would have bootstrapped.
 
 The bucket repository `LovelessCodes/scoop-bucket` exists and is current. The
 `scoop` job in `.github/workflows/distribute.yml` keeps it that way using the
-same `PACKAGING_TOKEN` PAT as the Homebrew tap (`Contents: read and write` on
-this repository) — see `packaging/homebrew/README.md`.
+same `PACKAGING_TOKEN` as the Homebrew tap. That token is a **GitHub personal
+access token**, not a Scoop or AUR credential:
+
+1. Go to <https://github.com/settings/personal-access-tokens/new>.
+2. Resource owner: `LovelessCodes`.
+3. Repository access: `Only select repositories` → `homebrew-tap` and
+   `scoop-bucket`. Nothing else is needed, and the StoryForge repository itself
+   must **not** be selected — the secret only has to write the two mirrors.
+4. Permissions → Repository permissions → `Contents: Read and write`. (That is
+   the only permission required; `Metadata: Read` is added automatically.)
+5. Generate, copy the token, then add it as a repository secret named
+   `PACKAGING_TOKEN` at
+   <https://github.com/LovelessCodes/StoryForge/settings/secrets/actions>.
+
+Fine-grained tokens expire (one year at most), so the token will need renewing;
+when it lapses both the `scoop` and `homebrew` jobs start skipping with a notice
+rather than failing a release.
 
 Pushing by hand, if the token is not set yet:
 

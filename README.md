@@ -43,7 +43,7 @@ Every file in the table is attached to the [latest release](https://github.com/L
 | Linux       | AppImage        | `Story.Forge_<version>_amd64.AppImage` or `_aarch64.AppImage`                                                    |
 | Linux       | Debian/Ubuntu   | `Story.Forge_<version>_amd64.deb` (or `_arm64.deb`)                                                              |
 | Linux       | Fedora/openSUSE | `Story.Forge-<version>-1.x86_64.rpm` (or `.aarch64.rpm`)                                                         |
-| Linux       | Arch            | `paru -S storyforge-bin` — the first AUR push happens with the next release                                      |
+| Linux       | Arch            | `makepkg -si` in [`packaging/aur/`](packaging/aur) of a clone — the AUR package is not published yet             |
 | Linux/macOS | Nix             | `nix run github:LovelessCodes/StoryForge` — see [Nix](#nix)                                                      |
 
 > [!WARNING]
@@ -56,7 +56,7 @@ Every file in the table is attached to the [latest release](https://github.com/L
 > [!NOTE]
 > Updates follow the channel you installed with. The installer, MSI, DMG, AppImage, `.deb`
 > and `.rpm` builds update themselves from inside the app; the Flatpak comes from Flathub/
-> `flatpak update`, and Homebrew, Scoop, AUR and Nix are updated by their own tool.
+> `flatpak update`, and Homebrew, Scoop and Nix are updated by their own tool.
 
 ## Concepts
 
@@ -202,16 +202,16 @@ regenerate `bun.nix` from the dev shell with `bun2nix -o bun.nix`. Intel Macs ar
 (nixpkgs dropped `x86_64-darwin` in 26.11).
 
 The first build compiles the whole app (~25 minutes). Builds of the `release` branch are pushed to
-the `storyforge` [Cachix](https://cachix.org) cache, so most people substitute instead of
-compiling:
+the `storyforge` [Cachix](https://cachix.org) cache, so a released commit substitutes instead of
+compiling. The cache and its public key are already listed in the flake's `nixConfig`, but Nix
+ignores that unless it trusts it, so either opt in once per machine:
 
 ```sh
-cachix use storyforge    # once per machine; adds the cache and its public key
+cachix use storyforge                     # plain `nix run` then substitutes
+nix run --accept-flake-config github:LovelessCodes/StoryForge   # or let the flake configure Nix
 ```
 
-CI skips the cache automatically until a `storyforge` cache exists and its token is stored as the
-`CACHIX_AUTH_TOKEN` secret — add the key printed by `cachix use` to the `nixConfig` block in
-`flake.nix` so `nix run` picks the cache up without any local setup.
+Only commits that land on `release` are pushed from CI; pull-request builds are never cached.
 
 ## Development
 

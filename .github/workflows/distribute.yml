@@ -175,6 +175,10 @@ jobs:
           git commit -m "storyforge: update to ${TAG#storyforge-v}"
           git push
 
+  # Dormant: the AUR cannot be registered for right now, so `storyforge-bin`
+  # does not exist and there is nothing to push to. The job is kept ready — it
+  # skips with a notice until AUR_SSH_PRIVATE_KEY is set, and the first push
+  # creates the package. See packaging/aur/README.md.
   aur:
     name: Publish to the AUR
     runs-on: ubuntu-latest

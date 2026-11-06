@@ -11,16 +11,15 @@
   };
 
   nixConfig = {
-    extra-substituters = [ "https://nix-community.cachix.org" ];
+    extra-substituters = [
+      "https://nix-community.cachix.org"
+      # Builds of the `release` branch, pushed by .github/workflows/nix.yml.
+      "https://storyforge.cachix.org"
+    ];
     extra-trusted-public-keys = [
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+      "storyforge.cachix.org-1:7zr0esCJt/Rq5sUReXD3lAPeZ7j8lteiiXdfGLut9Zo="
     ];
-    # The project's own cache is not listed until it exists: create the
-    # `storyforge` cache at cachix.org, then add
-    #   extra-substituters = [ "https://storyforge.cachix.org" ];
-    #   extra-trusted-public-keys = [ "storyforge.cachix.org-1:<key>" ]
-    # with the key printed by `cachix use storyforge`. CI pushes to it from
-    # .github/workflows/nix.yml (see README → Nix).
   };
 
   outputs =
