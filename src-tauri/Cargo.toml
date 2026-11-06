@@ -91,7 +91,6 @@ tar = "0.4"
 image = { version = "0.25", default-features = false, features = ["png"] }
 fs_extra = "1.3.0"
 semver = "1.0.28"
-libc = "0.2"
 base64 = "0.23"
 sha2 = "0.11"
 same-file = "1"
@@ -100,6 +99,10 @@ same-file = "1"
 rusqlite = { version = "0.40", features = ["bundled"] }
 
 [target.'cfg(unix)'.dependencies]
+# `kill`/`killpg` are safe wrappers over the syscall, so the launcher's own
+# process-tree handling needs no `unsafe`. Already in the tree via os_info/zip,
+# so this adds no crate to the build.
+nix = { version = "0.31", default-features = false, features = ["signal"] }
 rusqlite = "0.40"
 
 # Reveal-in-file-manager goes through xdg-desktop-portal on Linux, which is the
@@ -107,6 +110,11 @@ rusqlite = "0.40"
 # opener plugin already pulls in, so the dependency tree is unchanged.
 [target.'cfg(target_os = "linux")'.dependencies]
 zbus = "5.9"
+
+# Only the `sysctlbyname` wrapper in modules/platform.rs reads host facts this
+# way; every other process and signal call goes through `nix` or std.
+[target.'cfg(target_os = "macos")'.dependencies]
+libc = "0.2"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2"
@@ -116,6 +124,10 @@ tempfile = "3"
 
 [lints.rust]
 unsafe_op_in_unsafe_fn = "warn"
+# The crate has exactly one `unsafe` block, the macOS `sysctlbyname` wrapper in
+# modules/platform.rs, which carries an `#[expect(unsafe_code)]`. Anything new
+# has to argue with this line first.
+unsafe_code = "deny"
 
 [lints.clippy]
 undocumented_unsafe_blocks = "warn"

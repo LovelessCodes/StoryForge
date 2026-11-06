@@ -955,30 +955,34 @@ fn cli_file_name() -> &'static str {
     }
 }
 
+/// Which signal a stop request sends to a run tree; the Windows side ignores
+/// it and force-kills either way.
+#[derive(Clone, Copy)]
+enum StopSignal {
+    Term,
+    Kill,
+}
+
 /// Kills the whole run, not just the process the installer spawned: each target
 /// is its own patcher process, and killing only the parent would leave
 /// grandchildren rewriting assemblies inside the game folder.
 #[cfg(unix)]
-fn kill_run_tree(pid: u32, signal: i32) {
-    // SAFETY: `kill` is called with a negative pid, which signals the process
-    // group the child was given; a missing group is the outcome this wants.
-    unsafe {
-        libc::kill(-(pid as i32), signal);
-    }
+fn kill_run_tree(pid: u32, signal: StopSignal) {
+    let signal = match signal {
+        StopSignal::Term => nix::sys::signal::Signal::SIGTERM,
+        StopSignal::Kill => nix::sys::signal::Signal::SIGKILL,
+    };
+    super::utils::signal_process_group(pid, signal);
 }
 
 #[cfg(windows)]
-fn kill_run_tree(pid: u32, _signal: i32) {
-    let _ = std::process::Command::new("taskkill")
+fn kill_run_tree(pid: u32, _signal: StopSignal) {
+    let _ = std::process::Command::new(super::utils::taskkill_executable())
         .args(["/PID", &pid.to_string(), "/T", "/F"])
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status();
 }
-
-/// Signal numbers used by [`kill_run_tree`]; the Windows side ignores them.
-const KILL_SIGTERM: i32 = 15;
-const KILL_SIGKILL: i32 = 9;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum RunStop {
@@ -1104,12 +1108,12 @@ async fn run_optimum_cli(
 
     if stop.is_some() {
         if let Some(pid) = pid {
-            kill_run_tree(pid, KILL_SIGTERM);
+            kill_run_tree(pid, StopSignal::Term);
         }
         let graceful = tokio::time::timeout(SIGKILL_GRACE, &mut wait).await;
         if graceful.is_err() {
             if let Some(pid) = pid {
-                kill_run_tree(pid, KILL_SIGKILL);
+                kill_run_tree(pid, StopSignal::Kill);
             }
             let _ = (&mut wait).await;
         }

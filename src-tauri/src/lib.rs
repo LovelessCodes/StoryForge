@@ -283,62 +283,72 @@ pub fn run() {
             }
 
             // ── Step 0: Init logger ──
-            // Use app_data_dir()/logs/ so the LogViewer can find the file.
-            let log_dir = app_handle
-                .path()
-                .app_data_dir()
-                .expect("Failed to get app data dir")
-                .join("logs");
-            let _ = std::fs::create_dir_all(&log_dir);
-            app_handle
-                .plugin(
-                    tauri_plugin_log::Builder::new()
-                        .target(tauri_plugin_log::Target::new(
-                            tauri_plugin_log::TargetKind::Folder {
-                                path: log_dir,
-                                file_name: Some("app".into()),
-                            },
+            // Use app_data_dir()/logs/ so the LogViewer can find the file. A
+            // machine where that path cannot be resolved still gets a running
+            // app: logging then goes to stderr, where a launcher started from
+            // a terminal will show it.
+            let log_target = match app_handle.path().app_data_dir() {
+                Ok(dir) => {
+                    let log_dir = dir.join("logs");
+                    let _ = std::fs::create_dir_all(&log_dir);
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Folder {
+                        path: log_dir,
+                        file_name: Some("app".into()),
+                    })
+                }
+                Err(error) => {
+                    eprintln!(
+                        "StoryForge: cannot resolve the app data dir ({error}); logging to stderr only"
+                    );
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stderr)
+                }
+            };
+            let log_plugin = app_handle.plugin(
+                tauri_plugin_log::Builder::new()
+                    .target(log_target)
+                    .max_file_size(512_000 /* bytes */)
+                    .level(log::LevelFilter::Info)
+                    .format(|out, message, record| {
+                        out.finish(format_args!(
+                            "[{}][{}] {}",
+                            chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
+                            record.level(),
+                            message
                         ))
-                        .max_file_size(512_000 /* bytes */)
-                        .level(log::LevelFilter::Info)
-                        .format(|out, message, record| {
-                            out.finish(format_args!(
-                                "[{}][{}] {}",
-                                chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
-                                record.level(),
-                                message
-                            ))
-                        })
-                        .build(),
-                )
-                .expect("Failed to init log plugin");
+                    })
+                    .build(),
+            );
+            // A logger that cannot start is not worth taking the app down for:
+            // `log` calls become no-ops and the app keeps working without a log
+            // file, which is what already happens if the folder is unwritable.
+            if let Err(error) = log_plugin {
+                eprintln!("StoryForge: log plugin failed to start: {error}");
+            }
 
             // Log startup info
             let startup_start = std::time::Instant::now();
             if let Ok(data_dir) = app_handle.path().app_data_dir() {
                 log_info!("App started, data dir: {}", utils::display_path(&data_dir));
-            } else {
-                log_error!("FATAL: Failed to resolve app_data_dir");
-                panic!("Failed to resolve app_data_dir");
             }
 
             // ── Step 1: Create store directory ──
             let t1 = std::time::Instant::now();
-            let store_path = match app.path().app_data_dir() {
-                Ok(dir) => dir.join(modules::paths::STORE_DIR),
-                Err(e) => {
-                    log_error!("Failed to get app_data_dir for store: {}", e);
-                    panic!("Failed to get app_data_dir for store: {}", e);
-                }
-            };
-            if let Err(e) = std::fs::create_dir_all(&store_path) {
+            // Errors rather than `panic!`: release builds use `panic = "abort"`,
+            // which would kill the app before its window ever shows. A setup
+            // error instead reaches the startup report in `run()`.
+            let store_path = app
+                .path()
+                .app_data_dir()
+                .map_err(|error| format!("Failed to resolve the app data directory: {error}"))?
+                .join(modules::paths::STORE_DIR);
+            std::fs::create_dir_all(&store_path).map_err(|error| {
                 log_error!(
                     "Failed to create store directory {}: {}",
                     utils::display_path(&store_path),
-                    e
+                    error
                 );
-                panic!("Failed to create store directory: {}", e);
-            }
+                format!("Failed to create {}: {error}", store_path.display())
+            })?;
             log_info!(
                 "Setup step 1 done: store dir created at {}",
                 utils::display_path(&store_path)
@@ -585,9 +595,21 @@ pub fn run() {
             maps::get_all_map_tiles_by_path,
         ]);
 
-    let app = builder
-        .build(tauri::generate_context!())
-        .expect("error while building tauri application");
+    let app = match builder.build(tauri::generate_context!()) {
+        Ok(app) => app,
+        // Release builds use `panic = "abort"`, and a Windows release build has
+        // no console to print to, so the reason is written somewhere the user
+        // can find it for a report instead of dying without a word.
+        Err(error) => {
+            let message = format!("StoryForge failed to start: {error}");
+            eprintln!("{message}");
+            let _ = std::fs::write(
+                std::env::temp_dir().join("storyforge-startup-error.txt"),
+                &message,
+            );
+            std::process::exit(1);
+        }
+    };
 
     app.run(|_app_handle, event| {
         if let RunEvent::Exit = event {

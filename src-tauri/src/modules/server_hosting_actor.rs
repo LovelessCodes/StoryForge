@@ -210,14 +210,7 @@ fn build_command(
     // On Unix, run the server in its own process group so we can terminate
     // any spawned children together with the main process.
     #[cfg(unix)]
-    // SAFETY: `setpgid` is async-signal-safe and only touches the child process
-    // created by `fork`; failures are ignored deliberately.
-    unsafe {
-        cmd.pre_exec(|| {
-            libc::setpgid(0, 0);
-            Ok(())
-        });
-    }
+    cmd.process_group(0);
 
     Ok(cmd)
 }
@@ -630,14 +623,10 @@ async fn graceful_stop(
             log_info!("server_hosting: instance {instance_id} did not stop cleanly, escalating");
             if let Some(p) = pid {
                 #[cfg(unix)]
-                // SAFETY: `p` is the live child PID recorded at spawn; the
-                // process group was created with `setpgid` above.
-                unsafe {
-                    let _ = libc::killpg(p as i32, libc::SIGTERM);
-                }
+                super::utils::signal_process_group(p, nix::sys::signal::Signal::SIGTERM);
                 #[cfg(windows)]
                 {
-                    let _ = std::process::Command::new("taskkill")
+                    let _ = std::process::Command::new(super::utils::taskkill_executable())
                         .args(["/PID", &p.to_string(), "/T"])
                         .output();
                 }
@@ -765,15 +754,10 @@ pub fn force_kill(instance_id: u64) -> bool {
     };
 
     #[cfg(unix)]
-    // SAFETY: `pid` is the live child recorded at spawn; `build_command` puts
-    // the child in its own process group (`setpgid(0, 0)`), so signalling the
-    // group also stops children the server spawned.
-    unsafe {
-        let _ = libc::killpg(pid as i32, libc::SIGKILL);
-    }
+    super::utils::signal_process_group(pid, nix::sys::signal::Signal::SIGKILL);
     #[cfg(windows)]
     {
-        let _ = std::process::Command::new("taskkill")
+        let _ = std::process::Command::new(super::utils::taskkill_executable())
             .args(["/PID", &pid.to_string(), "/F", "/T"])
             .output();
     }
