@@ -28,8 +28,8 @@ use super::profiles::{
     find_profile_by_id, read_profile_json, write_profile_json, ProfileInfo, ProfileResult,
 };
 use super::utils::{
-    dir_name, dir_size_cached, format_size, generate_id, profiles_folder, profiles_subdir,
-    require_managed_path, safe_file_name,
+    dir_name, dir_size_cached, format_size, generate_id, profile_folder_name, profiles_folder,
+    profiles_subdir, require_managed_path,
 };
 use super::{mod_store, mods};
 use crate::{log_error, log_info};
@@ -91,8 +91,8 @@ fn now_nanos() -> u128 {
 
 /// Validates a user-supplied profile name and returns it trimmed.
 ///
-/// The folder name is always derived with [`safe_file_name`]; this check only
-/// rejects input that cannot become a usable profile name.
+/// The folder name is always derived with [`profile_folder_name`]; this check
+/// only rejects input that cannot become a usable profile name.
 pub(crate) fn validate_profile_name(name: &str) -> Result<String, UiError> {
     let trimmed = name.trim();
     if trimmed.is_empty() {
@@ -222,7 +222,7 @@ fn clone_profile_blocking(
 ) -> Result<ProfileResult, UiError> {
     let (source_dir, mut info) = find_profile_by_id(app, id)?;
     let root = profiles_dir(app)?;
-    let folder = safe_file_name(new_name)?;
+    let folder = profile_folder_name(new_name);
     let target_dir = root.join(&folder);
     require_managed_path(app, &target_dir, "profile")?;
 
@@ -311,7 +311,7 @@ fn rename_profile_blocking(
 
     let (source_dir, mut info) = find_profile_by_id(app, id)?;
     let root = profiles_dir(app)?;
-    let folder = safe_file_name(new_name)?;
+    let folder = profile_folder_name(new_name);
     let target_dir = root.join(&folder);
     require_managed_path(app, &target_dir, "profile")?;
 
@@ -519,7 +519,7 @@ fn restore_deleted_profile_blocking(
         .unwrap_or_else(|| archive_name.to_string());
     let old_id = generate_id(&default_folder);
     let folder = match &new_name {
-        Some(n) => safe_file_name(n)?,
+        Some(n) => profile_folder_name(n),
         None => default_folder,
     };
     let target_dir = root.join(&folder);
