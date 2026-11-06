@@ -268,6 +268,20 @@ pub fn safe_file_name(name: &str) -> Result<String, UiError> {
     }
 }
 
+/// Builds the on-disk folder name for a profile's display name.
+///
+/// Mirrors the frontend's `makeStringFolderSafe` so a profile keeps the same
+/// folder convention whether it was created or renamed: ASCII letters are
+/// lowercased and every other UTF-16 code unit becomes `_`.
+pub fn profile_folder_name(name: &str) -> String {
+    name.encode_utf16()
+        .map(|unit| match char::from_u32(u32::from(unit)) {
+            Some(c) if c.is_ascii_alphanumeric() => c.to_ascii_lowercase(),
+            _ => '_',
+        })
+        .collect()
+}
+
 /// Normalizes a path syntactically, resolving `.` and `..` without touching the
 /// filesystem. Used for containment checks before a path exists.
 pub fn normalize_path(path: &Path) -> PathBuf {
@@ -734,6 +748,17 @@ mod tests {
         assert_eq!(safe_file_name("../mod.zip").unwrap(), "mod.zip");
         assert!(safe_file_name("").is_err());
         assert!(safe_file_name("..").is_err());
+    }
+
+    #[test]
+    fn test_profile_folder_name_matches_frontend_sanitizer() {
+        assert_eq!(profile_folder_name("1.22.7 solo"), "1_22_7_solo");
+        assert_eq!(profile_folder_name("My World"), "my_world");
+        assert_eq!(profile_folder_name("  spaced  "), "__spaced__");
+        assert_eq!(profile_folder_name("Café"), "caf_");
+        assert_eq!(profile_folder_name("a-b_c"), "a_b_c");
+        // Non-BMP characters cover two UTF-16 code units, like the JS regex.
+        assert_eq!(profile_folder_name("🎮"), "__");
     }
 
     #[test]
