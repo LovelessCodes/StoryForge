@@ -140,8 +140,12 @@ function scoop(version: string, source: { name: string; hash: string; extract: b
       "Scoop unpacks the NSIS installer; post_install drops the installer helpers. Releases that ship Story.Forge_<version>_x64-portable.zip use that instead.";
     manifest.post_install =
       'Remove-Item "$dir\\`$*", "$dir\\Uninstall*" -Force -Recurse -ErrorAction SilentlyContinue';
+    // The NSIS payload renames the exe (`StoryForge.exe`); the portable zip
+    // ships it with its display name instead. Both get a `storyforge` shim.
+    manifest.bin = [["StoryForge.exe", "storyforge"]];
     manifest.shortcuts = [["StoryForge.exe", "Story Forge"]];
   } else {
+    manifest.bin = [["Story Forge.exe", "storyforge"]];
     manifest.shortcuts = [["Story Forge.exe", "Story Forge"]];
   }
 
