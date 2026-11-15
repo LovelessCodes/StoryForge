@@ -136,8 +136,10 @@ jobs:
           Compress-Archive -Path $exe.FullName -DestinationPath $zip -Force
           # tauri-action leaves the release as a draft and the by-tag endpoint
           # does not resolve drafts, so find the release in the list first.
-          $id = gh api "repos/$env:GITHUB_REPOSITORY/releases" --jq ".[] | select(.tag_name == '$tag') | .id" |
-            Select-Object -First 1
+          # Filter in PowerShell: a jq expression with quoted tag names does
+          # not survive PowerShell's argument passing.
+          $releases = gh api "repos/$env:GITHUB_REPOSITORY/releases?per_page=100" | ConvertFrom-Json
+          $id = ($releases | Where-Object { $_.tag_name -eq $tag } | Select-Object -First 1).id
           if (-not $id) { throw "no release found for $tag" }
           Write-Host "Uploading $zip to $tag"
           gh api --method POST -H "Content-Type: application/zip" --input $zip `
