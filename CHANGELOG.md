@@ -8,6 +8,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.12] - 2026-11-15
+
+### Added
+
+- **Install with Homebrew, Scoop or the AUR**: all three channels are now generated from each release's own assets, so their versions and checksums cannot drift from the build they install. The Windows release also attaches a portable zip, which the Scoop manifest uses so `storyforge` lands on `PATH`, and the committed manifests move together with `package.json` on every bump.
+- **Flatpak builds hear about updates**: a hand-installed Flatpak bundle has no updater of its own, so it could keep running an old build indefinitely — including builds whose game downloads stopped working when the API moved. Settings → Updates now names the newest published release and links straight to it.
+
+### Fixed
+
+- **Game downloads fall back to the official CDN**: downloads resolved their URL through `api.getstoryforge.app` only, so an outage or an unreachable host failed every install with a bare transport error. Linux and macOS now build the official Vintage Story CDN URL locally when the API cannot be reached; Windows keeps the error because its official channel is an installer the launcher cannot extract. The version link request also times out instead of hanging on a server that accepts the connection and never answers.
+- **Download errors are readable and can be copied**: the failure line was truncated to a single line, cutting off exactly the URL that separates an outage from a dead host or a stale build. The message now wraps, stays selectable, is capped in height, and a copy action includes the entry's label and URL for support reports.
+- **Renaming a profile no longer produces a different folder name**: creation sanitized the name (`1.22.7 solo` became `1_22_7_solo`) while rename and clone only stripped the path, leaving spaces and dots behind. Both paths now derive the folder from the display name the same way.
+
+### Changed
+
+- **Process handling no longer relies on hand-written `unsafe`**: the launcher's process-group and signal handling now uses the safe `std` and `nix` calls where they exist, `unsafe_code` is denied in the crate, and the one remaining macOS sysctl call documents why it stays.
+
 ## [2.0.11] - 2026-11-01
 
 ### Added
