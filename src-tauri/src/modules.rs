@@ -30,6 +30,7 @@ pub mod platform;
 pub mod profile_ops;
 pub mod profiles;
 pub mod proto;
+pub mod releases;
 pub mod reveal;
 #[cfg(target_os = "linux")]
 pub mod reveal_linux;

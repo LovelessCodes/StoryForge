@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { locale } from "@tauri-apps/plugin-os";
-import { DownloadIcon, MoonIcon, RefreshCwIcon, ZapIcon } from "lucide-react";
+import { DownloadIcon, ExternalLinkIcon, MoonIcon, RefreshCwIcon, ZapIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import type { ReactNode } from "react";
 import { useRef, useState } from "react";
@@ -18,12 +19,14 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useAppVersion } from "@/hooks/use-app-version";
 import { useIsFlatpak } from "@/hooks/use-is-flatpak";
+import { useLatestRelease } from "@/hooks/use-latest-release";
 import { errorMessage } from "@/lib/errors";
 import { LOCALES, resolveLocale } from "@/lib/i18n";
 import { type SortBy, sortOptions } from "@/lib/mod-sort";
 import { toast } from "@/lib/notify";
 import { TEXT_SCALE_OPTIONS } from "@/lib/text-scale";
 import { elementCenter, switchTheme } from "@/lib/theme-transition";
+import { isNewerVersion } from "@/lib/version";
 import { useSettingsStore } from "@/stores/settings";
 
 import AccountCard from "./AccountCard";
@@ -278,13 +281,29 @@ function BehaviourCard() {
   );
 }
 
+/** Where a Flatpak bundle that has no updater has to be downloaded from. */
+const RELEASES_PAGE = "https://github.com/LovelessCodes/StoryForge/releases/latest";
+
 function UpdatesCard() {
   const { t } = useTranslation();
   const { data: version } = useAppVersion();
   // Undefined until the sandbox check resolves; it is warm from the titlebar.
   const { data: isFlatpak } = useIsFlatpak();
+  // Only Flatpak needs this: elsewhere the updater plugin already reports a newer build.
+  const { data: latestRelease } = useLatestRelease({ enabled: isFlatpak === true });
   const queryClient = useQueryClient();
   const [checking, setChecking] = useState(false);
+
+  const newerRelease =
+    latestRelease && version && isNewerVersion(latestRelease.version, version)
+      ? latestRelease
+      : null;
+
+  const updateDescription = isFlatpak
+    ? newerRelease
+      ? t("settings.updates.flatpakNewer", { version: newerRelease.version })
+      : t("settings.updates.flatpakDescription")
+    : t("settings.updates.description");
 
   async function checkForUpdates() {
     setChecking(true);
@@ -319,13 +338,17 @@ function UpdatesCard() {
         >
           <span className="font-mono text-xs">{version ? `v${version}` : "…"}</span>
         </SettingRow>
-        <SettingRow
-          description={
-            isFlatpak ? t("settings.updates.flatpakDescription") : t("settings.updates.description")
-          }
-          label={t("settings.updates.label")}
-        >
-          {isFlatpak ? null : (
+        <SettingRow description={updateDescription} label={t("settings.updates.label")}>
+          {isFlatpak ? (
+            <Button
+              onClick={() => void openUrl(newerRelease?.url ?? RELEASES_PAGE)}
+              size="sm"
+              variant="outline"
+            >
+              <ExternalLinkIcon />
+              {t("settings.updates.flatpakOpen")}
+            </Button>
+          ) : (
             <Button
               disabled={checking || isFlatpak === undefined}
               onClick={() => void checkForUpdates()}

@@ -2,8 +2,8 @@ pub mod modules;
 use modules::{
     auth, backups, cairn, conflicts, download, game_data, game_defaults, gruntlauncher, importer,
     launch, launcher_logins, legacy, lithic, maps, mod_store, modpack_io, mods, mvl, news, optimum,
-    packs, profile_ops, profiles, rustory, saves, screenshots, server_hosting, servers, sniffer,
-    utils, versions, vs_launcher, vulkanstory, waxlight, yelloowstone,
+    packs, profile_ops, profiles, releases, rustory, saves, screenshots, server_hosting, servers,
+    sniffer, utils, versions, vs_launcher, vulkanstory, waxlight, yelloowstone,
 };
 use tauri::RunEvent;
 
@@ -430,6 +430,8 @@ pub fn run() {
             launcher_logins::import_launcher_logins,
             // News
             news::fetch_news,
+            // Newest published release (manual Flatpak bundles have no updater)
+            releases::latest_release,
             // Game defaults (live source profile settings applied on launch)
             game_defaults::preview_game_defaults,
             // Mods
