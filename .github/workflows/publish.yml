@@ -95,6 +95,29 @@ jobs:
       - name: install frontend dependencies
         run: bun install
 
+      # The release body is the changelog entry for this version: the same
+      # text the ModDB pipeline and Discord take from a published release.
+      # Without this step the draft carries the placeholder below and has to
+      # be corrected by hand after publishing.
+      - name: Read the changelog entry
+        shell: bash
+        run: |
+          version=$(node -p "require('./package.json').version")
+          notes=$(awk -v v="$version" '
+            index($0, "## [" v "]") == 1 { found=1; next }
+            found && index($0, "## [") == 1 { exit }
+            found { print }
+          ' CHANGELOG.md | sed '/./,$!d')
+          if [ -z "$notes" ]; then
+            echo "::warning::CHANGELOG.md has no entry for $version; using the placeholder release body."
+            notes="See the assets to download this version and install."
+          fi
+          {
+            echo "RELEASE_BODY<<__RELEASE_BODY_EOF__"
+            printf '%s\n' "$notes"
+            echo "__RELEASE_BODY_EOF__"
+          } >> "$GITHUB_ENV"
+
       # Zed-style Linux size pass: link the release binary with LLD and
       # enable safe ICF; -addrsig emits address-significance tables so only
       # functions whose address is never observed get folded.
@@ -112,7 +135,7 @@ jobs:
         with:
           tagName: storyforge-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
           releaseName: "Story Forge v__VERSION__"
-          releaseBody: ${{ contains(github.ref_name, '-rc.') && '⚠️ Release candidate — not recommended for general use.' || 'See the assets to download this version and install.' }}
+          releaseBody: ${{ contains(github.ref_name, '-rc.') && '⚠️ Release candidate — not recommended for general use.' || env.RELEASE_BODY }}
           releaseDraft: true
           tauriScript: ${{ (matrix.platform == 'ubuntu-22.04') && 'cargo tauri' || '' }}
           prerelease: ${{ contains(github.ref_name, '-rc.') }}
