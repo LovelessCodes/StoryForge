@@ -81,26 +81,30 @@ fn is_dotnet_arch(root: &Path, expected: MachArch) -> bool {
 /// architecture has to be verified rather than inferred from the path.
 fn has_runtime_for(root: &Path, channel: &str, arch: &str) -> bool {
     let _ = arch;
-    if !has_runtime(root, channel) {
-        return false;
-    }
+    let runtime_present = has_runtime(root, channel);
+
+    // Only worth checking the binaries when the runtime is there at all.
     #[cfg(target_os = "macos")]
-    {
+    let arch_matches = runtime_present && {
         let expected = if arch == "arm64" {
             MachArch::Arm64
         } else {
             MachArch::X86_64
         };
-        if !is_dotnet_arch(root, expected) {
+        let matches = is_dotnet_arch(root, expected);
+        if !matches {
             log_debug!(
                 "[dotnet] has_runtime_for: {:?} has runtime but no {} binaries, skipping",
                 root,
                 arch
             );
-            return false;
         }
-    }
-    true
+        matches
+    };
+    #[cfg(not(target_os = "macos"))]
+    let arch_matches = true;
+
+    runtime_present && arch_matches
 }
 
 /// Check if the shared runtime for `channel` exists at the given root.
