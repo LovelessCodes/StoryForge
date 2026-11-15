@@ -1,4 +1,5 @@
-import { Loader2, Pause, RotateCcw, Undo2, X } from "lucide-react";
+import { writeText } from "@tauri-apps/plugin-clipboard-manager";
+import { Copy, Loader2, Pause, RotateCcw, Undo2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,9 @@ import {
 import { useDownloadManager } from "@/hooks/use-download-manager";
 import { useInstalledMods } from "@/hooks/use-installed-mods";
 import { useInstalledVersions } from "@/hooks/use-installed-versions";
+import { errorMessage } from "@/lib/errors";
 import { pathDelimiter } from "@/lib/helpers";
+import { toast } from "@/lib/notify";
 import { useDownloadStore, type DownloadEntry } from "@/stores/downloads";
 
 /** Translation keys: `downloads.status.<status>`. */
@@ -71,6 +74,38 @@ function DownloadRowHeader({ entry }: { entry: DownloadEntry }) {
   );
 }
 
+/** Failure line: the full message, wrapped, with a copy action for support. */
+function DownloadRowError({ entry }: { entry: DownloadEntry }) {
+  const { t } = useTranslation();
+
+  async function copyError() {
+    try {
+      await writeText([entry.label, entry.url, entry.error].filter(Boolean).join("\n"));
+      toast.success(t("common.actions.copied"));
+    } catch (error) {
+      toast.error(errorMessage(error));
+    }
+  }
+
+  return (
+    <div className="flex items-start gap-2">
+      <p className="text-destructive max-h-32 min-w-0 flex-1 overflow-y-auto text-[11px] break-words select-text">
+        {entry.error}
+      </p>
+      <Button
+        aria-label={t("common.actions.copy")}
+        className="text-muted-foreground shrink-0"
+        onClick={() => void copyError()}
+        size="icon-xs"
+        title={t("common.actions.copy")}
+        variant="ghost"
+      >
+        <Copy />
+      </Button>
+    </div>
+  );
+}
+
 /** Progress bar plus the speed and error line of an unfinished download. */
 function DownloadRowProgress({ entry }: { entry: DownloadEntry }) {
   return (
@@ -79,8 +114,8 @@ function DownloadRowProgress({ entry }: { entry: DownloadEntry }) {
       <div className="text-muted-foreground flex items-center gap-3 text-[11px] tabular-nums">
         <span>{entry.percent !== null ? `${entry.percent.toFixed(0)}%` : "…"}</span>
         {entry.speedBps !== null && <span>{(entry.speedBps / 1024 / 1024).toFixed(1)} MB/s</span>}
-        {entry.error && <span className="text-destructive truncate">{entry.error}</span>}
       </div>
+      {entry.error && <DownloadRowError entry={entry} />}
     </>
   );
 }
