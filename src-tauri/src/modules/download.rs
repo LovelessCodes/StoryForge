@@ -1170,6 +1170,80 @@ fn download_platform(os: &str, apple_silicon: bool, version: &str) -> String {
     }
 }
 
+/// Official Vintage Story CDN, stable channel.
+const VANILLA_CDN: &str = "https://cdn.vintagestory.at/gamefiles/stable";
+
+/// Builds the official download URL for a platform the CDN serves directly.
+///
+/// The Story Forge API resolves the file for the running platform and mirrors
+/// the Windows build; for Linux and macOS it only redirects to this CDN, so the
+/// URL can be built locally when the API cannot be reached. Windows has no
+/// official archive the launcher can extract, so it has no fallback.
+fn official_download_url(version: &str, platform: &str) -> Option<String> {
+    if !is_release_version(version) {
+        return None;
+    }
+    let file = match platform {
+        "linux" => format!("vs_client_linux-x64_{version}.tar.gz"),
+        "mac" => format!("vs_client_osx-x64_{version}.tar.gz"),
+        "mac_arm64" => format!("vs_client_osx-arm64_{version}.tar.gz"),
+        _ => return None,
+    };
+    Some(format!("{VANILLA_CDN}/{file}"))
+}
+
+/// Release builds are exactly `MAJOR.MINOR.PATCH`. Release candidates carry a
+/// suffix and live outside the stable CDN path, so they have no fallback URL.
+fn is_release_version(version: &str) -> bool {
+    let is_number = |part: &str| !part.is_empty() && part.bytes().all(|b| b.is_ascii_digit());
+    let mut parts = version.split('.');
+    matches!(
+        (parts.next(), parts.next(), parts.next(), parts.next()),
+        (Some(major), Some(minor), Some(patch), None)
+            if is_number(major) && is_number(minor) && is_number(patch)
+    )
+}
+
+/// Asks the Story Forge API which file to download for this platform.
+async fn request_download_link(
+    client: &reqwest::Client,
+    version: &str,
+    platform_name: &str,
+) -> Result<String, UiError> {
+    let url = format!("https://api.getstoryforge.app/download/{version}/{platform_name}/");
+    let res = client
+        .get(&url)
+        .timeout(Duration::from_secs(20))
+        .send()
+        .await
+        .map_err(|e| {
+            log_error!("download: Request error: {e}");
+            UiError::new("request_error", format!("Request error: {e}"))
+        })?;
+
+    if !res.status().is_success() {
+        log_error!("download: Download service answered {}", res.status());
+        return Err(UiError::new(
+            "request_error",
+            format!("Download service answered {}", res.status()),
+        ));
+    }
+
+    let body = res.text().await.map_err(|e| {
+        log_error!("download: Read error: {e}");
+        UiError::new("io_error", format!("Read error: {e}"))
+    })?;
+
+    let json: serde_json::Value = serde_json::from_str(&body).map_err(|e| {
+        log_error!("download: JSON parse error: {e}");
+        UiError::new("parse_error", format!("JSON parse error: {e}"))
+    })?;
+    json.get("url")
+        .and_then(|value| value.as_str())
+        .map(str::to_string)
+        .ok_or_else(|| UiError::from("No download_url found in response"))
+}
+
 #[command]
 pub async fn get_download_link(
     client: State<'_, Arc<reqwest::Client>>,
@@ -1180,33 +1254,16 @@ pub async fn get_download_link(
 
     log_info!("platform: {platform_name}, apple_silicon: {apple_silicon}");
 
-    let url = format!(
-        "https://api.getstoryforge.app/download/{}/{}/",
-        version, platform_name
-    );
-    let res = client
-        .get(&url)
-        .send()
-        .await
-        .map_err(|e| {
-            log_error!("download: Request error: {e}");
-            UiError::new("request_error", format!("Request error: {e}"))
-        })?
-        .text()
-        .await
-        .map_err(|e| {
-            log_error!("download: Read error: {e}");
-            UiError::new("io_error", format!("Read error: {e}"))
-        })?;
-
-    let json: serde_json::Value = serde_json::from_str(&res).map_err(|e| {
-        log_error!("download: JSON parse error: {e}");
-        UiError::new("parse_error", format!("JSON parse error: {e}"))
-    })?;
-    if let Some(link) = json.get("url").and_then(|v| v.as_str()) {
-        Ok(link.to_string())
-    } else {
-        Err(UiError::from("No download_url found in response"))
+    let client: &reqwest::Client = &client;
+    match request_download_link(client, version, &platform_name).await {
+        Ok(link) => Ok(link),
+        Err(error) => match official_download_url(version, &platform_name) {
+            Some(fallback) => {
+                log_error!("download: download service unavailable ({error}); using {fallback}");
+                Ok(fallback)
+            }
+            None => Err(error),
+        },
     }
 }
 
@@ -1322,6 +1379,33 @@ mod tests {
         assert_eq!(download_platform("macos", false, "1.22.7"), "mac");
         assert_eq!(download_platform("windows", false, "1.22.7"), "windows");
         assert_eq!(download_platform("linux", true, "1.22.7"), "linux");
+    }
+
+    #[test]
+    fn official_download_url_mirrors_the_api_for_unix_platforms() {
+        assert_eq!(
+            official_download_url("1.22.7", "linux").as_deref(),
+            Some("https://cdn.vintagestory.at/gamefiles/stable/vs_client_linux-x64_1.22.7.tar.gz")
+        );
+        assert_eq!(
+            official_download_url("1.22.7", "mac").as_deref(),
+            Some("https://cdn.vintagestory.at/gamefiles/stable/vs_client_osx-x64_1.22.7.tar.gz")
+        );
+        assert_eq!(
+            official_download_url("1.22.7", "mac_arm64").as_deref(),
+            Some("https://cdn.vintagestory.at/gamefiles/stable/vs_client_osx-arm64_1.22.7.tar.gz")
+        );
+        // Windows is only served as an installer, which the launcher cannot extract.
+        assert_eq!(official_download_url("1.22.7", "windows"), None);
+    }
+
+    #[test]
+    fn official_download_url_skips_prereleases_and_odd_versions() {
+        // Pre-releases live outside the stable CDN path.
+        assert_eq!(official_download_url("1.23.0-rc.1", "linux"), None);
+        assert_eq!(official_download_url("1.22", "linux"), None);
+        assert_eq!(official_download_url("1.22.7.1", "linux"), None);
+        assert_eq!(official_download_url("", "linux"), None);
     }
 
     #[test]
