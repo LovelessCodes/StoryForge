@@ -17,7 +17,7 @@ the NSIS installer when a release has no portable build:
 
 | Source         | Manifest shape                                             |
 | -------------- | ---------------------------------------------------------- |
-| portable zip   | `url` → `..._x64-portable.zip`, shortcut `Story Forge.exe` |
+| portable zip   | `url` → `..._x64-portable.zip`, shortcut `StoryForge.exe`  |
 | NSIS installer | `url` → `..._x64-setup.exe#/dl.7z`, `post_install` cleanup |
 
 `2.0.11` (and everything before it) uses the installer: Tauri's NSIS setup is a

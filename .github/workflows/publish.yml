@@ -132,7 +132,7 @@ jobs:
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           $tag = "storyforge-v$version"
           $zip = "Story.Forge_${version}_x64-portable.zip"
-          $exe = Get-Item "src-tauri/target/release/Story Forge.exe"
+          $exe = Get-Item "src-tauri/target/release/StoryForge.exe"
           Compress-Archive -Path $exe.FullName -DestinationPath $zip -Force
           # tauri-action leaves the release as a draft and the by-tag endpoint
           # does not resolve drafts, so find the release in the list first.
