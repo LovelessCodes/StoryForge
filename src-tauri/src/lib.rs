@@ -438,6 +438,7 @@ pub fn run() {
             mods::fetch_mod_tags,
             mods::fetch_mods,
             mods::fetch_mod_info,
+            mods::fetch_release_sizes,
             mods::get_mods,
             mods::get_mod_dependencies,
             mods::get_mod_configs,

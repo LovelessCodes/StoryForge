@@ -1,3 +1,4 @@
+use futures_util::StreamExt;
 use json5::from_str as json5_from_str;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_slice, from_str, json, Value};
@@ -21,7 +22,7 @@ use super::mod_store::{self, BlobMeta, ModStore};
 use super::paths;
 use super::profiles::find_profile_by_id;
 use super::utils::{
-    display_path, hex_lower, lock, require_managed_path, safe_file_name, safe_join,
+    display_path, format_size, hex_lower, lock, require_managed_path, safe_file_name, safe_join,
 };
 use crate::{log_error, log_info};
 
@@ -310,6 +311,53 @@ pub async fn fetch_mod_info(
     let json: Value = from_str(&res)
         .map_err(|e| UiError::new("parse_error", format!("JSON parse error: {e}")))?;
     Ok(json)
+}
+
+/// One release file's download size, resolved from its CDN URL.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReleaseSize {
+    pub url: String,
+    /// Size in bytes; `None` when the CDN did not report one.
+    pub size_bytes: Option<u64>,
+    /// `size_bytes` rendered for display.
+    pub size_display: Option<String>,
+}
+
+/// The length a CDN reports for a file, without downloading it.
+async fn remote_file_size(client: &reqwest::Client, url: &str) -> Option<u64> {
+    let response = client.head(url).send().await.ok()?;
+    if !response.status().is_success() {
+        return None;
+    }
+    response.content_length().filter(|length| *length > 0)
+}
+
+/// Resolves the download sizes of release files.
+///
+/// The ModDB API has no size field, so this asks the CDN with HEAD requests,
+/// a few at a time. A file the CDN reports no length for is returned with
+/// `None` instead of failing the whole batch.
+#[command]
+pub async fn fetch_release_sizes(
+    client: State<'_, Arc<reqwest::Client>>,
+    urls: Vec<String>,
+) -> Result<Vec<ReleaseSize>, UiError> {
+    let client = Arc::clone(client.inner());
+    let sizes = futures_util::stream::iter(urls.into_iter().map(|url| {
+        let client = Arc::clone(&client);
+        async move {
+            let size_bytes = remote_file_size(&client, &url).await;
+            ReleaseSize {
+                size_display: size_bytes.map(format_size),
+                size_bytes,
+                url,
+            }
+        }
+    }))
+    .buffer_unordered(4)
+    .collect::<Vec<_>>()
+    .await;
+    Ok(sizes)
 }
 
 /// Writes bytes next to `destination` and renames them into place. Renaming
