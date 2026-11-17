@@ -25,7 +25,7 @@ import { modUpdatesQueryKey } from "@/hooks/use-mod-updates";
 import { useApplyModState, useSetModEnabled } from "@/hooks/use-set-mod-enabled";
 import { errorMessage } from "@/lib/errors";
 import { sectionMods, type ModGroup, type ModSection } from "@/lib/mod-groups";
-import { orderMods } from "@/lib/mod-order";
+import { arrangeMods } from "@/lib/mod-order";
 import { toast } from "@/lib/notify";
 import type { OutputMod } from "@/lib/types";
 import { useSettingsStore } from "@/stores/settings";
@@ -102,6 +102,8 @@ export function InstalledModsView({
   const order = useSettingsStore((s) => s.modOrder[modsDirectory] ?? NO_ORDER);
   const reorderMods = useSettingsStore((s) => s.reorderMods);
   const resetModOrder = useSettingsStore((s) => s.resetModOrder);
+  const sort = useSettingsStore((s) => s.installedSort[modsDirectory] ?? "manual");
+  const setInstalledSort = useSettingsStore((s) => s.setInstalledSort);
   const applyState = useApplyModState(modsDirectory);
   const { mutate: setModEnabled } = useSetModEnabled(modsDirectory);
 
@@ -121,7 +123,7 @@ export function InstalledModsView({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const mods = useMemo(() => orderMods(data?.mods ?? [], order), [data, order]);
+  const mods = useMemo(() => arrangeMods(data?.mods ?? [], sort, order), [data, sort, order]);
   const sections = useMemo(() => sectionMods(groups, mods), [groups, mods]);
   const collapsed = useMemo(() => new Set(collapsedKeys), [collapsedKeys]);
   const toggleCollapsed = (key: string) =>
@@ -275,7 +277,7 @@ export function InstalledModsView({
           applyPending={applyState.isPending}
           canToggleMods={canToggleMods}
           creatingGroup={creatingGroup}
-          hasCustomOrder={order.length > 0}
+          hasCustomOrder={sort === "manual" && order.length > 0}
           modCount={mods.length}
           newGroupName={newGroupName}
           onApplyAll={(enabled) => applyEnabled(mods, enabled)}
@@ -285,7 +287,10 @@ export function InstalledModsView({
           onNewGroupNameChange={setNewGroupName}
           onOpenPresets={() => setPresetsOpen(true)}
           onResetOrder={resetOrder}
+          onSortChange={(value) => setInstalledSort(modsDirectory, value)}
           onStartCreate={() => setCreatingGroup(true)}
+          sort={sort}
+          totalSize={data?.total_size_display ?? ""}
         />
 
         <InstalledModsList
@@ -320,6 +325,7 @@ export function InstalledModsView({
           setModEnabled={setModEnabled}
           setRenameName={setRenameName}
           setRenamingId={setRenamingId}
+          sortable={sort === "manual"}
         />
 
         <InstalledModsSelectionBar

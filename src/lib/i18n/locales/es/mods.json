@@ -360,6 +360,12 @@
       "cancelled": "Reordenación cancelada.",
       "reset": "Restablecer orden",
       "resetDone": "Orden de mods restablecido"
+    },
+    "sort": {
+      "aria": "Ordenar los mods instalados",
+      "manual": "Orden manual",
+      "name": "Nombre",
+      "size": "Tamaño (mayor primero)"
     }
   },
   "groups": {

@@ -1,12 +1,17 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import { useReleaseSizes } from "@/hooks/use-release-sizes";
 import type { ModInfo, Release } from "@/lib/types";
 
 import { ModChangelog } from "./ModChangelog";
 
-/** One release row: version, game tag(s) and download count. */
-export function ModReleaseItem({ release }: { release: Release }) {
+/**
+ * One release row: version, game tag(s), download count and, once resolved,
+ * the size of the release file.
+ */
+export function ModReleaseItem({ release, size }: { release: Release; size?: string }) {
   const { t } = useTranslation();
   return (
     <div className="flex flex-col">
@@ -22,6 +27,7 @@ export function ModReleaseItem({ release }: { release: Release }) {
       </span>
       <span className="text-muted-foreground text-xs">
         {t("mods.release.downloads", { count: release.downloads })}
+        {size ? ` · ${size}` : null}
       </span>
     </div>
   );
@@ -42,9 +48,18 @@ export function ModVersionPicker({
   onSelect: (release: Release | null) => void;
 }) {
   const { t } = useTranslation();
+  // Sizes are resolved once the list is opened: without that, showing a mod
+  // would HEAD every release it ever published.
+  const [sizesRequested, setSizesRequested] = useState(false);
+  const sizes = useReleaseSizes(releases, sizesRequested);
+  const sizeFor = (release: Release) => sizes.data?.get(release.mainfile);
+  const selectedSize = selected ? sizeFor(selected) : undefined;
   return (
     <div className="grid gap-2">
       <Select
+        onOpenChange={(open) => {
+          if (open) setSizesRequested(true);
+        }}
         onValueChange={(value) => {
           const release = releases?.find((r) => r.modversion === value) ?? null;
           onSelect(release);
@@ -61,6 +76,7 @@ export function ModVersionPicker({
                   {selected.tags.length > 1
                     ? t("mods.versionPicker.moreTags", { count: selected.tags.length - 1 })
                     : ""}
+                  {selectedSize ? ` · ${selectedSize}` : null}
                 </span>
               </>
             ) : (
@@ -71,7 +87,7 @@ export function ModVersionPicker({
         <SelectContent alignItemWithTrigger={false}>
           {releases?.map((release) => (
             <SelectItem key={release.fileid} value={release.modversion}>
-              <ModReleaseItem release={release} />
+              <ModReleaseItem release={release} size={sizeFor(release)} />
             </SelectItem>
           ))}
         </SelectContent>

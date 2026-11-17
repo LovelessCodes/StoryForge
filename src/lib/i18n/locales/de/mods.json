@@ -360,6 +360,12 @@
       "cancelled": "Umsortieren abgebrochen.",
       "reset": "Reihenfolge zurücksetzen",
       "resetDone": "Mod-Reihenfolge zurückgesetzt"
+    },
+    "sort": {
+      "aria": "Installierte Mods sortieren",
+      "manual": "Eigene Reihenfolge",
+      "name": "Name",
+      "size": "Größe (größte zuerst)"
     }
   },
   "groups": {

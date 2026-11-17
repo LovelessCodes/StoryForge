@@ -360,6 +360,12 @@
       "cancelled": "Reordering cancelled.",
       "reset": "Reset order",
       "resetDone": "Mod order reset"
+    },
+    "sort": {
+      "aria": "Sort installed mods",
+      "manual": "Manual order",
+      "name": "Name",
+      "size": "Size (largest first)"
     }
   },
   "groups": {

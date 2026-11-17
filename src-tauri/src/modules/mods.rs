@@ -1,3 +1,4 @@
+use futures_util::StreamExt;
 use json5::from_str as json5_from_str;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_slice, from_str, json, Value};
@@ -21,7 +22,7 @@ use super::mod_store::{self, BlobMeta, ModStore};
 use super::paths;
 use super::profiles::find_profile_by_id;
 use super::utils::{
-    display_path, hex_lower, lock, require_managed_path, safe_file_name, safe_join,
+    display_path, format_size, hex_lower, lock, require_managed_path, safe_file_name, safe_join,
 };
 use crate::{log_error, log_info};
 
@@ -91,12 +92,24 @@ pub struct OutputMod {
     /// `stringListSettings.disabledMods` as `modid@version`.
     #[serde(default)]
     pub disabled: bool,
+    /// Size of the mod's zip on disk, in bytes.
+    #[serde(default)]
+    pub size_bytes: u64,
+    /// `size_bytes` rendered for display.
+    #[serde(default)]
+    pub size_display: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModsResult {
     pub mods: Vec<OutputMod>,
     pub errors: Vec<ModError>,
+    /// Sum of the mods' zip sizes, in bytes.
+    #[serde(default)]
+    pub total_size_bytes: u64,
+    /// `total_size_bytes` rendered for display.
+    #[serde(default)]
+    pub total_size_display: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -310,6 +323,53 @@ pub async fn fetch_mod_info(
     let json: Value = from_str(&res)
         .map_err(|e| UiError::new("parse_error", format!("JSON parse error: {e}")))?;
     Ok(json)
+}
+
+/// One release file's download size, resolved from its CDN URL.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReleaseSize {
+    pub url: String,
+    /// Size in bytes; `None` when the CDN did not report one.
+    pub size_bytes: Option<u64>,
+    /// `size_bytes` rendered for display.
+    pub size_display: Option<String>,
+}
+
+/// The length a CDN reports for a file, without downloading it.
+async fn remote_file_size(client: &reqwest::Client, url: &str) -> Option<u64> {
+    let response = client.head(url).send().await.ok()?;
+    if !response.status().is_success() {
+        return None;
+    }
+    response.content_length().filter(|length| *length > 0)
+}
+
+/// Resolves the download sizes of release files.
+///
+/// The ModDB API has no size field, so this asks the CDN with HEAD requests,
+/// a few at a time. A file the CDN reports no length for is returned with
+/// `None` instead of failing the whole batch.
+#[command]
+pub async fn fetch_release_sizes(
+    client: State<'_, Arc<reqwest::Client>>,
+    urls: Vec<String>,
+) -> Result<Vec<ReleaseSize>, UiError> {
+    let client = Arc::clone(client.inner());
+    let sizes = futures_util::stream::iter(urls.into_iter().map(|url| {
+        let client = Arc::clone(&client);
+        async move {
+            let size_bytes = remote_file_size(&client, &url).await;
+            ReleaseSize {
+                size_display: size_bytes.map(format_size),
+                size_bytes,
+                url,
+            }
+        }
+    }))
+    .buffer_unordered(4)
+    .collect::<Vec<_>>()
+    .await;
+    Ok(sizes)
 }
 
 /// Writes bytes next to `destination` and renames them into place. Renaming
@@ -961,6 +1021,9 @@ fn read_modinfo_from_zip(
                     }
                 };
                 let version = modinfo_string(&json, "version").unwrap_or_else(|| "0.0.0".into());
+                let size_bytes = std::fs::metadata(zip_path)
+                    .map(|meta| meta.len())
+                    .unwrap_or(0);
                 return (
                     Some(OutputMod {
                         modid,
@@ -970,6 +1033,8 @@ fn read_modinfo_from_zip(
                         path: zip_path.to_string_lossy().into_owned(),
                         dependencies: dependencies_from_modinfo(&json),
                         disabled: false,
+                        size_bytes,
+                        size_display: format_size(size_bytes),
                     }),
                     true,
                 );
@@ -1083,7 +1148,13 @@ pub fn get_mods_in_dir(mods_path: &Path) -> Result<ModsResult, UiError> {
         }
     }
 
-    Ok(ModsResult { mods, errors })
+    let total_size_bytes: u64 = mods.iter().map(|mod_info| mod_info.size_bytes).sum();
+    Ok(ModsResult {
+        total_size_bytes,
+        total_size_display: format_size(total_size_bytes),
+        mods,
+        errors,
+    })
 }
 
 // ── Enabled / disabled mods ──
@@ -2153,6 +2224,12 @@ mod tests {
         let scanned = get_mods_in_dir(&paths::mods_dir(&profile)).unwrap();
         assert_eq!(scanned.mods.len(), 1);
         assert_eq!(scanned.mods[0].modid, "carryon");
+        assert!(scanned.mods[0].size_bytes > 0);
+        assert_eq!(scanned.total_size_bytes, scanned.mods[0].size_bytes);
+        assert_eq!(
+            scanned.total_size_display,
+            format_size(scanned.total_size_bytes)
+        );
     }
 
     #[test]

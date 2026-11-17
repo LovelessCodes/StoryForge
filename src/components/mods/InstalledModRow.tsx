@@ -83,6 +83,10 @@ export function InstalledModRow({
         </p>
       </div>
 
+      <span className="text-muted-foreground w-16 shrink-0 text-right text-[11px] tabular-nums">
+        {installed.size_display}
+      </span>
+
       {confirmingRemove ? (
         <>
           <span className="text-destructive shrink-0 text-[11px]">
