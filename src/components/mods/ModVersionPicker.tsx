@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import type { ModInfo, Release } from "@/lib/types";
 
+import { ModChangelog } from "./ModChangelog";
+
 /** One release row: version, game tag(s) and download count. */
 export function ModReleaseItem({ release }: { release: Release }) {
   const { t } = useTranslation();
@@ -80,9 +82,10 @@ export function ModVersionPicker({
           <p className="text-muted-foreground mb-1 text-[10px] font-medium tracking-widest uppercase">
             {t("mods.versionPicker.changelog")}
           </p>
-          <p className="max-h-36 overflow-y-auto text-[11px] whitespace-pre-wrap">
-            {selected.changelog}
-          </p>
+          <ModChangelog
+            className="max-h-36 overflow-y-auto text-[11px]"
+            html={selected.changelog}
+          />
         </div>
       )}
     </div>

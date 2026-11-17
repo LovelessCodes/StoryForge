@@ -26,7 +26,10 @@ import {
 import { errorMessage } from "@/lib/errors";
 import { hashPath } from "@/lib/helpers";
 import { toast } from "@/lib/notify";
+import { richTextToPlainText } from "@/lib/rich-text";
 import type { ModInfo, OutputMod } from "@/lib/types";
+
+import { ModChangelog } from "./ModChangelog";
 
 /**
  * Review every pending mod update before running them: the changelogs of each
@@ -159,9 +162,11 @@ export function BulkUpdateSheet({
       .map((update, index) => {
         const info = infoFor(update, index);
         const from = info.installedVersion ? `${info.installedVersion} → ` : "";
-        return `${info.name} ${from}${update.modversion}\n${
-          info.changelog?.trim() || t("mods.bulk.noChangelog")
-        }`;
+        // Changelogs are HTML on ModDB; copy readable text, not the markup.
+        const changelog = info.changelog?.trim()
+          ? richTextToPlainText(info.changelog)
+          : t("mods.bulk.noChangelog");
+        return `${info.name} ${from}${update.modversion}\n${changelog}`;
       })
       .join("\n\n");
     try {
@@ -201,9 +206,10 @@ export function BulkUpdateSheet({
                   {info.loading ? (
                     <Skeleton className="h-3 w-3/4" />
                   ) : (
-                    <p className="text-muted-foreground line-clamp-4 text-[11px] whitespace-pre-wrap">
-                      {info.changelog?.trim() || t("mods.bulk.noChangelog")}
-                    </p>
+                    <ModChangelog
+                      className="text-muted-foreground max-h-20 overflow-hidden text-[11px]"
+                      html={info.changelog?.trim() || t("mods.bulk.noChangelog")}
+                    />
                   )}
                 </div>
               );
