@@ -10,6 +10,8 @@ function mod(modid: string, version: string): OutputMod {
     authors: [],
     version,
     path: `/profile/Mods/${modid}_${version}.zip`,
+    size_bytes: 0,
+    size_display: "0 B",
   };
 }
 

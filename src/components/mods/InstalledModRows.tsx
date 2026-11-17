@@ -41,6 +41,9 @@ type RowHandle = {
  * The rows of one installed section, as their own drag context. It is nested
  * inside the group drag context, so a row drag and a group drag never claim
  * the same gesture.
+ *
+ * A sorted view (by name or size) leaves `sortable` off: the saved drag order
+ * does not apply, so rows render without grips and drops would only snap back.
  */
 export function InstalledModRows({
   canToggleMods,
@@ -52,6 +55,7 @@ export function InstalledModRows({
   onSelectedChange,
   onToggleEnabled,
   selected,
+  sortable,
 }: {
   canToggleMods: boolean;
   groups: ModGroup[];
@@ -62,6 +66,7 @@ export function InstalledModRows({
   onSelectedChange: (modid: string, selected: boolean) => void;
   onToggleEnabled: (mod: OutputMod, enabled: boolean) => void;
   selected: Set<string>;
+  sortable: boolean;
 }) {
   const { t } = useTranslation();
   const sensors = useSensors(
@@ -110,6 +115,25 @@ export function InstalledModRows({
     onReorder(activeMod.modid, overMod.modid);
   };
 
+  const renderRow = (installed: OutputMod, dragHandle?: ReactNode) => (
+    <InstalledModRow
+      canToggleMods={canToggleMods}
+      dragHandle={dragHandle}
+      groups={groups}
+      installed={installed}
+      key={installed.path}
+      onMove={onMove}
+      onRemove={onRemove}
+      onSelectedChange={onSelectedChange}
+      onToggleEnabled={onToggleEnabled}
+      selected={selected.has(installed.modid.toLowerCase())}
+    />
+  );
+
+  if (!sortable) {
+    return <div className="grid gap-1.5">{mods.map((installed) => renderRow(installed))}</div>;
+  }
+
   return (
     <DndContext
       accessibility={{
@@ -125,32 +149,23 @@ export function InstalledModRows({
         <div className="grid gap-1.5">
           {mods.map((installed) => (
             <SortableModRow key={installed.path} path={installed.path}>
-              {(handle) => (
-                <InstalledModRow
-                  canToggleMods={canToggleMods}
-                  dragHandle={
-                    <Button
-                      {...handle.listeners}
-                      {...handle.attributes}
-                      ref={handle.ref}
-                      aria-label={t("mods.installed.order.handle")}
-                      className="text-muted-foreground cursor-grab touch-none active:cursor-grabbing"
-                      size="icon-sm"
-                      title={t("mods.installed.order.handle")}
-                      variant="ghost"
-                    >
-                      <GripVertical />
-                    </Button>
-                  }
-                  groups={groups}
-                  installed={installed}
-                  onMove={onMove}
-                  onRemove={onRemove}
-                  onSelectedChange={onSelectedChange}
-                  onToggleEnabled={onToggleEnabled}
-                  selected={selected.has(installed.modid.toLowerCase())}
-                />
-              )}
+              {(handle) =>
+                renderRow(
+                  installed,
+                  <Button
+                    {...handle.listeners}
+                    {...handle.attributes}
+                    ref={handle.ref}
+                    aria-label={t("mods.installed.order.handle")}
+                    className="text-muted-foreground cursor-grab touch-none active:cursor-grabbing"
+                    size="icon-sm"
+                    title={t("mods.installed.order.handle")}
+                    variant="ghost"
+                  >
+                    <GripVertical />
+                  </Button>,
+                )
+              }
             </SortableModRow>
           ))}
         </div>

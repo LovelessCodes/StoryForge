@@ -248,6 +248,18 @@ export type OutputMod = {
   dependencies?: Record<string, string>;
   /** True when the profile lists this mod as disabled in `disabledMods`. */
   disabled?: boolean;
+  /** Size of the mod's zip on disk, in bytes. */
+  size_bytes: number;
+  /** `size_bytes` already rendered for display, e.g. "12.40 MB". */
+  size_display: string;
+};
+
+/** The installed mods of one folder, anything that failed to scan, and their total size. */
+export type InstalledMods = {
+  mods: OutputMod[];
+  errors: ModScanError[];
+  total_size_bytes: number;
+  total_size_display: string;
 };
 
 /** One `.zip` in a profile's Mods folder that could not be scanned. */

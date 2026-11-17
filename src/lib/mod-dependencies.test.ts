@@ -57,6 +57,8 @@ describe("findMissingDependencies", () => {
     version: "1.0.0",
     path: `/mods/${modid}.zip`,
     dependencies,
+    size_bytes: 0,
+    size_display: "0 B",
   });
 
   it("lists dependencies that are not installed", () => {

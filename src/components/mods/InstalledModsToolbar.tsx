@@ -1,8 +1,25 @@
-import { ArrowDownAZ, Bookmark, Copy, FolderPlus, Power, PowerOff } from "lucide-react";
+import {
+  ArrowDownAZ,
+  ArrowUpDown,
+  Bookmark,
+  Copy,
+  FolderPlus,
+  Power,
+  PowerOff,
+} from "lucide-react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { InstalledSort } from "@/lib/mod-order";
 
 /**
  * The installed view's header: how many mods are installed and the actions
@@ -22,7 +39,10 @@ export function InstalledModsToolbar({
   onNewGroupNameChange,
   onOpenPresets,
   onResetOrder,
+  onSortChange,
   onStartCreate,
+  sort,
+  totalSize,
 }: {
   applyPending: boolean;
   canToggleMods: boolean;
@@ -37,14 +57,27 @@ export function InstalledModsToolbar({
   onNewGroupNameChange: (name: string) => void;
   onOpenPresets: () => void;
   onResetOrder: () => void;
+  onSortChange: (sort: InstalledSort) => void;
   onStartCreate: () => void;
+  sort: InstalledSort;
+  /** Total size of the installed zips, already formatted; empty while loading. */
+  totalSize: string;
 }) {
   const { t } = useTranslation();
+  const sortItems = useMemo(
+    () =>
+      (["manual", "name", "size"] as const).map((value) => ({
+        label: t(`mods.installed.sort.${value}`),
+        value,
+      })),
+    [t],
+  );
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
       <span className="text-muted-foreground text-xs">
         {t("mods.installed.count", { count: modCount })}
+        {totalSize ? ` · ${totalSize}` : null}
       </span>
       <div className="flex flex-wrap items-center gap-2">
         {canToggleMods && (
@@ -79,6 +112,25 @@ export function InstalledModsToolbar({
           <Copy />
           {t("mods.copy.button")}
         </Button>
+        <Select
+          items={sortItems}
+          value={sort}
+          onValueChange={(value) => {
+            if (typeof value === "string") onSortChange(value as InstalledSort);
+          }}
+        >
+          <SelectTrigger aria-label={t("mods.installed.sort.aria")} size="sm">
+            <ArrowUpDown className="text-muted-foreground" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent alignItemWithTrigger={false}>
+            {sortItems.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button
           aria-label={t("mods.installed.order.reset")}
           disabled={!hasCustomOrder}

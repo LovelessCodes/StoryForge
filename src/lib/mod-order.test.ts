@@ -2,15 +2,17 @@ import { describe, expect, it } from "vitest";
 
 import type { OutputMod } from "@/lib/types";
 
-import { orderMods, reorderSection } from "./mod-order";
+import { arrangeMods, orderMods, reorderSection } from "./mod-order";
 
-function mod(modid: string, version = "1.0.0"): OutputMod {
+function mod(modid: string, version = "1.0.0", sizeBytes = 0): OutputMod {
   return {
     modid,
     name: `Mod ${modid}`,
     authors: [],
     version,
     path: `/mods/${modid}_${version}.zip`,
+    size_bytes: sizeBytes,
+    size_display: `${sizeBytes} B`,
   };
 }
 
@@ -88,5 +90,35 @@ describe("reorderSection", () => {
     reorderSection(order, section, "bravo", "alpha");
     expect(order).toEqual(["alpha", "bravo"]);
     expect(section).toEqual(["alpha", "bravo"]);
+  });
+});
+
+describe("arrangeMods", () => {
+  it("uses the saved order in manual mode", () => {
+    const next = arrangeMods(mods, "manual", ["charlie"]);
+    expect(next.map((item) => item.modid)).toEqual(["charlie", "alpha", "bravo", "delta"]);
+  });
+
+  it("ignores the saved order when sorting by name", () => {
+    const next = arrangeMods(mods, "name", ["delta"]);
+    expect(next.map((item) => item.modid)).toEqual(["alpha", "bravo", "charlie", "delta"]);
+  });
+
+  it("sorts by size with the largest first", () => {
+    const sized = [mod("small", "1.0.0", 1024), mod("big", "1.0.0", 40_000), mod("mid")];
+    const next = arrangeMods(sized, "size", []);
+    expect(next.map((item) => item.modid)).toEqual(["big", "small", "mid"]);
+  });
+
+  it("breaks size ties by name", () => {
+    const tied = [mod("bravo", "1.0.0", 2048), mod("alpha", "1.0.0", 2048)];
+    const next = arrangeMods(tied, "size", []);
+    expect(next.map((item) => item.modid)).toEqual(["alpha", "bravo"]);
+  });
+
+  it("does not mutate the incoming list", () => {
+    const sized = [mod("alpha", "1.0.0", 10), mod("bravo", "1.0.0", 20)];
+    arrangeMods(sized, "size", []);
+    expect(sized.map((item) => item.modid)).toEqual(["alpha", "bravo"]);
   });
 });

@@ -6,7 +6,7 @@ import { create } from "zustand";
 import { logToFile } from "@/lib/logger";
 import { toggleBlockedAuthor } from "@/lib/mod-blocklist";
 import { moveMods, reorderGroups, setGroupCollapsed, type ModGroup } from "@/lib/mod-groups";
-import { reorderSection } from "@/lib/mod-order";
+import { reorderSection, type InstalledSort } from "@/lib/mod-order";
 import type { SortBy } from "@/lib/mod-sort";
 import { relocateRecord } from "@/lib/profile-records";
 import { clampTextScale, TEXT_SCALE_DEFAULT } from "@/lib/text-scale";
@@ -98,6 +98,12 @@ type SettingsStore = {
   modOrder: Record<string, string[]>;
   reorderMods: (path: string, section: string[], activeId: string, overId: string) => void;
   resetModOrder: (path: string) => void;
+  /**
+   * How each installed list is arranged, keyed by profile/server path. Absent
+   * means the saved drag order.
+   */
+  installedSort: Record<string, InstalledSort>;
+  setInstalledSort: (path: string, sort: InstalledSort) => void;
   /** Moves the path-keyed mod records to a renamed profile's new folder. */
   relocateProfileData: (oldPath: string, newPath: string) => void;
   /** Favourite mod listings (lowercased modidstrs), shared across profiles. */
@@ -225,6 +231,14 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
       delete modOrder[path];
       return { modOrder };
     }),
+  installedSort: {},
+  setInstalledSort: (path, sort) =>
+    set((state) => {
+      const installedSort = { ...state.installedSort };
+      if (sort === "manual") delete installedSort[path];
+      else installedSort[path] = sort;
+      return { installedSort };
+    }),
   createModGroup: (path, name) =>
     set((state) => ({
       modGroups: {
@@ -291,6 +305,7 @@ export const useSettingsStore = create<SettingsStore>()((set, _get, store) => ({
       modGroups: relocateRecord(state.modGroups, oldPath, newPath),
       collapsedModGroups: relocateRecord(state.collapsedModGroups, oldPath, newPath),
       modOrder: relocateRecord(state.modOrder, oldPath, newPath),
+      installedSort: relocateRecord(state.installedSort, oldPath, newPath),
     })),
   modPresets: {},
   saveModPreset: (path, preset) =>

@@ -74,3 +74,20 @@ export function reorderSection(
   }
   return saved;
 }
+
+/** How the installed list is arranged. `manual` is the saved drag order. */
+export type InstalledSort = "manual" | "name" | "size";
+
+/**
+ * Arranges installed mods for display.
+ *
+ * `manual` applies the saved drag order. The other modes rank the whole list
+ * and ignore that order, so the rows can be scanned by name or by disk use.
+ * Size sorts largest first, since the reason to sort by size is finding what
+ * to cut.
+ */
+export function arrangeMods(mods: OutputMod[], sort: InstalledSort, order: string[]): OutputMod[] {
+  if (sort === "manual") return orderMods(mods, order);
+  if (sort === "name") return mods.toSorted((a, b) => a.name.localeCompare(b.name));
+  return mods.toSorted((a, b) => b.size_bytes - a.size_bytes || a.name.localeCompare(b.name));
+}

@@ -347,6 +347,12 @@
       "cancelled": "已取消调整顺序。",
       "reset": "重置顺序",
       "resetDone": "模组顺序已重置"
+    },
+    "sort": {
+      "aria": "排序已安装的模组",
+      "manual": "手动顺序",
+      "name": "名称",
+      "size": "大小（从大到小）"
     }
   },
   "groups": {
