@@ -5,6 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { useReleaseSizes } from "@/hooks/use-release-sizes";
 import type { ModInfo, Release } from "@/lib/types";
 
+import { ModChangelog } from "./ModChangelog";
+
 /**
  * One release row: version, game tag(s), download count and, once resolved,
  * the size of the release file.
@@ -96,9 +98,10 @@ export function ModVersionPicker({
           <p className="text-muted-foreground mb-1 text-[10px] font-medium tracking-widest uppercase">
             {t("mods.versionPicker.changelog")}
           </p>
-          <p className="max-h-36 overflow-y-auto text-[11px] whitespace-pre-wrap">
-            {selected.changelog}
-          </p>
+          <ModChangelog
+            className="max-h-36 overflow-y-auto text-[11px]"
+            html={selected.changelog}
+          />
         </div>
       )}
     </div>
