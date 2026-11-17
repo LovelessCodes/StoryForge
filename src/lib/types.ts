@@ -34,6 +34,15 @@ export type Release = {
   changelog: string | null;
 };
 
+/** One release file's download size, resolved from its CDN URL. */
+export type ReleaseSize = {
+  url: string;
+  /** Size in bytes, or null when the CDN reported none. */
+  size_bytes: number | null;
+  /** `size_bytes` rendered for display, e.g. "12.40 MB". */
+  size_display: string | null;
+};
+
 export type ModInfo = {
   mod: {
     modid: number;
