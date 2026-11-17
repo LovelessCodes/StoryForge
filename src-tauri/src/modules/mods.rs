@@ -21,7 +21,7 @@ use super::mod_store::{self, BlobMeta, ModStore};
 use super::paths;
 use super::profiles::find_profile_by_id;
 use super::utils::{
-    display_path, hex_lower, lock, require_managed_path, safe_file_name, safe_join,
+    display_path, format_size, hex_lower, lock, require_managed_path, safe_file_name, safe_join,
 };
 use crate::{log_error, log_info};
 
@@ -91,12 +91,24 @@ pub struct OutputMod {
     /// `stringListSettings.disabledMods` as `modid@version`.
     #[serde(default)]
     pub disabled: bool,
+    /// Size of the mod's zip on disk, in bytes.
+    #[serde(default)]
+    pub size_bytes: u64,
+    /// `size_bytes` rendered for display.
+    #[serde(default)]
+    pub size_display: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModsResult {
     pub mods: Vec<OutputMod>,
     pub errors: Vec<ModError>,
+    /// Sum of the mods' zip sizes, in bytes.
+    #[serde(default)]
+    pub total_size_bytes: u64,
+    /// `total_size_bytes` rendered for display.
+    #[serde(default)]
+    pub total_size_display: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -961,6 +973,9 @@ fn read_modinfo_from_zip(
                     }
                 };
                 let version = modinfo_string(&json, "version").unwrap_or_else(|| "0.0.0".into());
+                let size_bytes = std::fs::metadata(zip_path)
+                    .map(|meta| meta.len())
+                    .unwrap_or(0);
                 return (
                     Some(OutputMod {
                         modid,
@@ -970,6 +985,8 @@ fn read_modinfo_from_zip(
                         path: zip_path.to_string_lossy().into_owned(),
                         dependencies: dependencies_from_modinfo(&json),
                         disabled: false,
+                        size_bytes,
+                        size_display: format_size(size_bytes),
                     }),
                     true,
                 );
@@ -1083,7 +1100,13 @@ pub fn get_mods_in_dir(mods_path: &Path) -> Result<ModsResult, UiError> {
         }
     }
 
-    Ok(ModsResult { mods, errors })
+    let total_size_bytes: u64 = mods.iter().map(|mod_info| mod_info.size_bytes).sum();
+    Ok(ModsResult {
+        total_size_bytes,
+        total_size_display: format_size(total_size_bytes),
+        mods,
+        errors,
+    })
 }
 
 // ── Enabled / disabled mods ──
@@ -2153,6 +2176,12 @@ mod tests {
         let scanned = get_mods_in_dir(&paths::mods_dir(&profile)).unwrap();
         assert_eq!(scanned.mods.len(), 1);
         assert_eq!(scanned.mods[0].modid, "carryon");
+        assert!(scanned.mods[0].size_bytes > 0);
+        assert_eq!(scanned.total_size_bytes, scanned.mods[0].size_bytes);
+        assert_eq!(
+            scanned.total_size_display,
+            format_size(scanned.total_size_bytes)
+        );
     }
 
     #[test]

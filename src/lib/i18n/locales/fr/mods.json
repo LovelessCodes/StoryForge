@@ -360,6 +360,12 @@
       "cancelled": "Réordonnancement annulé.",
       "reset": "Réinitialiser l'ordre",
       "resetDone": "Ordre des mods réinitialisé"
+    },
+    "sort": {
+      "aria": "Trier les mods installés",
+      "manual": "Ordre manuel",
+      "name": "Nom",
+      "size": "Taille (le plus gros d'abord)"
     }
   },
   "groups": {

@@ -68,6 +68,7 @@ export function InstalledModsList({
   setModEnabled,
   setRenameName,
   setRenamingId,
+  sortable,
 }: {
   applyEnabled: (targets: OutputMod[], enabled: boolean) => void;
   applyPending: boolean;
@@ -98,6 +99,8 @@ export function InstalledModsList({
   }) => void;
   setRenameName: (name: string) => void;
   setRenamingId: (groupId: string | null) => void;
+  /** Rows keep the saved drag order and offer grips; false when sorted by name or size. */
+  sortable: boolean;
 }) {
   const { t } = useTranslation();
   const groupIds = useMemo(() => groups.map((group) => group.id), [groups]);
@@ -292,6 +295,7 @@ export function InstalledModsList({
                           })
                         }
                         selected={selected}
+                        sortable={sortable}
                       />
                     ))}
                 </>

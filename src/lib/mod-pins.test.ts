@@ -15,6 +15,8 @@ const mod = (modid: string, version: string): OutputMod => ({
   authors: [],
   version,
   path: `/mods/${modid}_${version}.zip`,
+  size_bytes: 0,
+  size_display: "0 B",
 });
 
 describe("isModPinned", () => {

@@ -17,6 +17,8 @@ function mod(modid: string, version = "1.0.0"): OutputMod {
     authors: [],
     version,
     path: `/mods/${modid}_${version}.zip`,
+    size_bytes: 0,
+    size_display: "0 B",
   };
 }
 
