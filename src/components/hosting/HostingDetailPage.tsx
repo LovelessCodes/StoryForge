@@ -91,7 +91,8 @@ function HostingDetailContent() {
   }
 
   const isRunning = status.status === "running";
-  const isBusy = status.status === "starting" || status.status === "stopping";
+  const isStarting = status.status === "starting";
+  const isBusy = isStarting || status.status === "stopping";
 
   return (
     <div className="grid gap-6">
@@ -116,6 +117,7 @@ function HostingDetailContent() {
         <HostingDetailActions
           isBusy={isBusy}
           isRunning={isRunning}
+          isStarting={isStarting}
           onOpenMods={openMods}
           onRestart={() => restartServer.mutate(instanceId)}
           onStart={() => startServer.mutate(instanceId)}
@@ -191,6 +193,7 @@ function HostingDetailTitle({
 function HostingDetailActions({
   isBusy,
   isRunning,
+  isStarting,
   onOpenMods,
   onRestart,
   onStart,
@@ -201,6 +204,7 @@ function HostingDetailActions({
 }: {
   isBusy: boolean;
   isRunning: boolean;
+  isStarting: boolean;
   onOpenMods: () => void;
   onRestart: () => void;
   onStart: () => void;
@@ -216,7 +220,9 @@ function HostingDetailActions({
       <Button size="sm" variant="ghost" onClick={onOpenMods}>
         <Package /> {t("hosting.detail.mods")}
       </Button>
-      {isRunning ? (
+      {isRunning || isStarting ? (
+        // A start can take a long time with modded worlds, so the user must be
+        // able to cancel it instead of waiting for the server to report ready.
         <Button disabled={stopPending} size="sm" variant="outline" onClick={onStop}>
           <Square /> {t("common.actions.stop")}
         </Button>
