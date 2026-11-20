@@ -66,7 +66,7 @@
     "folderMissing": "未找到文件夹，请重新链接或取消链接",
     "reallyDelete": "确定删除？",
     "reallyUnlink": "确定取消链接？",
-    "releaseCandidate": "候选版本",
+    "preRelease": "预览版",
     "unlink": "取消链接",
     "unlinkNote": "Story Forge 将不再使用此文件夹；磁盘上的内容不会有任何变化，安装它的启动器可继续正常工作。",
     "unlinkVersion": "取消链接版本 {{name}}"

@@ -50,7 +50,7 @@
     "systemDotnet": "Utiliser le .NET du système",
     "systemDotnetDescription": "Essayer le runtime .NET de votre système avant d'en télécharger un.",
     "showPreRelease": "Afficher les versions préliminaires",
-    "showPreReleaseDescription": "Inclure les versions candidates (RC) lors du choix d'une version du jeu.",
+    "showPreReleaseDescription": "Inclure les versions préliminaires et candidates lors du choix d'une version du jeu.",
     "defaultModSort": "Tri par défaut des mods",
     "defaultModSortDescription": "Ordre de tri utilisé à l'ouverture du navigateur de mods.",
     "defaultWorldsToActiveProfile": "Afficher uniquement les mondes du profil actif",

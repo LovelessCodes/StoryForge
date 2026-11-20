@@ -1,10 +1,13 @@
 /**
- * Release candidates carry "rc" in their version name (e.g. `1.22.0-rc.1`).
- * They are hidden from the version pickers unless the user opts in — see the
- * "show pre-release versions" setting.
+ * Vintage Story marks unfinished builds with a hyphenated suffix: release
+ * candidates are `1.22.0-rc.1`, previews are `1.23.0-pre.1`. Story Forge's own
+ * client forks append `+optimum`/`+vulkanstory` instead, so only the hyphenated
+ * form is a pre-release — a fork of a stable build stays a stable build.
  */
+const PRE_RELEASE_SUFFIX = /^v?\d+\.\d+\.\d+-[0-9A-Za-z]/;
+
 export function isPreReleaseVersion(version: string): boolean {
-  return version.includes("rc");
+  return PRE_RELEASE_SUFFIX.test(version);
 }
 
 /** Keeps pre-release versions only when the user has opted into them. */

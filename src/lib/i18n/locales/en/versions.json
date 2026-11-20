@@ -69,7 +69,7 @@
     "folderMissing": "Folder not found — relink or unlink it",
     "reallyDelete": "Really delete?",
     "reallyUnlink": "Really unlink?",
-    "releaseCandidate": "Release Candidate",
+    "preRelease": "Pre-release",
     "unlink": "Unlink",
     "unlinkNote": "Story Forge stops using this folder; nothing on disk is changed and the launcher that installed it keeps working.",
     "unlinkVersion": "Unlink version {{name}}"

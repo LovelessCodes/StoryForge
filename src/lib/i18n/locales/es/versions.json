@@ -69,7 +69,7 @@
     "folderMissing": "Carpeta no encontrada — vuelve a enlazarla o desenlázala",
     "reallyDelete": "¿Eliminar de verdad?",
     "reallyUnlink": "¿Desenlazar de verdad?",
-    "releaseCandidate": "Candidata de lanzamiento",
+    "preRelease": "Versión preliminar",
     "unlink": "Desenlazar",
     "unlinkNote": "Story Forge deja de usar esta carpeta; nada en el disco cambia y el lanzador que la instaló sigue funcionando.",
     "unlinkVersion": "Desenlazar la versión {{name}}"

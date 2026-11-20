@@ -4,13 +4,14 @@ import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { type InstalledVersion } from "@/hooks/use-installed-versions";
 import { baseGameVersion, isOptimumVersion, isVulkanStoryVersion } from "@/lib/helpers";
+import { isPreReleaseVersion } from "@/lib/pre-release";
 
-/** The fork, release-candidate and linked badges shown next to a version name. */
+/** The fork, pre-release and linked badges shown next to a version name. */
 function VersionBadges({ version }: { version: InstalledVersion }) {
   const { t } = useTranslation();
   const isOptimum = isOptimumVersion(version.name);
   const isVulkanStory = isVulkanStoryVersion(version.name);
-  const isRc = version.name.includes("rc");
+  const isPreRelease = isPreReleaseVersion(version.name);
 
   return (
     <>
@@ -36,9 +37,9 @@ function VersionBadges({ version }: { version: InstalledVersion }) {
             : t("versions.vulkanstory.label")}
         </Badge>
       )}
-      {isRc && (
+      {isPreRelease && (
         <Badge variant="outline" className="shrink-0 text-[10px]">
-          {t("versions.row.releaseCandidate")}
+          {t("versions.row.preRelease")}
         </Badge>
       )}
       {version.external && (
