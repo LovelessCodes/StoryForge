@@ -1,12 +1,12 @@
 {
   "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
-  "version": "2.0.13",
+  "version": "2.0.14",
   "description": "A modern desktop launcher and mod manager for Vintage Story",
   "homepage": "https://getstoryforge.app/",
   "license": "GPL-3.0-only",
   "architecture": {
     "64bit": {
-      "url": "https://github.com/LovelessCodes/StoryForge/releases/download/storyforge-v2.0.13/Story.Forge_2.0.13_x64-setup.exe#/dl.7z",
+      "url": "https://github.com/LovelessCodes/StoryForge/releases/download/storyforge-v2.0.14/Story.Forge_2.0.14_x64-setup.exe#/dl.7z",
       "hash": "20a3336f4e1042a289f14297c5c4396ad9b77b4df6dad6b0b24715fcb429b5ec"
     }
   },
