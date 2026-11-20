@@ -18,7 +18,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tokio::{
-    io::{AsyncBufReadExt, AsyncWriteExt, BufReader as AsyncBufReader},
+    io::{AsyncBufRead, AsyncBufReadExt, AsyncWriteExt, BufReader as AsyncBufReader},
     process::{Child, Command},
     sync::{mpsc, oneshot},
 };
@@ -27,7 +27,7 @@ use chrono::Local;
 
 use super::server_hosting::{
     append_log, emit_log, emit_status, open_instance_log, server_exe_path, HostedServerInstance,
-    ServerStatus, ServerStatusInfo,
+    InstanceLog, ServerStatus, ServerStatusInfo,
 };
 use super::utils::lock;
 use crate::{log_error, log_info};
@@ -173,6 +173,15 @@ pub async fn spawn(
     let handle = ServerActorHandle { tx };
     let token = NEXT_ACTOR_TOKEN.fetch_add(1, Ordering::Relaxed);
     register(instance_id, token, handle.clone());
+    // Publish the starting state (and PID) as soon as the process exists, so a
+    // client that missed the optimistic update still sees it is starting.
+    emit_status(
+        &app,
+        instance_id,
+        &ServerStatus::Starting,
+        process.pid,
+        Some(Instant::now()),
+    );
 
     let app_clone = app.clone();
     tokio::spawn(async move {
@@ -260,6 +269,91 @@ struct ServerProcess {
     stdout: tokio::process::ChildStdout,
     stderr: tokio::process::ChildStderr,
     stdin: tokio::process::ChildStdin,
+}
+
+/// The banner Vintage Story prints once it accepts connections.
+const READY_MARKER: &str = "dedicated server now running on port";
+
+/// True when a line is the server's "ready" banner.
+///
+/// The comparison is case-insensitive because the banner's casing has varied
+/// between game versions. Missing it leaves the instance on "starting" even
+/// though the server is up.
+fn is_ready_line(line: &str) -> bool {
+    line.to_ascii_lowercase().contains(READY_MARKER)
+}
+
+/// Reads one line of process output, lossily decoding invalid UTF-8.
+///
+/// `AsyncBufReadExt::lines` returns an error for a line that is not valid
+/// UTF-8, and stopping the reader there would silence the console for the rest
+/// of the session. It is also worse than that on Windows: once nobody drains
+/// the pipe, the server blocks on its next write. A mod printing a single
+/// non-UTF-8 byte must not be able to do that.
+async fn read_output_line<R: AsyncBufRead + Unpin>(
+    reader: &mut R,
+    buffer: &mut Vec<u8>,
+) -> std::io::Result<Option<String>> {
+    buffer.clear();
+    if reader.read_until(b'\n', buffer).await? == 0 {
+        return Ok(None);
+    }
+    if buffer.last() == Some(&b'\n') {
+        buffer.pop();
+    }
+    if buffer.last() == Some(&b'\r') {
+        buffer.pop();
+    }
+    Ok(Some(String::from_utf8_lossy(buffer).into_owned()))
+}
+
+/// Forwards one of a server's output streams to the console, log file and
+/// status until the stream closes.
+#[allow(clippy::too_many_arguments)]
+fn spawn_output_reader<R>(
+    app: tauri::AppHandle,
+    instance_id: u64,
+    reader: R,
+    log_writer: Arc<Mutex<Option<InstanceLog>>>,
+    status: Arc<tokio::sync::Mutex<ServerStatus>>,
+    startup_reported: Arc<std::sync::atomic::AtomicBool>,
+    last_output: Arc<Mutex<Instant>>,
+    pid: Option<u32>,
+    started_at: Instant,
+) where
+    R: AsyncBufRead + Unpin + Send + 'static,
+{
+    tokio::spawn(async move {
+        let mut reader = reader;
+        let mut buffer = Vec::new();
+        loop {
+            match read_output_line(&mut reader, &mut buffer).await {
+                Ok(Some(line)) => {
+                    *lock(&last_output) = Instant::now();
+                    emit_log(&app, instance_id, &line);
+                    append_log(&log_writer, &line);
+
+                    if is_ready_line(&line) && !startup_reported.swap(true, Ordering::SeqCst) {
+                        *status.lock().await = ServerStatus::Running;
+                        emit_status(
+                            &app,
+                            instance_id,
+                            &ServerStatus::Running,
+                            pid,
+                            Some(started_at),
+                        );
+                    }
+                }
+                Ok(None) => break,
+                Err(error) => {
+                    log_error!(
+                        "server_hosting: instance {instance_id} output reader stopped: {error}"
+                    );
+                    break;
+                }
+            }
+        }
+    });
 }
 
 /// One session's ending: who decided it.
@@ -415,67 +509,34 @@ async fn run_session(
     let stdin = Arc::new(tokio::sync::Mutex::new(stdin));
     let status = Arc::new(tokio::sync::Mutex::new(ServerStatus::Starting));
     let startup_reported = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let last_output = Arc::new(Mutex::new(Instant::now()));
 
-    // stdout reader
-    let app_stdout = app.clone();
-    let log_stdout = log_writer.clone();
-    let status_stdout = status.clone();
-    let startup_reported_stdout = startup_reported.clone();
-    tokio::spawn(async move {
-        let reader = AsyncBufReader::new(stdout);
-        let mut lines = reader.lines();
-        while let Ok(Some(line)) = lines.next_line().await {
-            emit_log(&app_stdout, instance_id, &line);
-            append_log(&log_stdout, &line);
-
-            // Also detect startup line here — VS may print it to stdout
-            if line.contains("Dedicated Server now running on Port")
-                && !startup_reported_stdout.load(std::sync::atomic::Ordering::SeqCst)
-            {
-                startup_reported_stdout.store(true, std::sync::atomic::Ordering::SeqCst);
-                *status_stdout.lock().await = ServerStatus::Running;
-                emit_status(
-                    &app_stdout,
-                    instance_id,
-                    &ServerStatus::Running,
-                    pid,
-                    Some(started_at),
-                );
-            }
-        }
-    });
-
-    // stderr reader
-    let app_stderr = app.clone();
-    let log_stderr = log_writer.clone();
-    let status_stderr = status.clone();
-    let startup_reported_stderr = startup_reported.clone();
-    tokio::spawn(async move {
-        let reader = AsyncBufReader::new(stderr);
-        let mut lines = reader.lines();
-        while let Ok(Some(line)) = lines.next_line().await {
-            emit_log(&app_stderr, instance_id, &line);
-            append_log(&log_stderr, &line);
-
-            // Detect server ready line to mark as Running
-            if line.contains("Dedicated Server now running on Port")
-                && !startup_reported_stderr.load(std::sync::atomic::Ordering::SeqCst)
-            {
-                startup_reported_stderr.store(true, std::sync::atomic::Ordering::SeqCst);
-                *status_stderr.lock().await = ServerStatus::Running;
-                emit_status(
-                    &app_stderr,
-                    instance_id,
-                    &ServerStatus::Running,
-                    pid,
-                    Some(started_at),
-                );
-            }
-        }
-    });
+    spawn_output_reader(
+        app.clone(),
+        instance_id,
+        AsyncBufReader::new(stdout),
+        log_writer.clone(),
+        status.clone(),
+        startup_reported.clone(),
+        last_output.clone(),
+        pid,
+        started_at,
+    );
+    spawn_output_reader(
+        app.clone(),
+        instance_id,
+        AsyncBufReader::new(stderr),
+        log_writer.clone(),
+        status.clone(),
+        startup_reported.clone(),
+        last_output.clone(),
+        pid,
+        started_at,
+    );
 
     let mut schedule_tick = tokio::time::interval(SCHEDULE_TICK);
     schedule_tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+    let mut startup_tick = tokio::time::interval(Duration::from_secs(60));
 
     let (exit, final_status) = loop {
         tokio::select! {
@@ -551,6 +612,23 @@ async fn run_session(
                 )
                 .await;
                 break (SessionExit::ScheduledRestart, new_status);
+            }
+
+            _ = startup_tick.tick() => {
+                let is_starting = *status.lock().await == ServerStatus::Starting;
+                if is_starting {
+                    let idle = lock(&last_output).elapsed();
+                    if idle >= Duration::from_secs(60) {
+                        // A silent startup is normal while a big modded world
+                        // loads, so this is a hint for support reports rather
+                        // than a timeout that would kill a healthy server.
+                        log_info!(
+                            "server_hosting: instance {instance_id} still starting after {}s, no output for {}s",
+                            started_at.elapsed().as_secs(),
+                            idle.as_secs()
+                        );
+                    }
+                }
             }
 
             wait_result = child.wait() => {
@@ -808,5 +886,74 @@ async fn stop_for_shutdown(instance_id: u64) {
     let deadline = Instant::now() + SHUTDOWN_KILL_WAIT;
     while is_running(instance_id) && Instant::now() < deadline {
         tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ready_line_matches_any_casing() {
+        assert!(is_ready_line(
+            "[Server Notification] Dedicated Server now running on Port 42420"
+        ));
+        assert!(is_ready_line("dedicated server now running on port 42420"));
+        assert!(!is_ready_line("Dedicated Server starting up"));
+    }
+
+    #[tokio::test]
+    async fn output_reader_survives_invalid_utf8() {
+        // A mod printing a non-UTF-8 byte must not end the stream.
+        let input = b"before\nbad \xFF byte\nafter\n";
+        let mut reader = AsyncBufReader::new(&input[..]);
+        let mut buffer = Vec::new();
+
+        assert_eq!(
+            read_output_line(&mut reader, &mut buffer)
+                .await
+                .unwrap()
+                .as_deref(),
+            Some("before")
+        );
+        let bad = read_output_line(&mut reader, &mut buffer)
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(bad.starts_with("bad "));
+        assert!(bad.ends_with(" byte"));
+        assert_eq!(
+            read_output_line(&mut reader, &mut buffer)
+                .await
+                .unwrap()
+                .as_deref(),
+            Some("after")
+        );
+        assert_eq!(
+            read_output_line(&mut reader, &mut buffer).await.unwrap(),
+            None
+        );
+    }
+
+    #[tokio::test]
+    async fn output_reader_strips_crlf() {
+        let input = b"one\r\ntwo";
+        let mut reader = AsyncBufReader::new(&input[..]);
+        let mut buffer = Vec::new();
+
+        assert_eq!(
+            read_output_line(&mut reader, &mut buffer)
+                .await
+                .unwrap()
+                .as_deref(),
+            Some("one")
+        );
+        assert_eq!(
+            read_output_line(&mut reader, &mut buffer)
+                .await
+                .unwrap()
+                .as_deref(),
+            Some("two")
+        );
     }
 }
