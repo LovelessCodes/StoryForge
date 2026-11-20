@@ -8,6 +8,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.13] - 2026-11-20
+
+### Fixed
+
+- **Preview builds are treated as pre-releases**: only versions containing `rc` were recognised, so Vintage Story's new `1.23.0-pre.1` counted as a stable build — it ignored the "Show pre-release versions" setting, sorted above 1.22.7 so a new profile would default to an unfinished preview, and a check for updates offered it as an upgrade. Any hyphenated suffix (`-rc`, `-pre`, `-beta`) is now recognised, while Story Forge's own `+optimum` and `+vulkanstory` forks of stable builds stay stable ([#317](https://github.com/LovelessCodes/StoryForge/issues/317)).
+
+### Changed
+
+- **The version badge reads "Pre-release"**: it was labelled "Release Candidate", which no longer describes everything it marks. The label and the pre-release setting's description are translated in all seven languages.
+
 ## [2.0.12] - 2026-11-15
 
 ### Added
