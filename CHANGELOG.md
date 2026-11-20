@@ -8,6 +8,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.14] - 2026-11-20
+
+### Fixed
+
+- **Hosted servers no longer stay on "starting" after a mod prints invalid UTF-8**: the console reader treated an invalid UTF-8 line as the end of the stream, so it stopped reading stdout and stderr. Story Forge then never saw the "Dedicated Server now running on Port" banner, and on Windows the server could block once the unread pipe filled. Output is now read as bytes and decoded lossily, so one bad line no longer silences the console or the status.
+- **A starting server can be stopped**: Start was disabled while "starting" and Stop only appeared once the server reached "running", so a stuck start could not be cancelled. Stop is now available while the instance starts.
+
+### Changed
+
+- **Starting servers report stalls in the application log**: when no output arrives for 60 seconds while an instance is still starting, Story Forge logs how long it has been waiting. This is diagnostic only; slow modded world loads are not killed.
+- **The hosted-server start state includes the PID**: the PID is sent as soon as the process exists, so the header shows it while the server loads.
+
 ## [2.0.13] - 2026-11-20
 
 ### Fixed
