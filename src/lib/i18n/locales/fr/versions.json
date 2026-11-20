@@ -69,7 +69,7 @@
     "folderMissing": "Dossier introuvable — reliez-le ou dissociez-le",
     "reallyDelete": "Vraiment supprimer ?",
     "reallyUnlink": "Vraiment dissocier ?",
-    "releaseCandidate": "Version candidate",
+    "preRelease": "Version préliminaire",
     "unlink": "Dissocier",
     "unlinkNote": "Story Forge cesse d'utiliser ce dossier ; rien n'est modifié sur le disque et le lanceur qui l'a installé continue de fonctionner.",
     "unlinkVersion": "Dissocier la version {{name}}"

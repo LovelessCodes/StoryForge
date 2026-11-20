@@ -69,7 +69,7 @@
     "folderMissing": "Pasta não encontrada — vincule-a novamente ou desvincule",
     "reallyDelete": "Excluir mesmo?",
     "reallyUnlink": "Desvincular mesmo?",
-    "releaseCandidate": "Candidata a lançamento",
+    "preRelease": "Versão prévia",
     "unlink": "Desvincular",
     "unlinkNote": "O Story Forge para de usar esta pasta; nada no disco é alterado e o launcher que a instalou continua funcionando.",
     "unlinkVersion": "Desvincular a versão {{name}}"

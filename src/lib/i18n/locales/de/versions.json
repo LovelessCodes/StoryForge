@@ -69,7 +69,7 @@
     "folderMissing": "Ordner nicht gefunden — neu verknüpfen oder Verknüpfung aufheben",
     "reallyDelete": "Wirklich löschen?",
     "reallyUnlink": "Verknüpfung wirklich aufheben?",
-    "releaseCandidate": "Release Candidate",
+    "preRelease": "Vorabversion",
     "unlink": "Verknüpfung aufheben",
     "unlinkNote": "Story Forge verwendet diesen Ordner nicht mehr; auf der Festplatte ändert sich nichts und der Launcher, der ihn installiert hat, funktioniert weiter.",
     "unlinkVersion": "Verknüpfung von Version {{name}} aufheben"

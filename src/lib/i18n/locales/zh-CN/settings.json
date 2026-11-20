@@ -50,7 +50,7 @@
     "systemDotnet": "使用系统 .NET",
     "systemDotnetDescription": "优先尝试系统中的 .NET 运行时，再考虑下载。",
     "showPreRelease": "显示预发布版本",
-    "showPreReleaseDescription": "选择游戏版本时列出候选版本（RC）。",
+    "showPreReleaseDescription": "选择游戏版本时列出预览版和候选版本。",
     "defaultModSort": "默认模组排序",
     "defaultModSortDescription": "打开模组浏览器时使用的排序方式。",
     "defaultWorldsToActiveProfile": "仅显示当前配置档的世界",
