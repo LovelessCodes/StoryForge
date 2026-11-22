@@ -1117,7 +1117,7 @@ pub mod macos {
         dotnet_root: &Path,
         options: &PlayGameParams,
         start_params: &str,
-        _env_vars: &HashMap<String, String>,
+        env_vars: &HashMap<String, String>,
     ) -> Result<tokio::process::Child, UiError> {
         log_info!(
             "[play_game] SPAWNING via open: open -W -a {:?} --args --dataPath {:?} DOTNET_ROOT={:?}",
@@ -1155,6 +1155,7 @@ pub mod macos {
             .env("DOTNET_ROOT", dotnet_root)
             .env("DOTNET_ROLL_FORWARD", "LatestMinor")
             .env("DOTNET_ROLL_FORWARD_TO_PRERELEASE", "0")
+            .envs(env_vars)
             .kill_on_drop(false)
             .arg("-W")
             .arg("-a")
